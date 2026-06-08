@@ -538,6 +538,7 @@ STANDARD = Standard(
         "CD-002":   ["Code-Review"],
         "CCM-001":  ["Code-Review"],                                   # CodeCommit approval rule template
         "GHA-014":  ["Code-Review"],
+        "GHA-123":  ["Code-Review"],# agentic CLI output lands without review
         "GL-004":   ["Code-Review"],
         "GL-029":   ["Code-Review"],
         "BB-004":   ["Code-Review"],

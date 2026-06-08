@@ -853,6 +853,7 @@ STANDARD = Standard(
         "GHA-052":  ["EX-6"],
         # Approval-gate / flow-control gaps
         "GHA-014":  ["DE-1"],
+        "GHA-123":  ["DE-1"],
         "GL-004":   ["DE-1"],
         "BB-004":   ["DE-1"],
         "ADO-004":  ["DE-1"],

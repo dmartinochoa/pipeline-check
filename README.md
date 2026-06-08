@@ -125,7 +125,7 @@ for inputs, idempotency, and fork-PR fallback behavior.
 | **Terraform** | `terraform show -json` plan or raw `*.tf` source | `--tf-plan` / `--tf-source` | AWS-parity shift-left checks, pre-provisioning |
 | **CloudFormation** | YAML or JSON template | `--cfn-template` | ~63 AWS-parity shift-left checks; resolves `!Ref` / `!Sub` / `!GetAtt` intrinsics (unresolved values treated as strict) |
 | **Pulumi** | `Pulumi.yaml` + stack config + project source | `--pulumi-path` | 14 checks · `PULUMI-001..014` · plaintext secrets, wildcard IAM, public resources, insecure state backend, unpinned plugins, deploy-time exec (Python / TypeScript / Go / C#, no Pulumi CLI needed) |
-| **GitHub Actions** | `.github/workflows/*.yml` | `--gha-path` | 113 checks · `GHA-001..073`, `GHA-086..122` + `TAINT-001..003`/`009` · SHA pinning, script injection, OIDC trusted-publishing abuse, agentic-CLI / IaC-apply RCE, prompt injection, `trust_remote_code` model loads, unpinned model refs, unsafe pickle deserialization, compromised-action and npm-worm IOCs, `$GITHUB_ENV` poisoning. [Full reference →](docs/providers/github.md) |
+| **GitHub Actions** | `.github/workflows/*.yml` | `--gha-path` | 114 checks · `GHA-001..073`, `GHA-086..123` + `TAINT-001..003`/`009` · SHA pinning, script injection, OIDC trusted-publishing abuse, agentic-CLI / IaC-apply RCE, prompt injection, `trust_remote_code` model loads, unpinned model refs, unsafe pickle deserialization, unreviewed AI-generated changes, compromised-action and npm-worm IOCs, `$GITHUB_ENV` poisoning. [Full reference →](docs/providers/github.md) |
 | **Gitea / Forgejo Actions** | `.gitea/` or `.forgejo/workflows/*.yml` | `--gitea-path` | Reuses the full GitHub Actions rule pack; GitHub-only reputation rules pass silently without `--resolve-remote` metadata |
 | **GitHub Actions run forensics** | Live Actions REST API | `--pipeline runs` | 3 checks · `RUN-001..003` · audits run history for what actually executed (fork-originated runs, privileged-trigger runs that fired, secrets leaked in run logs via `--audit-runs-logs`) vs. what the static config could do |
 | **GitLab CI** | `.gitlab-ci.yml` | `--gitlab-path` | 46 checks · `GL-001..044` + `TAINT-004`/`008` · `CI_JOB_TOKEN` cross-project scope, DinD TLS bypass, debug-trace secret leaks, MR-pipeline IaC apply + prod deploy, disabled native scanners, mutable `include: component:` |
@@ -523,7 +523,7 @@ pipeline_check/
         ├── terraform/         # AWS-parity checks against plan JSON or HCL source
         ├── cloudformation/    # AWS-parity checks against CFN templates (YAML/JSON)
         ├── pulumi/rules/      # PULUMI-001 .. PULUMI-014 — Pulumi.yaml + stack config + project source IaC static analysis (plaintext secrets, wildcard IAM, public resources, unpinned plugins, deploy-time exec)
-        ├── github/rules/      # GHA-001 .. GHA-073, GHA-086..122 + TAINT-001..003, TAINT-009
+        ├── github/rules/      # GHA-001 .. GHA-073, GHA-086..123 + TAINT-001..003, TAINT-009
         ├── runs/rules/        # RUN-001 .. RUN-003 — GitHub Actions run-history forensics via the live Actions REST API (fork-originated runs, privileged-trigger runs that fired, secrets leaked in run logs)
         ├── gitlab/rules/      # GL-001 .. GL-044 + TAINT-004 / TAINT-008
         ├── bitbucket/rules/   # BB-001 .. BB-034

@@ -29,7 +29,7 @@ missing major surfaces or requires extra config. No = not in scope.
 | Capability | Pipeline-Check | Checkov | KICS | Semgrep | tfsec | Trivy |
 |---|---|---|---|---|---|---|
 | **CI/CD pipeline configs** | | | | | | |
-| GitHub Actions | Yes (113 rules) | Partial | Yes | Partial | No | No |
+| GitHub Actions | Yes (114 rules) | Partial | Yes | Partial | No | No |
 | GitLab CI | Yes (46) | No | Partial | No | No | No |
 | Jenkins (Declarative + Scripted) | Yes (36) | No | No | Partial | No | No |
 | CircleCI | Yes (33) | No | Partial | No | No | No |

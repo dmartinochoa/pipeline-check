@@ -19,7 +19,7 @@ Kubernetes, …) when an audit asks for that framework's vocabulary.
 
 - **Controls in this standard:** 10
 - **Controls evidenced by at least one check:** 10 / 10
-- **Distinct checks evidencing this standard:** 921
+- **Distinct checks evidencing this standard:** 922
 - **Of those, autofixable with `--fix`:** 111
 
 _Severity levels (`CRITICAL` / `HIGH` / `MEDIUM` / `LOW` / `INFO`) follow the same scale across every provider and standard. See [How to read severity](README.md#how-to-read-severity) on the standards overview for the definitions._
@@ -30,7 +30,7 @@ Click a control ID to jump to the per-control section with the full check list. 
 
 | Control | Title | Checks | Severity mix |
 |---------|-------|-------:|--------------|
-| [`CICD-SEC-1`](#ctrl-cicd-sec-1) | Insufficient Flow Control Mechanisms | 97 | 7C · 47H · 35M · 8L |
+| [`CICD-SEC-1`](#ctrl-cicd-sec-1) | Insufficient Flow Control Mechanisms | 98 | 7C · 48H · 35M · 8L |
 | [`CICD-SEC-2`](#ctrl-cicd-sec-2) | Inadequate Identity and Access Management | 79 | 11C · 45H · 22M · 1L |
 | [`CICD-SEC-3`](#ctrl-cicd-sec-3) | Dependency Chain Abuse | 303 | 11C · 165H · 105M · 22L |
 | [`CICD-SEC-4`](#ctrl-cicd-sec-4) | Poisoned Pipeline Execution | 137 | 32C · 71H · 22M · 12L |
@@ -62,7 +62,7 @@ pipeline_check --pipeline aws --standard owasp_cicd_top_10 --standard nist_ssdf
 
 Reviews, approvals, branch protection, and deployment gates are the brakes on the pipeline. Missing them lets a single commit, or a single API call, ship straight to production.
 
-**Evidenced by 97 checks** across 18 providers (AWS, Argo CD, Argo Workflows, Azure DevOps, Bitbucket, Buildkite, Cargo, CircleCI, Composer, Drone CI, GitHub Actions, GitLab CI, Jenkins, Pulumi, RubyGems, SCM, Tekton, maven).
+**Evidenced by 98 checks** across 18 providers (AWS, Argo CD, Argo Workflows, Azure DevOps, Bitbucket, Buildkite, Cargo, CircleCI, Composer, Drone CI, GitHub Actions, GitLab CI, Jenkins, Pulumi, RubyGems, SCM, Tekton, maven).
 
 | Check | Title | Severity | Provider | Fix |
 |-------|-------|----------|----------|-----|
@@ -107,6 +107,7 @@ Reviews, approvals, branch protection, and deployment gates are the brakes on th
 | [`GHA-112`](../providers/github.md#gha-112) | Self-hosted deploy job not gated by a protected environment | <span class="pg-sev pg-sev--high">HIGH</span> | [GitHub Actions](../providers/github.md) |  |
 | [`GHA-113`](../providers/github.md#gha-113) | OIDC trusted-publishing job without an environment gate | <span class="pg-sev pg-sev--high">HIGH</span> | [GitHub Actions](../providers/github.md) |  |
 | [`GHA-114`](../providers/github.md#gha-114) | Package-publish workflow runs on an unrestricted push trigger | <span class="pg-sev pg-sev--high">HIGH</span> | [GitHub Actions](../providers/github.md) |  |
+| [`GHA-123`](../providers/github.md#gha-123) | Agentic CLI output lands without human review | <span class="pg-sev pg-sev--high">HIGH</span> | [GitHub Actions](../providers/github.md) |  |
 | [`GL-004`](../providers/gitlab.md#gl-004) | Deploy job lacks manual approval or environment gate | <span class="pg-sev pg-sev--medium">MEDIUM</span> | [GitLab CI](../providers/gitlab.md) |  |
 | [`GL-029`](../providers/gitlab.md#gl-029) | Manual deploy job defaults to allow_failure: true | <span class="pg-sev pg-sev--medium">MEDIUM</span> | [GitLab CI](../providers/gitlab.md) |  |
 | [`GL-033`](../providers/gitlab.md#gl-033) | Global before_script / after_script propagates taint to every job | <span class="pg-sev pg-sev--high">HIGH</span> | [GitLab CI](../providers/gitlab.md) |  |

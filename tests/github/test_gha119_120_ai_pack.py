@@ -2,7 +2,8 @@
 GHA-119 (untrusted context reaches an agentic CLI prompt -> injection),
 GHA-120 (ML model loaded with trust_remote_code -> code execution),
 GHA-121 (model pulled from a mutable / unpinned registry ref),
-GHA-122 (unsafe deserialization of a fetched artifact -> pickle RCE).
+GHA-122 (unsafe deserialization of a fetched artifact -> pickle RCE),
+GHA-123 (agentic CLI output lands without human review).
 """
 from __future__ import annotations
 
@@ -263,3 +264,70 @@ class TestGHA122UnsafeDeserialization:
               - run: python -c "import torch; torch.load('ckpt.pt')"
         """
         assert run_check(wf, "GHA-122").passed is True
+
+
+class TestGHA123AiOutputAutoland:
+    def test_fails_on_agent_plus_git_auto_commit(self):
+        wf = """
+        on: push
+        jobs:
+          b:
+            runs-on: ubuntu-latest
+            steps:
+              - run: aider --message "fix the failing test"
+              - uses: stefanzweifel/git-auto-commit-action@v5
+        """
+        assert run_check(wf, "GHA-123").passed is False
+
+    def test_fails_on_agent_plus_gh_pr_merge_auto(self):
+        wf = """
+        on: push
+        jobs:
+          b:
+            runs-on: ubuntu-latest
+            steps:
+              - run: claude -p "apply the refactor"
+              - run: gh pr merge ${{ github.event.number }} --auto --squash
+        """
+        assert run_check(wf, "GHA-123").passed is False
+
+    def test_passes_on_agent_opening_pr_for_review(self):
+        # create-pull-request without auto-merge is the review path.
+        wf = """
+        on: push
+        jobs:
+          b:
+            runs-on: ubuntu-latest
+            steps:
+              - run: aider --message "x"
+              - uses: peter-evans/create-pull-request@v6
+        """
+        assert run_check(wf, "GHA-123").passed is True
+
+    def test_passes_on_auto_commit_without_agent(self):
+        # Ordinary formatting bot: auto-commit but no agentic CLI.
+        wf = """
+        on: push
+        jobs:
+          b:
+            runs-on: ubuntu-latest
+            steps:
+              - run: npx prettier --write .
+              - uses: stefanzweifel/git-auto-commit-action@v5
+        """
+        assert run_check(wf, "GHA-123").passed is True
+
+    def test_passes_when_agent_and_autoland_in_different_jobs(self):
+        wf = """
+        on: push
+        jobs:
+          edit:
+            runs-on: ubuntu-latest
+            steps:
+              - run: claude -p "x"
+          publish:
+            runs-on: ubuntu-latest
+            steps:
+              - uses: stefanzweifel/git-auto-commit-action@v5
+        """
+        assert run_check(wf, "GHA-123").passed is True

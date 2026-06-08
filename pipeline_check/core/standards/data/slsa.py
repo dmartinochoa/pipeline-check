@@ -142,6 +142,7 @@ STANDARD = Standard(
         "GHA-054":  ["Build.L3.NonFalsifiable"],                   # checkout ssh-key persists into .git/config
         "GHA-005":  ["Build.L3.NonFalsifiable"],                   # long-lived AWS keys
         "GHA-014":  ["Build.L3.NonFalsifiable"],                   # deploy job missing environment
+        "GHA-123":  ["Build.L3.NonFalsifiable"],                   # agentic CLI output lands without review
         "GHA-018":  ["Build.L3.NonFalsifiable"],                   # GITHUB_TOKEN persisted to storage
         "GHA-022":  ["Build.L3.Isolated",
                      "Build.L3.NonFalsifiable"],                   # TLS bypass

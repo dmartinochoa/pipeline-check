@@ -180,6 +180,7 @@ STANDARD = Standard(
         "GHA-105":  ["2.2.2"],                           # self-hosted runner on PR trigger
         "GHA-013":  ["2.3.8", "2.1.3"],                  # issue_comment trigger no author guard
         "GHA-014":  ["5.1.4", "5.2.1"],                  # deploy job missing environment
+        "GHA-123":  ["5.1.4", "5.2.1"],                  # agentic CLI output lands without review
         "GHA-015":  ["2.2.2"],                           # job has no timeout-minutes
         "GHA-016":  ["1.4.1", "3.1.5"],                  # remote script piped to shell
         "GHA-017":  ["3.1.5", "1.4.1"],                  # package install from insecure source

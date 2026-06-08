@@ -271,6 +271,7 @@ STANDARD = Standard(
         "CP-005":   ["ENF-1", "ENF-2"],
         "CD-002":   ["ENF-1"],
         "GHA-014":  ["ENF-1"],
+        "GHA-123":  ["ENF-1"],
         "GL-004":   ["ENF-1", "ENF-2"],
         "GL-029":   ["ENF-2"],
         "BB-004":   ["ENF-1"],

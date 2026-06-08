@@ -11,7 +11,7 @@ and artifact controls covering the full pipeline trust chain.
 
 - **Controls in this standard:** 25
 - **Controls evidenced by at least one check:** 25 / 25
-- **Distinct checks evidencing this standard:** 890
+- **Distinct checks evidencing this standard:** 891
 - **Of those, autofixable with `--fix`:** 110
 
 _Severity levels (`CRITICAL` / `HIGH` / `MEDIUM` / `LOW` / `INFO`) follow the same scale across every provider and standard. See [How to read severity](README.md#how-to-read-severity) on the standards overview for the definitions._
@@ -44,8 +44,8 @@ Click a control ID to jump to the per-control section with the full check list. 
 | [`4.2.1`](#ctrl-4-2-1) | Ensure access to artifacts is limited | 20 | 5C · 9H · 6M |
 | [`4.3.3`](#ctrl-4-3-3) | Ensure package registries use authentication and authorization | 10 | 3C · 6H · 1M |
 | [`4.4.1`](#ctrl-4-4-1) | Ensure artifacts have provenance/SBOM metadata | 40 | 5H · 26M · 9L |
-| [`5.1.4`](#ctrl-5-1-4) | Ensure deployment configuration manifests are reviewed before apply | 52 | 2C · 22H · 25M · 3L |
-| [`5.2.1`](#ctrl-5-2-1) | Ensure deployment environments are separated | 25 | 12H · 11M · 2L |
+| [`5.1.4`](#ctrl-5-1-4) | Ensure deployment configuration manifests are reviewed before apply | 53 | 2C · 23H · 25M · 3L |
+| [`5.2.1`](#ctrl-5-2-1) | Ensure deployment environments are separated | 26 | 13H · 11M · 2L |
 | [`5.2.3`](#ctrl-5-2-3) | Ensure deployment environment activity is audited | 15 | 3H · 6M · 3L · 3I |
 
 ## Filter at runtime
@@ -1424,7 +1424,7 @@ pipeline_check --pipeline aws --standard cis_supply_chain --standard owasp_cicd_
 
 ### 5.1.4: Ensure deployment configuration manifests are reviewed before apply { #ctrl-5-1-4 }
 
-**Evidenced by 52 checks** across 11 providers (AWS, Argo CD, Azure DevOps, Bitbucket, Buildkite, CircleCI, GitHub Actions, GitLab CI, Jenkins, Kubernetes, SCM).
+**Evidenced by 53 checks** across 11 providers (AWS, Argo CD, Azure DevOps, Bitbucket, Buildkite, CircleCI, GitHub Actions, GitLab CI, Jenkins, Kubernetes, SCM).
 
 | Check | Title | Severity | Provider | Fix |
 |-------|-------|----------|----------|-----|
@@ -1445,6 +1445,7 @@ pipeline_check --pipeline aws --standard cis_supply_chain --standard owasp_cicd_
 | [`GHA-014`](../providers/github.md#gha-014) | Deploy job missing environment binding | <span class="pg-sev pg-sev--medium">MEDIUM</span> | [GitHub Actions](../providers/github.md) | <span class="pg-fix" title="`--fix` will patch this rule">🔧 fix</span> |
 | [`GHA-086`](../providers/github.md#gha-086) | Wildcard branch trigger gates an environment-bound deploy | <span class="pg-sev pg-sev--medium">MEDIUM</span> | [GitHub Actions](../providers/github.md) |  |
 | [`GHA-112`](../providers/github.md#gha-112) | Self-hosted deploy job not gated by a protected environment | <span class="pg-sev pg-sev--high">HIGH</span> | [GitHub Actions](../providers/github.md) |  |
+| [`GHA-123`](../providers/github.md#gha-123) | Agentic CLI output lands without human review | <span class="pg-sev pg-sev--high">HIGH</span> | [GitHub Actions](../providers/github.md) |  |
 | [`GL-004`](../providers/gitlab.md#gl-004) | Deploy job lacks manual approval or environment gate | <span class="pg-sev pg-sev--medium">MEDIUM</span> | [GitLab CI](../providers/gitlab.md) |  |
 | [`GL-029`](../providers/gitlab.md#gl-029) | Manual deploy job defaults to allow_failure: true | <span class="pg-sev pg-sev--medium">MEDIUM</span> | [GitLab CI](../providers/gitlab.md) |  |
 | [`JF-005`](../providers/jenkins.md#jf-005) | Deploy stage missing manual `input` approval | <span class="pg-sev pg-sev--medium">MEDIUM</span> | [Jenkins](../providers/jenkins.md) |  |
@@ -1483,7 +1484,7 @@ pipeline_check --pipeline aws --standard cis_supply_chain --standard owasp_cicd_
 
 ### 5.2.1: Ensure deployment environments are separated { #ctrl-5-2-1 }
 
-**Evidenced by 25 checks** across 11 providers (AWS, Argo CD, Azure DevOps, Bitbucket, Buildkite, CircleCI, GitHub Actions, GitLab CI, Jenkins, Kubernetes, SCM).
+**Evidenced by 26 checks** across 11 providers (AWS, Argo CD, Azure DevOps, Bitbucket, Buildkite, CircleCI, GitHub Actions, GitLab CI, Jenkins, Kubernetes, SCM).
 
 | Check | Title | Severity | Provider | Fix |
 |-------|-------|----------|----------|-----|
@@ -1503,6 +1504,7 @@ pipeline_check --pipeline aws --standard cis_supply_chain --standard owasp_cicd_
 | [`GHA-086`](../providers/github.md#gha-086) | Wildcard branch trigger gates an environment-bound deploy | <span class="pg-sev pg-sev--medium">MEDIUM</span> | [GitHub Actions](../providers/github.md) |  |
 | [`GHA-113`](../providers/github.md#gha-113) | OIDC trusted-publishing job without an environment gate | <span class="pg-sev pg-sev--high">HIGH</span> | [GitHub Actions](../providers/github.md) |  |
 | [`GHA-114`](../providers/github.md#gha-114) | Package-publish workflow runs on an unrestricted push trigger | <span class="pg-sev pg-sev--high">HIGH</span> | [GitHub Actions](../providers/github.md) |  |
+| [`GHA-123`](../providers/github.md#gha-123) | Agentic CLI output lands without human review | <span class="pg-sev pg-sev--high">HIGH</span> | [GitHub Actions](../providers/github.md) |  |
 | [`GL-004`](../providers/gitlab.md#gl-004) | Deploy job lacks manual approval or environment gate | <span class="pg-sev pg-sev--medium">MEDIUM</span> | [GitLab CI](../providers/gitlab.md) |  |
 | [`GL-029`](../providers/gitlab.md#gl-029) | Manual deploy job defaults to allow_failure: true | <span class="pg-sev pg-sev--medium">MEDIUM</span> | [GitLab CI](../providers/gitlab.md) |  |
 | [`GL-031`](../providers/gitlab.md#gl-031) | id_tokens: missing audience pin or environment binding | <span class="pg-sev pg-sev--high">HIGH</span> | [GitLab CI](../providers/gitlab.md) |  |

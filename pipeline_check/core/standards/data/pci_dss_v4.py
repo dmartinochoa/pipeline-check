@@ -357,6 +357,7 @@ STANDARD = Standard(
         "GHA-105":  ["6.4.1"],                           # self-hosted runner on PR trigger
         "GHA-013":  ["6.4.1", "6.5.1"],                  # issue_comment no author guard
         "GHA-014":  ["6.4.3"],                           # deploy job missing environment
+        "GHA-123":  ["6.4.3"],                           # agentic CLI output lands without review
         "GHA-015":  ["6.4.1"],                           # no timeout-minutes
         "GHA-016":  ["6.3.3", "6.5.1"],                  # remote script piped to shell
         "GHA-017":  ["6.3.3", "6.5.1"],                  # package install insecure source

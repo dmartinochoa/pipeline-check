@@ -20,7 +20,7 @@ risk language.
 
 - **Controls in this standard:** 13
 - **Controls evidenced by at least one check:** 13 / 13
-- **Distinct checks evidencing this standard:** 891
+- **Distinct checks evidencing this standard:** 892
 - **Of those, autofixable with `--fix`:** 111
 
 _Severity levels (`CRITICAL` / `HIGH` / `MEDIUM` / `LOW` / `INFO`) follow the same scale across every provider and standard. See [How to read severity](README.md#how-to-read-severity) on the standards overview for the definitions._
@@ -33,7 +33,7 @@ Click a control ID to jump to the per-control section with the full check list. 
 |---------|-------|-------:|--------------|
 | [`PO.3.2`](#ctrl-po-3-2) | Implement and maintain supporting toolchains with security controls | 11 | 2H · 5M · 4L |
 | [`PO.3.3`](#ctrl-po-3-3) | Configure the toolchain to generate an audit trail of SDLC activities | 59 | 6H · 27M · 10L · 16I |
-| [`PO.5.1`](#ctrl-po-5-1) | Separate and protect each environment involved in software development | 246 | 33C · 134H · 71M · 8L |
+| [`PO.5.1`](#ctrl-po-5-1) | Separate and protect each environment involved in software development | 247 | 33C · 135H · 71M · 8L |
 | [`PO.5.2`](#ctrl-po-5-2) | Secure and harden endpoints used for software development | 25 | 1C · 3H · 17M · 4L |
 | [`PS.1.1`](#ctrl-ps-1-1) | Store all forms of code based on least-privilege and tamper-resistance | 197 | 33C · 104H · 49M · 11L |
 | [`PS.2.1`](#ctrl-ps-2-1) | Make software integrity verification information available to acquirers | 36 | 11H · 25M |
@@ -148,7 +148,7 @@ pipeline_check --pipeline aws --standard nist_ssdf --standard owasp_cicd_top_10
 
 ### PO.5.1: Separate and protect each environment involved in software development { #ctrl-po-5-1 }
 
-**Evidenced by 246 checks** across 28 providers (AWS, Actions run history, Argo Workflows, Azure Cloud, Azure DevOps, Bitbucket, Buildkite, Cargo, CircleCI, Cloud Build, CloudFormation, Composer, Dockerfile, Drone CI, GCP, GitHub Actions, GitLab CI, Go modules, Helm, Jenkins, Kubernetes, NuGet, Pulumi, RubyGems, SCM, Tekton, Terraform, npm).
+**Evidenced by 247 checks** across 28 providers (AWS, Actions run history, Argo Workflows, Azure Cloud, Azure DevOps, Bitbucket, Buildkite, Cargo, CircleCI, Cloud Build, CloudFormation, Composer, Dockerfile, Drone CI, GCP, GitHub Actions, GitLab CI, Go modules, Helm, Jenkins, Kubernetes, NuGet, Pulumi, RubyGems, SCM, Tekton, Terraform, npm).
 
 | Check | Title | Severity | Provider | Fix |
 |-------|-------|----------|----------|-----|
@@ -289,6 +289,7 @@ pipeline_check --pipeline aws --standard nist_ssdf --standard owasp_cicd_top_10
 | [`GHA-113`](../providers/github.md#gha-113) | OIDC trusted-publishing job without an environment gate | <span class="pg-sev pg-sev--high">HIGH</span> | [GitHub Actions](../providers/github.md) |  |
 | [`GHA-114`](../providers/github.md#gha-114) | Package-publish workflow runs on an unrestricted push trigger | <span class="pg-sev pg-sev--high">HIGH</span> | [GitHub Actions](../providers/github.md) |  |
 | [`GHA-115`](../providers/github.md#gha-115) | ``id-token: write`` granted workflow-wide instead of job-scoped | <span class="pg-sev pg-sev--medium">MEDIUM</span> | [GitHub Actions](../providers/github.md) |  |
+| [`GHA-123`](../providers/github.md#gha-123) | Agentic CLI output lands without human review | <span class="pg-sev pg-sev--high">HIGH</span> | [GitHub Actions](../providers/github.md) |  |
 | [`GL-004`](../providers/gitlab.md#gl-004) | Deploy job lacks manual approval or environment gate | <span class="pg-sev pg-sev--medium">MEDIUM</span> | [GitLab CI](../providers/gitlab.md) |  |
 | [`GL-010`](../providers/gitlab.md#gl-010) | Multi-project pipeline ingests upstream artifact unverified | <span class="pg-sev pg-sev--critical">CRITICAL</span> | [GitLab CI](../providers/gitlab.md) |  |
 | [`GL-011`](../providers/gitlab.md#gl-011) | include: local file pulled in MR-triggered pipeline | <span class="pg-sev pg-sev--high">HIGH</span> | [GitLab CI](../providers/gitlab.md) |  |
