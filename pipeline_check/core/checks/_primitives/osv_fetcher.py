@@ -116,6 +116,10 @@ def _fetch_batch(
     except Exception as exc:
         return {}, str(exc)
 
+    if not isinstance(body, dict):
+        # OSV (or an intercepting proxy / error page) returned valid JSON
+        # that isn't an object — ``body.get`` would raise AttributeError.
+        return {}, "OSV response was not a JSON object"
     raw_results = body.get("results", [])
     # OSV returns one result entry per query, in request order. A
     # response with fewer entries than queries (truncated / partial)
@@ -130,7 +134,7 @@ def _fetch_batch(
         )
     results: dict[int, list[dict[str, Any]]] = {}
     for i, entry in enumerate(raw_results):
-        vulns = entry.get("vulns", [])
+        vulns = entry.get("vulns", []) if isinstance(entry, dict) else []
         if vulns:
             results[i] = vulns
     return results, None
@@ -149,7 +153,10 @@ def _parse_vulns(raw: str) -> list[OsvAdvisory]:
             continue
         osv_id = v.get("id", "")
         summary = v.get("summary", "")
-        aliases = tuple(v.get("aliases", []))
+        # ``.get(key, [])`` only defaults a *missing* key; an explicit
+        # ``"aliases": null`` returns None, and ``tuple(None)`` raises.
+        raw_aliases = v.get("aliases")
+        aliases = tuple(raw_aliases) if isinstance(raw_aliases, list) else ()
         severity = _extract_severity(v)
         advisories.append(OsvAdvisory(
             id=osv_id, summary=summary,
@@ -159,7 +166,8 @@ def _parse_vulns(raw: str) -> list[OsvAdvisory]:
 
 
 def _extract_severity(vuln: dict[str, Any]) -> str:
-    for sev in vuln.get("severity", []):
+    severity = vuln.get("severity")
+    for sev in severity if isinstance(severity, list) else ():
         if isinstance(sev, dict) and sev.get("type") == "CVSS_V3":
             score_val = sev.get("score", "")
             if isinstance(score_val, (int, float)):

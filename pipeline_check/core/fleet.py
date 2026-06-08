@@ -228,7 +228,10 @@ def load_repo_list(yaml_path: Path | str) -> list[RepoCoordinate]:
             f"--repos {path} does not exist. Pass a YAML file with "
             "a list of repo coordinate entries."
         )
-    text = path.read_text(encoding="utf-8")
+    try:
+        text = path.read_text(encoding="utf-8")
+    except (OSError, UnicodeDecodeError) as exc:
+        raise ValueError(f"--repos {path}: could not read file: {exc}") from exc
     try:
         raw = yaml.safe_load(text)
     except yaml.YAMLError as exc:

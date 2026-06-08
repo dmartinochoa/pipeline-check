@@ -4332,3 +4332,168 @@ class TestActiveRulesetsTargetingDefault:
             rulesets=None,
         )
         assert active_rulesets_targeting_default(snap) == ([], [], [])
+
+
+# ── SCM-048..055: firing tests for the newest rules (no coverage gate
+#    runs on the SCM pack, so these slipped in without a Test<ID> class) ─
+
+
+class TestSCM048:
+    def test_all_repos_visibility_fails(self):
+        snap = SCMRepoSnapshot(
+            owner="acme", name="r",
+            codespace_secrets=[{"name": "PROD_DB_PASSWORD", "visibility": "all"}],
+        )
+        f = _by_id(_findings(snap), "SCM-048")
+        assert not f.passed
+        assert f.severity == Severity.HIGH
+        assert "PROD_DB_PASSWORD" in f.description
+
+    def test_selected_visibility_passes(self):
+        snap = SCMRepoSnapshot(
+            owner="acme", name="r",
+            codespace_secrets=[{"name": "PROD", "visibility": "selected"}],
+        )
+        assert _by_id(_findings(snap), "SCM-048").passed
+
+    def test_no_secrets_passes(self):
+        snap = SCMRepoSnapshot(owner="acme", name="r", codespace_secrets=[])
+        assert _by_id(_findings(snap), "SCM-048").passed
+
+
+class TestSCM049:
+    def test_classic_pat_fails(self):
+        snap = SCMRepoSnapshot(owner="o", name="r", token_type="classic")
+        f = _by_id(_findings(snap), "SCM-049")
+        assert not f.passed
+        assert f.severity == Severity.MEDIUM
+
+    def test_fine_grained_passes(self):
+        snap = SCMRepoSnapshot(owner="o", name="r", token_type="fine-grained")
+        assert _by_id(_findings(snap), "SCM-049").passed
+
+
+class TestSCM050:
+    def test_prevent_secrets_off_fails(self):
+        snap = SCMRepoSnapshot(
+            owner="o", name="r", platform="gitlab",
+            repo_meta={"_gitlab_push_rule": {"prevent_secrets": False}},
+        )
+        f = _by_id(_findings(snap), "SCM-050")
+        assert not f.passed
+        assert f.severity == Severity.HIGH
+
+    def test_prevent_secrets_on_passes(self):
+        snap = SCMRepoSnapshot(
+            owner="o", name="r", platform="gitlab",
+            repo_meta={"_gitlab_push_rule": {"prevent_secrets": True}},
+        )
+        assert _by_id(_findings(snap), "SCM-050").passed
+
+
+class TestSCM051:
+    def test_committer_check_off_fails(self):
+        snap = SCMRepoSnapshot(
+            owner="o", name="r", platform="gitlab",
+            repo_meta={"_gitlab_push_rule": {"commit_committer_check": False}},
+        )
+        assert not _by_id(_findings(snap), "SCM-051").passed
+
+    def test_committer_check_on_passes(self):
+        snap = SCMRepoSnapshot(
+            owner="o", name="r", platform="gitlab",
+            repo_meta={"_gitlab_push_rule": {"commit_committer_check": True}},
+        )
+        assert _by_id(_findings(snap), "SCM-051").passed
+
+
+class TestSCM052:
+    def test_unresolved_discussions_allowed_fails(self):
+        snap = SCMRepoSnapshot(
+            owner="o", name="r", platform="gitlab",
+            repo_meta={"_gitlab_project": {
+                "only_allow_merge_if_all_discussions_are_resolved": False,
+            }},
+        )
+        assert not _by_id(_findings(snap), "SCM-052").passed
+
+    def test_resolution_required_passes(self):
+        snap = SCMRepoSnapshot(
+            owner="o", name="r", platform="gitlab",
+            repo_meta={"_gitlab_project": {
+                "only_allow_merge_if_all_discussions_are_resolved": True,
+            }},
+        )
+        assert _by_id(_findings(snap), "SCM-052").passed
+
+
+class TestSCM053:
+    def test_author_self_approval_allowed_fails(self):
+        snap = SCMRepoSnapshot(
+            owner="o", name="r", platform="gitlab",
+            repo_meta={"_gitlab_project": {"merge_requests_author_approval": True}},
+        )
+        f = _by_id(_findings(snap), "SCM-053")
+        assert not f.passed
+        assert f.severity == Severity.HIGH
+
+    def test_author_self_approval_disabled_passes(self):
+        snap = SCMRepoSnapshot(
+            owner="o", name="r", platform="gitlab",
+            repo_meta={"_gitlab_project": {"merge_requests_author_approval": False}},
+        )
+        assert _by_id(_findings(snap), "SCM-053").passed
+
+
+class TestSCM054:
+    def test_private_repo_public_forks_fails(self):
+        snap = SCMRepoSnapshot(
+            owner="o", name="r", platform="bitbucket",
+            repo_meta={"_bitbucket_repo": {
+                "is_private": True, "fork_policy": "allow_forks",
+            }},
+        )
+        f = _by_id(_findings(snap), "SCM-054")
+        assert not f.passed
+        assert f.severity == Severity.HIGH
+
+    def test_no_forks_policy_passes(self):
+        snap = SCMRepoSnapshot(
+            owner="o", name="r", platform="bitbucket",
+            repo_meta={"_bitbucket_repo": {
+                "is_private": True, "fork_policy": "no_forks",
+            }},
+        )
+        assert _by_id(_findings(snap), "SCM-054").passed
+
+    def test_public_repo_passes(self):
+        snap = SCMRepoSnapshot(
+            owner="o", name="r", platform="bitbucket",
+            repo_meta={"_bitbucket_repo": {
+                "is_private": False, "fork_policy": "allow_forks",
+            }},
+        )
+        assert _by_id(_findings(snap), "SCM-054").passed
+
+
+class TestSCM055:
+    def test_no_write_side_restriction_fails(self):
+        snap = SCMRepoSnapshot(
+            owner="o", name="r", platform="bitbucket",
+            default_branch_protection={
+                "allow_force_pushes": {"enabled": True},
+                "allow_deletions": {"enabled": True},
+            },
+        )
+        f = _by_id(_findings(snap), "SCM-055")
+        assert not f.passed
+        assert f.severity == Severity.HIGH
+
+    def test_force_push_restricted_passes(self):
+        snap = SCMRepoSnapshot(
+            owner="o", name="r", platform="bitbucket",
+            default_branch_protection={
+                "allow_force_pushes": {"enabled": False},
+            },
+        )
+        assert _by_id(_findings(snap), "SCM-055").passed

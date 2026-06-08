@@ -303,8 +303,15 @@ def _emit_report(
     so adding a new format only edits the dispatch site.
     """
     if output_file:
-        with open(output_file, "w", encoding="utf-8") as fh:
-            fh.write(text)
+        try:
+            with open(output_file, "w", encoding="utf-8") as fh:
+                fh.write(text)
+        except OSError as exc:
+            # A directory path, a missing parent dir, or a read-only
+            # destination should be a clean usage error, not a traceback.
+            raise click.UsageError(
+                f"could not write {label} to {output_file}: {exc}"
+            ) from exc
         if not quiet:
             click.echo(f"{label} written to {output_file}", err=True)
     elif not quiet:
@@ -713,7 +720,9 @@ def _collect_inline_ignores(
                     continue
                 try:
                     text = open(filepath, encoding="utf-8").read()
-                except OSError:
+                except (OSError, UnicodeDecodeError):
+                    # Skip unreadable or non-UTF-8 files rather than
+                    # aborting the whole scan over one stray byte.
                     continue
                 try:
                     rel = os.path.relpath(filepath).replace("\\", "/")
@@ -3801,11 +3810,16 @@ def _emit_scan_report(
         # HTML reporter writes the file itself (it bundles assets), so
         # we don't route it through ``_emit_report``.
         from pipeline_check.core.html_reporter import report_html
-        report_html(
-            findings, score_result, region=region, target=target or "",
-            output_path=output_file, chains=chains,
-            pipeline_graphs=pipeline_graphs,
-        )
+        try:
+            report_html(
+                findings, score_result, region=region, target=target or "",
+                output_path=output_file, chains=chains,
+                pipeline_graphs=pipeline_graphs,
+            )
+        except OSError as exc:
+            raise click.UsageError(
+                f"could not write HTML report to {output_file}: {exc}"
+            ) from exc
         if not quiet:
             click.echo(f"HTML report written to {output_file}", err=True)
 
@@ -5231,7 +5245,12 @@ def fleet_cmd(
             f"[fleet] {source} yielded no repo coordinates."
         )
     out_dir = Path(output_dir)
-    scan_flags = shlex.split(scan_flags_str) if scan_flags_str else None
+    try:
+        scan_flags = shlex.split(scan_flags_str) if scan_flags_str else None
+    except ValueError as exc:
+        # Unbalanced quotes in --scan-flags shouldn't crash with a raw
+        # traceback.
+        raise click.UsageError(f"--scan-flags is not parseable: {exc}") from exc
     effective_jobs = jobs if jobs is not None else default_worker_count(len(repos))
     digest = run_fleet(
         repos, out_dir,

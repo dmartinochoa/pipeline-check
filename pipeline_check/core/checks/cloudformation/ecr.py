@@ -114,7 +114,7 @@ def _ecr003_public_policy(properties: dict[str, Any], name: str) -> Finding:
     else:
         policy = {}
     public = [
-        s for s in policy.get("Statement", [])
+        s for s in policy.get("Statement") or []
         if isinstance(s, dict)
         and s.get("Effect") == "Allow"
         and _is_public_principal(s.get("Principal"))

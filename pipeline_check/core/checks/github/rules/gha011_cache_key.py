@@ -93,7 +93,14 @@ def check(path: str, doc: dict[str, Any]) -> Finding:
                 raw = with_block.get(key_name)
                 if raw is None:
                     continue
-                text = raw if isinstance(raw, str) else "\n".join(str(v) for v in raw)
+                if isinstance(raw, str):
+                    text = raw
+                elif isinstance(raw, (list, tuple)):
+                    text = "\n".join(str(v) for v in raw)
+                else:
+                    # Numeric/boolean scalar key (e.g. ``key: 123``):
+                    # stringify rather than iterate it.
+                    text = str(raw)
                 if CACHE_TAINT_RE.search(text):
                     offenders.append(f"{job_id}[{idx}].{key_name}")
                     anchor_jobs[job_id] = None

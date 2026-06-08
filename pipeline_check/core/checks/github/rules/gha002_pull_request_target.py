@@ -121,7 +121,8 @@ def check(path: str, doc: dict[str, Any]) -> Finding:
                 "actions/checkout@"
             ):
                 continue
-            ref = ((step.get("with") or {}).get("ref") or "")
+            with_block = step.get("with")
+            ref = with_block.get("ref") if isinstance(with_block, dict) else None
             if isinstance(ref, str) and PR_HEAD_REF_RE.search(ref):
                 offending.append(f"{job_id}[{idx}]")
                 locations.append(step_location(path, step))

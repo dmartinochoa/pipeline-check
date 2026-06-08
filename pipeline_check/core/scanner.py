@@ -340,8 +340,26 @@ class Scanner:
 
         findings: list[Finding] = []
         for check_class in self._check_classes:
-            checker = check_class(self._context, target=target)
-            batch = checker.run()
+            try:
+                checker = check_class(self._context, target=target)
+                batch = checker.run()
+            except Exception:
+                # Per-rule crashes are already contained inside
+                # ``discover_rules``; this guards the surface around them,
+                # context construction (e.g. a malformed plan that breaks
+                # ``TerraformContext.__init__``) and any orchestrator-level
+                # code. One provider tripping over bad input must not drop
+                # the other providers in a multi-provider scan.
+                logger.warning(
+                    "%s crashed and was skipped", check_class.__name__,
+                    exc_info=True,
+                )
+                if log:
+                    log(
+                        f"running {check_class.__name__}... "
+                        "skipped (internal error)"
+                    )
+                continue
             if log:
                 log(f"running {check_class.__name__}... {len(batch)} finding(s)")
             findings.extend(batch)

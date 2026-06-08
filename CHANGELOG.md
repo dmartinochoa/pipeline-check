@@ -363,6 +363,72 @@ release commit collapses this section into `## [X.Y.Z] - <date>`.
   binding, K8S-044 admission webhook). Detection, severity, and finding
   counts are unchanged. The remaining document-level Tekton / Argo rules
   are tracked as the next batch.
+- **A crashing rule no longer aborts the whole scan.** Rules run over
+  config the scanner didn't author, and a single rule tripping over an
+  unexpected YAML shape used to raise straight out of the orchestrator and
+  kill the scan (no findings, non-zero exit). A scanned PR could weaponize
+  this: one malformed workflow file suppressed every finding. `discover_rules`
+  now wraps each check so an unhandled exception degrades to a logged warning
+  plus a passing finding, and the scanner loop guards provider context
+  construction (e.g. a malformed Terraform plan) so one provider's failure
+  doesn't drop the others in a multi-provider run.
+- **GHA-002 / GHA-003 / GHA-004 / GHA-011 crashes on malformed workflows.**
+  GHA-002 and GHA-004 raised `AttributeError` on a scalar `with:` block
+  (`with: ref` instead of a mapping); GHA-003 raised `re.error` when an
+  `env:` key contained a regex metacharacter (the env-var name was
+  interpolated into a pattern without `re.escape`, unlike its sibling rules);
+  GHA-011 raised `TypeError` on a numeric `key:` (`key: 123`). All four now
+  handle the off-shape input instead of crashing.
+- **Autofix no longer writes a duplicate mapping key.** When a sibling key
+  (`name:`, `if:`) sat between `uses:`/`run:` and the `with:`/`env:` block,
+  the GHA-002 and GHA-003 fixers inserted a *second* `with:`/`env:` mapping
+  instead of merging into the existing one. The round-trip safety gate used a
+  lenient loader (last-wins) that accepted the corruption, so it reached disk
+  under `--fix --apply` and silently dropped the original value. The fixers
+  now merge correctly, and the gate uses the strict duplicate-key loader so
+  any future duplicate-emitting fixer bails to "no patch" instead of
+  corrupting the file.
+- **OSV fetcher crash on null fields (`--resolve-remote`).** A vulnerability
+  record with an explicit `"aliases": null` or `"severity": null` raised
+  `TypeError` (`dict.get(key, default)` only substitutes the default for a
+  *missing* key, not a present-but-null one). Both are now treated as empty.
+- **Maven POM parsing hardened against entity-expansion DoS.** `pom.xml` /
+  `settings.xml` were parsed with stdlib ElementTree and no size guard
+  (unlike the NuGet loader). A crafted `<!DOCTYPE>` with nested `<!ENTITY>`
+  definitions (a "billion laughs" payload) could exhaust memory. POM bodies
+  carrying a DTD, or larger than 10 MB, are now refused (`parsed_ok=False`)
+  before parsing; a POM never legitimately needs a DTD.
+- **SARIF regions no longer omit `startLine`.** A `Location` can carry a
+  column or end position without a start line; the region builder emitted
+  `startColumn` / `endLine` / `endColumn` with no `startLine`, which GitHub
+  code scanning rejects as invalid. The column/end fields are now emitted
+  only alongside a `startLine`; a column-only location degrades to a
+  file-level result.
+- **JUnit XML strips XML-forbidden control characters.** A finding field
+  carrying a C0 control byte (a NUL or similar lifted from scanned file
+  content) passed through `saxutils` unescaped and produced non-well-formed
+  XML that CI ingestors reject. Control characters (except tab / LF / CR)
+  are now stripped before escaping.
+- **Non-UTF-8 config / ignore / repo-list files no longer crash the run.**
+  The config loader, both ignore-file loaders (flat + YAML), the inline-ignore
+  scanner, and the fleet `--repos` loader caught `OSError` but not
+  `UnicodeDecodeError` (a `ValueError`), so a latin-1 / cp1252 file aborted
+  the process with a traceback before scanning. These reads now degrade
+  cleanly (skip the file with a warning, or raise a usage error). Because
+  these run outside the per-rule guard, the crash was process-fatal.
+- **Report writes to a bad `--output-file` give a clean error.** Writing
+  JSON / SARIF / JUnit / HTML / etc. to a directory path, a missing parent
+  directory, or a read-only destination raised a raw `OSError`; it is now a
+  `click.UsageError`. Unbalanced quotes in `fleet --scan-flags` likewise
+  surface as a usage error instead of a `shlex` traceback.
+- **`.get(key, default)` null-value crashes.** Several sites relied on a
+  two-arg `.get` defaulting a *missing* key, but an explicit `null` returns
+  None and crashed: the OSV fetcher on a non-object JSON response
+  (`--resolve-remote`), and the CloudFormation S3-005 / ECR-003 policy checks
+  on a `"Statement": null` (which silently disabled those public-access
+  checks via the per-rule guard). The SCM loader's GitLab `repository_size`
+  coercion and the Argo CD `ApplicationSet` source walk are likewise guarded
+  against a non-numeric value and a list-shaped `spec:`.
 
 ## [1.11.0] - 2026-06-06
 

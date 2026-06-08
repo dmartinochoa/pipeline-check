@@ -189,7 +189,11 @@ def _load_path(p: Path) -> dict[str, Any]:
         else:
             # Unknown extension, best effort: try YAML (it's a superset of JSON).
             data = _safe_load_strict(p.read_text(encoding="utf-8")) or {}
-    except (OSError, yaml.YAMLError, tomllib.TOMLDecodeError) as exc:
+    except (OSError, UnicodeDecodeError, yaml.YAMLError,
+            tomllib.TOMLDecodeError) as exc:
+        # UnicodeDecodeError (a ValueError, not an OSError) fires when the
+        # config file isn't valid UTF-8; without it a latin-1/cp1252 file
+        # crashes the eager config-load callback before the scan starts.
         print(f"[config] could not parse {p}: {exc}", file=sys.stderr)
         return {}
     return _flatten(data, source=str(p))

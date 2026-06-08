@@ -128,10 +128,18 @@ def gitlab_context_for_repo(
 
     push_rule_raw = fetcher.fetch(f"projects/{encoded}/push_rule")
 
+    stats = project.get("statistics")
+    raw_size = stats.get("repository_size") if isinstance(stats, dict) else None
+    try:
+        # A self-hosted / proxied GitLab can return a null or non-numeric
+        # ``repository_size``; don't let ``int()`` abort the SCM scan.
+        repo_size = int(raw_size)  # type: ignore[arg-type]
+    except (TypeError, ValueError):
+        repo_size = 1024
+
     repo_meta: dict[str, Any] = {
         "default_branch": default_branch,
-        "size": int(project.get("statistics", {}).get("repository_size", 1024))
-        if isinstance(project.get("statistics"), dict) else 1024,
+        "size": repo_size,
         "private": project.get("visibility") == "private",
         "visibility": project.get("visibility"),
         "archived": bool(project.get("archived")),
