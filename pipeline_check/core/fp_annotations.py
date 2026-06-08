@@ -82,7 +82,7 @@ def load_annotations(path: str | Path = DEFAULT_FP_PATH) -> list[FPAnnotation]:
     try:
         text = p.read_text(encoding="utf-8")
         doc = json.loads(text)
-    except (OSError, UnicodeDecodeError, json.JSONDecodeError):
+    except (OSError, UnicodeDecodeError, json.JSONDecodeError, RecursionError, MemoryError):
         return []
     if not isinstance(doc, dict):
         return []

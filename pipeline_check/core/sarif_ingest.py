@@ -310,7 +310,7 @@ def parse_sarif_text(
     result = IngestResult(file_path=file_path)
     try:
         doc = json.loads(text)
-    except json.JSONDecodeError as exc:
+    except (json.JSONDecodeError, RecursionError, MemoryError) as exc:
         result.warnings.append(
             f"[ingest] {file_path}: JSON parse error: "
             f"{str(exc).split(chr(10), 1)[0]}"

@@ -238,7 +238,7 @@ def load_history(directory: Path | str) -> HistoryReport:
             continue
         try:
             doc = json.loads(text)
-        except json.JSONDecodeError as exc:
+        except (json.JSONDecodeError, RecursionError, MemoryError) as exc:
             warnings.append(
                 f"{f.name}: JSON decode error: "
                 f"{str(exc).split(chr(10), 1)[0]}"

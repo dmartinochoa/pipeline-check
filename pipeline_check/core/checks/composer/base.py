@@ -203,7 +203,7 @@ class ComposerContext:
                     if isinstance(parsed, dict):
                         auth_body = parsed
                 except (OSError, UnicodeDecodeError,
-                        json.JSONDecodeError):
+                        json.JSONDecodeError, RecursionError, MemoryError):
                     auth_body = {}
             files.append(ComposerFile(
                 path=pf.path, text=pf.text,
@@ -362,7 +362,7 @@ def _walk_scripts(
 def _parse_composer(path: str, text: str) -> ComposerFile:
     try:
         data = json.loads(text)
-    except json.JSONDecodeError:
+    except (json.JSONDecodeError, RecursionError, MemoryError):
         return ComposerFile(
             path=path, text=text, package_name="",
             parsed_ok=False,

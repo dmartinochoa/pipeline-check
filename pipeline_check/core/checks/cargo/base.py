@@ -370,7 +370,7 @@ def _parse_cargo(path: str, text: str) -> CargoFile:
     """Parse a ``Cargo.toml`` body into a :class:`CargoFile`."""
     try:
         data = tomllib.loads(text)
-    except tomllib.TOMLDecodeError:
+    except (tomllib.TOMLDecodeError, RecursionError, MemoryError):
         return CargoFile(
             path=path, text=text, crate_name="",
             parsed_ok=False,
@@ -414,7 +414,7 @@ def _discover_cargo_config(
                 continue
             try:
                 data = tomllib.loads(cfg.read_text(encoding="utf-8"))
-            except (OSError, UnicodeDecodeError, tomllib.TOMLDecodeError):
+            except (OSError, UnicodeDecodeError, tomllib.TOMLDecodeError, RecursionError, MemoryError):
                 return str(cfg), {}
             return str(cfg), data if isinstance(data, dict) else {}
     return None, {}

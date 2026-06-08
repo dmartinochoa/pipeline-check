@@ -190,7 +190,7 @@ def _load_path(p: Path) -> dict[str, Any]:
             # Unknown extension, best effort: try YAML (it's a superset of JSON).
             data = _safe_load_strict(p.read_text(encoding="utf-8")) or {}
     except (OSError, UnicodeDecodeError, yaml.YAMLError,
-            tomllib.TOMLDecodeError) as exc:
+            tomllib.TOMLDecodeError, RecursionError, MemoryError) as exc:
         # UnicodeDecodeError (a ValueError, not an OSError) fires when the
         # config file isn't valid UTF-8; without it a latin-1/cp1252 file
         # crashes the eager config-load callback before the scan starts.
@@ -203,7 +203,7 @@ def _load_pyproject(p: Path) -> dict[str, Any]:
     try:
         with p.open("rb") as fh:
             doc = tomllib.load(fh)
-    except (OSError, UnicodeDecodeError, tomllib.TOMLDecodeError):
+    except (OSError, UnicodeDecodeError, tomllib.TOMLDecodeError, RecursionError, MemoryError):
         # ``tomllib.load`` decodes UTF-8 and raises ``UnicodeDecodeError``
         # (a sibling of ``TOMLDecodeError``, not a subclass) on a non-UTF-8
         # ``pyproject.toml``; without it the eager config callback crashes
