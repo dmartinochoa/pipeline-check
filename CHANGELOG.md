@@ -12,6 +12,17 @@ release commit collapses this section into `## [X.Y.Z] - <date>`.
 
 ### Added
 
+- **Built-in policy packs (`--policy <name>`).** Five curated scan
+  profiles ship with the tool so the common compliance / release gates
+  work by name without authoring a file: `pr-gate` (full pack, fail on
+  HIGH+), `release-gate` (fail on MEDIUM+, require grade B+), `slsa-l3`
+  (SLSA + OWASP focus), `pci-dss` (PCI DSS v4.0 evidence run), and
+  `supply-chain-strict` (pinning / provenance / dependency integrity,
+  with the unpinned-action rule `GHA-001` promoted to CRITICAL). A local
+  `./policies/<name>.yml` of the same name shadows the built-in, and
+  `--list-policies` now lists the built-ins alongside any local files.
+  The packs reuse the existing policy schema and precedence (CLI flags,
+  env vars, and the config file still override policy values).
 - **GHA-123: Agentic CLI output lands without human review.** The
   flow-control leg of the AI/LLM-pipeline pack. Fires when one job both
   invokes an agentic coding CLI (claude / gemini / cursor-agent / aider /

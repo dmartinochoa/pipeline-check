@@ -92,8 +92,8 @@ from .core.inline_ignore import (
     extract_inline_ignores,
 )
 from .core.policies import (
-    POLICY_DIRS,
     PolicyError,
+    builtin_policies,
     discover_policies,
     load_policy,
     policy_to_config_map,
@@ -877,14 +877,12 @@ def _list_policies_callback(
     """Print every discoverable policy and exit. Eager, no scan runs."""
     if not value:
         return
-    policies = discover_policies()
-    if not policies:
-        click.echo(
-            "[list-policies] no policies found. Searched: "
-            + ", ".join(POLICY_DIRS),
-            err=True,
-        )
-        ctx.exit(3)
+    local = discover_policies()
+    # Built-in packs always exist; a local policy of the same name
+    # shadows the built-in (matching ``load_policy`` resolution order).
+    local_names = {p.name for p in local}
+    builtins = [p for p in builtin_policies() if p.name not in local_names]
+    policies = local + builtins
     name_w = max(len(p.name) for p in policies)
     for p in policies:
         suffix = f"  -- {p.description}" if p.description else ""
@@ -1009,13 +1007,15 @@ def _install_completion_callback(
     callback=_load_policy_callback,
     help=(
         "Load a named scan profile from ./policies/<NAME>.yml or "
-        "./.pipeline-check/policies/<NAME>.yml. Policies bundle a "
-        "rule filter, standards filter, gate thresholds, and "
-        "per-rule severity overrides into a single file. Values "
-        "become click defaults: explicit CLI flags, env vars, and "
-        "the config file override them. Run --list-policies to see "
-        "what's available. A NAME with a path separator is treated "
-        "as a literal path."
+        "./.pipeline-check/policies/<NAME>.yml, or one of the built-in "
+        "packs (pr-gate, release-gate, slsa-l3, pci-dss, "
+        "supply-chain-strict) shipped with the tool. A local policy of "
+        "the same name shadows the built-in. Policies bundle a rule "
+        "filter, standards filter, gate thresholds, and per-rule "
+        "severity overrides. Values become click defaults: explicit CLI "
+        "flags, env vars, and the config file override them. Run "
+        "--list-policies to see what's available. A NAME with a path "
+        "separator is treated as a literal path."
     ),
 )
 @click.option(

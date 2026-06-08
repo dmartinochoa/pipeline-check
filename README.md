@@ -407,8 +407,8 @@ See [docs/standards/](docs/standards/).
 | `--baseline` | | Prior JSON report; existing findings don't gate |
 | `--baseline-from-git` | | `REF:PATH`. Resolves baseline via `git show` |
 | `--write-baseline` | | Write the current scan's failing findings to PATH as JSON. Pair with `--baseline PATH` on subsequent runs to gate only on new issues. |
-| `--policy` | | Load a named scan profile from `./policies/<NAME>.yml` (or `./.pipeline-check/policies/<NAME>.yml`). Bundles a rule filter, standards filter, gate thresholds, and per-rule severity overrides into one file. CLI flags and config keep overriding policy values. |
-| `--list-policies` | | List every discoverable policy file and exit. |
+| `--policy` | | Load a named scan profile from `./policies/<NAME>.yml` (or `./.pipeline-check/policies/<NAME>.yml`), or one of the built-in packs (`pr-gate`, `release-gate`, `slsa-l3`, `pci-dss`, `supply-chain-strict`) shipped with the tool. Bundles a rule filter, standards filter, gate thresholds, and per-rule severity overrides into one profile. A local policy of the same name shadows the built-in; CLI flags and config keep overriding policy values. |
+| `--list-policies` | | List every discoverable policy (local files plus built-in packs) and exit. |
 | `--ignore-file` | `.pipelinecheckignore` | Suppressions (flat or YAML with `expires:`) |
 | `--diff-base` | | Only scan files changed vs this git ref |
 | `--fix` | | Emit unified-diff patches to stdout |

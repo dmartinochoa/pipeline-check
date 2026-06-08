@@ -77,6 +77,54 @@ _TOPLEVEL_KEYS: frozenset[str] = frozenset({
     "name", "description", "checks", "standards", "gate", "overrides",
 })
 
+#: Curated policy packs shipped with the tool, so the common compliance /
+#: release gates work by name (``--policy slsa-l3``) without authoring a
+#: file. Each entry uses the same schema as an on-disk policy and is
+#: validated through the same loader. A local policy of the same name
+#: (under :data:`POLICY_DIRS`) shadows the built-in. The ``standards``
+#: filter only focuses finding annotation (the full rule pack still runs
+#: and scores), so a framework pack narrows the compliance evidence
+#: without reducing coverage.
+BUILTIN_PACKS: dict[str, dict[str, Any]] = {
+    "pr-gate": {
+        "name": "pr-gate",
+        "description": "Pre-merge gate: full rule pack, block on HIGH and CRITICAL.",
+        "gate": {"fail_on": "HIGH"},
+    },
+    "release-gate": {
+        "name": "release-gate",
+        "description": "Release gate: block on MEDIUM+ and require grade B or better.",
+        "gate": {"fail_on": "MEDIUM", "min_grade": "B"},
+    },
+    "slsa-l3": {
+        "name": "slsa-l3",
+        "description": "SLSA Build L3 focus: provenance, signing, isolation; block on HIGH+.",
+        "standards": ["slsa", "owasp_cicd_top_10"],
+        "gate": {"fail_on": "HIGH"},
+    },
+    "pci-dss": {
+        "name": "pci-dss",
+        "description": "PCI DSS v4.0 evidence run; block on HIGH+.",
+        "standards": ["pci_dss_v4", "owasp_cicd_top_10"],
+        "gate": {"fail_on": "HIGH"},
+    },
+    "supply-chain-strict": {
+        "name": "supply-chain-strict",
+        "description": (
+            "Strict supply-chain gate: pinning, provenance, dependency "
+            "integrity; block on MEDIUM+ and require grade B+."
+        ),
+        "standards": [
+            "owasp_cicd_top_10", "slsa", "cis_supply_chain", "s2c2f",
+        ],
+        "gate": {"fail_on": "MEDIUM", "min_grade": "B"},
+        # GHA-001 (third-party action not pinned to a SHA) is the
+        # canonical pinning rule; a strict supply-chain gate treats an
+        # unpinned action as a hard stop.
+        "overrides": {"GHA-001": {"severity": "critical"}},
+    },
+}
+
 
 class PolicyError(Exception):
     """A policy file could not be resolved or parsed."""
@@ -173,9 +221,13 @@ def load_policy(name_or_path: str, cwd: Path | None = None) -> Policy:
             candidate = base / f"{name}{suffix}"
             if candidate.is_file():
                 return _load_policy_file(candidate)
+    builtin = _builtin_policy(name)
+    if builtin is not None:
+        return builtin
     raise PolicyError(
         f"policy {name!r} not found in any of: "
         + ", ".join(POLICY_DIRS)
+        + f"; built-in packs: {', '.join(sorted(BUILTIN_PACKS))}"
     )
 
 
@@ -204,6 +256,30 @@ def policy_to_config_map(policy: Policy) -> dict[str, Any]:
         out["max_failures"] = policy.max_failures
     if policy.fail_on_checks:
         out["fail_on_checks"] = tuple(policy.fail_on_checks)
+    return out
+
+
+def _builtin_policy(name: str) -> Policy | None:
+    """Build the built-in pack named *name*, or ``None`` if there isn't one.
+
+    Routed through :func:`_from_dict` so a pack is validated exactly like
+    an on-disk policy (a malformed severity / grade in :data:`BUILTIN_PACKS`
+    trips the same checks, caught by the test suite).
+    """
+    raw = BUILTIN_PACKS.get(name)
+    if raw is None:
+        return None
+    # Copy so the loader can't mutate the shared constant.
+    return _from_dict(dict(raw), Path(f"<built-in:{name}>"))
+
+
+def builtin_policies() -> list[Policy]:
+    """Every built-in pack, in declaration order. Used by ``--list-policies``."""
+    out: list[Policy] = []
+    for name in BUILTIN_PACKS:
+        pol = _builtin_policy(name)
+        if pol is not None:
+            out.append(pol)
     return out
 
 
