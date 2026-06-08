@@ -17,6 +17,8 @@ __all__ = [
     "PR_HEAD_REF_RE",
     "CACHE_TAINT_RE",
     "UNTRUSTED_TRIGGERS",
+    "AGENTIC_CLI_RE",
+    "step_invokes_agentic_cli",
 ]
 
 # Untrusted attacker-controllable context expressions inside `run:`
@@ -115,3 +117,21 @@ CACHE_TAINT_RE = re.compile(
 # Triggers on which the checked-out workspace can contain
 # PR-controlled content. Used by GHA-010.
 UNTRUSTED_TRIGGERS = frozenset({"pull_request_target", "workflow_run"})
+
+# Agentic AI CLIs: tools that read a prompt and then act (run shell,
+# write files, call tools) rather than just returning text. Shared by
+# GHA-058 (permission-bypass flags) and GHA-119 (prompt injection). The
+# set is the agentic ones specifically, plain text-completion CLIs
+# (``llm``, ``ollama``) are excluded because a prompt-injection there
+# can't directly execute. ``q chat`` is Amazon Q; ``cursor-agent`` runs
+# unattended by default.
+AGENTIC_CLI_RE = re.compile(
+    r"\b(?:claude|gemini|q\s+chat|cursor-agent|aider|openhands|goose)\b",
+    re.IGNORECASE,
+)
+
+
+def step_invokes_agentic_cli(body: str) -> str | None:
+    """Return the agentic-CLI name a ``run:`` *body* invokes, or None."""
+    match = AGENTIC_CLI_RE.search(body)
+    return match.group(0).lower() if match else None

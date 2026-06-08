@@ -107,6 +107,8 @@ STANDARD = Standard(
         "GHA-110": ["ESF-S-VERIFY-DEPS"],  # CI env disables Go module verification
         "GHA-002":  ["ESF-D-INJECTION", "ESF-D-BUILD-ENV"],
         "GHA-003":  ["ESF-D-INJECTION"],
+        "GHA-119":  ["ESF-D-INJECTION"],# untrusted context into an agentic AI CLI
+        "GHA-120":  ["ESF-D-INJECTION"],# trust_remote_code model load = code exec
         "GHA-117":  ["ESF-D-INJECTION"],# IaC apply on untrusted PR trigger
         "GHA-118":  ["ESF-D-INJECTION"],# untrusted content into $GITHUB_ENV / $GITHUB_PATH
         "GHA-004":  ["ESF-C-LEAST-PRIV"],
