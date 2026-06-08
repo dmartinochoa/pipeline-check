@@ -3217,6 +3217,7 @@ def scan(
     if not quiet and output != "json":
         _emit_gate_summary(
             gate,
+            grade=score_result["grade"],
             baseline_path=baseline,
             baseline_from_git=baseline_from_git,
         )
@@ -4554,6 +4555,7 @@ def _build_gate_trailer(
 def _emit_gate_summary(
     gate: Any,
     *,
+    grade: str | None = None,
     baseline_path: str | None = None,
     baseline_from_git: str | None = None,
 ) -> None:
@@ -4564,6 +4566,12 @@ def _emit_gate_summary(
     one-command path to close the loop (fix-and-apply, baseline-write,
     or explain-the-rule). The trailer is intentionally short so a CI
     log scan picks it up without scrolling.
+
+    A strong *grade* (A or B) sitting on top of a failing gate is the
+    most confusing outcome a first-time user hits, since the grade reads
+    as "all good" while the build still exits non-zero. When that
+    happens, a one-line note clarifies that the grade is a posture score
+    and the gate is a separate blocking policy.
     """
     n_effective = len(gate.effective)
     n_chains_tripped = len(getattr(gate, "tripped_chains", []) or [])
@@ -4575,6 +4583,12 @@ def _emit_gate_summary(
         msg_lines = ["[gate] FAIL"]
         for reason in gate.reasons:
             msg_lines.append(f"        - {reason}")
+        if grade in ("A", "B"):
+            msg_lines.append(
+                f"[gate] note: Grade {grade} is overall posture (checks "
+                "weighted by severity), not this gate. A strong grade can "
+                "still fail the gate on a single blocking finding."
+            )
         trailer = _build_gate_trailer(
             gate,
             baseline_path=baseline_path,
