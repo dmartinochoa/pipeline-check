@@ -49,7 +49,9 @@ class TestNoBestPracticeFlag:
             "on: push\njobs: {b: {runs-on: x, steps: [{run: echo}]}}\n"
         )
         result = CliRunner().invoke(
-            scan, ["--pipeline", "github", "--output", "json", *extra_args]
+            scan,
+            ["--pipeline", "github", "--output", "json", "--show-passed",
+             *extra_args],
         )
         assert result.exit_code in (0, 1), result.output
         return {f["check_id"] for f in json.loads(result.stdout)["findings"]}

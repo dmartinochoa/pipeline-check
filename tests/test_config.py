@@ -275,7 +275,7 @@ class TestCliIntegration:
             "pipeline: gitlab\n"
         )
         (tmp_path / ".gitlab-ci.yml").write_text("build: {script: [make]}\n")
-        result = CliRunner().invoke(scan, ["--output", "json"])
+        result = CliRunner().invoke(scan, ["--output", "json", "--show-passed"])
         assert result.exit_code in (0, 1), result.output
         payload = json.loads(result.stdout)
         # Config-supplied `pipeline: gitlab` actually took effect — only
@@ -328,7 +328,7 @@ class TestCliIntegration:
         (tmp_path / ".pipeline-check.yml").write_text("pipeline: aws\n")
         monkeypatch.setenv("PIPELINE_CHECK_PIPELINE", "gitlab")
         (tmp_path / ".gitlab-ci.yml").write_text("build: {script: [make]}\n")
-        result = CliRunner().invoke(scan, ["--output", "json"])
+        result = CliRunner().invoke(scan, ["--output", "json", "--show-passed"])
         assert result.exit_code in (0, 1), result.output
         payload = json.loads(result.stdout)
         # GitLab provider actually ran — AWS would need real creds and

@@ -199,7 +199,7 @@ class TestPipelinesFlag:
         runner = CliRunner()
         result = runner.invoke(scan, [
             "--pipelines", "github,github,oci",
-            "--output", "json",
+            "--output", "json", "--show-passed",
         ])
         assert result.exit_code in (0, 1, 2)
         # If github ran twice we'd see duplicate GHA-NNN findings.

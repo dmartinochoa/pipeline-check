@@ -2161,10 +2161,12 @@ def _install_completion_callback(
     is_flag=True,
     default=False,
     help=(
-        "Include passed checks in the terminal table. Off by default "
-        "so the table focuses on failures; the headline still shows "
-        "the failed-vs-passed counts. Passed findings always appear "
-        "in JSON / SARIF / JUnit outputs regardless of this flag."
+        "Include passed checks in the terminal table and the JSON "
+        "report. Off by default so both focus on failures; the headline "
+        "and the JSON ``score.summary`` block still carry the "
+        "failed-vs-passed counts. SARIF is always failures-only "
+        "(code-scanning semantics); JUnit always lists every check "
+        "(test-report semantics), both regardless of this flag."
     ),
 )
 @click.option(
@@ -3796,6 +3798,7 @@ def _emit_scan_report(
             inventory=components,
             chains=chains if not no_chains else None,
             scan_status=_scan_status(scanner.metadata, findings),
+            show_passed=show_passed,
         )
         # ``both`` always streams JSON to stdout regardless of
         # ``--output-file``; the file destination is only honored
