@@ -19,6 +19,9 @@ from pipeline_check.core.checks.drone.rules import (
 from pipeline_check.core.checks.drone.rules import (
     dr016_image_field_interpolation as r16,
 )
+from pipeline_check.core.checks.drone.rules import (
+    dr017_shell_eval as r17,
+)
 
 _DIGEST = "@sha256:" + "0" * 64
 
@@ -189,3 +192,46 @@ class TestDR016ImageInterpolation:
     def test_passes_with_no_images(self):
         p = _pipeline()
         assert r16.check(p).passed
+
+
+# ── DR-017 ──────────────────────────────────────────────────────
+
+
+class TestDR017ShellEval:
+    def test_fails_on_eval_of_variable(self):
+        p = _pipeline(steps=[
+            {"name": "build", "image": f"alpine:3.19{_DIGEST}",
+             "commands": ['eval "$BUILD_CMD"']},
+        ])
+        f = r17.check(p)
+        assert not f.passed
+        assert "idiom" in f.description.lower()
+
+    def test_fails_on_sh_c_unquoted_variable(self):
+        p = _pipeline(steps=[
+            {"name": "run", "image": f"alpine:3.19{_DIGEST}",
+             "commands": ["sh -c $RAW_HOOK"]},
+        ])
+        assert not r17.check(p).passed
+
+    def test_passes_on_direct_command(self):
+        p = _pipeline(steps=[
+            {"name": "build", "image": f"alpine:3.19{_DIGEST}",
+             "commands": ['./scripts/dispatch.sh "$BUILD_CMD"']},
+        ])
+        assert r17.check(p).passed
+
+    def test_passes_on_ssh_agent_bootstrap_idiom(self):
+        # ``eval "$(ssh-agent -s)"`` substitutes a literal command; only
+        # its output is eval'd, so it is intentionally not flagged.
+        p = _pipeline(steps=[
+            {"name": "agent", "image": f"alpine:3.19{_DIGEST}",
+             "commands": ['eval "$(ssh-agent -s)"']},
+        ])
+        assert r17.check(p).passed
+
+    def test_passes_on_non_container_pipeline(self):
+        p = _pipeline(type="exec", steps=[
+            {"name": "x", "commands": ['eval "$CMD"']},
+        ])
+        assert r17.check(p).passed

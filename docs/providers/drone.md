@@ -50,7 +50,7 @@ All other flags (`--output`, `--severity-threshold`, `--checks`,
 
 ## What it covers
 
-16 checks · 0 have an autofix patch (``--fix``).
+17 checks · 0 have an autofix patch (``--fix``).
 
 | Check | Title | Severity | Fix |
 |-------|-------|----------|-----|
@@ -70,6 +70,7 @@ All other flags (`--output`, `--severity-threshold`, `--checks`,
 | [DR-014](#dr-014) | Step pipes a remote download into a shell interpreter | <span class="pg-sev pg-sev--high">HIGH</span> |  |
 | [DR-015](#dr-015) | Pipeline clone enables recursive submodule cloning | <span class="pg-sev pg-sev--medium">MEDIUM</span> |  |
 | [DR-016](#dr-016) | Step image: field carries a Drone template substitution | <span class="pg-sev pg-sev--high">HIGH</span> |  |
+| [DR-017](#dr-017) | Dangerous shell idiom (eval, sh -c variable, backtick exec) | <span class="pg-sev pg-sev--high">HIGH</span> |  |
 
 ---
 
@@ -548,6 +549,30 @@ If the build genuinely needs to swap images per environment, pin each variant ex
         when: { branch: [main] }
 
 The literal image references are immutable; the ``when:`` block controls execution without exposing the image identity to PR-controllable input.
+
+</div>
+
+</div>
+
+<div class="pg-rule pg-rule--high" markdown>
+
+## DR-017: Dangerous shell idiom (eval, sh -c variable, backtick exec) { #dr-017 }
+
+<div class="pg-rule__tags">
+<span class="pg-sev pg-sev--high">HIGH</span> <span class="pg-tag pg-tag--owasp">CICD-SEC-4</span> <span class="pg-tag pg-tag--esf">ESF-D-INJECTION</span> <span class="pg-tag pg-tag--cwe">CWE-95</span>
+</div>
+
+Complements DR-003 (untrusted ``${DRONE_*}`` variable in a command). This rule fires on intrinsically risky idioms, ``eval``, ``sh -c "$X"``, backtick exec, regardless of whether the input source is currently trusted, because the idiom hands a value full shell-grammar reach. Uses the shared ``_primitives.shell_eval`` detector and scans every ``commands:`` entry on every step. The Drone analog of GHA-028 / GL-026 / BB-026 / ADO-027 / CC-027 / BK-016.
+
+**Known false-positive modes**
+
+- ``eval "$(ssh-agent -s)"`` and similar ``eval "$(<literal-tool>)"`` bootstrap idioms are intentionally NOT flagged, the substituted command is literal, only its output is eval'd.
+
+<div class="pg-rule__rec" markdown>
+
+**Recommended action**
+
+Replace ``eval "$VAR"`` / ``sh -c "$VAR"`` / backtick exec with direct command invocation. Validate or allow-list any value that must feed a dynamic command at the boundary.
 
 </div>
 

@@ -1,0 +1,15 @@
+trigger:
+  - main
+# PR-validated: this pipeline runs the PR branch's scripts.
+pr:
+  branches:
+    include: [main]
+
+stages:
+  - stage: Infra
+    jobs:
+      - job: Terraform
+        steps:
+          - script: |
+              terraform init
+              terraform apply -auto-approve

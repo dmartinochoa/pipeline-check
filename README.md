@@ -26,7 +26,7 @@
 
 Pipeline-Check is a security scanner for GitHub Actions, GitLab CI, Jenkins, CircleCI, Azure DevOps, Bitbucket Pipelines, Buildkite, Drone, Tekton, Argo Workflows, and Google Cloud Build, plus Terraform, CloudFormation, Kubernetes, Helm, Dockerfile, OCI image manifests, and live AWS, Azure, and GCP accounts. It maps every finding to the [OWASP Top 10 CI/CD Security Risks](https://owasp.org/www-project-top-10-ci-cd-security-risks/), SLSA, NIST SSDF, PCI DSS, SOC 2, the CIS GitHub Benchmark, and twelve other frameworks, and scores each scan A through D so you can gate merges on the result.
 
-**1140+ checks** across **33 providers**, mapped to **18 compliance standards**, with **111 autofixers**, plus **53 attack chains** correlating findings into MITRE ATT&CK-mapped kill chains. A dataflow taint engine catches multi-step and cross-job propagation that single-rule scanners miss.
+**1160+ checks** across **33 providers**, mapped to **18 compliance standards**, with **111 autofixers**, plus **53 attack chains** correlating findings into MITRE ATT&CK-mapped kill chains. A dataflow taint engine catches multi-step and cross-job propagation that single-rule scanners miss.
 
 [Quick start](#-quick-start) |
 [Usage guide](docs/usage.md) |
@@ -130,12 +130,12 @@ for inputs, idempotency, and fork-PR fallback behavior.
 | **Gitea / Forgejo Actions** | `.gitea/` or `.forgejo/workflows/*.yml` | `--gitea-path` | Reuses the full GitHub Actions rule pack; GitHub-only reputation rules pass silently without `--resolve-remote` metadata |
 | **GitLab CI** | `.gitlab-ci.yml` | `--gitlab-path` | 46 checks · `GL-001..044` + `TAINT-004`/`008` · `CI_JOB_TOKEN` cross-project scope, DinD TLS bypass, debug-trace secret leaks, MR-pipeline IaC apply + prod deploy, disabled native scanners, mutable `include: component:` |
 | **Bitbucket Pipelines** | `bitbucket-pipelines.yml` | `--bitbucket-path` | 34 checks · `BB-001..034` · PR-pipeline IaC apply + prod deploy |
-| **Azure DevOps** | `azure-pipelines.yml` | `--azure-path` | 32 checks · `ADO-001..032` · incl. `persistCredentials` leaving the pipeline token in `.git/config` |
-| **Jenkins** | `Jenkinsfile` (Declarative / Scripted) | `--jenkinsfile-path` | 35 checks · `JF-001..035` |
+| **Azure DevOps** | `azure-pipelines.yml` | `--azure-path` | 33 checks · `ADO-001..033` · incl. IaC apply on a PR-validated pipeline |
+| **Jenkins** | `Jenkinsfile` (Declarative / Scripted) | `--jenkinsfile-path` | 36 checks · `JF-001..036` |
 | **CircleCI** | `.circleci/config.yml` | `--circleci-path` | 33 checks · `CC-001..033` · incl. Go-module-verification bypass |
-| **Google Cloud Build** | `cloudbuild.yaml` | `--cloudbuild-path` | 26 checks · `GCB-001..026` |
-| **Buildkite** | `.buildkite/pipeline.yml` | `--buildkite-path` | 16 checks · `BK-001..015` + `TAINT-005` |
-| **Drone CI** | `.drone.yml` / `.drone.yaml` | `--drone-path` | 16 checks · `DR-001..016` · image / plugin pinning, privileged steps, `${DRONE_*}` injection, fork-PR exposure, pipe-to-shell, sensitive host-path mounts |
+| **Google Cloud Build** | `cloudbuild.yaml` | `--cloudbuild-path` | 27 checks · `GCB-001..027` |
+| **Buildkite** | `.buildkite/pipeline.yml` | `--buildkite-path` | 17 checks · `BK-001..016` + `TAINT-005` |
+| **Drone CI** | `.drone.yml` / `.drone.yaml` | `--drone-path` | 17 checks · `DR-001..017` · image / plugin pinning, privileged steps, `${DRONE_*}` injection, fork-PR exposure, pipe-to-shell, dangerous shell idioms, sensitive host-path mounts |
 | **Tekton** | `Task` / `Pipeline` / `*Run` YAML | `--tekton-path` | 17 checks · `TKN-001..016` + `TAINT-006` |
 | **Argo Workflows** | `Workflow` / `WorkflowTemplate` YAML | `--argo-path` | 18 checks · `ARGO-001..017` + `TAINT-007` · over-privileged / default service account, untrusted-parameter manifest injection |
 | **Argo CD** | `Application` / `AppProject` YAML + `argocd-*` ConfigMaps | `--argocd-path` | 19 checks · `ARGOCD-001..019` · sourceRepo / destination wildcards, RBAC wildcards, mutable source refs, web terminal, drift-detection bypass. [Reference →](docs/providers/argocd.md) |
@@ -173,7 +173,7 @@ for the full per-check reference.
 
 ```
                  +-----------+
-  Config files   |  Scanner  |   1140+ checks across 33 providers
+  Config files   |  Scanner  |   1160+ checks across 33 providers
   or live APIs ---->         +---> Findings (check_id, severity, resource)
                  +-----------+
                        |
@@ -519,12 +519,12 @@ pipeline_check/
         ├── github/rules/      # GHA-001 .. GHA-073, GHA-086..118 + TAINT-001..003, TAINT-009
         ├── gitlab/rules/      # GL-001 .. GL-044 + TAINT-004 / TAINT-008
         ├── bitbucket/rules/   # BB-001 .. BB-034
-        ├── azure/rules/       # ADO-001 .. ADO-032
-        ├── jenkins/rules/     # JF-001 .. JF-035
+        ├── azure/rules/       # ADO-001 .. ADO-033
+        ├── jenkins/rules/     # JF-001 .. JF-036
         ├── circleci/rules/    # CC-001 .. CC-033
-        ├── cloudbuild/rules/  # GCB-001 .. GCB-026
-        ├── buildkite/rules/   # BK-001 .. BK-015 + TAINT-005
-        ├── drone/rules/       # DR-001 .. DR-016
+        ├── cloudbuild/rules/  # GCB-001 .. GCB-027
+        ├── buildkite/rules/   # BK-001 .. BK-016 + TAINT-005
+        ├── drone/rules/       # DR-001 .. DR-017
         ├── tekton/rules/      # TKN-001 .. TKN-016 + TAINT-006
         ├── argo/rules/        # ARGO-001 .. ARGO-017 + TAINT-007
         ├── argocd/rules/      # ARGOCD-001 .. ARGOCD-019

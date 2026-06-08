@@ -378,6 +378,7 @@ STANDARD = Standard(
         "JF-033":   ["CICD-SEC-6"],   # withCredentials leaked via Groovy ${} in sh
         "JF-034":   ["CICD-SEC-6"],   # password() build parameter declared
         "JF-035":   ["CICD-SEC-3"],   # httpRequest ignoreSslErrors: true
+        "JF-036":   ["CICD-SEC-4"],   # sh body interpolates params.* (injection)
         # CircleCI
         "CC-001":   ["CICD-SEC-3", "CICD-SEC-8"],
         "CC-033": ["CICD-SEC-3", "CICD-SEC-5"],  # CI env disables Go module verification
@@ -438,6 +439,7 @@ STANDARD = Standard(
         "GCB-024":  ["CICD-SEC-9"],   # images: missing despite docker push
         "GCB-025":  ["CICD-SEC-10"],  # tags: empty (audit/discoverability)
         "GCB-026":  ["CICD-SEC-4"],   # waitFor references unknown id
+        "GCB-027":  ["CICD-SEC-4", "CICD-SEC-7"],  # malicious-activity indicators
         # Kubernetes manifests
         "K8S-001":  ["CICD-SEC-3"],
         "K8S-002":  ["CICD-SEC-7"],
@@ -707,6 +709,7 @@ STANDARD = Standard(
         "BK-013":   ["CICD-SEC-1"],   # deploy step has no branches filter
         "BK-014":   ["CICD-SEC-3"],   # unpinned package install
         "BK-015":   ["CICD-SEC-7", "CICD-SEC-1"],  # agents map interpolation
+        "BK-016":   ["CICD-SEC-4"],                # dangerous shell idiom
         # Tekton
         "TKN-001":  ["CICD-SEC-3"],   # step image not pinned to digest
         "TKN-016": ["CICD-SEC-3"],  # remote resolver / bundle task body not pinned
@@ -792,6 +795,7 @@ STANDARD = Standard(
         "DR-014":   ["CICD-SEC-3", "CICD-SEC-5"],   # pipe-to-shell
         "DR-015":   ["CICD-SEC-3", "CICD-SEC-5"],   # clone recursive
         "DR-016":   ["CICD-SEC-3", "CICD-SEC-5"],   # image field interpolation
+        "DR-017":   ["CICD-SEC-4"],                 # dangerous shell idiom
         # OCI image manifests
         "OCI-001":  ["CICD-SEC-3", "CICD-SEC-10"],  # missing provenance annotations
         "OCI-002":  ["CICD-SEC-3", "CICD-SEC-9", "CICD-SEC-10"],  # missing build attestation
@@ -881,6 +885,7 @@ STANDARD = Standard(
         "BB-032":   ["CICD-SEC-6"],               # secret echoed to Bitbucket log
         "ADO-031":  ["CICD-SEC-6"],               # secret echoed to Azure DevOps log
         "ADO-032":  ["CICD-SEC-6"],               # checkout persistCredentials leaks token to .git/config
+        "ADO-033":  ["CICD-SEC-4"],               # IaC apply on a PR-validated pipeline
         "CC-032":   ["CICD-SEC-6"],               # secret echoed to CircleCI log
         # npm supply-chain posture
         "NPM-012":  ["CICD-SEC-3", "CICD-SEC-6"],  # publish token missing restrictions

@@ -403,6 +403,7 @@ STANDARD = Standard(
         "BK-013":   ["PO.5.1"],                        # no branches filter
         "BK-014":   ["PW.4.1", "PW.4.4"],              # unpinned package install
         "BK-015":   ["PW.6.1", "PW.9.1"],              # agents map untrusted interpolation
+        "BK-016":   ["PW.6.1", "PW.9.1"],              # dangerous shell idiom
         # ── Jenkins ─────────────────────────────────────────────
         "JF-001":   ["PW.4.1", "PW.4.4"],              # shared library not pinned
         "JF-002":   ["PW.6.1", "PW.9.1"],              # script step untrusted env
@@ -439,6 +440,7 @@ STANDARD = Standard(
         "JF-033":   ["PS.1.1"],                        # withCredentials leaked via Groovy ${}
         "JF-034":   ["PS.1.1"],                        # password() build parameter
         "JF-035":   ["PW.4.4"],                        # httpRequest SSL off
+        "JF-036":   ["PW.6.1", "PW.9.1"],              # sh body interpolates params.*
         # ── Drone CI ────────────────────────────────────────────
         "DR-001":   ["PW.4.1", "PW.4.4"],              # step image not digest-pinned
         "DR-002":   ["PO.5.1", "PW.9.1"],              # privileged step
@@ -457,6 +459,7 @@ STANDARD = Standard(
         "DR-014":   ["PW.4.4"],                        # pipe-to-shell
         "DR-015":   ["PW.4.4"],                        # clone recursive
         "DR-016":   ["PW.4.4", "PW.6.1"],              # image field interpolation
+        "DR-017":   ["PW.6.1", "PW.9.1"],              # dangerous shell idiom
         # ── Tekton ──────────────────────────────────────────────
         "TKN-001":  ["PW.4.1", "PW.4.4"],              # step image not digest-pinned
         "TKN-016": ["PW.4.1", "PW.4.4"],  # remote resolver / bundle task body not pinned
@@ -569,6 +572,7 @@ STANDARD = Standard(
         "GCB-024": ["PS.3.2"],                         # missing provenance labels
         "GCB-025": ["PW.4.1"],                         # outdated runner image
         "GCB-026": ["PS.1.1"],                         # public storage bucket
+        "GCB-027": ["PW.4.4", "RV.1.1"],               # malicious-activity indicators
         # ── NPM / PyPI / Maven dep supply-chain ─────────────────
         # PW.4.* (acquire / verify components) is the natural home
         # for pinning + integrity + non-registry sources.
@@ -901,6 +905,7 @@ STANDARD = Standard(
         "BB-032":   ["PS.1.1"],                        # secret echoed to Bitbucket log
         "ADO-031":  ["PS.1.1"],                        # secret echoed to Azure DevOps log
         "ADO-032":  ["PS.1.1"],                        # checkout persistCredentials leaks token to .git/config
+        "ADO-033":  ["PW.6.1", "PW.9.1"],              # IaC apply on a PR-validated pipeline
         "CC-032":   ["PS.1.1"],                        # secret echoed to CircleCI log
         "SCM-048":  ["PO.5.1"],                        # org codespace secrets scoped to all repos
         "SCM-049":  ["PS.1.1"],                        # classic PAT where fine-grained suffices

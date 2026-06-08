@@ -91,6 +91,8 @@ stages:
           - script: eval "$BUILD_CMD"
           # ADO-028: pip install from an unpinned git URL.
           - script: pip install git+https://example.com/internal/helper.git
+          # ADO-033: IaC apply on a PR-validated pipeline (pr: set above).
+          - script: terraform apply -auto-approve
 
   - stage: Deploy
     dependsOn: Build

@@ -12,6 +12,7 @@ pipeline {
     // build.xml and surfaces it on the parameters page.
     parameters {
         password(name: 'DEPLOY_TOKEN', defaultValue: '', description: 'prod token')
+        string(name: 'BUILD_TARGET', defaultValue: 'all', description: 'make target')
     }
 
     environment {
@@ -35,6 +36,8 @@ pipeline {
         stage('Build') {
             steps {
                 sh "echo Building branch ${env.BRANCH_NAME}"
+                // JF-036 — build parameter spliced into a double-quoted sh.
+                sh "make ${params.BUILD_TARGET}"
                 sh "make build"
                 // JF-013 -- ingests build output from another job
                 // with no integrity check.

@@ -483,6 +483,9 @@ STANDARD = Standard(
         "GL-040":   ["CC6.1", "CC8.1"],     # CI_JOB_TOKEN used for cross-project access
         "GL-041":   ["CC6.8"],              # IaC apply on an untrusted MR trigger
         "BB-033":   ["CC6.8"],              # IaC apply on a PR pipeline
+        "ADO-033":  ["CC6.8"],              # IaC apply on a PR-validated pipeline
+        "BK-016":   ["CC6.8"],              # dangerous shell idiom
+        "JF-036":   ["CC6.8"],              # shell step interpolates params.*
         "GL-032":   ["CC6.8"],              # tags interpolates untrusted
         "GL-033":   ["CC6.8"],              # global before_script taint
         "GL-034":   ["CC8.1"],              # npm install without audit signatures
@@ -567,6 +570,7 @@ STANDARD = Standard(
         "DR-014":   ["CC8.1"],              # pipe-to-shell
         "DR-015":   ["CC8.1"],              # clone recursive
         "DR-016":   ["CC8.1"],              # image field interpolation
+        "DR-017":   ["CC6.8"],              # dangerous shell idiom
         # ── Tekton (K8s-native pipeline kinds) ────────────────────
         "TKN-001":  ["CC8.1"],              # step image not digest-pinned
         "TKN-016": ["CC8.1"],  # remote resolver / bundle task body not pinned
@@ -631,6 +635,7 @@ STANDARD = Standard(
         "GCB-024": ["CC8.1"],               # images: missing for docker push
         "GCB-025": ["CC7.2"],               # tags: empty (audit/discoverability)
         "GCB-026": ["CC8.1"],               # waitFor unknown step id
+        "GCB-027": ["CC6.8"],               # malicious-activity indicators
         # ── NPM / PyPI / Maven dep supply-chain ──────────────────
         # Dep-supply-chain rules land on CC8.1 (change management).
         # Compromised packages also evidence CC6.8 (malicious software)

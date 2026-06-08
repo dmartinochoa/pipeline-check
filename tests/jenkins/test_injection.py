@@ -122,3 +122,86 @@ class TestJF030ShellEval:
         """
         f = run_check(groovy, "JF-030")
         assert f.passed
+
+
+# ── JF-036 build-parameter shell interpolation ──────────────────────
+
+
+class TestJF036ParamShellInjection:
+    def test_fails_when_param_in_double_quoted_sh(self):
+        groovy = """
+        pipeline {
+            agent any
+            parameters {
+                string(name: 'IMAGE_TAG', defaultValue: 'latest')
+            }
+            stages {
+                stage('build') {
+                    steps {
+                        sh "docker build -t app:${params.IMAGE_TAG} ."
+                    }
+                }
+            }
+        }
+        """
+        f = run_check(groovy, "JF-036")
+        assert not f.passed
+        assert "params" in f.description.lower()
+
+    def test_passes_when_param_in_single_quoted_sh(self):
+        # Groovy single-quoted strings don't interpolate; ${params.X}
+        # reaches the shell as a literal, not as injected command text.
+        groovy = """
+        pipeline {
+            agent any
+            parameters {
+                string(name: 'IMAGE_TAG', defaultValue: 'latest')
+            }
+            stages {
+                stage('build') {
+                    steps {
+                        withEnv(["IMAGE_TAG=${params.IMAGE_TAG}"]) {
+                            sh 'docker build -t "app:$IMAGE_TAG" .'
+                        }
+                    }
+                }
+            }
+        }
+        """
+        f = run_check(groovy, "JF-036")
+        assert f.passed
+
+    def test_passes_when_no_param_reference(self):
+        groovy = """
+        pipeline {
+            agent any
+            stages {
+                stage('build') {
+                    steps {
+                        sh "docker build -t app:latest ."
+                    }
+                }
+            }
+        }
+        """
+        f = run_check(groovy, "JF-036")
+        assert f.passed
+
+    def test_ignores_param_reference_in_a_comment(self):
+        # Comment-stripped text means a commented-out vulnerable line
+        # does not fire.
+        groovy = """
+        pipeline {
+            agent any
+            stages {
+                stage('build') {
+                    steps {
+                        // sh "echo ${params.TARGET}"
+                        sh 'echo ok'
+                    }
+                }
+            }
+        }
+        """
+        f = run_check(groovy, "JF-036")
+        assert f.passed

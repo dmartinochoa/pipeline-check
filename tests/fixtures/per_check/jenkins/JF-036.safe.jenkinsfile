@@ -1,0 +1,15 @@
+pipeline {
+  agent any
+  parameters {
+    string(name: 'IMAGE_TAG', defaultValue: 'latest', description: 'image tag to build')
+  }
+  stages {
+    stage('build') {
+      steps {
+        withEnv(["IMAGE_TAG=${params.IMAGE_TAG}"]) {
+          sh 'docker build -t "myapp:$IMAGE_TAG" .'
+        }
+      }
+    }
+  }
+}
