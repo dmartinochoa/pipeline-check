@@ -9,6 +9,8 @@ from click.testing import CliRunner
 from pipeline_check.cli import scan
 from pipeline_check.core.checks.base import Finding, Severity
 
+from ._check_ids import registered_ids
+
 
 def _finding(check_id="CB-001", passed=True, severity=Severity.HIGH):
     return Finding(
@@ -243,10 +245,9 @@ class TestAutoDetect:
         # resolved path was actually loaded and scanned.
         payload = json.loads(result.stdout)
         emitted = {f["check_id"] for f in payload["findings"]}
-        assert emitted == (
-            {f"GL-{i:03d}" for i in range(1, 45)}
-            | {"TAINT-004", "TAINT-008"}
-        )
+        # Derived from the registry: autodetect must run every gitlab
+        # check (no hand-maintained enumeration to bump per rule).
+        assert emitted == registered_ids("gitlab")
 
     def test_bitbucket_path_autodetected(self, runner, tmp_path, monkeypatch):
         monkeypatch.chdir(tmp_path)
@@ -260,7 +261,7 @@ class TestAutoDetect:
         assert "[auto] using --bitbucket-path bitbucket-pipelines.yml" in result.output
         payload = json.loads(result.stdout)
         emitted = {f["check_id"] for f in payload["findings"]}
-        assert emitted == {f"BB-{i:03d}" for i in range(1, 35)}
+        assert emitted == registered_ids("bitbucket")
 
 
     def test_github_path_autodetected(self, runner, tmp_path, monkeypatch):
@@ -277,18 +278,9 @@ class TestAutoDetect:
         assert "[auto] using --gha-path" in result.output
         payload = json.loads(result.stdout)
         emitted = {f["check_id"] for f in payload["findings"]}
-        assert emitted == (
-            {f"GHA-{i:03d}" for i in range(1, 74)}
-            | {"GHA-086", "GHA-087", "GHA-088", "GHA-089", "GHA-090",
-               "GHA-091", "GHA-092", "GHA-093", "GHA-094", "GHA-095",
-               "GHA-096", "GHA-097", "GHA-098", "GHA-099",
-               "GHA-100", "GHA-102", "GHA-103", "GHA-104",
-               "GHA-105", "GHA-106", "GHA-107", "GHA-108", "GHA-109",
-               "GHA-110", "GHA-111", "GHA-112", "GHA-113", "GHA-114",
-               "GHA-115", "GHA-116", "GHA-117", "GHA-118",
-               "GHA-119", "GHA-120"}
-            | {"TAINT-001", "TAINT-002", "TAINT-003", "TAINT-009"}
-        )
+        # Derived from the registry: autodetect must run every github
+        # check on the workspace (no per-rule enumeration to maintain).
+        assert emitted == registered_ids("github")
 
     def test_gitlab_missing_file_raises_usage_error(self, tmp_path_factory, monkeypatch):
         # Uses a fresh tmp dir (not the ``runner`` fixture's, which

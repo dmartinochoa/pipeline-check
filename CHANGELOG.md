@@ -233,6 +233,16 @@ release commit collapses this section into `## [X.Y.Z] - <date>`.
 
 ### Changed
 
+- **New-rule contributor friction reduced (internal).** The autodetect /
+  config emitted-set assertions (`test_cli.py`, `test_config.py`) now
+  derive the expected check set from the live registry
+  (`tests/_check_ids.registered_ids`) instead of hand-maintained
+  `range(...)` enumerations, so adding a github / gitlab / bitbucket rule
+  no longer has to bump those lists (and an ID gap can't silently break a
+  contiguous range). The `scripts/new_rule.py` checklist was corrected
+  too: OWASP mapping is flagged MANDATORY (it was wrongly "optional"), the
+  required per-check real-example pair is now listed, and the
+  now-auto-derived sets are noted.
 - **The gate summary clarifies grade vs gate when they disagree.** A
   strong grade (A or B) sitting on top of a failing gate is the most
   confusing outcome for a first-time user: the headline reads "Grade A"
