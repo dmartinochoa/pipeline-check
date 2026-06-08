@@ -50,7 +50,24 @@ class TestReportJson:
         data = json.loads(output)
         assert "score" in data
         assert "findings" in data
+        # JSON defaults to failures-only (matches terminal + SARIF).
+        n_failed = sum(1 for f in FINDINGS if not f.passed)
+        assert len(data["findings"]) == n_failed
+        assert all(not f["passed"] for f in data["findings"])
+
+    def test_show_passed_includes_every_check(self):
+        # ``--show-passed`` restores the full audit record.
+        result = score(FINDINGS)
+        data = json.loads(report_json(FINDINGS, result, show_passed=True))
         assert len(data["findings"]) == len(FINDINGS)
+
+    def test_score_summary_carries_counts_even_when_failures_only(self):
+        # The grade/counts survive the default filter via score.summary.
+        result = score(FINDINGS)
+        data = json.loads(report_json(FINDINGS, result))
+        n_passed = sum(1 for f in FINDINGS if f.passed)
+        summary = data["score"]["summary"]
+        assert sum(b["passed"] for b in summary.values()) == n_passed
 
     def test_finding_fields(self):
         result = score(FINDINGS)

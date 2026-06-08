@@ -102,6 +102,12 @@ That lets consumers distinguish "nothing matched" from "not asked
 for". See [attack_chains.md](attack_chains.md) for the full
 chain-output contract.
 
+- The **`findings`** array carries the **failing** findings only by
+  default, matching the terminal table and SARIF (a real repo runs ~100
+  checks per file, almost all passing). The per-severity `passed` /
+  `failed` tallies live in `score.summary` regardless, so the grade and
+  counts are unaffected. Pass `--show-passed` to emit every check (passed
+  and failed) as the full audit record.
 - **`schema_version`** is bumped on breaking format changes. Adding a
   new optional field does not require a bump; renaming or removing one
   does. Consumers should branch on the major component.

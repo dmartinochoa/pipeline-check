@@ -130,6 +130,17 @@ release commit collapses this section into `## [X.Y.Z] - <date>`.
 
 ### Changed
 
+- **`--output json` now lists failing findings only by default.** The JSON
+  `findings` array previously included every passing check too (~100 per
+  file), bloating the report ~50x. It now defaults to failures-only,
+  matching the terminal table and SARIF. The per-severity `passed` /
+  `failed` tallies still live in the `score.summary` block, so the grade and
+  counts are unchanged, and the gate/baseline path (which only reads failing
+  findings) is unaffected. Pass `--show-passed` to restore the full audit
+  record (every check, passed and failed). SARIF stays failures-only and
+  JUnit stays a complete test report, both regardless of the flag. This is a
+  behavior change for JSON consumers that iterated passing findings; they
+  should add `--show-passed`.
 - **More hardcoded-credential formats detected.** The shared secret-shape
   catalog (`_patterns.SECRET_DETECTORS`, used by GHA-008 and the
   cross-provider literal-secret rules) gained four modern, high-confidence

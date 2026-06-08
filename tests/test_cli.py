@@ -90,7 +90,9 @@ class TestJsonOutput:
         findings = [_finding(check_id=f"CB-00{i}") for i in range(1, 4)]
         with patch("pipeline_check.cli.Scanner") as MockScanner:
             MockScanner.return_value.run.return_value = findings
-            result = runner.invoke(scan, ["--output", "json"])
+            # --show-passed: the default JSON is failures-only, but this
+            # asserts the full finding set reaches the report.
+            result = runner.invoke(scan, ["--output", "json", "--show-passed"])
         payload = json.loads(result.stdout)
         assert len(payload["findings"]) == 3
 
@@ -231,7 +233,9 @@ class TestAutoDetect:
     def test_gitlab_path_autodetected(self, runner, tmp_path, monkeypatch):
         monkeypatch.chdir(tmp_path)
         (tmp_path / ".gitlab-ci.yml").write_text("build: {script: [make]}\n")
-        result = runner.invoke(scan, ["--pipeline", "gitlab", "--output", "json"])
+        result = runner.invoke(
+            scan, ["--pipeline", "gitlab", "--output", "json", "--show-passed"],
+        )
         assert result.exit_code in (0, 1), result.output
         # Auto-detection announced on stderr.
         assert "[auto] using --gitlab-path .gitlab-ci.yml" in result.output
@@ -249,7 +253,9 @@ class TestAutoDetect:
         (tmp_path / "bitbucket-pipelines.yml").write_text(
             "pipelines:\n  default:\n    - step: {script: [make]}\n"
         )
-        result = runner.invoke(scan, ["--pipeline", "bitbucket", "--output", "json"])
+        result = runner.invoke(
+            scan, ["--pipeline", "bitbucket", "--output", "json", "--show-passed"],
+        )
         assert result.exit_code in (0, 1), result.output
         assert "[auto] using --bitbucket-path bitbucket-pipelines.yml" in result.output
         payload = json.loads(result.stdout)
@@ -264,7 +270,9 @@ class TestAutoDetect:
         (wf / "ci.yml").write_text(
             "on: push\njobs: {b: {runs-on: x, steps: [{run: echo}]}}\n"
         )
-        result = runner.invoke(scan, ["--pipeline", "github", "--output", "json"])
+        result = runner.invoke(
+            scan, ["--pipeline", "github", "--output", "json", "--show-passed"],
+        )
         assert result.exit_code in (0, 1), result.output
         assert "[auto] using --gha-path" in result.output
         payload = json.loads(result.stdout)

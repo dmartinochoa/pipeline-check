@@ -516,8 +516,18 @@ def report_json(
     inventory: list[Component] | None = None,
     chains: list[Chain] | None = None,
     scan_status: dict[str, Any] | None = None,
+    show_passed: bool = False,
 ) -> str:
-    """Serialize all findings and the score to a JSON string.
+    """Serialize the findings and the score to a JSON string.
+
+    The ``findings`` array carries the *failing* findings only by
+    default, matching the terminal table and SARIF output (a real repo
+    runs ~100 checks per file, almost all passing, so the full list is
+    mostly noise and bloats the report by ~50x). The per-severity
+    ``passed`` / ``failed`` tallies live in the ``score.summary`` block
+    regardless, so the grade and counts are unaffected. Pass
+    ``show_passed=True`` (the ``--show-passed`` flag) to emit every
+    check, passed and failed, as the full audit record.
 
     The payload carries ``schema_version`` (bumped on breaking format
     changes) and ``tool_version`` (the pipeline_check release that
@@ -540,11 +550,12 @@ def report_json(
     a fully-completed scan from one where a file failed to parse or a
     cloud module degraded. The score alone can't convey that.
     """
+    emitted = findings if show_passed else [f for f in findings if not f.passed]
     payload: dict[str, Any] = {
         "schema_version": JSON_SCHEMA_VERSION,
         "tool_version": tool_version or "0.0.0",
         "score": score_result,
-        "findings": [f.to_dict() for f in findings],
+        "findings": [f.to_dict() for f in emitted],
     }
     if scan_status is not None:
         payload["scan_status"] = scan_status
