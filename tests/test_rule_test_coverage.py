@@ -48,6 +48,11 @@ PROVIDERS_AND_FLOORS: dict[str, tuple[str, int]] = {
     "drone":      ("pipeline_check.core.checks.drone.rules",      100),
     "maven":      ("pipeline_check.core.checks.maven.rules",      100),
     "devenv":     ("pipeline_check.core.checks.devenv.rules",     100),
+    # SCM posture rules consume an API snapshot rather than a file, but
+    # they ship as the same RULE + check module shape, so the per-rule
+    # Test<ID> contract applies. Gated here so a new SCM rule can't land
+    # without a firing test (SCM-048..055 slipped in untested before this).
+    "scm":        ("pipeline_check.core.checks.scm.rules",        100),
 }
 
 

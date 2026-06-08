@@ -1,6 +1,7 @@
 """GHA-003, `run:` blocks must not interpolate attacker-controllable context."""
 from __future__ import annotations
 
+import re
 from typing import Any
 
 from ..._primitives.tainted_variables import (
@@ -97,8 +98,17 @@ def _tainted_env_vars(env_block: Any) -> set[str]:
 
 def _gha_ref_pattern(name: str) -> str:
     """Match every GHA reference syntax for *name*: ``$VAR``, ``${VAR}``,
-    or ``${{ env.VAR }}``."""
-    return rf"(?:\$\{{{name}\}}|\${name}\b|\${{{{[\s]*env\.{name}[\s]*}}}})"
+    or ``${{ env.VAR }}``.
+
+    ``name`` is a user-authored env-var key and can contain regex
+    metacharacters (``(``, ``[``, ``|``, ...). It must be escaped before
+    interpolation, otherwise an env var like ``"A("`` compiles to an
+    invalid pattern and raises ``re.error``, aborting the scan. The
+    sibling provider rules (GL-002, BB-002, ADO-002, GHA-072) all
+    escape; this one is matched to them.
+    """
+    safe = re.escape(name)
+    return rf"(?:\$\{{{safe}\}}|\${safe}\b|\${{{{[\s]*env\.{safe}[\s]*}}}})"
 
 
 def _service_sink_taints(

@@ -7,6 +7,8 @@ from __future__ import annotations
 
 from unittest.mock import patch
 
+import pytest
+
 from pipeline_check.core import autofix
 from pipeline_check.core.checks.base import Finding, Severity, is_quoted_assignment
 
@@ -299,3 +301,384 @@ def test_vuln_scan_tokens_new_entries():
     for token in ("cargo audit", "bundler-audit", "docker scout",
                   "codeql-action", "semgrep ", "bandit ", "checkov ", "tfsec "):
         assert token in VULN_SCAN_TOKENS, f"{token!r} missing from VULN_SCAN_TOKENS"
+
+
+# ────────────────────────────────────────────────────────────────────────
+# Bug F — a single crashing rule must not abort the whole scan.
+#   A scanner runs over config it didn't author; one rule tripping over
+#   an unexpected YAML shape used to raise straight out of the
+#   orchestrator and kill the scan (no findings at all). ``discover_rules``
+#   now wraps each check, and the rules below guard the specific shapes
+#   that crashed (scalar ``with:``, regex-metachar env names, numeric
+#   cache keys).
+# ────────────────────────────────────────────────────────────────────────
+
+def test_bug_f_discover_rules_guard_contains_a_crashing_check():
+    """A rule that raises is downgraded to a passing finding plus a
+    logged warning, not an exception that aborts the scan."""
+    from pipeline_check.core.checks.base import Severity
+    from pipeline_check.core.checks.rule import Rule, _guard_check
+
+    rule = Rule(id="X-001", title="boom", severity=Severity.HIGH)
+
+    def boom(path, doc):
+        raise ValueError("kaboom")
+
+    guarded = _guard_check(rule, boom)
+    finding = guarded("wf.yml", {})  # must not raise
+    assert finding.passed
+    assert finding.check_id == "X-001"
+
+
+def test_bug_f_gha002_handles_scalar_with_block():
+    """A scalar ``with:`` (``with: ref``) on a checkout step used to
+    raise ``AttributeError: 'str' object has no attribute 'get'``."""
+    from pipeline_check.core.checks.github.rules import (
+        gha002_pull_request_target as gha002,
+    )
+    doc = {
+        "on": "pull_request_target",
+        "jobs": {"build": {"steps": [
+            {"uses": "actions/checkout@v4", "with": "ref"},
+        ]}},
+    }
+    finding = gha002.check("wf.yml", doc)  # must not raise
+    assert finding.passed
+
+
+def test_bug_f_gha003_ref_pattern_escapes_regex_metachars():
+    """An env-var name with regex metacharacters used to crash
+    ``re.compile`` and abort the scan."""
+    import re
+
+    from pipeline_check.core.checks.github.rules.gha003_script_injection import (
+        _gha_ref_pattern,
+    )
+    for name in ("A(", "x|y", "[z]", "a.b", "c)"):
+        re.compile(_gha_ref_pattern(name))  # must not raise re.error
+
+
+def test_bug_f_gha004_handles_scalar_with_block():
+    """A scalar ``with:`` on an OIDC/docker step used to raise inside
+    ``_is_oidc_step`` / ``_step_consumes_scope``. It must degrade
+    equivalently to a step carrying no ``with:`` at all (the keys those
+    helpers read just aren't there), not crash and not silently flip the
+    verdict (which ``finding is not None`` alone would never catch)."""
+    from pipeline_check.core.checks.github.rules import gha004_permissions as gha004
+    base = [
+        {"uses": "docker/build-push-action@v5"},
+        {"uses": "aws-actions/configure-aws-credentials@v4"},
+    ]
+
+    def _doc(steps: list[dict]) -> dict:
+        return {
+            "on": "push",
+            "jobs": {"build": {
+                "permissions": {"id-token": "write", "packages": "write"},
+                "steps": steps,
+            }},
+        }
+
+    no_with = gha004.check("wf.yml", _doc([dict(s) for s in base]))
+    scalar_with = gha004.check(  # must not raise
+        "wf.yml", _doc([{**s, "with": "scalar"} for s in base]),
+    )
+    assert scalar_with.check_id == "GHA-004"
+    assert scalar_with.passed == no_with.passed
+
+
+def test_bug_f_gha011_handles_numeric_cache_key():
+    """A numeric ``key:`` (``key: 123``) used to raise
+    ``TypeError: 'int' object is not iterable``."""
+    from pipeline_check.core.checks.github.rules import gha011_cache_key as gha011
+    doc = {
+        "jobs": {"build": {"steps": [
+            {"uses": "actions/cache@v4", "with": {"key": 123}},
+        ]}},
+    }
+    finding = gha011.check("wf.yml", doc)  # must not raise
+    assert finding.passed
+
+
+def test_bug_f_as_finding_list_normalizes_single_none_and_list():
+    """The list-pack orchestrators (AWS/GCP/Azure/CFN/TF) ``extend`` a
+    ``list[Finding]``, but ``_guard_check`` degrades a crash to a single
+    ``Finding``. ``as_finding_list`` reconciles both shapes plus ``None``."""
+    from pipeline_check.core.checks.base import Finding, Severity
+    from pipeline_check.core.checks.rule import as_finding_list
+    one = Finding(
+        check_id="A-1", title="t", severity=Severity.LOW, resource="r",
+        description="d", recommendation="r", passed=True,
+    )
+    assert as_finding_list(None) == []
+    assert as_finding_list(one) == [one]
+    assert as_finding_list([one, one]) == [one, one]
+
+
+def test_bug_f_list_pack_crash_keeps_sibling_rules():
+    """A crashing rule in a list-shaped pack must degrade to ONE finding
+    without taking down the OTHER rules in the same provider. Before the
+    fix the guard returned a lone ``Finding``, the orchestrator's
+    ``for f in batch`` / ``extend`` raised ``TypeError: 'Finding' object
+    is not iterable``, and the surrounding scanner guard dropped every
+    finding from that provider. This replicates the CFN / TF run() loop."""
+    from pipeline_check.core.checks.base import Severity
+    from pipeline_check.core.checks.rule import (
+        Rule,
+        _guard_check,
+        apply_rule_metadata,
+        as_finding_list,
+    )
+    good = Rule(id="CFN-1", title="ok", severity=Severity.HIGH)
+    bad = Rule(id="CFN-2", title="boom", severity=Severity.HIGH)
+
+    def good_check(ctx):
+        return [good.fail_finding("res", "a real finding")]
+
+    def bad_check(ctx):
+        raise ValueError("malformed template")
+
+    rules = [
+        (good, _guard_check(good, good_check)),
+        (bad, _guard_check(bad, bad_check)),
+    ]
+    findings = []
+    for rule, check_fn in rules:
+        batch = as_finding_list(check_fn({"ctx": 1}))  # must not raise
+        for finding in batch:
+            apply_rule_metadata(finding, rule)
+        findings.extend(batch)
+    ids = {f.check_id for f in findings}
+    assert ids == {"CFN-1", "CFN-2"}  # sibling survived; crash degraded
+    assert len(findings) == 2
+
+
+# ────────────────────────────────────────────────────────────────────────
+# Bug G — autofix must never emit a duplicate mapping key.
+#   When a sibling key sat between ``uses:``/``run:`` and the
+#   ``with:``/``env:`` block, the fixers inserted a SECOND block. The
+#   lenient round-trip gate accepted it (last-wins), so the corruption
+#   reached disk and silently dropped the original value.
+# ────────────────────────────────────────────────────────────────────────
+
+def test_bug_g_gha002_merges_into_with_after_sibling_key():
+    wf = (
+        "jobs:\n"
+        "  build:\n"
+        "    steps:\n"
+        "      - uses: actions/checkout@v4\n"
+        "        name: checkout\n"
+        "        with:\n"
+        "          ref: abc\n"
+    )
+    out = autofix.generate_fix(_f("GHA-002"), wf)
+    assert out is not None
+    assert out.count("with:") == 1, "fixer emitted a duplicate with: key"
+    assert "persist-credentials: false" in out
+
+
+def test_bug_g_gha003_merges_into_env_sibling():
+    wf = (
+        "jobs:\n"
+        "  build:\n"
+        "    steps:\n"
+        '      - run: echo "${{ github.event.pull_request.title }}"\n'
+        "        env:\n"
+        "          FOO: bar\n"
+    )
+    out = autofix.generate_fix(_f("GHA-003"), wf, tier="unsafe")
+    assert out is not None
+    assert out.count("env:") == 1, "fixer emitted a duplicate env: key"
+    assert "FOO: bar" in out
+
+
+def test_bug_g_roundtrip_safe_rejects_duplicate_keys():
+    """The safety net itself: a duplicate-key payload must be rejected,
+    a clean addition accepted."""
+    from pipeline_check.core.autofix import _roundtrip_safe
+    before = "a:\n  b: 1\n"
+    assert _roundtrip_safe(before, "a:\n  b: 1\n  b: 2\n") is False
+    assert _roundtrip_safe(before, "a:\n  b: 1\n  c: 2\n") is True
+
+
+# ────────────────────────────────────────────────────────────────────────
+# Bug H — parser / reporter robustness on hostile or off-shape input.
+# ────────────────────────────────────────────────────────────────────────
+
+def test_bug_h_osv_handles_null_aliases_and_severity():
+    """An OSV record with explicit ``null`` aliases / severity used to
+    raise ``TypeError`` (``.get(key, [])`` only defaults a *missing*
+    key)."""
+    import json
+
+    from pipeline_check.core.checks._primitives import osv_fetcher as osv
+    payload = json.dumps([
+        {"id": "OSV-1", "summary": "s", "aliases": None, "severity": None},
+    ])
+    advisories = osv._parse_vulns(payload)  # must not raise
+    assert len(advisories) == 1
+    assert advisories[0].aliases == ()
+
+
+def test_bug_h_maven_rejects_doctype_entity_bomb():
+    """A ``pom.xml`` with a DTD (the "billion laughs" entity-expansion
+    vector) is refused rather than expanded; a normal POM still parses."""
+    from pipeline_check.core.checks.maven.base import _parse_pom
+    bomb = (
+        '<?xml version="1.0"?>'
+        '<!DOCTYPE lolz [<!ENTITY lol "lol"><!ENTITY lol2 "&lol;&lol;">]>'
+        '<project>&lol2;</project>'
+    )
+    assert _parse_pom("pom.xml", bomb).parsed_ok is False
+    assert _parse_pom(
+        "pom.xml", "<project><groupId>g</groupId></project>",
+    ).parsed_ok is True
+
+
+def test_bug_h_sarif_region_requires_start_line():
+    """A SARIF region must not carry ``startColumn`` / ``endLine`` /
+    ``endColumn`` without ``startLine`` (GitHub code scanning rejects
+    it). A column-only location degrades to file-level."""
+    from pipeline_check.core import sarif_reporter as sr
+    from pipeline_check.core.checks.base import Finding, Location, Severity
+
+    col_only = Finding(
+        check_id="X-1", title="t", severity=Severity.HIGH, resource="f.yml",
+        description="d", recommendation="r", passed=False,
+        locations=[Location(path="f.yml", start_column=5)],
+    )
+    phys = sr._finding_to_result(col_only, {})["locations"][0]["physicalLocation"]
+    assert "region" not in phys
+
+    with_line = Finding(
+        check_id="X-1", title="t", severity=Severity.HIGH, resource="f.yml",
+        description="d", recommendation="r", passed=False,
+        locations=[Location(
+            path="f.yml", start_line=3, start_column=5, end_column=9,
+        )],
+    )
+    region = (
+        sr._finding_to_result(with_line, {})
+        ["locations"][0]["physicalLocation"]["region"]
+    )
+    assert region["startLine"] == 3
+    assert region["startColumn"] == 5
+
+
+def test_bug_h_junit_strips_xml_invalid_control_chars():
+    """A finding field carrying an XML-forbidden control byte (NUL, etc.)
+    must not produce non-well-formed JUnit XML."""
+    import xml.dom.minidom as minidom
+
+    from pipeline_check.core.checks.base import Finding, Severity
+    from pipeline_check.core.junit_reporter import report_junit
+    from pipeline_check.core.scorer import score
+
+    f = Finding(
+        check_id="GHA-1", title="bad\x00title", severity=Severity.HIGH,
+        resource="f.yml", description="desc with \x00 and \x01 controls",
+        recommendation="r", passed=False,
+    )
+    out = report_junit([f], score([f]))
+    assert "\x00" not in out and "\x01" not in out
+    minidom.parseString(out)  # raises if not well-formed
+
+
+# ────────────────────────────────────────────────────────────────────────
+# Bug I — file I/O and input-shape robustness OUTSIDE the rule guard.
+#   Config / ignore-file / fleet reads missed UnicodeDecodeError (a
+#   ValueError, not OSError), so a non-UTF-8 file aborted the whole
+#   process; report writes raised raw OSError on a bad --output-file; and
+#   a handful of ``.get(k, default)`` sites crashed on an explicit null.
+# ────────────────────────────────────────────────────────────────────────
+
+def test_bug_i_config_load_survives_non_utf8(tmp_path):
+    from pipeline_check.core.config import _load_path
+    p = tmp_path / "cfg.yml"
+    p.write_bytes(b"pipeline: caf\xe9\n")  # latin-1, invalid UTF-8
+    assert _load_path(p) == {}  # must not raise
+
+
+def test_bug_i_ignore_files_survive_non_utf8(tmp_path):
+    from pipeline_check.core.gate import _load_ignore_flat, _load_ignore_yaml
+    flat = tmp_path / ".ig"
+    flat.write_bytes(b"GHA-001: caf\xe9\n")
+    assert _load_ignore_flat(flat) == []  # must not raise
+    yml = tmp_path / "ig.yml"
+    yml.write_bytes(b"- caf\xe9\n")
+    assert _load_ignore_yaml(yml) == []  # must not raise
+
+
+def test_bug_i_pyproject_load_survives_non_utf8(tmp_path):
+    # ``tomllib.load`` decodes UTF-8 and raises ``UnicodeDecodeError``
+    # (a sibling of ``TOMLDecodeError``, not a subclass), which the
+    # sibling ``_load_path`` guarded but ``_load_pyproject`` did not.
+    from pipeline_check.core.config import _load_pyproject
+    p = tmp_path / "pyproject.toml"
+    p.write_bytes(b'[tool.pipeline_check]\nfail_on = "caf\xe9"\n')
+    assert _load_pyproject(p) == {}  # must not raise
+
+
+def test_bug_i_baseline_load_survives_non_utf8(tmp_path):
+    # ``load_baseline`` promises an empty set "rather than raising" so it
+    # can't crash CI; a non-UTF-8 file raised ``UnicodeDecodeError``.
+    from pipeline_check.core.gate import load_baseline
+    p = tmp_path / "baseline.json"
+    p.write_bytes(b'{"findings": "caf\xe9"}\n')
+    assert load_baseline(p) == set()  # must not raise
+
+
+def test_bug_i_fleet_repo_list_non_utf8_is_clean_error(tmp_path):
+    from pipeline_check.core.fleet import load_repo_list
+    p = tmp_path / "repos.yml"
+    p.write_bytes(b"- caf\xe9\n")
+    with pytest.raises(ValueError):  # not a raw UnicodeDecodeError traceback
+        load_repo_list(p)
+
+
+def test_bug_i_emit_report_to_directory_is_usage_error(tmp_path):
+    import click
+
+    from pipeline_check.cli import _emit_report
+    with pytest.raises(click.UsageError):
+        _emit_report("body", str(tmp_path), "JSON report", quiet=True)
+
+
+def test_bug_i_osv_fetch_handles_non_dict_response():
+    from unittest.mock import MagicMock, patch
+
+    from pipeline_check.core.checks._primitives import osv_fetcher as osv
+    resp = MagicMock()
+    resp.read.return_value = b'["not", "an", "object"]'
+    cm = MagicMock()
+    cm.__enter__.return_value = resp
+    with patch.object(osv.urllib.request, "urlopen", return_value=cm):
+        results, error = osv._fetch_batch([("pkg", "1.0", "npm")])
+    assert results == {}
+    assert error  # graceful error string, not an AttributeError
+
+
+def test_bug_i_cfn_policy_handles_null_statement():
+    from pipeline_check.core.checks.cloudformation.ecr import _ecr003_public_policy
+    from pipeline_check.core.checks.cloudformation.s3 import (
+        _s3005_secure_transport,
+    )
+    # ``Statement: null`` previously raised "NoneType is not iterable".
+    f1 = _s3005_secure_transport(
+        {"PolicyDocument": {"Statement": None}}, "bucket",
+    )
+    assert f1.check_id == "S3-005"
+    f2 = _ecr003_public_policy(
+        {"RepositoryPolicyText": {"Statement": None}}, "repo",
+    )
+    assert f2.check_id == "ECR-003"
+
+
+def test_bug_i_argocd_handles_spec_as_list():
+    from pipeline_check.core.checks.argocd.base import application_sources
+
+    class _App:
+        kind = "ApplicationSet"
+        data = {"spec": [1, 2, 3]}  # spec authored as a sequence
+
+    assert list(application_sources(_App())) == []  # must not raise

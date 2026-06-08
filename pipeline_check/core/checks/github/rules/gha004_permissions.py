@@ -114,7 +114,10 @@ def _is_oidc_step(step: dict[str, Any]) -> bool:
     uses = step.get("uses")
     if not isinstance(uses, str):
         return False
-    with_block = step.get("with") or {}
+    with_block = step.get("with")
+    if not isinstance(with_block, dict):
+        # A scalar/list ``with:`` carries none of the keys below.
+        with_block = {}
     if "configure-aws-credentials" in uses and "role-to-assume" in with_block:
         return True
     if "docker/build-push-action" in uses:
@@ -256,7 +259,9 @@ def _step_consumes_scope(step: dict[str, Any], scope: str) -> bool:
                 return True
         # docker/build-push-action special case for packages: write.
         if scope == "packages" and "docker/build-push-action" in uses:
-            with_block = step.get("with") or {}
+            with_block = step.get("with")
+            if not isinstance(with_block, dict):
+                with_block = {}
             push = with_block.get("push")
             if push not in (None, False, "false", "no", "off", "0"):
                 return True

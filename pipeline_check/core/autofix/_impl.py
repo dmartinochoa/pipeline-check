@@ -110,13 +110,13 @@ def _fix_gha002(content: str, finding: Finding) -> str | None:
                 break
         # A ``with:`` block sits at the same column as ``uses:``,
         # followed by at least one child indented two spaces deeper.
+        # The leading newline is optional: when sibling keys were
+        # skipped above, the sibling scan already consumed the newline
+        # before ``with:`` (``scan_offset`` points at the start of the
+        # ``with:`` line). Requiring ``\n`` here would miss the existing
+        # block and wrongly insert a duplicate ``with:`` key.
         block_match = re.match(
-            r"\n" + re.escape(uses_col) + r"with:\s*\n"
-            r"(?:" + re.escape(child_col) + r"\S[^\n]*\n?)+",
-            after,
-            # Start the match from where the sibling scan stopped.
-        ) if scan_offset == 0 else re.match(
-            r"\n" + re.escape(uses_col) + r"with:\s*\n"
+            r"\n?" + re.escape(uses_col) + r"with:\s*\n"
             r"(?:" + re.escape(child_col) + r"\S[^\n]*\n?)+",
             after[scan_offset:],
         )
@@ -884,6 +884,11 @@ def _fix_gha003(content: str, finding: Finding) -> str | None:
                 # immediately following the ``run:`` line (possibly
                 # with other sibling keys in between). If so, merge
                 # the new vars into it instead of inserting a duplicate.
+                # ``env:`` is a sibling of ``run:``, so it sits at the
+                # SAME column (``step_indent``), not two deeper. Looking
+                # at ``step_indent + 2`` (and breaking on ``<= step_indent``)
+                # meant a sibling ``env:`` was never found and a duplicate
+                # block was inserted at ``run:``'s column instead.
                 step_indent = len(indent)
                 existing_env_line: int | None = None
                 peek = i + 1
@@ -894,12 +899,12 @@ def _fix_gha003(content: str, finding: Finding) -> str | None:
                         peek += 1
                         continue
                     peek_ind = len(peek_line) - len(peek_line.lstrip())
-                    if peek_ind <= step_indent:
-                        # Left the step block — no existing env:.
+                    if peek_ind < step_indent:
+                        # Dedented past the step's keys — left the step.
                         break
-                    if peek_ind == step_indent + 2:
-                        # Check for the list-item boundary ``- `` which
-                        # starts a new step.
+                    if peek_ind == step_indent:
+                        # A sibling key at the step's key column. A
+                        # ``- `` here starts a new list item / step.
                         if peek_stripped.lstrip().startswith("- "):
                             break
                         if re.match(r"\s*env\s*:", peek_line):

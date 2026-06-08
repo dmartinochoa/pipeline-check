@@ -28,12 +28,28 @@ the XML envelope.
 """
 from __future__ import annotations
 
-from xml.sax.saxutils import escape as _xml_escape
-from xml.sax.saxutils import quoteattr as _xml_attr
+import re
+from xml.sax.saxutils import escape as _sax_escape
+from xml.sax.saxutils import quoteattr as _sax_quoteattr
 
 from .checks.base import Finding, inline_exploit
 from .report_view import ReportView
 from .scorer import ScoreResult
+
+# XML 1.0 forbids the C0 control characters except tab / LF / CR.
+# ``saxutils`` escapes markup but passes these bytes through verbatim,
+# so a finding field carrying one (a NUL or other control byte lifted
+# from a scanned file) yields non-well-formed XML that CI ingestors
+# reject. Strip them before escaping.
+_XML_INVALID_RE = re.compile(r"[\x00-\x08\x0b\x0c\x0e-\x1f]")
+
+
+def _xml_escape(text: str) -> str:
+    return _sax_escape(_XML_INVALID_RE.sub("", text))
+
+
+def _xml_attr(text: str) -> str:
+    return _sax_quoteattr(_XML_INVALID_RE.sub("", text))
 
 
 def _prefix(check_id: str) -> str:

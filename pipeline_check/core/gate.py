@@ -265,7 +265,15 @@ def load_ignore_file(path: str | Path) -> list[IgnoreRule]:
 
 def _load_ignore_flat(p: Path) -> list[IgnoreRule]:
     rules: list[IgnoreRule] = []
-    for raw in p.read_text(encoding="utf-8").splitlines():
+    try:
+        text = p.read_text(encoding="utf-8")
+    except (OSError, UnicodeDecodeError) as exc:
+        print(
+            f"[ignore-file] could not read {p}: {exc}. No rules loaded.",
+            file=sys.stderr,
+        )
+        return []
+    for raw in text.splitlines():
         line = raw.split("#", 1)[0].strip()
         if not line:
             continue
@@ -299,7 +307,7 @@ def _load_ignore_yaml(p: Path) -> list[IgnoreRule]:
             file=sys.stderr,
         )
         return []
-    except OSError as exc:
+    except (OSError, UnicodeDecodeError) as exc:
         print(
             f"[ignore-file] could not read {p}: {exc}. No rules loaded.",
             file=sys.stderr,
@@ -359,7 +367,11 @@ def load_baseline(path: str | Path) -> set[tuple[str, str]]:
         return set()
     try:
         doc = json.loads(p.read_text(encoding="utf-8"))
-    except (OSError, json.JSONDecodeError):
+    except (OSError, UnicodeDecodeError, json.JSONDecodeError):
+        # A non-UTF-8 baseline raises ``UnicodeDecodeError`` (a
+        # ``ValueError``, not an ``OSError``); without it this loader
+        # crashes CI despite the docstring's "empty set rather than
+        # raising" promise. Mirrors the ignore-file loaders above.
         return set()
     return _baseline_from_doc(doc)
 

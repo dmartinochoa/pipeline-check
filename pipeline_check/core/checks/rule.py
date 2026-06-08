@@ -35,14 +35,18 @@ template.
 """
 from __future__ import annotations
 
+import functools
 import importlib
 import inspect
+import logging
 import pkgutil
 from collections.abc import Callable
 from dataclasses import dataclass
 from typing import Any
 
 from .base import Finding, Severity
+
+_log = logging.getLogger(__name__)
 
 
 @dataclass(frozen=True, slots=True)
@@ -142,6 +146,44 @@ class Rule:
 _RULES_CACHE: dict[str, list[tuple[Any, Callable[..., Finding]]]] = {}
 
 
+def _guard_check(
+    rule: Rule, check: Callable[..., Finding],
+) -> Callable[..., Finding]:
+    """Wrap a rule's ``check`` so an unhandled exception degrades to a
+    single passing finding plus a logged warning, instead of aborting
+    the whole scan.
+
+    A scanner is a defensive tool run over config it didn't write: one
+    rule tripping over an unexpected shape (a scalar where a mapping was
+    assumed, a value that isn't a ``str``) must not take down the other
+    ~1100 checks. Without this, a single malformed pipeline file in a
+    scanned PR suppresses every finding, the scanner exits non-zero with
+    no results, and a real vulnerability sails through unreported.
+
+    The wrapper is signature-transparent: ``functools.wraps`` copies
+    ``__wrapped__``, so the ``inspect.signature`` introspection the
+    orchestrators use to dispatch (``_positional_count`` /
+    ``wants_ctx_kwarg``) still reports the real parameters.
+    """
+    @functools.wraps(check)
+    def guarded(*args: Any, **kwargs: Any) -> Finding:
+        try:
+            return check(*args, **kwargs)
+        except Exception:
+            # ``args[0]`` is the path/target for every rule signature.
+            resource = args[0] if args and isinstance(args[0], str) else rule.id
+            _log.warning(
+                "check %s crashed on %r and was skipped",
+                rule.id, resource, exc_info=True,
+            )
+            return rule.pass_finding(
+                resource,
+                f"{rule.id} could not be evaluated (internal error); "
+                "skipped so the rest of the scan can complete.",
+            )
+    return guarded
+
+
 def discover_rules(package_fqn: str) -> list[tuple[Any, Callable[..., Finding]]]:
     """Import every submodule under ``package_fqn`` and collect
     ``(RULE, check)`` pairs.
@@ -171,7 +213,7 @@ def discover_rules(package_fqn: str) -> list[tuple[Any, Callable[..., Finding]]]
         rule = getattr(mod, "RULE", None)
         check = getattr(mod, "check", None)
         if isinstance(rule, Rule) and callable(check):
-            pairs.append((rule, check))
+            pairs.append((rule, _guard_check(rule, check)))
     _RULES_CACHE[package_fqn] = pairs
     return pairs
 
@@ -190,6 +232,31 @@ def wants_ctx_kwarg(check_fn: Callable[..., Finding]) -> bool:
     except (TypeError, ValueError):
         return False
     return len(params) >= 2
+
+
+def as_finding_list(
+    result: Finding | list[Finding] | None,
+) -> list[Finding]:
+    """Normalize a check's return value into a ``list[Finding]``.
+
+    The AWS / GCP / Azure / CloudFormation / Terraform orchestrators
+    expect their ``check`` callables to return ``list[Finding]`` and
+    ``extend`` the batch. But :func:`_guard_check` degrades a crashing
+    check to a *single* ``Finding`` (it can't tell the list-shaped packs
+    from the github-style ones, where a lone ``Finding`` is the
+    contract). Without this, a crashing list-pack rule returns one
+    ``Finding``, the orchestrator's ``for f in batch`` / ``extend(batch)``
+    raises ``TypeError: 'Finding' object is not iterable``, and the
+    surrounding scanner guard then drops the *whole provider* (the exact
+    failure ``_guard_check`` exists to prevent). Wrap a bare ``Finding``
+    (and ``None``) so one crashing rule degrades to one finding without
+    taking down its provider.
+    """
+    if result is None:
+        return []
+    if isinstance(result, Finding):
+        return [result]
+    return list(result)
 
 
 def apply_rule_metadata(finding: Finding, rule: Rule) -> None:

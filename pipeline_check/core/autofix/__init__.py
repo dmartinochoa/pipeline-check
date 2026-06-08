@@ -38,6 +38,7 @@ from collections.abc import Callable
 
 import yaml
 
+from .._yaml_strict import safe_load_all_strict
 from ..checks.base import Finding
 
 Fixer = Callable[[str, Finding], "str | None"]
@@ -109,7 +110,7 @@ def _roundtrip_safe(before: str, after: str) -> bool:
        and (for multi-doc streams) the same number of documents.
     """
     try:
-        before_docs = list(yaml.safe_load_all(before))
+        before_docs = safe_load_all_strict(before)
     except yaml.YAMLError:
         return True
     # Dockerfile / scalar / empty input: ``safe_load_all`` returned
@@ -117,7 +118,11 @@ def _roundtrip_safe(before: str, after: str) -> bool:
     if not any(isinstance(d, (dict, list)) for d in before_docs):
         return True
     try:
-        after_docs = list(yaml.safe_load_all(after))
+        # Strict loader: a fixer that emits a duplicate mapping key
+        # (the classic "insert a second ``with:`` / ``env:`` block"
+        # bug) must be rejected here, not silently accepted by
+        # last-wins parsing and written to disk.
+        after_docs = safe_load_all_strict(after)
     except yaml.YAMLError:
         _log.warning("autofix output failed to parse as YAML; bailing")
         return False
