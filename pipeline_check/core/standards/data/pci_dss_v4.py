@@ -118,6 +118,8 @@ STANDARD = Standard(
         "RUN-002":  ["6.5.1"],                           # forensics: privileged trigger fired
         "RUN-003":  ["6.5.1"],                           # forensics: secret leaked in run logs
         "GHA-003":  ["6.5.1"],                           # script injection
+        "GHA-119":  ["6.5.1"],                           # untrusted context into an agentic AI CLI
+        "GHA-120":  ["6.5.1"],                           # trust_remote_code model load = code exec
         "GHA-117":  ["6.5.1"],                           # IaC apply on untrusted PR trigger
         "GHA-118":  ["6.5.1"],                           # untrusted content into $GITHUB_ENV / $GITHUB_PATH
         "GHA-004":  ["7.2.5"],                           # unrestricted GITHUB_TOKEN

@@ -86,6 +86,8 @@ STANDARD = Standard(
         "GHA-110": ["Build.L3.NonFalsifiable"],  # CI env disables Go module verification
         "GHA-002":  ["Build.L3.NonFalsifiable", "Build.L3.Isolated"], # pull_request_target + PR head
         "GHA-003":  ["Build.L3.Isolated"],                         # script injection
+        "GHA-119":  ["Build.L3.Isolated"],                         # untrusted context into an agentic AI CLI
+        "GHA-120":  ["Build.L3.Isolated"],                         # trust_remote_code model load = code exec
         "GHA-117":  ["Build.L3.Isolated"],                         # IaC apply on untrusted PR trigger
         "GHA-118":  ["Build.L3.Isolated"],                         # untrusted content into $GITHUB_ENV / $GITHUB_PATH
         "GHA-004":  ["Build.L3.NonFalsifiable"],                   # unrestricted GITHUB_TOKEN

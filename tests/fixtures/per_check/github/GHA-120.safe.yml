@@ -1,0 +1,7 @@
+name: model-eval
+on: push
+jobs:
+  eval:
+    runs-on: ubuntu-latest
+    steps:
+      - run: python -c "from transformers import AutoModel; AutoModel.from_pretrained('acme/m')"

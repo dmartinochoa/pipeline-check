@@ -162,6 +162,8 @@ STANDARD = Standard(
         "GHA-110": ["1.5.2"],  # CI env disables Go module verification
         "GHA-002": ["1.5.2"],                                 # pull_request_target + checkout PR head
         "GHA-003": ["1.5.2"],                                 # script injection via ${{ }}
+        "GHA-119": ["1.5.2"],                                 # untrusted context into an agentic AI CLI
+        "GHA-120": ["1.5.2"],                                 # trust_remote_code model load = code exec
         "GHA-117": ["1.5.2"],                                 # IaC apply on untrusted PR trigger
         "GHA-118": ["1.5.2"],                                 # untrusted content into $GITHUB_ENV / $GITHUB_PATH
         "GHA-004": ["1.5.2"],                                 # GITHUB_TOKEN unrestricted

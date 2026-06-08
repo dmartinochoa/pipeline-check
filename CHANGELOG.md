@@ -12,6 +12,20 @@ release commit collapses this section into `## [X.Y.Z] - <date>`.
 
 ### Added
 
+- **AI / LLM-pipeline rule pack (GitHub).** Two rules for the
+  fastest-growing CI surface, extending the agentic-CLI family
+  (GHA-058/103/104/106/111). **GHA-119** (HIGH) is the AI analog of
+  GHA-003: untrusted context (a PR / issue / comment body, a fork branch
+  name) reaches an agentic CLI's prompt (claude / gemini / cursor-agent /
+  aider / openhands / goose), so a fork PR can smuggle instructions the
+  agent then executes. Crucially it fires even when the value is routed
+  through `env:`, because, unlike a shell, an LLM ingests the env value
+  as prompt text, so the GHA-003 mitigation does not apply. **GHA-120**
+  (HIGH) flags `trust_remote_code=True` / `--trust-remote-code` in a
+  `run:` step: the transformers / huggingface_hub loader executes the
+  model repo's own Python at load time, so an untrusted or unpinned model
+  is arbitrary code execution in CI. The agentic-CLI catalog is now a
+  shared helper (`AGENTIC_CLI_RE`) used by GHA-058 and GHA-119.
 - **Run-history forensics provider (`--pipeline runs`).** A new live-API
   provider that audits what a repository's GitHub Actions *actually
   executed*, complementing the static `github` provider's "what could
