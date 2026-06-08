@@ -5630,6 +5630,238 @@ def fix_pr_cmd(
             click.echo(f"[fix-pr] {result.note}", err=True)
 
 
+# ────────────────────────────────────────────────────────────────────────────
+# `verify-artifact` subcommand, run cosign / slsa-verifier / gh attestation
+# against an artifact and report whether its provenance validates. Turns the
+# static "you should sign" findings into a runtime pass/fail gate.
+# ────────────────────────────────────────────────────────────────────────────
+
+
+@click.command(name="verify-artifact")
+@click.argument("ref", required=False, metavar="REF")
+@click.option(
+    "--source-uri",
+    "source_uri",
+    default=None,
+    metavar="URI",
+    help=(
+        "Expected source repository the artifact was built from, e.g. "
+        "``github.com/acme/api``. Required by slsa-verifier."
+    ),
+)
+@click.option(
+    "--builder-id",
+    "builder_id",
+    default=None,
+    metavar="ID",
+    help="Expected SLSA builder id (slsa-verifier ``--builder-id``).",
+)
+@click.option(
+    "--certificate-identity",
+    "cert_identity",
+    default=None,
+    metavar="IDENTITY",
+    help=(
+        "Exact cosign keyless signer identity (the signing workflow ref). "
+        "Pair with --certificate-oidc-issuer."
+    ),
+)
+@click.option(
+    "--certificate-identity-regexp",
+    "cert_identity_re",
+    default=None,
+    metavar="REGEXP",
+    help="cosign keyless signer identity as a regexp (alternative to exact).",
+)
+@click.option(
+    "--certificate-oidc-issuer",
+    "cert_oidc_issuer",
+    default=None,
+    metavar="ISSUER",
+    help=(
+        "Expected cosign keyless OIDC issuer, e.g. "
+        "``https://token.actions.githubusercontent.com``."
+    ),
+)
+@click.option(
+    "--key",
+    "key",
+    default=None,
+    metavar="PATH|URL",
+    help="cosign public key for keyed verification (alternative to keyless).",
+)
+@click.option(
+    "--owner",
+    "owner",
+    default=None,
+    metavar="OWNER",
+    help="GitHub owner / org for ``gh attestation verify``.",
+)
+@click.option(
+    "--provenance",
+    "provenance_path",
+    default=None,
+    metavar="PATH",
+    help="Provenance file for verifying a local file artifact with slsa-verifier.",
+)
+@click.option(
+    "--tool",
+    "tool",
+    type=click.Choice(["auto", "cosign", "slsa-verifier", "gh"]),
+    default="auto",
+    show_default=True,
+    help="Which verifier(s) to run. ``auto`` runs every applicable, installed tool.",
+)
+@click.option(
+    "--type",
+    "artifact_type",
+    type=click.Choice(["auto", "oci", "file"]),
+    default="auto",
+    show_default=True,
+    help="Treat REF as an OCI image or a local file. ``auto`` infers from REF.",
+)
+@click.option(
+    "--timeout",
+    "timeout",
+    type=click.IntRange(1, 3600),
+    default=120,
+    show_default=True,
+    metavar="SECONDS",
+    help="Per-verifier subprocess timeout.",
+)
+@click.option(
+    "--json",
+    "as_json",
+    is_flag=True,
+    default=False,
+    help="Emit the result as JSON instead of the text summary.",
+)
+def verify_artifact_cmd(
+    ref: str | None,
+    source_uri: str | None,
+    builder_id: str | None,
+    cert_identity: str | None,
+    cert_identity_re: str | None,
+    cert_oidc_issuer: str | None,
+    key: str | None,
+    owner: str | None,
+    provenance_path: str | None,
+    tool: str,
+    artifact_type: str,
+    timeout: int,
+    as_json: bool,
+) -> None:
+    """Verify an artifact's signature / SLSA provenance against a policy.
+
+    Shells out to the supply-chain verifiers on PATH (``cosign``,
+    ``slsa-verifier``, ``gh attestation``) and reports whether REF is
+    verifiably built by who it claims. REF is an OCI image reference
+    (``ghcr.io/acme/api:1.2.3``, optionally ``@sha256:...``) or a local
+    file path.
+
+    Exit codes follow the canonical contract: ``0`` verified, ``1``
+    verification failed (gateable in CI), ``2`` bad invocation, ``3``
+    could not verify (no installed tool matched the policy).
+    """
+    import json as _json
+    from pathlib import Path
+
+    from .core.provenance import (
+        KNOWN_TOOLS,
+        ProvenanceError,
+        Verdict,
+        VerifyPolicy,
+        verify_artifact,
+    )
+
+    if not ref:
+        raise click.UsageError(
+            "missing REF. Example: pipeline_check verify-artifact "
+            "ghcr.io/acme/api:1.2.3 --source-uri github.com/acme/api"
+        )
+
+    # Normalize the reference and decide OCI vs. file. An explicit
+    # ``oci://`` prefix or --type wins; otherwise an existing path is a
+    # file and anything else is an OCI ref.
+    canonical = ref
+    if canonical.startswith("oci://"):
+        canonical = canonical[len("oci://"):]
+        inferred_file = False
+    elif artifact_type == "file":
+        inferred_file = True
+    elif artifact_type == "oci":
+        inferred_file = False
+    else:
+        inferred_file = Path(canonical).exists()
+    is_file = artifact_type == "file" or inferred_file
+
+    # A policy with no anchor can't verify anything; fail fast with a
+    # pointer at the flags each tool needs rather than running no-ops.
+    has_keyless = bool(
+        (cert_identity or cert_identity_re) and cert_oidc_issuer
+    )
+    if not (source_uri or key or has_keyless or owner):
+        raise click.UsageError(
+            "no verification policy supplied. Provide at least one of: "
+            "--source-uri (slsa-verifier), --owner (gh attestation), "
+            "--key, or --certificate-identity[-regexp] with "
+            "--certificate-oidc-issuer (cosign keyless)."
+        )
+
+    policy = VerifyPolicy(
+        ref=canonical,
+        is_file=is_file,
+        source_uri=source_uri,
+        builder_id=builder_id,
+        certificate_identity=cert_identity,
+        certificate_identity_regexp=cert_identity_re,
+        certificate_oidc_issuer=cert_oidc_issuer,
+        key=key,
+        owner=owner,
+        provenance_path=provenance_path,
+    )
+    selected = KNOWN_TOOLS if tool == "auto" else (tool,)
+
+    try:
+        report = verify_artifact(policy, tools=selected, timeout=timeout)
+    except ProvenanceError as exc:
+        raise click.UsageError(str(exc)) from exc
+
+    if as_json:
+        click.echo(_json.dumps(report.to_dict(), indent=2))
+        raise click.exceptions.Exit(report.exit_code)
+
+    click.echo(f"verify-artifact {report.ref}\n")
+    width = max((len(r.label) for r in report.results), default=0)
+    for r in report.results:
+        if r.ran and r.ok:
+            status = "OK"
+            tail = ""
+        elif r.ran:
+            status = "FAIL"
+            tail = f"  {r.detail}"
+        else:
+            status = "skip"
+            tail = f"  ({r.detail.removeprefix('skipped: ')})"
+        click.echo(f"  {r.label:<{width}}  {status}{tail}")
+    if report.builder:
+        click.echo(f"\n  builder: {report.builder}")
+
+    gloss = {
+        Verdict.PASS: (
+            f"provenance verified "
+            f"({sum(1 for r in report.results if r.ran and r.ok)} "
+            f"verifier(s) agreed)"
+        ),
+        Verdict.FAIL: "verification failed",
+        Verdict.INCONCLUSIVE: (
+            "could not verify (no installed tool matched the policy)"
+        ),
+    }[report.verdict]
+    click.echo(f"\n  {report.verdict.value}  {gloss}")
+    raise click.exceptions.Exit(report.exit_code)
+
+
 def main() -> None:
     """Console entry point: dispatches between ``scan`` and subcommands.
 
@@ -5666,5 +5898,9 @@ def main() -> None:
     if len(sys.argv) >= 2 and sys.argv[1] == "fix-pr":
         sys.argv.pop(1)
         fix_pr_cmd()
+        return
+    if len(sys.argv) >= 2 and sys.argv[1] == "verify-artifact":
+        sys.argv.pop(1)
+        verify_artifact_cmd()
         return
     scan()

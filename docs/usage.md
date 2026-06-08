@@ -168,6 +168,12 @@ pipeline_check --pipeline scm --scm-platform github \
 # $GITHUB_TOKEN.
 pipeline_check --pipeline runs --scm-repo owner/name \
     --gh-token "$GITHUB_TOKEN"
+
+# Heavier pass: also download recent privileged-trigger run logs
+# and scan them for leaked secrets (RUN-003). One download per run,
+# needs the actions:read scope.
+pipeline_check --pipeline runs --scm-repo owner/name \
+    --gh-token "$GITHUB_TOKEN" --audit-runs-logs
 ```
 
 Full per-provider reference: [providers/](providers/README.md).
@@ -390,6 +396,54 @@ unrelated edits; `--allow-dirty` overrides that but still stages only the
 autofix edits. `--base` sets the target branch (defaults to the current
 one), `--branch` / `--remote` / `--title` / `--body` / `--checks` tune
 the rest.
+
+## Verify artifact provenance: `verify-artifact`
+
+The scan tells you a release *should* be signed (GHA-100 and the
+attestation rules). `verify-artifact` closes the loop at runtime: it
+checks that a built artifact is verifiably produced by who it claims,
+shelling out to the supply-chain verifiers already on your PATH.
+
+```bash
+# SLSA provenance for a container image, anchored on the source repo
+pipeline_check verify-artifact ghcr.io/acme/api:1.2.3 \
+    --source-uri github.com/acme/api
+
+# cosign keyless signature, anchored on the signing workflow identity
+pipeline_check verify-artifact ghcr.io/acme/api:1.2.3 \
+    --certificate-identity \
+        https://github.com/acme/api/.github/workflows/release.yml@refs/tags/v1.2.3 \
+    --certificate-oidc-issuer https://token.actions.githubusercontent.com
+
+# GitHub artifact attestation for a release file
+pipeline_check verify-artifact dist/app.tar.gz --owner acme
+
+# pin one verifier and emit a machine-readable result
+pipeline_check verify-artifact ghcr.io/acme/api:1.2.3 \
+    --source-uri github.com/acme/api --tool slsa-verifier --json
+```
+
+`REF` is an OCI image reference (an `oci://` prefix or a `registry/name:tag`,
+optionally pinned by `@sha256:...`) or a local file path. `--type` forces
+the OCI-vs-file choice when the inference is wrong.
+
+The policy flags decide which verifiers run. With `--tool auto` (the
+default) every verifier that is installed *and* has the flags it needs
+runs:
+
+- **`cosign`** needs `--key`, or a keyless identity
+  (`--certificate-identity` / `--certificate-identity-regexp` plus
+  `--certificate-oidc-issuer`).
+- **`slsa-verifier`** needs `--source-uri` (and `--provenance` for a
+  file artifact); `--builder-id` pins the expected builder.
+- **`gh attestation`** needs `--owner`.
+
+The verdict folds the per-tool outcomes: **PASS** when at least one tool
+ran and verified and none failed, **FAIL** when any tool's verification
+failed, **INCONCLUSIVE** when no installed tool matched the policy (a
+missing binary degrades here rather than crashing). Exit codes follow
+the [canonical contract](#exit-codes): `0` verified, `1` verification
+failed (gate on this in CI), `3` could not verify.
 
 ## Compliance annotations
 

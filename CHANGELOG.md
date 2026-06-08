@@ -10,6 +10,30 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 PRs landing on `dev` between releases append entries below. The
 release commit collapses this section into `## [X.Y.Z] - <date>`.
 
+## [1.13.0] - 2026-06-08
+
+### Added
+
+- **Provenance verification gate (`verify-artifact REF`).** A new
+  subcommand that turns the static "you should sign" findings (GHA-100
+  and the attestation rules) into a runtime pass/fail check. It shells
+  out to the supply-chain verifiers already on PATH (`cosign`,
+  `slsa-verifier`, `gh attestation`), building an injection-safe argv
+  per tool, and folds the outcomes into one verdict: **PASS** when at
+  least one tool ran and verified and none failed, **FAIL** when any
+  verification failed, **INCONCLUSIVE** when no installed tool matched
+  the supplied policy. `REF` is an OCI image (`ghcr.io/acme/api:1.2.3`,
+  optionally `@sha256:...`) or a local file. The policy flags select
+  which verifiers run: `--source-uri` (+ `--builder-id` / `--provenance`)
+  for slsa-verifier, `--certificate-identity[-regexp]` with
+  `--certificate-oidc-issuer` or `--key` for cosign, `--owner` for
+  `gh attestation`. Exit codes follow the canonical contract: `0`
+  verified, `1` verification failed (gateable in CI), `3` could not
+  verify. A missing verifier binary degrades to INCONCLUSIVE rather than
+  crashing, mirroring the `opa` / `helm` shell-out pattern. `--json`
+  emits a machine-readable result. (Closes the provenance-verification
+  candidate in ROADMAP.)
+
 ## [1.12.0] - 2026-06-08
 
 ### Added

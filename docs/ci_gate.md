@@ -386,7 +386,7 @@ Exact IDs (`--checks GHA-001`) still work unchanged.
 
 `--only-known-attacked` filters the rule set to rules whose detection
 shape is anchored to a documented real-world incident, CVE, or vendor
-disclosure (`Rule.incident_refs` non-empty, 77 rules today). Useful for
+disclosure (`Rule.incident_refs` non-empty, 225 rules today). Useful for
 burning down the incident-driven worklist on a fresh repo without the
 full pack noise.
 
@@ -411,7 +411,7 @@ rather than the scan silently producing no findings.
 ## Custom secret patterns
 
 The secret-scanning checks (`GHA-008`, `GL-008`, `BB-008`, `ADO-008`,
-`JF-008`, `CC-008`, `DR-004`, …) ship with **46 named vendor-token
+`JF-008`, `CC-008`, `DR-004`, …) ship with **49 named vendor-token
 detectors**. Sample of the catalog:
 
 | Detector              | Matches                                                          |
@@ -434,7 +434,7 @@ detectors**. Sample of the catalog:
 | `replicate_token`     | `r8_…` (40 trailing)                                             |
 | `asana_pat`           | `1/<account-id>:<32-hex>`                                        |
 | `square_access_token` | `sq0(atp\|csp)-…`                                                |
-| `…`                   | plus 28 more (Twilio, Mailchimp, Shopify, Databricks, HuggingFace, Linear, PlanetScale, New Relic, Grafana, Telegram, Atlassian, GitLab Runner / CI, Supabase, Fly, Pulumi, Doppler, Netlify, Railway, Render, Prefect, Neon, age, …) |
+| `…`                   | plus 31 more (Twilio, Mailchimp, Shopify, Databricks, HuggingFace, Linear, PlanetScale, New Relic, Grafana, Telegram, Atlassian, GitLab Runner / CI, Supabase, Fly, Pulumi, Doppler, Netlify, Railway, Render, Prefect, Neon, age, Postman, Tailscale, Sentry, …) |
 
 Plus a multi-line `private_key` detector that fires on any
 `-----BEGIN PRIVATE KEY-----` block (RSA, DSA, EC, OPENSSH, PGP, and
