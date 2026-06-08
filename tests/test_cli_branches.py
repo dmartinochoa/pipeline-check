@@ -247,6 +247,37 @@ class TestGateSummary:
         assert result.exit_code == 0
         assert "[gate] FAIL" not in result.output
 
+    def test_grade_note_when_high_grade_fails_gate(self, runner):
+        """Grade A/B sitting on a failing gate is the confusing case; the
+        summary adds a note clarifying the grade is posture, not the gate."""
+        findings = [
+            _finding(check_id=f"CB-{i:03d}", passed=True) for i in range(1, 40)
+        ]
+        findings.append(
+            _finding(check_id="CB-099", passed=False, severity=Severity.HIGH),
+        )
+        with patch("pipeline_check.cli.Scanner") as MockScanner:
+            MockScanner.return_value.run.return_value = findings
+            result = runner.invoke(
+                scan, ["--output", "terminal", "--fail-on-check", "CB-099"],
+            )
+        assert result.exit_code == 1
+        assert "[gate] FAIL" in result.output
+        assert "[gate] note: Grade" in result.output
+        assert "overall posture" in result.output
+
+    def test_no_grade_note_when_grade_is_low(self, runner):
+        """A low grade (C/D) failing the gate is unsurprising, so the
+        clarifying note is suppressed."""
+        with patch("pipeline_check.cli.Scanner") as MockScanner:
+            MockScanner.return_value.run.return_value = [
+                _finding(severity=Severity.CRITICAL),  # one CRITICAL fail → grade D
+            ]
+            result = runner.invoke(scan, ["--output", "terminal"])
+        assert result.exit_code == 1
+        assert "[gate] FAIL" in result.output
+        assert "[gate] note: Grade" not in result.output
+
     def test_baseline_suppression_is_reported(self, runner, tmp_path):
         # Baseline contains the exact (check_id, resource) we'll emit.
         baseline = tmp_path / "b.json"

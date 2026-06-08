@@ -200,6 +200,15 @@ release commit collapses this section into `## [X.Y.Z] - <date>`.
 
 ### Changed
 
+- **The gate summary clarifies grade vs gate when they disagree.** A
+  strong grade (A or B) sitting on top of a failing gate is the most
+  confusing outcome for a first-time user: the headline reads "Grade A"
+  while the build still exits non-zero. When the gate fails with a high
+  grade, the stderr summary now adds a one-line note that the grade is
+  an overall posture score (checks weighted by severity) while the gate
+  is a separate blocking policy, so a strong grade can still fail on a
+  single blocking finding. A low grade failing the gate is unsurprising,
+  so the note is suppressed there.
 - **`--output json` now lists failing findings only by default.** The JSON
   `findings` array previously included every passing check too (~100 per
   file), bloating the report ~50x. It now defaults to failures-only,
