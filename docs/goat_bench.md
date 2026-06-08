@@ -16,13 +16,13 @@ workflow](https://github.com/dmartinochoa/pipeline-check/actions/workflows/goat-
 
 | Goat | Recall | Findings | Coverage |
 |---|---|---|---|
-| [`cicd-goat`](https://github.com/cider-security-research/cicd-goat) | **9 / 9 (100%)** | 28 | GHA release workflow + 7 Jenkinsfiles |
+| [`cicd-goat`](https://github.com/cider-security-research/cicd-goat) | **9 / 9 (100%)** | 30 | GHA release workflow + 7 Jenkinsfiles |
 | [`cicd-goat-comparison`](https://github.com/greylag-ci/cicd-goat) | **27 / 27 (100%)** | - | GHA + npm slice of the 120-scenario cross-scanner matrix (pipeline-check leads) |
-| [`cfngoat`](https://github.com/bridgecrewio/cfngoat) | **6 / 6 (100%)** | 7 | `cfngoat.yaml` (IAM, KMS, Lambda, CloudTrail) |
+| [`cfngoat`](https://github.com/bridgecrewio/cfngoat) | **5 / 5 (100%)** | 6 | `cfngoat.yaml` (IAM, KMS, Lambda, CloudTrail) |
 | [`kubernetes-goat`](https://github.com/madhuakula/kubernetes-goat) | **27 / 27 (100%)** | 27 | `scenarios/` manifest tree |
 | [`terragoat`](https://github.com/bridgecrewio/terragoat) | pending curation | - | Direct-HCL parsing shipped; `expected.txt` awaiting population |
 
-**42 check IDs locked across the three fully curated goats.** Any rule
+**41 check IDs locked across the three fully curated goats.** Any rule
 change that stops one from firing on its goat trips the bench in
 CI. The `cicd-goat-comparison` goat gates the GHA + npm slice with 27
 unique curated check IDs; upstream that testbed has since grown into a
@@ -148,7 +148,6 @@ Every fire maps to a misconfiguration on `cfngoat.yaml`:
 | `CF-001`  | `AWS::IAM::AccessKey` long-lived static credential as code |
 | `CT-001`  | Stack deploys AWS resources with no `AWS::CloudTrail::Trail` (CIS AWS 3.1) |
 | `KMS-001` | `KMS::Key.LogsKey` rotation disabled (CIS AWS 3.8) |
-| `KMS-002` | `KMS::Key.LogsKey` policy grants wildcard `kms:*` (CIS AWS 1.16) |
 | `LMB-001` | AnalysisLambda + CleanBucketFunction lack `CodeSigningConfigArn` (CIS SSC 2.4.2) |
 | `LMB-003` | AnalysisLambda env vars carry plaintext secret-shaped values (CIS AWS 3.7) |
 

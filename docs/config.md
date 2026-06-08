@@ -4,8 +4,12 @@ The common CLI flags can be set in a config file so CI invocations
 stay short and repo policy lives alongside the code. Both TOML
 (inside `pyproject.toml`) and YAML (`.pipeline-check.yml`) are
 supported. The supported keys are the allowlist `_TOPLEVEL_KEYS` /
-`_GATE_KEYS` in `pipeline_check/core/config.py`; provider-specific
-path flags and many of the newer flags are CLI-only.
+`_GATE_KEYS` in `pipeline_check/core/config.py`, which is the source of
+truth: every provider path flag (`gha_path`, `gitlab_path`, `npm_path`,
+…) plus `min_confidence`, `custom_rules`, `rego_rules`, `detect_entropy`,
+and `resolve_remote` are all config-settable. The examples below show a
+representative subset; the run-mode flags (`--fix`, `--ingest`,
+`--verify-secrets`, the `--chains-require-*` gates, …) stay CLI-only.
 
 ## Precedence
 
@@ -41,8 +45,13 @@ region = "eu-west-1"
 profile = "prod"
 standards = ["owasp_cicd_top_10", "nist_ssdf"]
 severity_threshold = "MEDIUM"
+min_confidence = "MEDIUM"          # drop LOW-confidence findings from the gate
 output = "sarif"
 output_file = "pipeline-check.sarif"
+
+# Load org-specific rules alongside the built-in catalog.
+custom_rules = ["policies/internal-rules.yml"]
+rego_rules = ["policies/forbidden-runner.rego"]
 
 # Provider-specific paths (auto-detected if omitted and a canonical
 # file exists at cwd).

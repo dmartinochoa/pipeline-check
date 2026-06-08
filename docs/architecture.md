@@ -47,6 +47,14 @@ flags, validates them, and passes a kwarg dict to the scanner.
 `pipeline_check/lambda_handler.py` is the AWS Lambda equivalent. It
 calls into the same scanner.
 
+Three more entry points wrap the same core: `pipeline_check/mcp_server/`
+is the Model Context Protocol server (`--serve`) that exposes the rule
+catalog and scans as MCP tools; `pipeline_check/lsp/` is the Language
+Server (`python -m pipeline_check.lsp`) that backs the VS Code
+extension; and `core/provenance.py` powers the `verify-artifact`
+subcommand, which shells out to cosign / slsa-verifier / `gh attestation`
+to turn the static "you should sign" findings into a runtime pass/fail.
+
 ### Middle: Scanner, scorer, gate, reporters
 
 `core/scanner.py` is provider-agnostic. It looks up the named provider

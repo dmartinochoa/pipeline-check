@@ -168,6 +168,12 @@ pipeline_check --pipeline scm --scm-platform github \
 # $GITHUB_TOKEN.
 pipeline_check --pipeline runs --scm-repo owner/name \
     --gh-token "$GITHUB_TOKEN"
+
+# Heavier pass: also download recent privileged-trigger run logs
+# and scan them for leaked secrets (RUN-003). One download per run,
+# needs the actions:read scope.
+pipeline_check --pipeline runs --scm-repo owner/name \
+    --gh-token "$GITHUB_TOKEN" --audit-runs-logs
 ```
 
 Full per-provider reference: [providers/](providers/README.md).

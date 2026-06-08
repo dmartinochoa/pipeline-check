@@ -57,7 +57,7 @@ Shape:
 ```json
 {
   "schema_version": "1.1",
-  "tool_version": "1.0.4",
+  "tool_version": "1.12.0",
   "score": {"grade": "B", "summary": {...}, "score": 82},
   "findings": [
     {
@@ -151,12 +151,16 @@ pipeline_check --pipeline github --gha-path .github/workflows \
     programmatic consumers.
 - Locations:
   - File-path resources (YAML paths) become `artifactLocation.uri`.
-  - For file-based findings, a best-effort `physicalLocation.region.startLine`
-    is emitted, per-check regexes grep the source for the signature line
-    so GitHub PR annotations land on the offending line, not just the file
-    header. Supported today: `GHA-001/002/003/008`, `GL-001/008`,
-    `BB-001/008`, `ADO-001/005/008`. When no pattern matches, the region
-    is omitted (GitHub falls back to file-level).
+  - For file-based findings, `physicalLocation.region` (`startLine`, and
+    `endLine` / `startColumn` / `endColumn` when known) is emitted from each
+    rule's structured `Finding.locations`, so GitHub PR annotations land on
+    the offending line, not just the file header. This is the primary path
+    and covers the providers that carry structured locations (the YAML CI
+    providers, Kubernetes, Tekton, Argo, and the rest of the retrofitted
+    pack). For findings with no structured location (AWS / Terraform /
+    CloudFormation and rules not yet retrofitted), a legacy best-effort
+    fallback regex-greps the source for the signature line. When neither
+    yields a line, the region is omitted (GitHub falls back to file-level).
   - AWS resource names (bucket names, project names) become
     `resource:///<name>` opaque URIs.
   - Both always carry a `logicalLocations` entry with the raw handle.

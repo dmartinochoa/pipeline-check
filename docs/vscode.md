@@ -252,6 +252,6 @@ the output channel for the request/response timing.
 
 - [usage.md](usage.md): CLI reference
 - [mcp.md](mcp.md): MCP server (`--serve`) for AI-client integration
-- [config.md](config.md): the `pipelinecheck.yml` config file (the
+- [config.md](config.md): the `.pipeline-check.yml` config file (the
   LSP server reads it too, so workspace-level ignores carry over)
 - [providers/](providers/README.md): per-provider check reference
