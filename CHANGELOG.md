@@ -12,6 +12,19 @@ release commit collapses this section into `## [X.Y.Z] - <date>`.
 
 ### Added
 
+- **GHA-123: Agentic CLI output lands without human review.** The
+  flow-control leg of the AI/LLM-pipeline pack. Fires when one job both
+  invokes an agentic coding CLI (claude / gemini / cursor-agent / aider /
+  openhands / goose / `q chat`) and, in the same job, lands the result
+  with no review gate: `stefanzweifel/git-auto-commit-action`,
+  `ad-m/github-push-action`, `peter-evans/enable-pull-request-automerge`,
+  or `gh pr merge` with `--auto` / `--admin` / `--merge` / `--squash` /
+  `--rebase`. AI-authored changes then reach a branch (or merge) with no
+  human reviewing the diff, and if the agent's prompt is influenced by
+  untrusted input that is prompt-injection straight to committed code.
+  Does not fire when the agent only opens a PR for review (a bare
+  `create-pull-request`), nor on an auto-commit job that runs no agent.
+  HIGH.
 - **GHA-122: Unsafe deserialization of a fetched artifact (pickle RCE).**
   The deserialization leg of the AI/LLM-pipeline pack. Loading a model /
   artifact through a pickle-backed deserializer executes arbitrary Python

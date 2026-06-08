@@ -492,6 +492,7 @@ STANDARD = Standard(
         # GV.SC-04 + GV.SC-07; logs → PR.PS-04 + DE.CM-09.
         # ── GitHub Actions ───────────────────────────────────────
         "GHA-014":  ["PR.PS-06"],               # deploy job missing environment
+        "GHA-123":  ["PR.PS-06"],               # agentic CLI output lands without review
         "GHA-030":  ["PR.AA-05"],               # OIDC w/o env-protected job
         "GHA-031":  ["PR.PS-05"],               # retired set-output / save-state
         "GHA-032":  ["PR.PS-05"],               # local script on untrusted trigger

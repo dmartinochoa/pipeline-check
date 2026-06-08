@@ -72,7 +72,7 @@ Resolution rules:
 
 ## What it covers
 
-113 checks · 17 have an autofix patch (``--fix``).
+114 checks · 17 have an autofix patch (``--fix``).
 
 | Check | Title | Severity | Fix |
 |-------|-------|----------|-----|
@@ -185,6 +185,7 @@ Resolution rules:
 | [GHA-120](#gha-120) | ML model loaded with trust_remote_code (code execution) | <span class="pg-sev pg-sev--high">HIGH</span> |  |
 | [GHA-121](#gha-121) | AI model pulled without a pinned revision | <span class="pg-sev pg-sev--medium">MEDIUM</span> |  |
 | [GHA-122](#gha-122) | Unsafe deserialization of a fetched artifact (pickle RCE) | <span class="pg-sev pg-sev--high">HIGH</span> |  |
+| [GHA-123](#gha-123) | Agentic CLI output lands without human review | <span class="pg-sev pg-sev--high">HIGH</span> |  |
 | [TAINT-001](#taint-001) | Untrusted input flows across step boundaries via step outputs | <span class="pg-sev pg-sev--high">HIGH</span> |  |
 | [TAINT-002](#taint-002) | Untrusted input flows across jobs via ``jobs.<id>.outputs:`` | <span class="pg-sev pg-sev--high">HIGH</span> |  |
 | [TAINT-003](#taint-003) | Untrusted input forwarded into reusable workflow ``with:`` | <span class="pg-sev pg-sev--high">HIGH</span> |  |
@@ -3287,6 +3288,32 @@ Does NOT fire when the step takes the safe path (``weights_only=True``, or safet
 **Recommended action**
 
 Don't deserialize a downloaded artifact through pickle. Load weights with safetensors, or pass ``weights_only=True`` to ``torch.load`` (the PyTorch 2.6+ default) so only tensors, not arbitrary Python, are unpickled. Drop ``allow_pickle=True`` from ``numpy.load``. If a pickle / joblib artifact is unavoidable, pin and verify its source (a pinned model revision, a checksum, or a signature) and load it in a sandboxed job with no production secrets, not on the default runner with the workflow token in scope.
+
+</div>
+
+</div>
+
+<div class="pg-rule pg-rule--high" markdown>
+
+## GHA-123: Agentic CLI output lands without human review { #gha-123 }
+
+<div class="pg-rule__tags">
+<span class="pg-sev pg-sev--high">HIGH</span> <span class="pg-tag pg-tag--owasp">CICD-SEC-1</span> <span class="pg-tag pg-tag--cwe">CWE-94</span> <span class="pg-tag pg-tag--cwe">CWE-693</span>
+</div>
+
+Fires when one job both invokes an agentic CLI (``claude`` / ``gemini`` / ``cursor-agent`` / ``aider`` / ``openhands`` / ``goose`` / ``q chat``) and, in the same job, lands the result with no review gate. The landing step is one of: ``uses: stefanzweifel/git-auto-commit-action``, ``uses: ad-m/github-push-action``, ``uses: peter-evans/enable-pull-request-automerge``, or a ``run:`` step with ``gh pr merge`` plus ``--auto`` / ``--admin`` / ``--merge`` / ``--squash`` / ``--rebase``.
+
+Does NOT fire when the agent only opens a pull request for review (a bare ``peter-evans/create-pull-request`` with no auto-merge), nor on an auto-commit / auto-merge job that does not run an agent (ordinary formatting / generated-file bots). The agent-plus-auto-land coupling is the signal.
+
+**Known false-positive modes**
+
+- A job that runs an agent for a read-only task (triage, labeling) but also auto-commits an unrelated generated file would match by co-location. Split the agent and the auto-commit into separate jobs, or suppress on the job with a rationale noting the agent does not write the committed paths.
+
+<div class="pg-rule__rec" markdown>
+
+**Recommended action**
+
+Don't let an agentic CLI's output reach a branch or a merge without a human review gate. Have the agent open a normal pull request (no auto-merge) so a person reviews the diff before it lands; drop ``peter-evans/enable-pull-request-automerge`` and ``gh pr merge --auto`` from the agent's job, and don't pair the agent with ``git-auto-commit-action`` / ``github-push-action`` that push straight to a branch. If the agent's prompt can be influenced by untrusted input (a PR body, an issue comment, a fetched page), treat the committed result as attacker-controlled.
 
 </div>
 

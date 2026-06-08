@@ -161,6 +161,7 @@ STANDARD = Standard(
         "GHA-105":  ["CICD-SEC-4", "CICD-SEC-7"],        # self-hosted runner on PR trigger
         "GHA-013":  ["CICD-SEC-4"],
         "GHA-014":  ["CICD-SEC-1"],
+        "GHA-123":  ["CICD-SEC-1"],# agentic CLI output lands without review
         "GHA-015":  ["CICD-SEC-7"],
         "GHA-016":  ["CICD-SEC-3"],
         "GHA-017":  ["CICD-SEC-7"],

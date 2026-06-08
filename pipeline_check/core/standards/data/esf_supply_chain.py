@@ -125,6 +125,7 @@ STANDARD = Standard(
         "GHA-105":  ["ESF-D-BUILD-ENV", "ESF-D-PRIV-BUILD"],
         "GHA-013":  ["ESF-D-INJECTION"],
         "GHA-014":  ["ESF-C-APPROVAL", "ESF-C-ENV-SEP"],
+        "GHA-123":  ["ESF-C-APPROVAL"],# agentic CLI output lands without review
         "GHA-015":  ["ESF-D-BUILD-TIMEOUT"],
         "GHA-016":  ["ESF-S-VERIFY-DEPS"],
         "GHA-017":  ["ESF-D-BUILD-ENV"],
