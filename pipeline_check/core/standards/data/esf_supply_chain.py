@@ -606,6 +606,7 @@ STANDARD = Standard(
         "JF-033":   ["ESF-D-SECRETS"],              # withCredentials leaked via Groovy ${}
         "JF-034":   ["ESF-D-SECRETS"],              # password() build parameter
         "JF-035":   ["ESF-S-TRUSTED-REG"],          # httpRequest SSL off
+        "JF-036":   ["ESF-D-INJECTION"],            # sh body interpolates params.*
         # ── Buildkite + Tekton + Argo extras ─────────────────────
         "BK-014":   ["ESF-S-PIN-DEPS", "ESF-S-VERIFY-DEPS"],   # unpinned package install
         "BK-015":   ["ESF-D-INJECTION"],            # agents map untrusted interpolation

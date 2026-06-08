@@ -378,6 +378,7 @@ STANDARD = Standard(
         "JF-033":   ["CICD-SEC-6"],   # withCredentials leaked via Groovy ${} in sh
         "JF-034":   ["CICD-SEC-6"],   # password() build parameter declared
         "JF-035":   ["CICD-SEC-3"],   # httpRequest ignoreSslErrors: true
+        "JF-036":   ["CICD-SEC-4"],   # sh body interpolates params.* (injection)
         # CircleCI
         "CC-001":   ["CICD-SEC-3", "CICD-SEC-8"],
         "CC-033": ["CICD-SEC-3", "CICD-SEC-5"],  # CI env disables Go module verification

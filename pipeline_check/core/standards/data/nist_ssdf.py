@@ -439,6 +439,7 @@ STANDARD = Standard(
         "JF-033":   ["PS.1.1"],                        # withCredentials leaked via Groovy ${}
         "JF-034":   ["PS.1.1"],                        # password() build parameter
         "JF-035":   ["PW.4.4"],                        # httpRequest SSL off
+        "JF-036":   ["PW.6.1", "PW.9.1"],              # sh body interpolates params.*
         # ── Drone CI ────────────────────────────────────────────
         "DR-001":   ["PW.4.1", "PW.4.4"],              # step image not digest-pinned
         "DR-002":   ["PO.5.1", "PW.9.1"],              # privileged step
