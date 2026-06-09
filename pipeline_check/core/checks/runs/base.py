@@ -60,6 +60,45 @@ _OIDC_MARKERS_RE = re.compile(
     r"|workloadIdentityPools",
 )
 
+#: GitHub's "Set up job" step prints one line per resolved action,
+#: ``Download action repository 'owner/repo@ref' (SHA:<resolved-commit>)``.
+#: The line carries both the ref the workflow pinned *and* the commit it
+#: actually resolved to, so it is the runtime record that catches a
+#: tag-repoint (the workflow says ``@v44`` but the tag now points at a
+#: malicious SHA). The optional sub-path (``owner/repo/path@ref``) and a
+#: leading log timestamp are tolerated.
+_ACTION_DOWNLOAD_RE = re.compile(
+    r"Download action repository '"
+    r"([^/'@\s]+)/([^/'@\s]+)(?:/[^'@\s]*)?@([^'\s]+)'"
+    r"(?:\s*\(SHA:\s*([0-9a-fA-F]+)\))?",
+)
+
+
+def _scan_compromised_actions(text: str) -> dict[str, str]:
+    """Return ``{label: advisory}`` for known-compromised actions whose
+    download line appears in *text*, or an empty dict.
+
+    Each ``Download action repository`` line is matched against the
+    curated GHA-040 IOC registry on both the pinned ref and the resolved
+    commit SHA: a workflow pinned to ``@v44`` still trips the rule when
+    the log shows ``v44`` resolved to the registry's malicious commit
+    (the tag-repoint case). ``lookup`` is imported lazily so a
+    metadata-only scan never pays for the GitHub rule package import.
+    """
+    from ..github._compromised_actions import lookup
+    out: dict[str, str] = {}
+    for m in _ACTION_DOWNLOAD_RE.finditer(text):
+        owner, repo, ref, sha = m.group(1), m.group(2), m.group(3), m.group(4)
+        entry = lookup(owner, repo, ref)
+        if entry is None and sha:
+            entry = lookup(owner, repo, sha)
+        if entry is not None:
+            label = f"{owner}/{repo}@{ref}"
+            if sha and sha.lower() != ref.lower():
+                label += f" (resolved SHA {sha[:12]})"
+            out[label] = entry.advisory
+    return out
+
 
 def _str(value: Any) -> str:
     return value if isinstance(value, str) else ""
@@ -118,6 +157,10 @@ class RunsContext:
     #: run_id -> the self-hosted runner's joined labels, for fork runs that
     #: executed on a self-hosted runner (only populated when ``scan_logs=True``).
     self_hosted_runs: dict[int, str] = field(default_factory=dict)
+    #: run_id -> {``owner/repo@ref`` label: advisory} for runs whose logs show
+    #: a known-compromised action (the GHA-040 IOC registry) actually
+    #: executed (only populated when ``scan_logs=True``); RUN-006 reports it.
+    compromised_action_runs: dict[int, dict[str, str]] = field(default_factory=dict)
     #: True once deep auditing (logs + job metadata) was requested + attempted,
     #: so RUN-003 / RUN-004 / RUN-005 can tell "nothing found" from "never run".
     logs_scanned: bool = False
@@ -201,11 +244,13 @@ class RunsContext:
             )
             if not raw:
                 continue
-            leaks, oidc_minted = _scan_log_zip(raw)
+            leaks, oidc_minted, compromised = _scan_log_zip(raw)
             if leaks:
                 self.log_leaks[run.run_id] = leaks
             if oidc_minted:
                 self.oidc_mint_runs.add(run.run_id)
+            if compromised:
+                self.compromised_action_runs[run.run_id] = compromised
 
     def _scan_jobs(self, fetcher: Any, fetch_limit: int) -> None:
         """Fetch job metadata for fork runs to flag self-hosted-runner use.
@@ -296,27 +341,34 @@ def _self_hosted_labels(raw: Any) -> str:
     return ""
 
 
-def _scan_log_zip(raw: bytes) -> tuple[list[str], bool]:
-    """Scan a run-logs ZIP for secret-shaped strings and OIDC-mint markers.
+def _scan_log_zip(raw: bytes) -> tuple[list[str], bool, dict[str, str]]:
+    """Scan a run-logs ZIP for secret-shaped strings, OIDC-mint markers,
+    and known-compromised action executions.
 
     GitHub masks registered secrets in logs, so a secret hit is one that
     leaked *past* masking (a credential a tool printed, a value never
     registered as a secret, a base64/transformed token) -- exactly the
     high-signal case. The OIDC pass flags that the run exercised cloud
-    OIDC token minting (the fork subset is RUN-004). Both run on the same
-    single decompress pass. Bounded per-file and in total against a
-    pathological archive; ``find_secret_values`` is imported lazily so a
-    metadata-only scan never pays for the detector catalog.
+    OIDC token minting (the fork subset is RUN-004). The compromised-action
+    pass matches each ``Download action repository`` line against the
+    GHA-040 IOC registry (the runtime confirmation behind RUN-006). All
+    three run on the same single decompress pass. Bounded per-file and in
+    total against a pathological archive; ``find_secret_values`` is
+    imported lazily so a metadata-only scan never pays for the detector
+    catalog.
 
-    Returns ``(sorted_secret_labels, oidc_minted)``.
+    Returns ``(sorted_secret_labels, oidc_minted, compromised_actions)``,
+    where ``compromised_actions`` maps each offending ``owner/repo@ref``
+    label to its advisory.
     """
     from .._secrets import find_secret_values
     try:
         archive = zipfile.ZipFile(io.BytesIO(raw))
     except (zipfile.BadZipFile, OSError, EOFError):
-        return [], False
+        return [], False, {}
     leaks: set[str] = set()
     oidc_minted = False
+    compromised: dict[str, str] = {}
     consumed = 0
     with archive:
         for info in archive.infolist():
@@ -332,7 +384,8 @@ def _scan_log_zip(raw: bytes) -> tuple[list[str], bool]:
             leaks.update(find_secret_values([text]))
             if not oidc_minted and _OIDC_MARKERS_RE.search(text):
                 oidc_minted = True
-    return sorted(leaks), oidc_minted
+            compromised.update(_scan_compromised_actions(text))
+    return sorted(leaks), oidc_minted, compromised
 
 
 def run_resource(ctx: RunsContext, run: RunRecord) -> str:

@@ -403,3 +403,76 @@ class TestRun005SelfHostedForkRun:
         assert ctx.self_hosted_runs == {}
         run005 = _for(_findings(ctx), "RUN-005")
         assert run005 and all(f.passed for f in run005)
+
+
+# ── RUN-006: known-compromised action executed (--audit-runs-logs) ───────────
+
+# The tj-actions/changed-files tag-repoint: the workflow pinned ``@v44`` but
+# the run log shows v44 resolved to the registry's malicious commit SHA.
+_TAG_REPOINT_LOG = (
+    "Download action repository 'actions/checkout@v4' "
+    "(SHA:b4ffde65f46336ab88eb53be808477a3936bae11)\n"
+    "Download action repository 'tj-actions/changed-files@v44' "
+    "(SHA:0e58ed8671d6b60d0890c21b07f8835ace038e67)\n"
+)
+
+
+class TestRun006CompromisedActionExecuted:
+    def _ctx_with_log(self, run: dict, log_text: str) -> RunsContext:
+        payload = {"total_count": 1, "workflow_runs": [run]}
+        blobs = {f"repos/owner/r/actions/runs/{run['id']}/logs": _log_zip(log_text)}
+        return RunsContext.for_repo(
+            "owner", "r", FakeFetcher({_RUNS_PATH: payload}, blobs),
+            scan_logs=True,
+        )
+
+    def test_passes_with_skip_note_when_logs_not_scanned(self):
+        ctx = _ctx(_run(1, "pull_request_target"))
+        assert ctx.logs_scanned is False
+        run006 = _for(_findings(ctx), "RUN-006")
+        assert run006 and all(f.passed for f in run006)
+        assert "not enabled" in run006[0].description
+
+    def test_fires_on_tag_repoint_resolved_sha(self):
+        run = _run(1, "pull_request_target")
+        ctx = self._ctx_with_log(run, _TAG_REPOINT_LOG)
+        assert 1 in ctx.compromised_action_runs
+        failing = [f for f in _for(_findings(ctx), "RUN-006") if not f.passed]
+        assert len(failing) == 1
+        f = failing[0]
+        assert f.severity == Severity.CRITICAL
+        assert "#run/1" in f.resource
+        assert "tj-actions/changed-files@v44" in f.description
+        assert "CVE-2025-30066" in f.description  # advisory carried through
+
+    def test_fires_on_compromised_version_via_pattern(self):
+        # aquasecurity/trivy-action matches the registry ref_pattern, so a
+        # plain tag pin (no resolved SHA) still trips the rule.
+        run = _run(1, "workflow_run")
+        log = "Download action repository 'aquasecurity/trivy-action@0.30.0'\n"
+        ctx = self._ctx_with_log(run, log)
+        assert 1 in ctx.compromised_action_runs
+        failing = [f for f in _for(_findings(ctx), "RUN-006") if not f.passed]
+        assert len(failing) == 1
+
+    def test_passes_on_clean_action_download(self):
+        run = _run(1, "pull_request_target")
+        log = (
+            "Download action repository 'actions/checkout@v4' "
+            "(SHA:b4ffde65f46336ab88eb53be808477a3936bae11)\n"
+        )
+        ctx = self._ctx_with_log(run, log)
+        assert ctx.compromised_action_runs == {}
+        run006 = _for(_findings(ctx), "RUN-006")
+        assert run006 and all(f.passed for f in run006)
+        assert "No known-compromised action" in run006[0].description
+
+    def test_does_not_fire_when_clean_tag_resolves_clean_sha(self):
+        # A safe tj-actions ref (post-incident clean SHA) must not match.
+        run = _run(1, "pull_request_target")
+        log = (
+            "Download action repository 'tj-actions/changed-files@v46.0.1' "
+            "(SHA:1111111111111111111111111111111111111111)\n"
+        )
+        ctx = self._ctx_with_log(run, log)
+        assert ctx.compromised_action_runs == {}
