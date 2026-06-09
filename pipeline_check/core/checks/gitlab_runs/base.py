@@ -28,6 +28,11 @@ from ..base import BaseCheck
 #: 100; one page is ample forensic signal without paginating all history.
 DEFAULT_PIPELINE_LIMIT = 100
 
+#: Fork-origin resolution (the deep pass, GLRUN-002) fetches one
+#: ``/merge_requests/:iid/pipelines`` page per fork merge request, so it is
+#: bounded to this many fork MRs.
+DEFAULT_MR_FETCH_LIMIT = 25
+
 _TIMEOUT = 10.0
 _MAX_RESPONSE_BYTES = 10 * 1024 * 1024
 
@@ -116,6 +121,15 @@ class GitLabRunsContext:
     warnings: list[str] = field(default_factory=list)
     files_scanned: int = 0   # repurposed: number of pipelines audited
     files_skipped: int = 0
+    #: Pipelines confirmed to belong to a *fork* merge request (the MR's
+    #: source project differs from the target project), so untrusted fork
+    #: code executed in this project's CI. Only populated when fork
+    #: resolution was requested (the deep pass behind ``--audit-runs-logs``);
+    #: GLRUN-002 reports it.
+    fork_pipelines: list[GitLabPipelineRecord] = field(default_factory=list)
+    #: True once the fork-resolution pass ran, so GLRUN-002 can tell
+    #: "no fork pipelines" from "never resolved".
+    forks_resolved: bool = False
 
     @property
     def slug(self) -> str:
@@ -127,6 +141,9 @@ class GitLabRunsContext:
         project: str,
         fetcher: GitLabFetcher,
         limit: int = DEFAULT_PIPELINE_LIMIT,
+        *,
+        resolve_forks: bool = False,
+        mr_fetch_limit: int = DEFAULT_MR_FETCH_LIMIT,
     ) -> GitLabRunsContext:
         ctx = cls(project=project)
         per_page = max(1, min(limit, 100))
@@ -144,7 +161,62 @@ class GitLabRunsContext:
             if rec is not None:
                 ctx.pipelines.append(rec)
         ctx.files_scanned = len(ctx.pipelines)
+        if resolve_forks:
+            ctx.forks_resolved = True
+            ctx._resolve_forks(fetcher, encoded, mr_fetch_limit)
         return ctx
+
+    def _resolve_forks(
+        self, fetcher: GitLabFetcher, encoded: str, fetch_limit: int,
+    ) -> None:
+        """Find pipelines that ran for a *fork* merge request.
+
+        GitLab's pipeline list doesn't carry the source/target project, so
+        fork-origin is resolved via the MR API: list recent merge requests,
+        keep the ones whose ``source_project_id`` differs from the
+        ``target_project_id`` (a fork), then pull each such MR's pipelines
+        (``/merge_requests/:iid/pipelines``). Those pipelines executed
+        untrusted fork code in this project's CI. Bounded to *fetch_limit*
+        fork MRs; a 404 / network error degrades to a skip.
+        """
+        raw = fetcher.fetch(
+            f"projects/{encoded}/merge_requests"
+            f"?per_page=100&order_by=updated_at&scope=all"
+        )
+        if not isinstance(raw, list):
+            return
+        fork_iids: list[int] = []
+        for mr in raw:
+            if not isinstance(mr, dict):
+                continue
+            src, tgt, iid = (
+                mr.get("source_project_id"),
+                mr.get("target_project_id"),
+                mr.get("iid"),
+            )
+            if (
+                isinstance(src, int) and isinstance(tgt, int)
+                and isinstance(iid, int) and src != tgt
+            ):
+                fork_iids.append(iid)
+        seen: set[int] = set()
+        for iid in fork_iids[:fetch_limit]:
+            praw = fetcher.fetch(
+                f"projects/{encoded}/merge_requests/{iid}/pipelines"
+            )
+            if not isinstance(praw, list):
+                continue
+            for entry in praw:
+                rec = _to_record(entry)
+                if rec is not None and rec.pipeline_id not in seen:
+                    seen.add(rec.pipeline_id)
+                    self.fork_pipelines.append(rec)
+        if len(fork_iids) > fetch_limit:
+            self.warnings.append(
+                f"[gitlab-runs] {self.project}: resolved the {fetch_limit} "
+                f"most recent fork merge request(s) of {len(fork_iids)}; "
+                "older fork MRs were not fetched."
+            )
 
 
 def _to_record(entry: Any) -> GitLabPipelineRecord | None:

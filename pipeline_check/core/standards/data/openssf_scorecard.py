@@ -227,6 +227,7 @@ STANDARD = Standard(
         "RUN-001":  ["Dangerous-Workflow"],
         "RUN-002":  ["Dangerous-Workflow"],
         "GLRUN-001": ["Dangerous-Workflow"],  # gitlab forensics: merge-request pipeline executed
+        "GLRUN-002": ["Dangerous-Workflow"],  # gitlab forensics: fork merge-request pipeline executed
         "RUN-003":  ["Dangerous-Workflow"],
         "RUN-004":  ["Dangerous-Workflow"],
         "RUN-005":  ["Dangerous-Workflow"],

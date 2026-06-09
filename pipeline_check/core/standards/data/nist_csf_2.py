@@ -338,6 +338,7 @@ STANDARD = Standard(
         "RUN-001":  ["PR.IR-01"],
         "RUN-002":  ["PR.IR-01"],
         "GLRUN-001": ["PR.IR-01"],  # gitlab forensics: merge-request pipeline executed
+        "GLRUN-002": ["PR.IR-01"],  # gitlab forensics: fork merge-request pipeline executed
         "RUN-003":  ["PR.IR-01"],
         "RUN-004":  ["PR.IR-01"],
         "RUN-005":  ["PR.IR-01"],

@@ -129,3 +129,88 @@ class TestProvider:
         from pipeline_check.core.standards.registry import resolve_for_check
         controls = {c.control_id for c in resolve_for_check("GLRUN-001")}
         assert "CICD-SEC-4" in controls
+
+    def test_glrun002_owasp_mapping(self):
+        from pipeline_check.core.standards.registry import resolve_for_check
+        controls = {c.control_id for c in resolve_for_check("GLRUN-002")}
+        assert "CICD-SEC-4" in controls
+
+
+# ── GLRUN-002: fork-origin resolution (deep pass) ─────────────────────────
+
+def _mrs_path() -> str:
+    return (
+        f"projects/{_ENCODED}/merge_requests"
+        f"?per_page=100&order_by=updated_at&scope=all"
+    )
+
+
+def _mr(iid: int, *, fork: bool) -> dict:
+    # A fork MR has a different source than target project.
+    return {
+        "iid": iid, "source_project_id": 99 if fork else 1,
+        "target_project_id": 1,
+    }
+
+
+def _mr_pipelines_path(iid: int) -> str:
+    return f"projects/{_ENCODED}/merge_requests/{iid}/pipelines"
+
+
+def _ctx_forks(pipelines, mrs, mr_pipelines) -> GitLabRunsContext:
+    mapping: dict[str, Any] = {_PIPELINES_PATH: list(pipelines)}
+    mapping[_mrs_path()] = list(mrs)
+    for iid, pls in mr_pipelines.items():
+        mapping[_mr_pipelines_path(iid)] = list(pls)
+    return GitLabRunsContext.for_project(
+        _PROJECT, FakeFetcher(mapping), resolve_forks=True,
+    )
+
+
+class TestGLRun002:
+    def test_skip_note_when_forks_not_resolved(self):
+        ctx = _ctx(_pipeline(1, "merge_request_event"))
+        assert ctx.forks_resolved is False
+        glrun = _for(_findings(ctx), "GLRUN-002")
+        assert glrun and all(f.passed for f in glrun)
+        assert "not enabled" in glrun[0].description
+
+    def test_fires_on_fork_mr_pipeline(self):
+        ctx = _ctx_forks(
+            [_pipeline(1, "merge_request_event")],
+            [_mr(7, fork=True)],
+            {7: [_pipeline(50, "merge_request_event", ref="refs/merge-requests/7/head")]},
+        )
+        assert ctx.forks_resolved is True
+        failing = [f for f in _for(_findings(ctx), "GLRUN-002") if not f.passed]
+        assert len(failing) == 1
+        assert failing[0].severity == Severity.HIGH
+        assert "#pipeline/50" in failing[0].resource
+
+    def test_passes_when_mrs_are_not_forks(self):
+        ctx = _ctx_forks(
+            [_pipeline(1, "merge_request_event")],
+            [_mr(7, fork=False)],
+            {},
+        )
+        glrun = _for(_findings(ctx), "GLRUN-002")
+        assert glrun and all(f.passed for f in glrun)
+        assert "No fork merge-request pipelines" in glrun[0].description
+
+    def test_only_fork_mrs_pull_pipelines(self):
+        ctx = _ctx_forks(
+            [],
+            [_mr(1, fork=False), _mr(2, fork=True)],
+            {2: [_pipeline(60, "merge_request_event")]},
+        )
+        assert len(ctx.fork_pipelines) == 1
+        assert ctx.fork_pipelines[0].pipeline_id == 60
+
+    def test_missing_mr_list_degrades(self):
+        # MR list endpoint returns nothing -> no forks, no crash.
+        mapping = {_PIPELINES_PATH: [_pipeline(1, "merge_request_event")]}
+        ctx = GitLabRunsContext.for_project(
+            _PROJECT, FakeFetcher(mapping), resolve_forks=True,
+        )
+        assert ctx.forks_resolved is True
+        assert ctx.fork_pipelines == []

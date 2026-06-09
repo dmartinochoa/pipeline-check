@@ -25,7 +25,7 @@
 
 Pipeline-Check is a security scanner for GitHub Actions, GitLab CI, Jenkins, CircleCI, Azure DevOps, Bitbucket Pipelines, Buildkite, Drone, Tekton, Argo Workflows, and Google Cloud Build, plus Terraform, CloudFormation, Kubernetes, Helm, Dockerfile, OCI image manifests, and live AWS, Azure, and GCP accounts. It maps every finding to the [OWASP Top 10 CI/CD Security Risks](https://owasp.org/www-project-top-10-ci-cd-security-risks/), SLSA, NIST SSDF, PCI DSS, SOC 2, the CIS GitHub Benchmark, and twelve other frameworks, and scores each scan A through D so you can gate merges on the result.
 
-**1180+ checks** across **36 providers**, mapped to **18 compliance standards**, with **111 autofixers**, plus **55 attack chains** correlating findings into MITRE ATT&CK-mapped kill chains. A dataflow taint engine catches multi-step and cross-job propagation that single-rule scanners miss.
+**1200+ checks** across **36 providers**, mapped to **18 compliance standards**, with **111 autofixers**, plus **55 attack chains** correlating findings into MITRE ATT&CK-mapped kill chains. A dataflow taint engine catches multi-step and cross-job propagation that single-rule scanners miss.
 
 [Quick start](#-quick-start) |
 [Usage guide](docs/usage.md) |
@@ -131,7 +131,7 @@ for inputs, idempotency, and fork-PR fallback behavior.
 | **GitHub Actions** | `.github/workflows/*.yml` | `--gha-path` | 114 checks · `GHA-001..073`, `GHA-086..123` + `TAINT-001..003`/`009` · SHA pinning, script injection, OIDC trusted-publishing abuse, agentic-CLI / IaC-apply RCE, prompt injection, `trust_remote_code` model loads, unpinned model refs, unsafe pickle deserialization, unreviewed AI-generated changes, compromised-action and npm-worm IOCs, `$GITHUB_ENV` poisoning. [Full reference →](docs/providers/github.md) |
 | **Gitea / Forgejo Actions** | `.gitea/` or `.forgejo/workflows/*.yml` | `--gitea-path` | Reuses the full GitHub Actions rule pack; GitHub-only reputation rules pass silently without `--resolve-remote` metadata |
 | **GitHub Actions run forensics** | Live Actions REST API | `--pipeline runs` | 6 checks · `RUN-001..006` · audits run history for what actually executed (fork-originated runs, privileged-trigger runs that fired, and via `--audit-runs-logs` secrets leaked in run logs, fork runs that minted a cloud OIDC token, fork runs that executed on a self-hosted runner, and a known-compromised action confirmed running, incl. tag-repoint) vs. what the static config could do |
-| **GitLab pipeline run forensics** | Live GitLab REST API | `--pipeline gitlab_runs` | 1 check · `GLRUN-001` · audits pipeline history for what actually executed (merge-request pipelines that fired) vs. what the static `.gitlab-ci.yml` could do |
+| **GitLab pipeline run forensics** | Live GitLab REST API | `--pipeline gitlab_runs` | 2 checks · `GLRUN-001..002` · audits pipeline history for what actually executed (merge-request pipelines that fired, and via `--audit-runs-logs` fork merge-request pipelines that ran untrusted code) vs. what the static `.gitlab-ci.yml` could do |
 | **GitLab CI** | `.gitlab-ci.yml` | `--gitlab-path` | 51 checks · `GL-001..049` + `TAINT-004`/`008` · `CI_JOB_TOKEN` cross-project scope, DinD TLS bypass, debug-trace secret leaks, MR-pipeline IaC apply + prod deploy, disabled native scanners, `trust_remote_code` + unpinned + pickle model loads, agentic-CLI prompt injection + autoland, mutable `include: component:` |
 | **Bitbucket Pipelines** | `bitbucket-pipelines.yml` | `--bitbucket-path` | 39 checks · `BB-001..039` · PR-pipeline IaC apply + prod deploy, `trust_remote_code` model loads, untrusted PR context into an agentic AI CLI, unsafe pickle deserialization, unpinned model pulls, agentic-CLI output pushed without review |
 | **Azure DevOps** | `azure-pipelines.yml` | `--azure-path` | 38 checks · `ADO-001..038` · incl. IaC apply on a PR-validated pipeline, `trust_remote_code` model loads, untrusted PR context into an agentic AI CLI, unsafe pickle deserialization, unpinned model pulls, agentic-CLI output pushed without review |
@@ -178,7 +178,7 @@ for the full per-check reference.
 
 ```
                  +-----------+
-  Config files   |  Scanner  |   1180+ checks across 36 providers
+  Config files   |  Scanner  |   1200+ checks across 36 providers
   or live APIs ---->         +---> Findings (check_id, severity, resource)
                  +-----------+
                        |
@@ -532,7 +532,7 @@ pipeline_check/
         ├── pulumi/rules/      # PULUMI-001 .. PULUMI-014 — Pulumi.yaml + stack config + project source IaC static analysis (plaintext secrets, wildcard IAM, public resources, unpinned plugins, deploy-time exec)
         ├── github/rules/      # GHA-001 .. GHA-073, GHA-086..123 + TAINT-001..003, TAINT-009
         ├── runs/rules/        # RUN-001 .. RUN-006 — GitHub Actions run-history forensics via the live Actions REST API (fork-originated runs, privileged-trigger runs that fired, secrets leaked in run logs, fork runs that minted a cloud OIDC token, fork runs on a self-hosted runner, known-compromised action confirmed executing)
-        ├── gitlab_runs/rules/ # GLRUN-001 — GitLab pipeline run-history forensics via the live GitLab REST API (merge-request pipelines that fired)
+        ├── gitlab_runs/rules/ # GLRUN-001 .. GLRUN-002 — GitLab pipeline run-history forensics via the live GitLab REST API (merge-request pipelines that fired, fork-MR pipelines that ran untrusted code)
         ├── gitlab/rules/      # GL-001 .. GL-049 + TAINT-004 / TAINT-008
         ├── bitbucket/rules/   # BB-001 .. BB-039
         ├── azure/rules/       # ADO-001 .. ADO-038
