@@ -1961,26 +1961,27 @@ analogue in other providers:
         """\
 # Modelfile provider
 
-Parses Ollama `Modelfile` declarations on disk, text-only static
-analysis, no model pull, no Ollama daemon. A Modelfile is the
-declarative recipe that pins a model into the local registry, so this
-provider is the "Dockerfile of models": the MODEL-* rules reason over
-the `FROM` base model and `ADAPTER` LoRA references a Modelfile
-declares. It is the static, declaration-side complement to the
-CI-script AI rules (GHA-120/121/122, GL-045..049) that catch model
-pulls in build scripts.
+Parses model declarations on disk, text-only static analysis, no model
+pull, no Ollama daemon. Two formats: Ollama `Modelfile` recipes (the
+declarative file that pins a model into the local registry, so this
+provider is the "Dockerfile of models") and vendored Hugging Face
+`config.json` model configs. The MODEL-* rules reason over the `FROM`
+base model / `ADAPTER` references a Modelfile declares and the custom
+code a model config wires in. It is the static, declaration-side
+complement to the CI-script AI rules (GHA-120/121/122, GL-045..049) that
+catch model pulls in build scripts.
 
 ## Producer workflow
 
 ```bash
-# Defaults to scanning the working tree for a Modelfile.
+# Defaults to scanning the working tree for a Modelfile / config.json.
 pipeline_check --pipeline modelfile
 
 # …or pass it explicitly.
 pipeline_check --pipeline modelfile --modelfile-path models/chat.Modelfile
 
 # Recursively scan a directory. The loader matches Modelfile,
-# *.Modelfile, and Modelfile.<suffix> by default.
+# *.Modelfile, Modelfile.<suffix>, and HF model config.json by default.
 pipeline_check --pipeline modelfile --modelfile-path models/
 ```
 
@@ -2002,6 +2003,10 @@ The MODEL-* pack covers the model supply chain a Modelfile declares:
 - **MODEL-004**, an `ADAPTER` LoRA pulled from a remote source can
   re-steer the model's behavior and deserves the same pin-and-verify
   treatment as the base model.
+- **MODEL-005**, a vendored HF `config.json` whose `auto_map` wires the
+  transformers auto-classes to the model repo's own Python, which runs
+  under `trust_remote_code=True`. The model-side complement of GHA-120 /
+  GL-045 (which flag the `trust_remote_code` load in CI scripts).
 """,
     ),
     "azure_cloud": (

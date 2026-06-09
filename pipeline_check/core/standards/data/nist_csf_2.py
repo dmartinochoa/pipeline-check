@@ -446,6 +446,7 @@ STANDARD = Standard(
         "MODEL-002": ["GV.SC-05"],              # third-party hub base model
         "MODEL-003": ["GV.SC-05"],              # local unverified weights blob
         "MODEL-004": ["GV.SC-05"],              # remote LoRA adapter
+        "MODEL-005": ["GV.SC-05"],              # config auto_map = custom loader code
         "DF-031": ["GV.SC-05"],                 # COPY --from external image not digest-pinned
         "DF-002": ["PR.PS-01"],                 # runs as root
         "DF-003": ["GV.SC-05", "PR.DS-02"],     # ADD remote no integrity

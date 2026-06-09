@@ -298,6 +298,7 @@ STANDARD = Standard(
         "MODEL-002": ["IA-11"],   # third-party hub base model
         "MODEL-003": ["IA-11"],   # local unverified weights blob
         "MODEL-004": ["IA-11"],   # remote LoRA adapter
+        "MODEL-005": ["IA-11"],   # config auto_map = custom loader code
         "DF-031":   ["IA-11"],
         "GHA-089":  ["IA-11"],
         "GHA-094":  ["IA-11"],

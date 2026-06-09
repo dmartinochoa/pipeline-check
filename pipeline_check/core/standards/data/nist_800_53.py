@@ -610,6 +610,7 @@ STANDARD = Standard(
         "MODEL-002": ["SR-3", "SR-11", "SI-2"],          # third-party hub base model
         "MODEL-003": ["SR-3", "SR-11", "SI-2"],          # local unverified weights blob
         "MODEL-004": ["SR-3", "SR-11", "SI-2"],          # remote LoRA adapter
+        "MODEL-005": ["SR-3", "SR-11", "SI-2"],          # config auto_map = custom loader code
         "DF-031":   ["SR-3", "SR-11", "SI-2"],           # COPY --from external image not digest-pinned
         "DF-002":   ["AC-6", "CM-6"],                    # no USER
         "DF-003":   ["SR-3", "SR-11", "SI-7"],           # ADD URL no checksum

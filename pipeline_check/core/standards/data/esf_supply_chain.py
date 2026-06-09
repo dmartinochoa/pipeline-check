@@ -371,6 +371,7 @@ STANDARD = Standard(
         "MODEL-002": ["ESF-S-TRUSTED-REG", "ESF-S-VERIFY-DEPS"],   # third-party hub base model
         "MODEL-003": ["ESF-S-VERIFY-DEPS"],                        # local unverified weights blob
         "MODEL-004": ["ESF-S-PIN-DEPS", "ESF-S-VERIFY-DEPS"],      # remote LoRA adapter
+        "MODEL-005": ["ESF-S-VERIFY-DEPS"],                        # config auto_map = custom loader code
         "DF-031": ["ESF-S-PIN-DEPS", "ESF-S-VERIFY-DEPS"],         # COPY --from external image not digest-pinned
         "DF-002": ["ESF-D-PRIV-BUILD"],                            # runs as root
         "DF-003": ["ESF-S-VERIFY-DEPS"],                           # ADD remote no integrity

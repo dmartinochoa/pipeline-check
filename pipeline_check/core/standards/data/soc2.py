@@ -336,6 +336,7 @@ STANDARD = Standard(
         "MODEL-002": ["CC8.1"],             # third-party hub base model
         "MODEL-003": ["CC8.1"],             # local unverified weights blob
         "MODEL-004": ["CC8.1"],             # remote LoRA adapter
+        "MODEL-005": ["CC8.1"],             # config auto_map = custom loader code
         "DF-031": ["CC8.1"],                # COPY --from external image not digest-pinned
         "DF-002": ["CC6.1", "CC6.8"],       # runs as root
         "DF-003": ["CC6.7", "CC8.1"],       # ADD remote no integrity
