@@ -151,6 +151,7 @@ STANDARD = Standard(
         "GHA-019":  ["PR.AA-01"],
         "GL-003":   ["PR.AA-01"],
         "GL-008":   ["PR.AA-01"],
+        "DEV-008":   ["PR.AA-01"],   # literal secret in a devenv config
         "GL-013":   ["PR.AA-01"],
         "GL-020":   ["PR.AA-01"],
         "BB-003":   ["PR.AA-01"],
@@ -257,20 +258,27 @@ STANDARD = Standard(
         "GHA-003":  ["PR.PS-05"],
         "GHA-119":  ["PR.PS-05"],# untrusted context into an agentic AI CLI
         "GHA-120":  ["PR.PS-05"],# trust_remote_code model load = code exec
+        "GHA-122":  ["PR.PS-05"],# unsafe pickle deser of fetched artifact = code exec
         "GHA-117":  ["PR.PS-05"],# IaC apply on untrusted PR trigger
         "GHA-118":  ["PR.PS-05"],# untrusted content into $GITHUB_ENV / $GITHUB_PATH
         "GHA-016":  ["PR.PS-05"],
         "GHA-027":  ["PR.PS-05"],
         "GHA-028":  ["PR.PS-05"],
         "GL-002":   ["PR.PS-05"],
+        "GL-045":   ["PR.PS-05"],   # trust_remote_code model load = code exec
+        "GL-047":   ["PR.PS-05"],   # unsafe pickle deser of fetched artifact = code exec
+        "GL-048":   ["PR.PS-05"],   # untrusted MR context into agentic CLI = prompt injection
+        "GL-049":   ["PR.PS-06"],   # agentic CLI output lands without review
         "GL-016":   ["PR.PS-05"],
         "GL-025":   ["PR.PS-05"],
         "GL-026":   ["PR.PS-05"],
         "BB-002":   ["PR.PS-05"],
+        "BB-035":   ["PR.PS-05"],   # trust_remote_code model load = code exec
         "BB-012":   ["PR.PS-05"],
         "BB-025":   ["PR.PS-05"],
         "BB-026":   ["PR.PS-05"],
         "ADO-002":  ["PR.PS-05"],
+        "ADO-034":  ["PR.PS-05"],   # trust_remote_code model load = code exec
         "ADO-016":  ["PR.PS-05"],
         "ADO-026":  ["PR.PS-05"],
         "ADO-027":  ["PR.PS-05"],
@@ -436,6 +444,11 @@ STANDARD = Standard(
         # Credential rules tie to PR.AA-01 (identity / credential
         # management). Vuln-scan / outdated-dep rules tie to PR.PS-02.
         "DF-001": ["GV.SC-05"],                 # FROM not digest-pinned
+        "MODEL-001": ["GV.SC-05"],              # unpinned base model
+        "MODEL-002": ["GV.SC-05"],              # third-party hub base model
+        "MODEL-003": ["GV.SC-05"],              # local unverified weights blob
+        "MODEL-004": ["GV.SC-05"],              # remote LoRA adapter
+        "MODEL-005": ["GV.SC-05"],              # config auto_map = custom loader code
         "DF-031": ["GV.SC-05"],                 # COPY --from external image not digest-pinned
         "DF-002": ["PR.PS-01"],                 # runs as root
         "DF-003": ["GV.SC-05", "PR.DS-02"],     # ADD remote no integrity
@@ -491,6 +504,7 @@ STANDARD = Standard(
         # GV.SC-04 + GV.SC-07; logs → PR.PS-04 + DE.CM-09.
         # ── GitHub Actions ───────────────────────────────────────
         "GHA-014":  ["PR.PS-06"],               # deploy job missing environment
+        "GHA-123":  ["PR.PS-06"],               # agentic CLI output lands without review
         "GHA-030":  ["PR.AA-05"],               # OIDC w/o env-protected job
         "GHA-031":  ["PR.PS-05"],               # retired set-output / save-state
         "GHA-032":  ["PR.PS-05"],               # local script on untrusted trigger
@@ -1088,6 +1102,7 @@ STANDARD = Standard(
         # Developer-environment auto-execution
         "DEV-001":   ["PR.PS-05"],
         "DEV-006":   ["PR.PS-05"],
+        "DEV-007":   ["PR.PS-05"],   # committed MCP config auto-launches a command server
         "DEV-002":   ["PR.PS-05"],
         "DEV-003":   ["PR.PS-05"],
         "DEV-004":   ["PR.PS-05"],

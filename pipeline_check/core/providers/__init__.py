@@ -53,6 +53,7 @@ _BUILTINS: dict[str, str] = {
     "jenkins": "JenkinsProvider",
     "kubernetes": "KubernetesProvider",
     "maven": "MavenProvider",
+    "modelfile": "ModelfileProvider",
     "npm": "NpmProvider",
     "nuget": "NuGetProvider",
     "oci": "OCIProvider",

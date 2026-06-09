@@ -145,6 +145,8 @@ STANDARD = Standard(
         "GHA-003":  ["CICD-SEC-4"],
         "GHA-119":  ["CICD-SEC-4"],# untrusted context into an agentic AI CLI
         "GHA-120":  ["CICD-SEC-4"],# trust_remote_code model load = code exec
+        "GHA-122":  ["CICD-SEC-4"],# unsafe pickle deser of fetched artifact = code exec
+        "GHA-121":  ["CICD-SEC-3"],# model pulled without a pinned revision
         "GHA-117":  ["CICD-SEC-4"],# IaC apply on untrusted PR trigger
         "GHA-118":  ["CICD-SEC-4"],# untrusted content into $GITHUB_ENV / $GITHUB_PATH
         "GHA-004":  ["CICD-SEC-5"],
@@ -159,6 +161,7 @@ STANDARD = Standard(
         "GHA-105":  ["CICD-SEC-4", "CICD-SEC-7"],        # self-hosted runner on PR trigger
         "GHA-013":  ["CICD-SEC-4"],
         "GHA-014":  ["CICD-SEC-1"],
+        "GHA-123":  ["CICD-SEC-1"],# agentic CLI output lands without review
         "GHA-015":  ["CICD-SEC-7"],
         "GHA-016":  ["CICD-SEC-3"],
         "GHA-017":  ["CICD-SEC-7"],
@@ -243,6 +246,11 @@ STANDARD = Standard(
         "GL-001":   ["CICD-SEC-3"],
         "GL-037": ["CICD-SEC-3", "CICD-SEC-5"],  # CI env disables Go module verification
         "GL-002":   ["CICD-SEC-4"],
+        "GL-045":   ["CICD-SEC-4"],   # trust_remote_code model load = code exec
+        "GL-046":   ["CICD-SEC-3"],   # model pulled without a pinned revision
+        "GL-047":   ["CICD-SEC-4"],   # unsafe pickle deser of fetched artifact = code exec
+        "GL-048":   ["CICD-SEC-4"],   # untrusted MR context into agentic CLI = prompt injection
+        "GL-049":   ["CICD-SEC-1"],   # agentic CLI output lands without review
         "GL-003":   ["CICD-SEC-6"],
         "GL-004":   ["CICD-SEC-1"],
         "GL-044":   ["CICD-SEC-1"],   # auto production deploy on an MR pipeline
@@ -251,6 +259,7 @@ STANDARD = Standard(
         "GL-006":   ["CICD-SEC-9"],
         "GL-007":   ["CICD-SEC-9"],
         "GL-008":   ["CICD-SEC-6"],
+        "DEV-008":   ["CICD-SEC-6"],   # literal secret in a devenv config
         "GL-009":   ["CICD-SEC-3"],
         "GL-010":   ["CICD-SEC-4"],
         "GL-011":   ["CICD-SEC-4"],
@@ -287,6 +296,7 @@ STANDARD = Standard(
         # Bitbucket Pipelines
         "BB-001":   ["CICD-SEC-3", "CICD-SEC-8"],
         "BB-002":   ["CICD-SEC-4"],
+        "BB-035":   ["CICD-SEC-4"],   # trust_remote_code model load = code exec
         "BB-003":   ["CICD-SEC-6"],
         "BB-004":   ["CICD-SEC-1"],
         "BB-005":   ["CICD-SEC-7"],
@@ -319,6 +329,7 @@ STANDARD = Standard(
         # Azure DevOps Pipelines
         "ADO-001":  ["CICD-SEC-3", "CICD-SEC-8"],
         "ADO-002":  ["CICD-SEC-4"],
+        "ADO-034":  ["CICD-SEC-4"],   # trust_remote_code model load = code exec
         "ADO-003":  ["CICD-SEC-6"],
         "ADO-004":  ["CICD-SEC-1"],
         "ADO-005":  ["CICD-SEC-3"],
@@ -511,6 +522,11 @@ STANDARD = Standard(
         "HELM-017": ["CICD-SEC-4"],  # tpl of an untrusted .Values value
         # Dockerfile
         "DF-001":   ["CICD-SEC-3"],   # FROM not digest-pinned
+        "MODEL-001": ["CICD-SEC-3"],   # unpinned base model
+        "MODEL-002": ["CICD-SEC-3"],   # base model from a third-party hub
+        "MODEL-003": ["CICD-SEC-3"],   # local unverified weights blob
+        "MODEL-004": ["CICD-SEC-3"],   # remote LoRA adapter
+        "MODEL-005": ["CICD-SEC-3"],   # config auto_map = custom loader code
         "DF-031":   ["CICD-SEC-3"],   # COPY --from external image not digest-pinned
         "DF-002":   ["CICD-SEC-7"],   # no USER
         "DF-003":   ["CICD-SEC-3", "CICD-SEC-9"],   # ADD URL no checksum
@@ -1002,6 +1018,7 @@ STANDARD = Standard(
         # Developer-environment auto-execution
         "DEV-001":   ["CICD-SEC-4"],                # vscode folderOpen task
         "DEV-006":   ["CICD-SEC-4"],                # vscode settings exec-path / env injection
+        "DEV-007":   ["CICD-SEC-4"],                # committed MCP config auto-launches a command server
         "DEV-002":   ["CICD-SEC-4"],                # devcontainer lifecycle
         "DEV-003":   ["CICD-SEC-4"],                # committed claude hook
         "DEV-004":   ["CICD-SEC-3", "CICD-SEC-4"],  # auto-run remote fetch+exec

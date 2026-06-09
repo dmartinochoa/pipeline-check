@@ -11,9 +11,9 @@ not remove the execution path; the safe default is the library default
 """
 from __future__ import annotations
 
-import re
 from typing import Any
 
+from ..._primitives.model_trust import TRUST_REMOTE_CODE_RE
 from ...base import Finding, Location, Severity
 from ...rule import Rule
 from ..base import iter_jobs, iter_steps, step_location
@@ -40,11 +40,6 @@ RULE = Rule(
     ),
 )
 
-_TRUST_REMOTE_RE = re.compile(
-    r"trust_remote_code\s*=\s*True|--trust[-_]remote[-_]code\b",
-    re.IGNORECASE,
-)
-
 
 def check(path: str, doc: dict[str, Any]) -> Finding:
     offenders: list[str] = []
@@ -53,7 +48,7 @@ def check(path: str, doc: dict[str, Any]) -> Finding:
     for job_id, job in iter_jobs(doc):
         for idx, step in enumerate(iter_steps(job)):
             run = step.get("run")
-            if isinstance(run, str) and _TRUST_REMOTE_RE.search(run):
+            if isinstance(run, str) and TRUST_REMOTE_CODE_RE.search(run):
                 offenders.append(f"{job_id}[{idx}]")
                 locations.append(step_location(path, step))
                 anchor_jobs[job_id] = None

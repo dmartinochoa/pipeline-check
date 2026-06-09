@@ -64,6 +64,21 @@ unit-tests:
   script:
     - echo "Running tests for MR ${CI_MERGE_REQUEST_TITLE}"
     - npm test
+    # GL-045 — model loaded with trust_remote_code (executes the model
+    # repo's own Python at load time = code execution in CI).
+    - python -c "from transformers import AutoModel; AutoModel.from_pretrained('acme/m', trust_remote_code=True)"
+    # GL-046 — model pulled from a registry by a mutable ref (no pinned
+    # revision), so the registry can serve swapped weights next pipeline.
+    - python -c "from huggingface_hub import snapshot_download; snapshot_download('vendor/llm')"
+    # GL-047 — unsafe deserialization of a fetched artifact: weights_only=False
+    # unpickles arbitrary Python embedded in the downloaded checkpoint.
+    - python -c "import torch; torch.load('model.pt', weights_only=False)"
+    # GL-048 — untrusted MR context reaches an agentic CLI (prompt injection):
+    # the model ingests the MR title as instructions and then acts.
+    - claude -p "Triage this failure for MR $CI_MERGE_REQUEST_TITLE"
+    # GL-049 — the agentic CLI's edits land with no human review: pushed
+    # straight to a branch in the same job.
+    - git push origin HEAD:main
 
 # GL-010 — multi-project artifact ingestion without verification.
 ingest-upstream:

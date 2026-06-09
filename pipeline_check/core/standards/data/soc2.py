@@ -81,6 +81,7 @@ STANDARD = Standard(
         "GHA-008":  ["CC6.2"],
         "GL-003":   ["CC6.2"],
         "GL-008":   ["CC6.2"],
+        "DEV-008":   ["CC6.2"],   # literal secret in a devenv config
         "GL-013":   ["CC6.2", "CC6.3"],
         "BB-003":   ["CC6.2"],
         "BB-008":   ["CC6.2"],
@@ -150,6 +151,7 @@ STANDARD = Standard(
         "GHA-003":  ["CC6.8"],             # script injection = malware vector
         "GHA-119":  ["CC6.8"],             # untrusted context into an agentic AI CLI
         "GHA-120":  ["CC6.8"],             # trust_remote_code model load = code exec
+        "GHA-122":  ["CC6.8"],             # unsafe pickle deser of fetched artifact = code exec
         "GHA-117":  ["CC6.8"],             # IaC apply on untrusted PR trigger
         "GHA-118":  ["CC6.8"],             # untrusted content into $GITHUB_ENV / $GITHUB_PATH
         "GHA-016":  ["CC6.8"],             # curl|bash = malware vector
@@ -157,17 +159,23 @@ STANDARD = Standard(
         "GHA-027":  ["CC6.8"],             # malicious activity
         "GHA-028":  ["CC6.8"],             # shell eval
         "GL-002":   ["CC6.8"],
+        "GL-045":   ["CC6.8"],   # trust_remote_code model load = code exec
+        "GL-047":   ["CC6.8"],   # unsafe pickle deser of fetched artifact = code exec
+        "GL-048":   ["CC6.8"],   # untrusted MR context into agentic CLI = prompt injection
+        "GL-049":   ["CC8.1"],   # agentic CLI output lands without review
         "GL-016":   ["CC6.8"],
         "GL-019":   ["CC6.8"],
         "GL-043":   ["CC6.8"],
         "GL-025":   ["CC6.8"],
         "GL-026":   ["CC6.8"],
         "BB-002":   ["CC6.8"],
+        "BB-035":   ["CC6.8"],   # trust_remote_code model load = code exec
         "BB-012":   ["CC6.8"],
         "BB-015":   ["CC6.8"],
         "BB-025":   ["CC6.8"],
         "BB-026":   ["CC6.8"],
         "ADO-002":  ["CC6.8"],
+        "ADO-034":  ["CC6.8"],   # trust_remote_code model load = code exec
         "ADO-016":  ["CC6.8"],
         "ADO-020":  ["CC6.8"],
         "ADO-026":  ["CC6.8"],
@@ -221,6 +229,7 @@ STANDARD = Standard(
         "CCM-001":  ["CC8.1"],
         "CB-008":   ["CC8.1"],
         "GHA-014":  ["CC8.1"],
+        "GHA-123":  ["CC8.1"],
         "GL-004":   ["CC8.1"],
         "GL-044":   ["CC8.1"],
         "GL-029":   ["CC8.1"],
@@ -325,6 +334,11 @@ STANDARD = Standard(
         # covers data-in-transit (curl-pipe / TLS bypass). CC8.1
         # covers change management (pinning, version drift).
         "DF-001": ["CC8.1"],                # FROM not digest-pinned
+        "MODEL-001": ["CC8.1"],             # unpinned base model
+        "MODEL-002": ["CC8.1"],             # third-party hub base model
+        "MODEL-003": ["CC8.1"],             # local unverified weights blob
+        "MODEL-004": ["CC8.1"],             # remote LoRA adapter
+        "MODEL-005": ["CC8.1"],             # config auto_map = custom loader code
         "DF-031": ["CC8.1"],                # COPY --from external image not digest-pinned
         "DF-002": ["CC6.1", "CC6.8"],       # runs as root
         "DF-003": ["CC6.7", "CC8.1"],       # ADD remote no integrity
@@ -1056,6 +1070,7 @@ STANDARD = Standard(
         # Developer-environment auto-execution (malware / untrusted-code vector)
         "DEV-001":   ["CC6.8"],
         "DEV-006":   ["CC6.8"],
+        "DEV-007":   ["CC6.8"],   # committed MCP config auto-launches a command server
         "DEV-002":   ["CC6.8"],
         "DEV-003":   ["CC6.8"],
         "DEV-004":   ["CC6.8"],

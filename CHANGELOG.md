@@ -10,7 +10,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 PRs landing on `dev` between releases append entries below. The
 release commit collapses this section into `## [X.Y.Z] - <date>`.
 
-## [1.13.0] - 2026-06-08
+## [1.13.0] - 2026-06-09
 
 ### Added
 
@@ -33,6 +33,261 @@ release commit collapses this section into `## [X.Y.Z] - <date>`.
   crashing, mirroring the `opa` / `helm` shell-out pattern. `--json`
   emits a machine-readable result. (Closes the provenance-verification
   candidate in ROADMAP.)
+- **Shareable policy packs (`--policy <url>`).** `--policy` now accepts an
+  `https://` URL (in addition to a built-in name or a local path), so an
+  organization can publish one gate policy and have every repo consume it
+  by URL. The remote pack is fetched over HTTPS (redirects pinned to
+  HTTPS via the shared `safe_http` opener, response size-capped at 256 KB)
+  and cached, so a later offline run still resolves the gate. A remote
+  policy can only configure the gate (rule / standards filters,
+  thresholds, severity overrides), never run code; because it can also
+  *weaken* the gate, the source URL is printed on the `[policy] loaded …`
+  line so the choice is auditable in CI logs. Builds on the built-in
+  `--policy <name>` packs and the existing local-path support.
+- **ADO-034: ML model loaded with `trust_remote_code` (Azure DevOps).**
+  Completes the cross-provider coverage of the flagship model-RCE rule
+  (GHA-120 / GL-045 / BB-035 / ADO-034) across every script-based CI
+  provider. Fires on `trust_remote_code=True` / `--trust-remote-code` in a
+  step's `script` / `bash` / `pwsh` / `powershell` body or a task-based
+  step's `inputs.script`: the transformers / huggingface_hub loader
+  executes the model repo's own Python at load time, so an untrusted or
+  unpinned model is arbitrary code execution on the agent with its
+  service-connection credentials in scope. Reuses the shared
+  `_primitives/model_trust` detector. HIGH. azure 33 -> 34.
+- **BB-035: ML model loaded with `trust_remote_code` (Bitbucket).** Brings
+  the flagship model-RCE rule to the #3 script-based CI provider,
+  completing its cross-provider coverage (GHA-120 / GL-045 / BB-035).
+  Fires on `trust_remote_code=True` / `--trust-remote-code` in a step's
+  `script`: the transformers / huggingface_hub loader executes the model
+  repo's own Python at load time, so an untrusted or unpinned model is
+  arbitrary code execution in the pipeline with the step's credentials in
+  scope. The `trust_remote_code` detection now lives in a shared
+  `_primitives/model_trust` helper that GHA-120, GL-045, and BB-035 all
+  use. HIGH. bitbucket 34 -> 35.
+- **MODEL-005: a vendored model config declares custom loader code
+  (`auto_map`).** Extends the `modelfile` provider to also parse vendored
+  Hugging Face `config.json` model configs (recognized by their
+  `auto_map` / `architectures` / `model_type` keys, with heavy
+  directories like `node_modules` skipped). Fires when a config's
+  `auto_map` block is non-empty: it points the transformers auto-classes
+  at the model repo's own Python (`modeling_*.py` / `configuration_*.py`),
+  which transformers imports and runs under `trust_remote_code=True`. It
+  is the model-side complement of GHA-120 / GL-045 (which flag the
+  `trust_remote_code` load in CI scripts): those catch the loader, this
+  catches the vendored config that makes such a load execute third-party
+  code. MEDIUM. modelfile 4 -> 5.
+- **DEV-008: a credential-shaped literal committed in a dev-environment
+  config.** The developer-environment member of the cross-provider
+  literal-secret `*-008` family (GHA-008 / GL-008 / …). Editor / agent /
+  container configs routinely carry credentials, an MCP server's `env`
+  block (a `GITHUB_TOKEN` / API key passed to the tool server), a
+  devcontainer `remoteEnv` / `containerEnv`, a VS Code setting, a Claude
+  Code hook, and a committed literal is exposed to everyone with repo
+  access and lives in git history. Scans every string in the parsed
+  config (`.vscode/` tasks / settings, `.devcontainer`,
+  `.claude/settings.json`, and the MCP configs `.mcp.json` /
+  `.cursor/mcp.json` / `.vscode/mcp.json`) against the shared
+  credential-shape catalog. CRITICAL. devenv 7 -> 8.
+- **DEV-007: a committed MCP config auto-launches a local command server.**
+  Extends the `devenv` provider (the auto-execute-on-repo-open surface) to
+  Model Context Protocol configs: `.mcp.json` (Claude Code),
+  `.cursor/mcp.json` (Cursor), and `.vscode/mcp.json` (VS Code). Fires when
+  a committed config defines a server with a `command` (a stdio server the
+  agent / editor launches as a local child process on project open, with
+  the developer's privileges). Both the `mcpServers` (Claude / Cursor) and
+  `servers` (VS Code) block names are read; `url`-only servers
+  (`type: http` / `sse`) don't spawn a local process and don't fire.
+  Commands that fetch an unpinned remote package (`npx -y`, `uvx`,
+  `pnpm dlx`, `bunx`, `pipx run`) are called out as the sharpest case: the
+  tool server becomes whatever the registry serves at open time. MEDIUM.
+  devenv 6 -> 7.
+- **Model-registry provider (`--pipeline modelfile`).** A new provider
+  that parses Ollama `Modelfile` declarations on disk, the "Dockerfile of
+  models", text-only with no model pull and no Ollama daemon. It is the
+  static, declaration-side complement to the CI-script AI rules
+  (GHA-120/121/122, GL-045..049) that catch model pulls in build scripts.
+  Four rules over the `FROM` / `ADAPTER` model references a Modelfile
+  declares: **MODEL-001** (base model pulled by a mutable reference, no
+  tag or `:latest`, the model-registry analogue of GHA-001 / DF-001),
+  **MODEL-002** (base model pulled straight from a third-party hub,
+  `hf.co` / `huggingface.co`, bypassing the curated Ollama library),
+  **MODEL-003** (base model loaded from a local unverified weights blob,
+  with a `.bin` / `.pt` import flagged as pickle-backed), and **MODEL-004**
+  (a LoRA `ADAPTER` applied from a remote source that can re-steer the
+  model's behavior). Auto-detected on a `Modelfile` at the scan root;
+  mapped across OWASP / ESF / NIST SSDF / NIST 800-53 / NIST CSF 2.0 /
+  NIST 800-190 / SOC 2 / PCI DSS / SLSA / S2C2F / OSC&R / CIS supply-chain
+  / OpenSSF Scorecard. Provider count 34 -> 35.
+- **GL-049: agentic CLI output lands without human review (GitLab).** The
+  GitLab analog of GHA-123 and the flow-control leg of the GitLab AI/model
+  pack (GL-045..049), completing parity with the GitHub agentic-AI rules.
+  Fires when one job both invokes an agentic CLI (`claude` / `gemini` /
+  `cursor-agent` / `aider` / `openhands` / `goose` / `q chat`) and, in the
+  same job, lands the result with no review gate: a `glab mr merge` with an
+  auto / non-interactive flag (`--auto-merge` / `--yes` / `-y` /
+  `--when-pipeline-succeeds`), a `git push` carrying the
+  `merge_request.merge_when_pipeline_succeeds` push option, or a plain
+  `git push` (the GitLab idiom for committing straight to a branch). Does
+  not fire when the agent only opens an MR for review (`glab mr create`),
+  on a push job with no agent, or on a `git push --dry-run`. The landing
+  idioms are GitLab-specific so the detection is its own; the agentic-CLI
+  catalog reuses the shared `_primitives/agentic_cli` helper. HIGH. gitlab
+  50 -> 51.
+- **GL-048: untrusted MR/commit context reaches an agentic AI CLI
+  (GitLab).** The GitLab analog of GHA-119 and the AI face of GL-002
+  (script injection). Fires when a job `script` line invokes an agentic
+  CLI (`claude` / `gemini` / `cursor-agent` / `aider` / `openhands` /
+  `goose` / `q chat`) and attacker-controllable GitLab context reaches
+  that line, either a predefined untrusted variable interpolated directly
+  (`$CI_MERGE_REQUEST_TITLE`, `$CI_COMMIT_MESSAGE`) or a `variables:`
+  entry whose value carries one. Unlike a shell, an LLM ingests a quoted
+  or variable-routed value as prompt text, so the GL-002 mitigation
+  (route through a quoted variable) does not sanitize it, which is why
+  this is a separate rule: anyone who can open an MR can smuggle
+  instructions the agent then executes. The agentic-CLI catalog now lives
+  in a shared `_primitives/agentic_cli` helper (re-exported from the
+  GitHub `_helpers` so GHA-058/119/123 are unchanged). HIGH. gitlab
+  49 -> 50.
+- **GL-047: unsafe deserialization of a fetched artifact (GitLab).** The
+  GitLab analog of GHA-122 and the deserialization leg of the GitLab
+  AI/model pack (alongside GL-045 `trust_remote_code` and GL-046 unpinned
+  model ref). Loading a downloaded model / artifact through a
+  pickle-backed deserializer runs arbitrary Python embedded in the file
+  at load time, which in CI is remote code execution under the job's
+  `CI_JOB_TOKEN` and secrets. Fires per job in two shapes: an explicit
+  unsafe opt-in (`weights_only=False`, or `allow_pickle=True` on
+  `numpy.load`) always; or a remote fetch (`curl` / `wget` /
+  `hf_hub_download` / `snapshot_download` / `huggingface-cli download` /
+  `requests`) alongside a pickle-backed loader (`torch.load` /
+  `pickle.load(s)` / `joblib.load`) with no safe path (`weights_only=True`
+  or safetensors) in the same job. Does not fire on the safe path or a
+  bare local load with no fetch. The two-shape detection now lives in a
+  shared `_primitives/unsafe_deser` helper that GHA-122 and GL-047 both
+  call. HIGH. gitlab 48 -> 49.
+- **GL-046: AI model pulled without a pinned revision (GitLab).** The
+  GitLab analog of GHA-121 and the pinning leg GL-045's own
+  recommendation points to. Fires on a job's `script` /
+  `before_script` / `after_script` that fetches a model from a registry
+  by a *mutable* reference (`from_pretrained("org/model")`,
+  `hf_hub_download` / `snapshot_download` with a bare `repo_id`, or
+  `huggingface-cli download org/model`) and supplies no `revision` pin.
+  Without a pinned revision the registry serves whatever the default
+  branch points at, so the owner (or whoever compromises the account or
+  upstream) can swap the weights, the tokenizer, or the custom loader
+  code under a green build. Scoped to org-namespaced ids (`org/model`),
+  so canonical first-party hub names (`bert-base-uncased`), local paths,
+  and `$`-interpolations don't fire. The registry-fetch + unpinned-ref
+  detection now lives in a shared `_primitives/model_ref` helper that
+  GHA-121 and GL-046 both call. MEDIUM.
+- **GL-045: ML model loaded with `trust_remote_code` (GitLab).** The
+  GitLab analog of GHA-120, extending the AI/model-supply-chain coverage
+  to the #2 CI platform. Fires on `trust_remote_code=True` /
+  `--trust-remote-code` in a job's `script` / `before_script` /
+  `after_script`: the transformers / huggingface_hub loader executes the
+  model repo's own Python at load time, so an untrusted or unpinned model
+  is arbitrary code execution in CI with the job's `CI_JOB_TOKEN` and
+  secrets. HIGH.
+- **Built-in policy packs (`--policy <name>`).** Five curated scan
+  profiles ship with the tool so the common compliance / release gates
+  work by name without authoring a file: `pr-gate` (full pack, fail on
+  HIGH+), `release-gate` (fail on MEDIUM+, require grade B+), `slsa-l3`
+  (SLSA + OWASP focus), `pci-dss` (PCI DSS v4.0 evidence run), and
+  `supply-chain-strict` (pinning / provenance / dependency integrity,
+  with the unpinned-action rule `GHA-001` promoted to CRITICAL). A local
+  `./policies/<name>.yml` of the same name shadows the built-in, and
+  `--list-policies` now lists the built-ins alongside any local files.
+  The packs reuse the existing policy schema and precedence (CLI flags,
+  env vars, and the config file still override policy values).
+- **GHA-123: Agentic CLI output lands without human review.** The
+  flow-control leg of the AI/LLM-pipeline pack. Fires when one job both
+  invokes an agentic coding CLI (claude / gemini / cursor-agent / aider /
+  openhands / goose / `q chat`) and, in the same job, lands the result
+  with no review gate: `stefanzweifel/git-auto-commit-action`,
+  `ad-m/github-push-action`, `peter-evans/enable-pull-request-automerge`,
+  or `gh pr merge` with `--auto` / `--admin` / `--merge` / `--squash` /
+  `--rebase`. AI-authored changes then reach a branch (or merge) with no
+  human reviewing the diff, and if the agent's prompt is influenced by
+  untrusted input that is prompt-injection straight to committed code.
+  Does not fire when the agent only opens a PR for review (a bare
+  `create-pull-request`), nor on an auto-commit job that runs no agent.
+  HIGH.
+- **GHA-122: Unsafe deserialization of a fetched artifact (pickle RCE).**
+  The deserialization leg of the AI/LLM-pipeline pack. Loading a model /
+  artifact through a pickle-backed deserializer executes arbitrary Python
+  embedded in the file at load time, and in CI that file is routinely
+  downloaded. Two firing shapes, both per `run:` step: an explicit unsafe
+  opt-in (`weights_only=False`, or `allow_pickle=True` on `numpy.load`),
+  always; or a remote fetch (`curl` / `wget` / `hf_hub_download` /
+  `snapshot_download` / `huggingface-cli download` / `requests`) alongside
+  a pickle-backed loader (`torch.load` / `pickle.load(s)` / `joblib.load`)
+  with no safe path (`weights_only=True` or safetensors) in the same step.
+  Does not fire on a bare local load (no fetch) or the safe path. Pairs
+  with GHA-120 (`trust_remote_code`) and GHA-121 (unpinned model ref).
+  HIGH.
+- **GHA-121: AI model pulled without a pinned revision.** Extends the
+  AI/LLM-pipeline pack (GHA-119/120) with the supply-chain pinning leg.
+  Fires on a `run:` step that fetches a model from a registry by a
+  *mutable* reference (`from_pretrained("org/model")`, `hf_hub_download`
+  / `snapshot_download` with a bare `repo_id`, or `huggingface-cli
+  download org/model`) and supplies no `revision` pin. Without a pinned
+  revision the registry serves whatever the default branch points at, so
+  the owner (or whoever compromises the account / upstream) can swap the
+  weights, tokenizer, or custom loader code under a green build. It is
+  the model-registry analog of pinning an action to a SHA (GHA-001) and
+  the prerequisite for the `trust_remote_code` execution path GHA-120
+  flags. Scoped to org-namespaced ids (`org/model`), so canonical
+  first-party hub names (`bert-base-uncased`), local paths, and `${{ }}`
+  interpolations don't fire. MEDIUM.
+
+### Changed
+
+- **`--verify-secrets` now covers developer-environment configs.** A
+  credential committed in a `devenv` config (DEV-008, e.g. a token in an
+  MCP server's `env` block or a devcontainer `remoteEnv`) is now
+  live-verifiable: the doc-map the verifier re-extracts raw tokens from
+  understands the devenv `WorkspaceFile`'s parsed `data` (it previously
+  only handled the workflow / pipeline / Jenkinsfile contexts), and
+  DEV-008 joined the secret-verification check set. A verified-active
+  committed token promotes to CRITICAL with its resolved identity; a
+  revoked one demotes to LOW.
+- **`--help` now leads with a "Getting started" block.** The top of
+  `--help` lists the five commands a new user actually reaches for
+  (auto-detect scan, `init`, `--policy pr-gate`, `explain`, `--man
+  recipes`) before the grouped flag reference, so the 150-flag surface
+  has a map. The README Quick Start surfaces the same PR-gate one-liner
+  and `--man recipes` pointer, and notes that both `pipeline-check` and
+  `pipeline_check` work.
+- **`--help` flag grouping cleanup.** The flags that fell into the
+  catch-all `Other` bucket are now sorted into their proper sections
+  (`--pipelines` / `--gitea-path` / the `--scm-*` and token flags /
+  `--no-cache` → Target, `--show-passed` / `--no-group` /
+  `--inline-explain` → Output, `--only-known-attacked` /
+  `--verify-secrets` → Filtering, the `--chains-require-*` flags →
+  Attack chains, `--serve` → Info & Help), so `--help` no longer shows
+  an `Other` section at all.
+- **Scan-time errors no longer dump a full traceback by default.** A
+  runtime failure prints the one-line `[error] Scan failed: ...` summary
+  plus a nudge to re-run with `--verbose`; the full stack trace is shown
+  only under `--verbose`.
+
+### Fixed
+
+- **A missing or invalid required flag now exits cleanly instead of
+  printing a Python traceback.** A provider's `build_context()` runs
+  during scanner construction, which sat outside the run-time error
+  guard, so `--pipeline scm` / `--pipeline runs` (missing `--scm-platform`
+  / `--scm-repo`) and the live-cloud SDK providers (`gcp` /
+  `azure_cloud`) without their optional extra installed crashed with a
+  raw traceback at exit 1. The construction is now guarded: the
+  provider's own message is surfaced as a clean `Error: ...` at exit 2.
+- **A bad AWS profile is now a clean error, not a botocore traceback.**
+  `--profile <typo>` (or an `AWS_PROFILE` env value) that doesn't exist
+  raised a raw `botocore` `ProfileNotFound` stack trace; the AWS provider
+  now catches it and re-raises a named, actionable `ValueError` that the
+  construction guard maps to a clean exit 2.
+- **`--man` accuracy.** The `output` topic now lists the `cyclonedx`,
+  `spdx`, and `codequality` formats it was missing, and the `secrets`
+  topic lists the Drone `DR-004` literal-secret rule.
 
 ## [1.12.0] - 2026-06-08
 

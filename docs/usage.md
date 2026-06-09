@@ -119,6 +119,7 @@ pipeline_check --pipeline tekton --tekton-path tekton/
 pipeline_check --pipeline argo --argo-path workflows/
 pipeline_check --pipeline argocd --argocd-path argocd/
 pipeline_check --pipeline dockerfile --dockerfile-path Dockerfile
+pipeline_check --pipeline modelfile --modelfile-path Modelfile
 pipeline_check --pipeline kubernetes --k8s-path manifests/
 pipeline_check --pipeline helm --helm-path charts/myapp/
 
@@ -716,7 +717,7 @@ restating it.
 |------|---------|
 | `0` | Scan completed; gate passed. |
 | `1` | Scan completed; gate failed (any of `--fail-on`, `--min-grade`, `--max-failures`, `--fail-on-check`, `--fail-on-chain`, `--fail-on-any-chain` tripped). |
-| `2` | Bad invocation or unexpected scan exception. Click `UsageError` (invalid flag, missing required path, mutually-exclusive flags) and uncaught scanner exceptions both surface here. The error and any traceback are on stderr. |
+| `2` | Bad invocation or unexpected scan exception. Click `UsageError` (invalid flag, mutually-exclusive flags), a missing required path / flag, a provider whose optional SDK isn't installed, and uncaught scanner exceptions all surface here with a clean one-line error on stderr. Run with `--verbose` to also print the full traceback. |
 | `3` | Operational failure on a non-scan action: `--list-checks` / `--explain` for an unknown ID, `--apply` without `--fix`, MCP support not installed, malformed `--ignore-file` or `--baseline`. |
 | `4` | `--ai-explain` request failure (missing SDK, missing API key, unknown provider, request error). |
 

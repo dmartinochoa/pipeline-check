@@ -79,8 +79,9 @@ def test_fix_routes_patch_to_stderr_when_output_is_json(tmp_path, monkeypatch):
 
 
 def test_scan_failure_prints_traceback(monkeypatch, tmp_path):
-    """Scan-time exceptions produce a traceback on stderr, not just the
-    one-liner, so operators can debug."""
+    """Scan-time exceptions print a clean one-line summary by default and
+    the full traceback only under --verbose, so operators can still debug
+    without a scary stack trace on every failure."""
     from pipeline_check.cli import scan as scan_cmd
     from pipeline_check.core import scanner as scanner_mod
 
@@ -98,13 +99,24 @@ def test_scan_failure_prints_traceback(monkeypatch, tmp_path):
         '{"planned_values": {"root_module": {"resources": []}}}'
     )
     try:
-        result = CliRunner().invoke(
+        # Default: one-line summary + a nudge, no scary stack trace.
+        default = CliRunner().invoke(
             scan_cmd, ["--pipeline", "terraform", "--tf-plan", "plan.json"]
+        )
+        # --verbose: the full traceback is available for debugging.
+        verbose = CliRunner().invoke(
+            scan_cmd,
+            ["--pipeline", "terraform", "--tf-plan", "plan.json", "--verbose"],
         )
     finally:
         monkeypatch.setattr(scanner_mod.Scanner, "run", orig_run)
 
-    assert result.exit_code == 2
-    assert "[error] Scan failed" in result.output
-    assert "Traceback" in result.output
-    assert "synthetic scan crash" in result.output
+    assert default.exit_code == 2
+    assert "[error] Scan failed" in default.output
+    assert "synthetic scan crash" in default.output
+    assert "Traceback" not in default.output
+    assert "--verbose" in default.output
+
+    assert verbose.exit_code == 2
+    assert "Traceback" in verbose.output
+    assert "synthetic scan crash" in verbose.output

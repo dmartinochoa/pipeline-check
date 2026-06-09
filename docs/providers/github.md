@@ -72,7 +72,7 @@ Resolution rules:
 
 ## What it covers
 
-111 checks · 17 have an autofix patch (``--fix``).
+114 checks · 17 have an autofix patch (``--fix``).
 
 | Check | Title | Severity | Fix |
 |-------|-------|----------|-----|
@@ -183,6 +183,9 @@ Resolution rules:
 | [GHA-118](#gha-118) | Untrusted content written to $GITHUB_ENV / $GITHUB_PATH | <span class="pg-sev pg-sev--high">HIGH</span> |  |
 | [GHA-119](#gha-119) | Untrusted context reaches an agentic AI CLI (prompt injection) | <span class="pg-sev pg-sev--high">HIGH</span> |  |
 | [GHA-120](#gha-120) | ML model loaded with trust_remote_code (code execution) | <span class="pg-sev pg-sev--high">HIGH</span> |  |
+| [GHA-121](#gha-121) | AI model pulled without a pinned revision | <span class="pg-sev pg-sev--medium">MEDIUM</span> |  |
+| [GHA-122](#gha-122) | Unsafe deserialization of a fetched artifact (pickle RCE) | <span class="pg-sev pg-sev--high">HIGH</span> |  |
+| [GHA-123](#gha-123) | Agentic CLI output lands without human review | <span class="pg-sev pg-sev--high">HIGH</span> |  |
 | [TAINT-001](#taint-001) | Untrusted input flows across step boundaries via step outputs | <span class="pg-sev pg-sev--high">HIGH</span> |  |
 | [TAINT-002](#taint-002) | Untrusted input flows across jobs via ``jobs.<id>.outputs:`` | <span class="pg-sev pg-sev--high">HIGH</span> |  |
 | [TAINT-003](#taint-003) | Untrusted input forwarded into reusable workflow ``with:`` | <span class="pg-sev pg-sev--high">HIGH</span> |  |
@@ -3233,6 +3236,84 @@ Fires on ``trust_remote_code=True`` / ``--trust-remote-code`` in a ``run:`` step
 **Recommended action**
 
 Load models with ``trust_remote_code=False`` (the library default). If a model genuinely needs custom code, vet it and pin an exact revision (a commit SHA, not a tag or branch), run the load in a sandboxed job with no production secrets, and prefer safetensors weights over pickle.
+
+</div>
+
+</div>
+
+<div class="pg-rule pg-rule--medium" markdown>
+
+## GHA-121: AI model pulled without a pinned revision { #gha-121 }
+
+<div class="pg-rule__tags">
+<span class="pg-sev pg-sev--medium">MEDIUM</span> <span class="pg-tag pg-tag--owasp">CICD-SEC-3</span> <span class="pg-tag pg-tag--esf">ESF-S-PIN-DEPS</span> <span class="pg-tag pg-tag--esf">ESF-S-VERIFY-DEPS</span> <span class="pg-tag pg-tag--cwe">CWE-494</span> <span class="pg-tag pg-tag--cwe">CWE-829</span>
+</div>
+
+Fires on a ``run:`` step that fetches a model by a mutable registry reference and supplies no revision pin. Detected fetch forms: ``from_pretrained("org/model")``, ``hf_hub_download`` / ``snapshot_download`` with a ``org/model`` repo id, and ``huggingface-cli download org/model`` / ``hf download org/model``. A finding requires the fetch call and the repo id to sit in the same step (a two-line window absorbs shell continuations).
+
+Does NOT fire when a revision is pinned in the same step (``revision='<sha>'`` / ``--revision <sha>``), when the reference is a local path (``./model``, ``/models/x``) or a variable / ``${{ }}`` interpolation (the value can't be judged statically), or on a bare single-segment canonical hub name (``bert-base-uncased``) that has no ``org/`` namespace, since those are first-party and the org-scoped third-party models are the higher-risk surface.
+
+**Known false-positive modes**
+
+- A team that re-pulls its own org's model on every run may treat the latest revision as intentional. The right fix is still to pin the revision (it makes an upstream compromise visible); if a rolling pull is genuinely wanted, suppress on the specific step with a rationale naming the model and who controls it.
+
+<div class="pg-rule__rec" markdown>
+
+**Recommended action**
+
+Pin the model to an immutable revision. Pass an exact commit ``revision=`` to ``from_pretrained`` / ``hf_hub_download`` / ``snapshot_download`` (a 40-char commit SHA, not a branch or a tag, both of which the owner can move), or ``--revision <sha>`` to ``huggingface-cli download``. A pinned revision is what makes a swapped-weights or swapped-loader-code attack show up as a diff in your repo instead of silently landing on the next build. Pair with ``trust_remote_code=False`` (GHA-120) and prefer safetensors weights over pickle.
+
+</div>
+
+</div>
+
+<div class="pg-rule pg-rule--high" markdown>
+
+## GHA-122: Unsafe deserialization of a fetched artifact (pickle RCE) { #gha-122 }
+
+<div class="pg-rule__tags">
+<span class="pg-sev pg-sev--high">HIGH</span> <span class="pg-tag pg-tag--owasp">CICD-SEC-4</span> <span class="pg-tag pg-tag--cwe">CWE-502</span> <span class="pg-tag pg-tag--cwe">CWE-494</span> <span class="pg-tag pg-tag--cwe">CWE-829</span>
+</div>
+
+Fires per ``run:`` step in two shapes. **(A) Explicit unsafe opt-in**, always: ``weights_only=False`` on a load, or ``allow_pickle=True`` on ``numpy.load`` / ``np.load``. **(B) Fetch + unpickle**, only when both appear in the same step: a remote fetch (``curl`` / ``wget`` / ``hf_hub_download`` / ``snapshot_download`` / ``huggingface-cli download`` / ``hf download`` / ``requests.get`` / ``urlretrieve`` / ``urlopen``) alongside a pickle-backed loader (``torch.load`` / ``pickle.load`` / ``pickle.loads`` / ``joblib.load``).
+
+Does NOT fire when the step takes the safe path (``weights_only=True``, or safetensors via ``safe_open`` / ``load_file``), nor on a bare ``torch.load`` / ``pickle.load`` with no remote fetch in the same step (a load of a locally produced, trusted artifact). The fetch-and-unpickle coupling is what raises it from a hygiene nudge to a code-execution finding.
+
+**Known false-positive modes**
+
+- A step that downloads a non-pickle file for one purpose and separately unpickles a trusted local file for another would match shape B by co-location. Split the two concerns into separate steps, or suppress on the specific step with a rationale naming the artifact's verified source.
+
+<div class="pg-rule__rec" markdown>
+
+**Recommended action**
+
+Don't deserialize a downloaded artifact through pickle. Load weights with safetensors, or pass ``weights_only=True`` to ``torch.load`` (the PyTorch 2.6+ default) so only tensors, not arbitrary Python, are unpickled. Drop ``allow_pickle=True`` from ``numpy.load``. If a pickle / joblib artifact is unavoidable, pin and verify its source (a pinned model revision, a checksum, or a signature) and load it in a sandboxed job with no production secrets, not on the default runner with the workflow token in scope.
+
+</div>
+
+</div>
+
+<div class="pg-rule pg-rule--high" markdown>
+
+## GHA-123: Agentic CLI output lands without human review { #gha-123 }
+
+<div class="pg-rule__tags">
+<span class="pg-sev pg-sev--high">HIGH</span> <span class="pg-tag pg-tag--owasp">CICD-SEC-1</span> <span class="pg-tag pg-tag--cwe">CWE-94</span> <span class="pg-tag pg-tag--cwe">CWE-693</span>
+</div>
+
+Fires when one job both invokes an agentic CLI (``claude`` / ``gemini`` / ``cursor-agent`` / ``aider`` / ``openhands`` / ``goose`` / ``q chat``) and, in the same job, lands the result with no review gate. The landing step is one of: ``uses: stefanzweifel/git-auto-commit-action``, ``uses: ad-m/github-push-action``, ``uses: peter-evans/enable-pull-request-automerge``, or a ``run:`` step with ``gh pr merge`` plus ``--auto`` / ``--admin`` / ``--merge`` / ``--squash`` / ``--rebase``.
+
+Does NOT fire when the agent only opens a pull request for review (a bare ``peter-evans/create-pull-request`` with no auto-merge), nor on an auto-commit / auto-merge job that does not run an agent (ordinary formatting / generated-file bots). The agent-plus-auto-land coupling is the signal.
+
+**Known false-positive modes**
+
+- A job that runs an agent for a read-only task (triage, labeling) but also auto-commits an unrelated generated file would match by co-location. Split the agent and the auto-commit into separate jobs, or suppress on the job with a rationale noting the agent does not write the committed paths.
+
+<div class="pg-rule__rec" markdown>
+
+**Recommended action**
+
+Don't let an agentic CLI's output reach a branch or a merge without a human review gate. Have the agent open a normal pull request (no auto-merge) so a person reviews the diff before it lands; drop ``peter-evans/enable-pull-request-automerge`` and ``gh pr merge --auto`` from the agent's job, and don't pair the agent with ``git-auto-commit-action`` / ``github-push-action`` that push straight to a branch. If the agent's prompt can be influenced by untrusted input (a PR body, an issue comment, a fetched page), treat the committed result as attacker-controlled.
 
 </div>
 

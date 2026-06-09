@@ -64,6 +64,7 @@ _PROVIDER_PACKAGES: tuple[tuple[str, str, str], ...] = (
     ("argo",       "pipeline_check.core.checks.argo.rules",       "Argo Workflows"),
     ("argocd",     "pipeline_check.core.checks.argocd.rules",     "Argo CD"),
     ("dockerfile", "pipeline_check.core.checks.dockerfile.rules", "Dockerfile"),
+    ("modelfile",  "pipeline_check.core.checks.modelfile.rules",  "Modelfile"),
     ("kubernetes", "pipeline_check.core.checks.kubernetes.rules", "Kubernetes"),
     ("helm",       "pipeline_check.core.checks.helm.rules",       "Helm"),
     ("oci",        "pipeline_check.core.checks.oci.rules",        "OCI manifest"),
@@ -104,7 +105,7 @@ _PROVIDER_PACKAGES: tuple[tuple[str, str, str], ...] = (
 _ANCHORED_PROVIDERS: frozenset[str] = frozenset({
     "github", "gitlab", "bitbucket", "azure", "jenkins", "circleci",
     "cloudbuild", "buildkite", "drone", "tekton", "argo", "dockerfile",
-    "kubernetes", "scm", "runs", "oci", "maven", "nuget",
+    "modelfile", "kubernetes", "scm", "runs", "oci", "maven", "nuget",
     "aws", "cloudformation", "terraform", "npm", "pypi", "helm", "argocd",
 })
 

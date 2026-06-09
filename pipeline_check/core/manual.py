@@ -421,8 +421,10 @@ providers:
   JF-008    Jenkins
   GCB-012   Google Cloud Build
   BK-002    Buildkite
+  DR-004    Drone CI
   TKN-005   Tekton
   ARGO-006  Argo Workflows
+  DEV-008   Developer-environment configs (.mcp.json, devcontainer, …)
 
 Built-in detector catalog ({len(_BUILTIN_PATTERNS)} entries):
 
@@ -637,12 +639,23 @@ TOPIC: output
                  tags. Shaped for SOC 2 / PCI evidence packages and
                  architecture-review docs; the risk register caps at
                  the top 25 failures (the JSON output is unbounded).
+    cyclonedx    CycloneDX 1.6 JSON SBOM of every build-time dependency
+                 the pipeline consumes (action refs, reusable workflows,
+                 base images, package-manifest deps). Each component
+                 carries a PURL. Stdout by default; --output-file to disk.
+    spdx         SPDX 2.3 JSON SBOM, the SPDX-format parallel of
+                 cyclonedx over the same dependency inventory.
+    codequality  GitLab Code Climate JSON that GitLab CI renders as
+                 inline merge-request annotations. One entry per
+                 (check_id, location) with a stable fingerprint for
+                 cross-run dedupe. Stdout by default.
     both         Terminal report -> stderr, JSON -> stdout. Pipe
                  ``jq`` while still seeing a human report.
 
 --output-file PATH
-    REQUIRED for --output html. Optional for --output sarif /
-    junit / markdown / threatmodel (default is stdout).
+    REQUIRED for --output html. Optional for --output sarif / junit /
+    markdown / threatmodel / cyclonedx / spdx / codequality (default
+    is stdout).
 
 --severity-threshold SEV
     Minimum severity to include in the rendered report (e.g. HIGH

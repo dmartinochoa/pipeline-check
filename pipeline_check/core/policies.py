@@ -47,7 +47,10 @@ tighten the bar without rewriting the YAML.
 """
 from __future__ import annotations
 
+import hashlib
 import sys
+import urllib.error
+import urllib.request
 from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any
@@ -56,6 +59,11 @@ import yaml
 
 from ._yaml_strict import safe_load_strict as _safe_load_strict
 from .checks.base import VALID_SEVERITY_NAMES as _VALID_SEVERITIES
+
+#: Remote-policy fetch bounds. A policy pack is a small YAML file; the cap
+#: protects against a pathological / hostile endpoint streaming gigabytes.
+_POLICY_FETCH_TIMEOUT = 15.0
+_MAX_POLICY_BYTES = 256 * 1024
 
 #: Search roots, in priority order, for policy YAML files relative to
 #: cwd. First existing directory wins; later directories are skipped so
@@ -76,6 +84,54 @@ _GATE_KEYS: frozenset[str] = frozenset({
 _TOPLEVEL_KEYS: frozenset[str] = frozenset({
     "name", "description", "checks", "standards", "gate", "overrides",
 })
+
+#: Curated policy packs shipped with the tool, so the common compliance /
+#: release gates work by name (``--policy slsa-l3``) without authoring a
+#: file. Each entry uses the same schema as an on-disk policy and is
+#: validated through the same loader. A local policy of the same name
+#: (under :data:`POLICY_DIRS`) shadows the built-in. The ``standards``
+#: filter only focuses finding annotation (the full rule pack still runs
+#: and scores), so a framework pack narrows the compliance evidence
+#: without reducing coverage.
+BUILTIN_PACKS: dict[str, dict[str, Any]] = {
+    "pr-gate": {
+        "name": "pr-gate",
+        "description": "Pre-merge gate: full rule pack, block on HIGH and CRITICAL.",
+        "gate": {"fail_on": "HIGH"},
+    },
+    "release-gate": {
+        "name": "release-gate",
+        "description": "Release gate: block on MEDIUM+ and require grade B or better.",
+        "gate": {"fail_on": "MEDIUM", "min_grade": "B"},
+    },
+    "slsa-l3": {
+        "name": "slsa-l3",
+        "description": "SLSA Build L3 focus: provenance, signing, isolation; block on HIGH+.",
+        "standards": ["slsa", "owasp_cicd_top_10"],
+        "gate": {"fail_on": "HIGH"},
+    },
+    "pci-dss": {
+        "name": "pci-dss",
+        "description": "PCI DSS v4.0 evidence run; block on HIGH+.",
+        "standards": ["pci_dss_v4", "owasp_cicd_top_10"],
+        "gate": {"fail_on": "HIGH"},
+    },
+    "supply-chain-strict": {
+        "name": "supply-chain-strict",
+        "description": (
+            "Strict supply-chain gate: pinning, provenance, dependency "
+            "integrity; block on MEDIUM+ and require grade B+."
+        ),
+        "standards": [
+            "owasp_cicd_top_10", "slsa", "cis_supply_chain", "s2c2f",
+        ],
+        "gate": {"fail_on": "MEDIUM", "min_grade": "B"},
+        # GHA-001 (third-party action not pinned to a SHA) is the
+        # canonical pinning rule; a strict supply-chain gate treats an
+        # unpinned action as a hard stop.
+        "overrides": {"GHA-001": {"severity": "critical"}},
+    },
+}
 
 
 class PolicyError(Exception):
@@ -142,14 +198,19 @@ def load_policy(name_or_path: str, cwd: Path | None = None) -> Policy:
 
     Resolution order:
 
+    0. ``name_or_path`` is an ``https://`` URL, fetch and load a shareable
+       remote policy pack.
     1. ``name_or_path`` matches an existing file on disk, load it
        directly.
     2. Walk :data:`POLICY_DIRS` looking for ``<name>.yml`` /
        ``<name>.yaml``. First hit wins.
+    3. A built-in pack of that name.
 
     Raises :class:`PolicyError` when no candidate matches or the YAML
     parse / shape check fails.
     """
+    if name_or_path.lower().startswith(("https://", "http://")):
+        return _load_policy_url(name_or_path)
     cwd = cwd or Path.cwd()
     p = Path(name_or_path)
     if p.is_file():
@@ -173,9 +234,13 @@ def load_policy(name_or_path: str, cwd: Path | None = None) -> Policy:
             candidate = base / f"{name}{suffix}"
             if candidate.is_file():
                 return _load_policy_file(candidate)
+    builtin = _builtin_policy(name)
+    if builtin is not None:
+        return builtin
     raise PolicyError(
         f"policy {name!r} not found in any of: "
         + ", ".join(POLICY_DIRS)
+        + f"; built-in packs: {', '.join(sorted(BUILTIN_PACKS))}"
     )
 
 
@@ -207,9 +272,108 @@ def policy_to_config_map(policy: Policy) -> dict[str, Any]:
     return out
 
 
+def _builtin_policy(name: str) -> Policy | None:
+    """Build the built-in pack named *name*, or ``None`` if there isn't one.
+
+    Routed through :func:`_from_dict` so a pack is validated exactly like
+    an on-disk policy (a malformed severity / grade in :data:`BUILTIN_PACKS`
+    trips the same checks, caught by the test suite).
+    """
+    raw = BUILTIN_PACKS.get(name)
+    if raw is None:
+        return None
+    # Copy so the loader can't mutate the shared constant.
+    return _from_dict(dict(raw), Path(f"<built-in:{name}>"))
+
+
+def builtin_policies() -> list[Policy]:
+    """Every built-in pack, in declaration order. Used by ``--list-policies``."""
+    out: list[Policy] = []
+    for name in BUILTIN_PACKS:
+        pol = _builtin_policy(name)
+        if pol is not None:
+            out.append(pol)
+    return out
+
+
 # ────────────────────────────────────────────────────────────────────────────
 # Internal: file loading and schema coercion.
 # ────────────────────────────────────────────────────────────────────────────
+
+
+def _policy_cache_dir() -> Path:
+    """Cache directory for fetched remote policy packs."""
+    try:
+        import platformdirs
+
+        base = Path(platformdirs.user_cache_dir("pipeline-check"))
+    except Exception:
+        base = Path.home() / ".cache" / "pipeline-check"
+    return base / "policies"
+
+
+def _load_policy_url(url: str) -> Policy:
+    """Fetch and load a shareable policy pack from an ``https://`` URL.
+
+    HTTPS only (the fetch reuses the redirect-hardened opener that the
+    other remote resolvers use). The response is size-capped, validated
+    through the same schema loader as an on-disk policy, and cached so a
+    later offline run still resolves the gate. A successful fetch always
+    refreshes the cache; the cache is only read back when the network
+    fetch fails.
+
+    A remote policy can only *configure the gate* (thresholds, rule
+    filters, severity overrides), never run code, but note that it can
+    also *weaken* the gate, so the source URL is printed by the CLI when
+    a policy loads.
+    """
+    if not url.lower().startswith("https://"):
+        raise PolicyError(
+            f"a remote policy must be fetched over https; refused: {url}"
+        )
+    cache = _policy_cache_dir() / (
+        hashlib.sha256(url.encode("utf-8")).hexdigest() + ".yml"
+    )
+    text: str | None = None
+    try:
+        req = urllib.request.Request(
+            url, headers={"User-Agent": "pipeline-check"}
+        )
+        from .checks._primitives.safe_http import urlopen_https_only
+
+        with urlopen_https_only(req, timeout=_POLICY_FETCH_TIMEOUT) as resp:
+            raw_bytes = resp.read(_MAX_POLICY_BYTES + 1)
+        if len(raw_bytes) > _MAX_POLICY_BYTES:
+            raise PolicyError(
+                f"remote policy is too large (> {_MAX_POLICY_BYTES} bytes): {url}"
+            )
+        text = raw_bytes.decode("utf-8")
+        try:
+            cache.parent.mkdir(parents=True, exist_ok=True)
+            cache.write_text(text, encoding="utf-8")
+        except OSError:
+            pass  # caching is best-effort
+    except (urllib.error.URLError, OSError, UnicodeDecodeError) as exc:
+        # Network failure: fall back to the last good cached copy if any.
+        if cache.is_file():
+            text = cache.read_text(encoding="utf-8")
+        else:
+            raise PolicyError(
+                f"could not fetch remote policy {url}: {exc}"
+            ) from exc
+    try:
+        raw = _safe_load_strict(text)
+    except yaml.YAMLError as exc:
+        raise PolicyError(f"could not parse remote policy {url}: {exc}") from exc
+    if not isinstance(raw, dict):
+        raise PolicyError(
+            f"remote policy {url}: top-level value must be a mapping"
+        )
+    pol = _from_dict(raw, Path(url))
+    # ``str(Path(url))`` collapses ``//`` to ``/``; keep the verbatim URL
+    # so the ``[policy] loaded … from <url>`` notice is accurate.
+    pol.source = url
+    return pol
 
 
 def _load_policy_file(path: Path) -> Policy:

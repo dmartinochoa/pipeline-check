@@ -5,6 +5,7 @@ from pipeline_check.core.checks.base import Severity
 from pipeline_check.core.checks.devenv.base import (
     KIND_CLAUDE_SETTINGS,
     KIND_DEVCONTAINER,
+    KIND_MCP_CONFIG,
     KIND_VSCODE_SETTINGS,
     KIND_VSCODE_TASKS,
     _strip_jsonc,
@@ -279,4 +280,88 @@ class TestDEV006:
     def test_passes_on_non_settings_kind(self):
         # The rule only inspects .vscode/settings.json documents.
         f = run_check('{"version": "2.0.0"}', KIND_VSCODE_TASKS, "DEV-006")
+        assert f.passed
+
+
+class TestDEV007:
+    """Committed MCP config auto-launches a local command server."""
+
+    def test_fires_on_npx_command_server(self):
+        f = run_check(
+            '{"mcpServers": {"weather": '
+            '{"command": "npx", "args": ["-y", "@acme/weather-mcp"]}}}',
+            KIND_MCP_CONFIG, "DEV-007",
+        )
+        assert not f.passed
+        assert f.severity is Severity.MEDIUM
+        assert "weather" in f.description
+        assert "remote package" in f.description  # npx -y flagged
+
+    def test_fires_on_local_command_server(self):
+        # A first-party local server still auto-launches on open.
+        f = run_check(
+            '{"mcpServers": {"local": '
+            '{"command": "node", "args": ["./tools/server.js"]}}}',
+            KIND_MCP_CONFIG, "DEV-007",
+        )
+        assert not f.passed
+        assert "remote package" not in f.description
+
+    def test_reads_vscode_servers_block(self):
+        f = run_check(
+            '{"servers": {"db": {"command": "uvx", "args": ["mcp-db"]}}}',
+            KIND_MCP_CONFIG, "DEV-007",
+        )
+        assert not f.passed
+        assert "remote package" in f.description  # uvx flagged
+
+    def test_passes_on_url_only_server(self):
+        # An http/sse server doesn't spawn a local process.
+        f = run_check(
+            '{"mcpServers": {"api": '
+            '{"type": "http", "url": "https://api.example.com/mcp"}}}',
+            KIND_MCP_CONFIG, "DEV-007",
+        )
+        assert f.passed
+
+    def test_passes_on_empty_config(self):
+        f = run_check('{"mcpServers": {}}', KIND_MCP_CONFIG, "DEV-007")
+        assert f.passed
+
+    def test_passes_on_non_mcp_kind(self):
+        f = run_check('{"version": "2.0.0"}', KIND_VSCODE_TASKS, "DEV-007")
+        assert f.passed
+
+
+class TestDEV008:
+    """Credential-shaped literal committed in a developer-environment config."""
+
+    def test_fires_on_token_in_mcp_env(self):
+        f = run_check(
+            '{"mcpServers": {"gh": {"command": "npx", '
+            '"env": {"GITHUB_TOKEN": '
+            '"ghp_abcdef1234567890abcdef1234567890abcd"}}}}',
+            KIND_MCP_CONFIG, "DEV-008",
+        )
+        assert not f.passed
+        assert f.severity is Severity.CRITICAL
+
+    def test_fires_on_token_in_devcontainer_env(self):
+        f = run_check(
+            '{"image": "node", "remoteEnv": '
+            '{"AWS_ACCESS_KEY_ID": "AKIAQYLPMN5HABCDEFGH"}}',
+            KIND_DEVCONTAINER, "DEV-008",
+        )
+        assert not f.passed
+
+    def test_passes_on_clean_config(self):
+        f = run_check(
+            '{"mcpServers": {"gh": {"command": "npx", '
+            '"env": {"GITHUB_TOKEN": "${env:GITHUB_TOKEN}"}}}}',
+            KIND_MCP_CONFIG, "DEV-008",
+        )
+        assert f.passed
+
+    def test_passes_on_unrelated_settings(self):
+        f = run_check('{"editor.tabSize": 2}', KIND_VSCODE_SETTINGS, "DEV-008")
         assert f.passed

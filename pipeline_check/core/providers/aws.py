@@ -47,8 +47,22 @@ class AWSProvider(BaseProvider):
         # ~165ms boto3/s3transfer import cost. Only an actual AWS scan
         # reaches build_context.
         import boto3
+        from botocore.exceptions import ProfileNotFound
 
-        return boto3.Session(region_name=region, profile_name=profile)
+        try:
+            return boto3.Session(region_name=region, profile_name=profile)
+        except ProfileNotFound as exc:
+            # Surface a named-profile typo as a clean error (the CLI maps
+            # ValueError from a provider's build_context to exit 2 with no
+            # traceback) instead of a raw botocore stack trace. ``str(exc)``
+            # names the actual profile, whether it came from --profile or
+            # the AWS_PROFILE environment variable.
+            raise ValueError(
+                f"{exc}. Pick an existing AWS profile (see ~/.aws/config / "
+                f"~/.aws/credentials), run `aws configure --profile <name>`, "
+                f"or drop --profile / unset AWS_PROFILE to use the default "
+                f"credential chain."
+            ) from exc
 
     @property
     def check_classes(self) -> list[type[BaseCheck]]:

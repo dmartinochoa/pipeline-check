@@ -224,6 +224,49 @@ the policy declared without rewriting the YAML.
 When a policy loads, a `[policy] loaded '<name>' from <path>` line
 prints to stderr so the active profile is visible in CI logs.
 
+### Built-in packs
+
+Five curated packs ship with the tool, so the common gates work by
+name without authoring a file:
+
+| Pack | Gate | Standards focus |
+|------|------|-----------------|
+| `pr-gate` | fail on HIGH+ | full pack |
+| `release-gate` | fail on MEDIUM+, grade B+ | full pack |
+| `slsa-l3` | fail on HIGH+ | SLSA + OWASP CI/CD |
+| `pci-dss` | fail on HIGH+ | PCI DSS v4.0 + OWASP CI/CD |
+| `supply-chain-strict` | fail on MEDIUM+, grade B+, unpinned action (`GHA-001`) promoted to CRITICAL | OWASP CI/CD + SLSA + CIS Supply Chain + S2C2F |
+
+```bash
+pipeline_check --policy slsa-l3              # batteries-included SLSA gate
+pipeline_check --policy supply-chain-strict  # strict supply-chain gate
+```
+
+A local `./policies/<name>.yml` of the same name shadows the built-in,
+so a team can start from a pack and override it by dropping a file of
+the same name. The `standards` focus only narrows the compliance
+annotation on findings (the full rule pack still runs and scores), so a
+framework pack sharpens the evidence without reducing coverage.
+`--list-policies` shows the built-ins alongside any local files.
+
+### Shareable packs (path or URL)
+
+`--policy` also accepts a literal path or an `https://` URL, so an
+organization can publish one gate and have every repo consume it:
+
+```bash
+pipeline_check --policy ./gates/fintech-strict.yml          # explicit path
+pipeline_check --policy https://policies.acme.internal/pci.yml   # shared pack
+```
+
+A remote pack is fetched over HTTPS (redirects are pinned to HTTPS, the
+response is size-capped) and cached, so a later offline run still
+resolves the gate. A remote policy can only *configure* the gate
+(thresholds, rule / standards filters, severity overrides), never run
+code, but note it can also *weaken* the gate, the source URL is printed
+on the `[policy] loaded … from <url>` line so the choice is auditable in
+CI logs.
+
 ## Gate summary on stderr
 
 Unless `--output json` is active (stdout must stay clean), every run

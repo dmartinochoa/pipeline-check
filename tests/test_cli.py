@@ -77,6 +77,16 @@ class TestExitCodes:
             result = runner.invoke(scan, ["--output", "json"])
         assert result.exit_code == 2
 
+    def test_exit_2_clean_error_on_missing_required_flag(self, runner):
+        # A provider whose build_context() raises ValueError on a missing
+        # required flag (scm / runs) must exit 2 with a clean message, NOT
+        # a raw traceback. Regression guard: build_context runs during
+        # Scanner construction, which used to sit outside the run() guard.
+        result = runner.invoke(scan, ["--pipeline", "scm", "--output", "json"])
+        assert result.exit_code == 2
+        assert "Traceback" not in result.output
+        assert "scm provider requires" in result.output
+
 
 class TestJsonOutput:
     def test_output_is_valid_json(self, runner):

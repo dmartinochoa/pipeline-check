@@ -230,6 +230,7 @@ STANDARD = Standard(
         "GHA-003":  ["Dangerous-Workflow"],
         "GHA-119":  ["Dangerous-Workflow"],# untrusted context into an agentic AI CLI
         "GHA-120":  ["Dangerous-Workflow"],# trust_remote_code model load = code exec
+        "GHA-122":  ["Dangerous-Workflow"],# unsafe pickle deser of fetched artifact = code exec
         "GHA-117":  ["Dangerous-Workflow"],# IaC apply on untrusted PR trigger
         "GHA-118":  ["Dangerous-Workflow"],# untrusted content into $GITHUB_ENV / $GITHUB_PATH
         "GHA-009":  ["Dangerous-Workflow"],
@@ -245,6 +246,10 @@ STANDARD = Standard(
         "GHA-028":  ["Dangerous-Workflow"],
         "GHA-038":  ["Dangerous-Workflow"],                            # ACTIONS_ALLOW_UNSECURE_COMMANDS
         "GL-002":   ["Dangerous-Workflow"],
+        "GL-045":   ["Dangerous-Workflow"],# trust_remote_code model load = code exec
+        "GL-047":   ["Dangerous-Workflow"],# unsafe pickle deser of fetched artifact = code exec
+        "GL-048":   ["Dangerous-Workflow"],# untrusted MR context into agentic CLI = prompt injection
+        "GL-049":   ["Code-Review"],# agentic CLI output lands without review
         "GL-011":   ["Dangerous-Workflow"],
         "GL-012":   ["Dangerous-Workflow"],
         "GL-023":   ["Dangerous-Workflow"],
@@ -254,11 +259,13 @@ STANDARD = Standard(
         "GL-034":   ["Signed-Releases", "Pinned-Dependencies"],        # npm install without audit signatures
         "GL-035":   ["Pinned-Dependencies"],                           # pip install without --require-hashes
         "BB-002":   ["Dangerous-Workflow"],
+        "BB-035":   ["Dangerous-Workflow"],   # trust_remote_code model load = code exec
         "BB-018":   ["Dangerous-Workflow"],
         "BB-023":   ["Dangerous-Workflow"],
         "BB-025":   ["Dangerous-Workflow"],                            # malicious activity
         "BB-026":   ["Dangerous-Workflow"],
         "ADO-002":  ["Dangerous-Workflow"],
+        "ADO-034":  ["Dangerous-Workflow"],   # trust_remote_code model load = code exec
         "ADO-011":  ["Dangerous-Workflow"],
         "ADO-012":  ["Dangerous-Workflow"],
         "ADO-019":  ["Dangerous-Workflow"],
@@ -413,6 +420,7 @@ STANDARD = Standard(
         "GHA-039":  ["Token-Permissions"],          # services / container creds literal
         "GL-003":   ["Token-Permissions"],
         "GL-008":   ["Token-Permissions"],
+        "DEV-008":   ["Token-Permissions"],   # literal secret in a devenv config
         "GL-013":   ["Token-Permissions"],
         "GL-020":   ["Token-Permissions"],
         "BB-003":   ["Token-Permissions"],
@@ -537,6 +545,7 @@ STANDARD = Standard(
         "CD-002":   ["Code-Review"],
         "CCM-001":  ["Code-Review"],                                   # CodeCommit approval rule template
         "GHA-014":  ["Code-Review"],
+        "GHA-123":  ["Code-Review"],# agentic CLI output lands without review
         "GL-004":   ["Code-Review"],
         "GL-029":   ["Code-Review"],
         "BB-004":   ["Code-Review"],
@@ -622,6 +631,11 @@ STANDARD = Standard(
         # includes, and packages. ``FROM image:tag`` without a
         # digest is the canonical image-not-pinned failure.
         "DF-001": ["Pinned-Dependencies"],                              # FROM not digest-pinned
+        "MODEL-001": ["Pinned-Dependencies"],                           # unpinned base model
+        "MODEL-002": ["Pinned-Dependencies"],                           # third-party hub base model
+        "MODEL-003": ["Pinned-Dependencies"],                           # local unverified weights blob
+        "MODEL-004": ["Pinned-Dependencies"],                           # remote LoRA adapter
+        "MODEL-005": ["Pinned-Dependencies"],                           # config auto_map = custom loader code
         "DF-031": ["Pinned-Dependencies"],                              # COPY --from external image not digest-pinned
         "DF-003": ["Pinned-Dependencies"],                              # ADD remote no integrity
         "DF-004": ["Pinned-Dependencies", "Dangerous-Workflow"],        # curl-pipe

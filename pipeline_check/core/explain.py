@@ -81,6 +81,7 @@ _RULE_PACKAGES: tuple[str, ...] = (
     "pipeline_check.core.checks.argo.rules",
     "pipeline_check.core.checks.argocd.rules",
     "pipeline_check.core.checks.dockerfile.rules",
+    "pipeline_check.core.checks.modelfile.rules",
     "pipeline_check.core.checks.kubernetes.rules",
     "pipeline_check.core.checks.helm.rules",
     "pipeline_check.core.checks.oci.rules",

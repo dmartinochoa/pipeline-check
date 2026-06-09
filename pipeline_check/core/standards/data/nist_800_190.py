@@ -77,20 +77,26 @@ STANDARD = Standard(
         "GHA-003":  ["4.1.3"],
         "GHA-119":  ["4.1.3"],# untrusted context into an agentic AI CLI
         "GHA-120":  ["4.1.3"],# trust_remote_code model load = code exec
+        "GHA-122":  ["4.1.3"],# unsafe pickle deser of fetched artifact = code exec
         "GHA-117":  ["4.1.3"],# IaC apply on untrusted PR trigger
         "GHA-118":  ["4.1.3"],# untrusted content into $GITHUB_ENV / $GITHUB_PATH
         "GHA-016":  ["4.1.3"],
         "GHA-027":  ["4.1.3"],
         "GHA-028":  ["4.1.3"],
         "GL-002":   ["4.1.3"],
+        "GL-045":   ["4.1.3"],# trust_remote_code model load = code exec
+        "GL-047":   ["4.1.3"],# unsafe pickle deser of fetched artifact = code exec
+        "GL-048":   ["4.1.3"],# untrusted MR context into agentic CLI = prompt injection
         "GL-016":   ["4.1.3"],
         "GL-025":   ["4.1.3"],
         "GL-026":   ["4.1.3"],
         "BB-002":   ["4.1.3"],
+        "BB-035":   ["4.1.3"],   # trust_remote_code model load = code exec
         "BB-012":   ["4.1.3"],
         "BB-025":   ["4.1.3"],
         "BB-026":   ["4.1.3"],
         "ADO-002":  ["4.1.3"],
+        "ADO-034":  ["4.1.3"],   # trust_remote_code model load = code exec
         "ADO-016":  ["4.1.3"],
         "ADO-026":  ["4.1.3"],
         "ADO-027":  ["4.1.3"],
@@ -111,6 +117,7 @@ STANDARD = Standard(
         "GHA-008":  ["4.1.4"],
         "GL-003":   ["4.1.4"],
         "GL-008":   ["4.1.4"],
+        "DEV-008":   ["4.1.4"],   # literal secret in a devenv config
         "GL-013":   ["4.1.4"],
         "BB-003":   ["4.1.4"],
         "BB-008":   ["4.1.4"],
@@ -297,6 +304,11 @@ STANDARD = Standard(
         # cleartext secrets in images, 4.1.5 untrusted images
         # (unpinned).
         "DF-001": ["4.1.5"],                       # FROM not digest-pinned
+        "MODEL-001": ["4.1.5"],                    # unpinned base model
+        "MODEL-002": ["4.1.5"],                    # third-party hub base model
+        "MODEL-003": ["4.1.5"],                    # local unverified weights blob
+        "MODEL-004": ["4.1.5"],                    # remote LoRA adapter
+        "MODEL-005": ["4.1.5"],                    # config auto_map = custom loader code
         "DF-031": ["4.1.5"],                       # COPY --from external image not digest-pinned
         "DF-002": ["4.1.2", "4.4.4"],              # runs as root
         "DF-003": ["4.1.5", "4.2.1"],              # ADD remote, no integrity

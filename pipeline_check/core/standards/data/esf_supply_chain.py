@@ -109,6 +109,8 @@ STANDARD = Standard(
         "GHA-003":  ["ESF-D-INJECTION"],
         "GHA-119":  ["ESF-D-INJECTION"],# untrusted context into an agentic AI CLI
         "GHA-120":  ["ESF-D-INJECTION"],# trust_remote_code model load = code exec
+        "GHA-122":  ["ESF-D-INJECTION"],# unsafe pickle deser of fetched artifact = code exec
+        "GHA-121":  ["ESF-S-PIN-DEPS", "ESF-S-VERIFY-DEPS"],# unpinned model registry ref
         "GHA-117":  ["ESF-D-INJECTION"],# IaC apply on untrusted PR trigger
         "GHA-118":  ["ESF-D-INJECTION"],# untrusted content into $GITHUB_ENV / $GITHUB_PATH
         "GHA-004":  ["ESF-C-LEAST-PRIV"],
@@ -123,6 +125,7 @@ STANDARD = Standard(
         "GHA-105":  ["ESF-D-BUILD-ENV", "ESF-D-PRIV-BUILD"],
         "GHA-013":  ["ESF-D-INJECTION"],
         "GHA-014":  ["ESF-C-APPROVAL", "ESF-C-ENV-SEP"],
+        "GHA-123":  ["ESF-C-APPROVAL"],# agentic CLI output lands without review
         "GHA-015":  ["ESF-D-BUILD-TIMEOUT"],
         "GHA-016":  ["ESF-S-VERIFY-DEPS"],
         "GHA-017":  ["ESF-D-BUILD-ENV"],
@@ -142,6 +145,11 @@ STANDARD = Standard(
         "GL-001":   ["ESF-S-PIN-DEPS", "ESF-S-VERIFY-DEPS"],
         "GL-037": ["ESF-S-VERIFY-DEPS"],  # CI env disables Go module verification
         "GL-002":   ["ESF-D-INJECTION"],
+        "GL-045":   ["ESF-D-INJECTION"],   # trust_remote_code model load = code exec
+        "GL-046":   ["ESF-S-PIN-DEPS", "ESF-S-VERIFY-DEPS"],   # unpinned model registry ref
+        "GL-047":   ["ESF-D-INJECTION"],   # unsafe pickle deser of fetched artifact = code exec
+        "GL-048":   ["ESF-D-INJECTION"],   # untrusted MR context into agentic CLI = prompt injection
+        "GL-049":   ["ESF-C-APPROVAL"],   # agentic CLI output lands without review
         "GL-003":   ["ESF-D-SECRETS"],
         "GL-004":   ["ESF-C-APPROVAL", "ESF-C-ENV-SEP"],
         "GL-044":   ["ESF-C-APPROVAL", "ESF-C-ENV-SEP"],  # auto production deploy on an MR pipeline
@@ -150,6 +158,7 @@ STANDARD = Standard(
         "GL-006":   ["ESF-D-SIGN-ARTIFACTS"],
         "GL-007":   ["ESF-D-SBOM"],
         "GL-008":   ["ESF-D-SECRETS"],
+        "DEV-008":   ["ESF-D-SECRETS"],   # literal secret in a devenv config
         "GL-009":   ["ESF-S-PIN-DEPS", "ESF-S-IMMUTABLE"],
         "GL-010":   ["ESF-D-INJECTION", "ESF-S-VERIFY-DEPS"],
         "GL-011":   ["ESF-D-INJECTION", "ESF-S-PIN-DEPS"],
@@ -174,6 +183,7 @@ STANDARD = Standard(
         # ── Bitbucket Pipelines ────────────────────────────────────
         "BB-001":   ["ESF-S-PIN-DEPS", "ESF-S-VERIFY-DEPS"],
         "BB-002":   ["ESF-D-INJECTION"],
+        "BB-035":   ["ESF-D-INJECTION"],   # trust_remote_code model load = code exec
         "BB-003":   ["ESF-D-SECRETS"],
         "BB-004":   ["ESF-C-APPROVAL", "ESF-C-ENV-SEP"],
         "BB-005":   ["ESF-D-BUILD-TIMEOUT"],
@@ -202,6 +212,7 @@ STANDARD = Standard(
         # ── Azure DevOps Pipelines ─────────────────────────────────
         "ADO-001":  ["ESF-S-PIN-DEPS", "ESF-S-VERIFY-DEPS"],
         "ADO-002":  ["ESF-D-INJECTION"],
+        "ADO-034":  ["ESF-D-INJECTION"],   # trust_remote_code model load = code exec
         "ADO-003":  ["ESF-D-SECRETS"],
         "ADO-004":  ["ESF-C-APPROVAL", "ESF-C-ENV-SEP"],
         "ADO-005":  ["ESF-S-PIN-DEPS", "ESF-S-TRUSTED-REG"],
@@ -358,6 +369,11 @@ STANDARD = Standard(
         "HELM-017": ["ESF-S-VERIFY-DEPS"],  # tpl of an untrusted .Values value
         # ── Dockerfile (image build supply chain) ──────────────────
         "DF-001": ["ESF-S-PIN-DEPS", "ESF-S-VERIFY-DEPS"],         # FROM not digest-pinned
+        "MODEL-001": ["ESF-S-PIN-DEPS", "ESF-S-VERIFY-DEPS"],      # unpinned base model
+        "MODEL-002": ["ESF-S-TRUSTED-REG", "ESF-S-VERIFY-DEPS"],   # third-party hub base model
+        "MODEL-003": ["ESF-S-VERIFY-DEPS"],                        # local unverified weights blob
+        "MODEL-004": ["ESF-S-PIN-DEPS", "ESF-S-VERIFY-DEPS"],      # remote LoRA adapter
+        "MODEL-005": ["ESF-S-VERIFY-DEPS"],                        # config auto_map = custom loader code
         "DF-031": ["ESF-S-PIN-DEPS", "ESF-S-VERIFY-DEPS"],         # COPY --from external image not digest-pinned
         "DF-002": ["ESF-D-PRIV-BUILD"],                            # runs as root
         "DF-003": ["ESF-S-VERIFY-DEPS"],                           # ADD remote no integrity
@@ -1060,6 +1076,7 @@ STANDARD = Standard(
         # Developer-environment auto-execution
         "DEV-001":   ["ESF-D-INJECTION"],                  # vscode folderOpen task
         "DEV-006":   ["ESF-D-INJECTION"],                  # vscode settings exec-path / env injection
+        "DEV-007":   ["ESF-D-INJECTION"],                  # committed MCP config auto-launches a command server
         "DEV-002":   ["ESF-D-INJECTION"],                  # devcontainer lifecycle
         "DEV-003":   ["ESF-D-INJECTION"],                  # committed claude hook
         "DEV-004":   ["ESF-S-VERIFY-DEPS", "ESF-D-INJECTION"],  # remote fetch+exec

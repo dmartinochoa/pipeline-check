@@ -59,13 +59,33 @@ class TestListPolicies:
         assert "release" in result.output
         assert "PR gate" in result.output
 
-    def test_list_policies_empty_exits_3(
+    def test_list_policies_lists_builtins_when_no_local(
         self, tmp_path: Path, monkeypatch,
     ) -> None:
+        """With no local policies, the built-in packs are still listed."""
         monkeypatch.chdir(tmp_path)
         runner = CliRunner()
         result = runner.invoke(scan, ["--list-policies"])
-        assert result.exit_code == 3, result.output
+        assert result.exit_code == 0, result.output
+        assert "slsa-l3" in result.output
+        assert "pci-dss" in result.output
+        assert "<built-in" in result.output
+
+    def test_list_policies_local_shadows_builtin(
+        self, tmp_path: Path, monkeypatch,
+    ) -> None:
+        """A local policy named like a built-in is listed once, from disk."""
+        monkeypatch.chdir(tmp_path)
+        _write_policy(
+            tmp_path, "slsa-l3",
+            "description: my custom slsa gate\ngate:\n  fail_on: LOW\n",
+        )
+        runner = CliRunner()
+        result = runner.invoke(scan, ["--list-policies"])
+        assert result.exit_code == 0, result.output
+        # The local file's description wins; the built-in line is gone.
+        assert "my custom slsa gate" in result.output
+        assert "SLSA Build L3 focus" not in result.output
 
 
 class TestPolicyResolution:
@@ -102,6 +122,26 @@ class TestPolicyResolution:
         # Click 8.2+ merges stderr into ``result.output``; we just
         # confirm the load message landed in the combined stream.
         assert "[policy] loaded 'pre-merge'" in result.output
+
+    def test_builtin_pack_resolves_without_local_file(
+        self, tmp_path: Path, monkeypatch,
+    ) -> None:
+        """``--policy slsa-l3`` resolves the built-in pack with no local file."""
+        monkeypatch.chdir(tmp_path)
+        repo = _minimal_gha_repo(tmp_path)
+        runner = CliRunner()
+        result = runner.invoke(
+            scan,
+            [
+                "--policy", "slsa-l3",
+                "--pipeline", "github",
+                "--gha-path", str(repo / ".github" / "workflows"),
+                "--output", "json",
+                "--no-chains",
+            ],
+        )
+        assert result.exit_code in (0, 1), result.output
+        assert "[policy] loaded 'slsa-l3'" in result.output
 
 
 class TestPolicyGateApplication:

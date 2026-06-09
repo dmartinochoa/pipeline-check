@@ -88,6 +88,7 @@ STANDARD = Standard(
         "GHA-003":  ["Build.L3.Isolated"],                         # script injection
         "GHA-119":  ["Build.L3.Isolated"],                         # untrusted context into an agentic AI CLI
         "GHA-120":  ["Build.L3.Isolated"],                         # trust_remote_code model load = code exec
+        "GHA-122":  ["Build.L3.Isolated"],                         # unsafe pickle deser of fetched artifact = code exec
         "GHA-117":  ["Build.L3.Isolated"],                         # IaC apply on untrusted PR trigger
         "GHA-118":  ["Build.L3.Isolated"],                         # untrusted content into $GITHUB_ENV / $GITHUB_PATH
         "GHA-004":  ["Build.L3.NonFalsifiable"],                   # unrestricted GITHUB_TOKEN
@@ -141,6 +142,7 @@ STANDARD = Standard(
         "GHA-054":  ["Build.L3.NonFalsifiable"],                   # checkout ssh-key persists into .git/config
         "GHA-005":  ["Build.L3.NonFalsifiable"],                   # long-lived AWS keys
         "GHA-014":  ["Build.L3.NonFalsifiable"],                   # deploy job missing environment
+        "GHA-123":  ["Build.L3.NonFalsifiable"],                   # agentic CLI output lands without review
         "GHA-018":  ["Build.L3.NonFalsifiable"],                   # GITHUB_TOKEN persisted to storage
         "GHA-022":  ["Build.L3.Isolated",
                      "Build.L3.NonFalsifiable"],                   # TLS bypass
@@ -174,11 +176,16 @@ STANDARD = Standard(
         "GL-001":   ["Build.L3.NonFalsifiable"],                   # floating image tag
         "GL-037": ["Build.L3.NonFalsifiable"],  # CI env disables Go module verification
         "GL-002":   ["Build.L3.Isolated"],                         # script injection
+        "GL-045":   ["Build.L3.Isolated"],                         # trust_remote_code model load = code exec
+        "GL-047":   ["Build.L3.Isolated"],                         # unsafe pickle deser of fetched artifact = code exec
+        "GL-048":   ["Build.L3.Isolated"],                         # MR context into agentic CLI = prompt injection
+        "GL-049":   ["Build.L3.NonFalsifiable"],                   # agentic CLI output lands without review
         "GL-005":   ["Build.L3.NonFalsifiable"],                   # unpinned include
         "GL-042":   ["Build.L3.NonFalsifiable"],                   # unpinned component include
         "GL-006":   ["Build.L2.Signed"],
         "GL-007":   ["Build.L1.Provenance"],
         "GL-008":   ["Build.L3.NonFalsifiable"],                   # leaked creds
+        "DEV-008":   ["Build.L3.NonFalsifiable"],                  # literal secret in a devenv config
         "GL-009":   ["Build.L3.NonFalsifiable"],                   # tag-pinned not digest
         "GL-010":   ["Build.L3.Isolated"],                         # multi-project artifact ingestion
         "GL-011":   ["Build.L3.Isolated"],                         # include: local on MR pipeline
@@ -214,6 +221,7 @@ STANDARD = Standard(
         # ── Bitbucket Pipelines ───────────────────────────────────
         "BB-001":   ["Build.L3.NonFalsifiable"],                   # unpinned pipe
         "BB-002":   ["Build.L3.Isolated"],                         # script injection
+        "BB-035":   ["Build.L3.Isolated"],                         # trust_remote_code model load = code exec
         "BB-005":   ["Build.L3.Ephemeral"],                        # unbounded runtime
         "BB-006":   ["Build.L2.Signed"],
         "BB-007":   ["Build.L1.Provenance"],
@@ -245,6 +253,7 @@ STANDARD = Standard(
         # ── Azure DevOps Pipelines ────────────────────────────────
         "ADO-001":  ["Build.L3.NonFalsifiable"],                   # unpinned task
         "ADO-002":  ["Build.L3.Isolated"],                         # script injection
+        "ADO-034":  ["Build.L3.Isolated"],                         # trust_remote_code model load = code exec
         "ADO-005":  ["Build.L3.NonFalsifiable"],                   # unpinned container
         "ADO-006":  ["Build.L2.Signed"],
         "ADO-007":  ["Build.L1.Provenance"],
@@ -544,6 +553,11 @@ STANDARD = Standard(
         # or by the build's own tenant). Provenance labels tie to
         # L1.Provenance + L2.Signed.
         "DF-001": ["Build.L3.NonFalsifiable"],                     # FROM not digest-pinned
+        "MODEL-001": ["Build.L3.NonFalsifiable"],                  # unpinned base model
+        "MODEL-002": ["Build.L3.NonFalsifiable"],                  # third-party hub base model
+        "MODEL-003": ["Build.L3.NonFalsifiable"],                  # local unverified weights blob
+        "MODEL-004": ["Build.L3.NonFalsifiable"],                  # remote LoRA adapter
+        "MODEL-005": ["Build.L3.NonFalsifiable"],                  # config auto_map = custom loader code
         "DF-031": ["Build.L3.NonFalsifiable"],                     # COPY --from external image not digest-pinned
         "DF-003": ["Build.L3.NonFalsifiable"],                     # ADD remote no integrity
         "DF-004": ["Build.L3.Isolated",

@@ -271,6 +271,8 @@ STANDARD = Standard(
         "CP-005":   ["ENF-1", "ENF-2"],
         "CD-002":   ["ENF-1"],
         "GHA-014":  ["ENF-1"],
+        "GHA-123":  ["ENF-1"],
+        "GL-049":   ["ENF-1"],   # agentic CLI output lands without review
         "GL-004":   ["ENF-1", "ENF-2"],
         "GL-029":   ["ENF-2"],
         "BB-004":   ["ENF-1"],
@@ -361,6 +363,11 @@ STANDARD = Standard(
         # tracking and updating OSS; REB-2 / REB-3 cover signing
         # and SBOMs of produced artifacts.
         "DF-001":  ["ING-1", "UPD-1"],   # FROM not digest-pinned
+        "MODEL-001": ["ING-1", "UPD-1"],  # unpinned base model
+        "MODEL-002": ["ING-1", "UPD-1"],  # third-party hub base model
+        "MODEL-003": ["ING-1", "UPD-1"],  # local unverified weights blob
+        "MODEL-004": ["ING-1", "UPD-1"],  # remote LoRA adapter
+        "MODEL-005": ["ING-1", "UPD-1"],  # config auto_map = custom loader code
         "DF-031":  ["ING-1", "UPD-1"],   # COPY --from external image not digest-pinned
         "DF-003":  ["ING-1", "UPD-1"],   # ADD remote no integrity
         "DF-004":  ["ING-1"],            # curl-pipe

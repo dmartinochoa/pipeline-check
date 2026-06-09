@@ -9,6 +9,12 @@ from __future__ import annotations
 
 import re
 
+from ..._primitives.agentic_cli import (  # re-exported for callers
+    AGENTIC_CLI_RE,
+)
+from ..._primitives.agentic_cli import (
+    invokes_agentic_cli as step_invokes_agentic_cli,
+)
 from ..._primitives.sha_ref import SHA_RE  # re-exported for callers
 
 __all__ = [
@@ -121,17 +127,6 @@ UNTRUSTED_TRIGGERS = frozenset({"pull_request_target", "workflow_run"})
 # Agentic AI CLIs: tools that read a prompt and then act (run shell,
 # write files, call tools) rather than just returning text. Shared by
 # GHA-058 (permission-bypass flags) and GHA-119 (prompt injection). The
-# set is the agentic ones specifically, plain text-completion CLIs
-# (``llm``, ``ollama``) are excluded because a prompt-injection there
-# can't directly execute. ``q chat`` is Amazon Q; ``cursor-agent`` runs
-# unattended by default.
-AGENTIC_CLI_RE = re.compile(
-    r"\b(?:claude|gemini|q\s+chat|cursor-agent|aider|openhands|goose)\b",
-    re.IGNORECASE,
-)
-
-
-def step_invokes_agentic_cli(body: str) -> str | None:
-    """Return the agentic-CLI name a ``run:`` *body* invokes, or None."""
-    match = AGENTIC_CLI_RE.search(body)
-    return match.group(0).lower() if match else None
+# set is the agentic ones specifically. ``AGENTIC_CLI_RE`` and
+# ``step_invokes_agentic_cli`` now live in ``_primitives/agentic_cli`` (shared
+# with the GitLab analog GL-048) and are re-exported at the top of this module.

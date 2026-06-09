@@ -144,6 +144,7 @@ STANDARD = Standard(
         #   Hardcoded secrets in CI config are the attacker's target.
         "GHA-008":  ["REC-2", "CA-6"],
         "GL-008":   ["REC-2", "CA-6"],
+        "DEV-008":   ["REC-2", "CA-6"],   # literal secret in a devenv config
         "BB-008":   ["REC-2", "CA-6"],
         "ADO-008":  ["REC-2", "CA-6"],
         "JF-008":   ["REC-2", "CA-6"],
@@ -293,6 +294,11 @@ STANDARD = Standard(
         "DR-001":   ["IA-11"],
         "DR-005":   ["IA-11"],
         "DF-001":   ["IA-11"],
+        "MODEL-001": ["IA-11"],   # unpinned base model
+        "MODEL-002": ["IA-11"],   # third-party hub base model
+        "MODEL-003": ["IA-11"],   # local unverified weights blob
+        "MODEL-004": ["IA-11"],   # remote LoRA adapter
+        "MODEL-005": ["IA-11"],   # config auto_map = custom loader code
         "DF-031":   ["IA-11"],
         "GHA-089":  ["IA-11"],
         "GHA-094":  ["IA-11"],
@@ -384,12 +390,19 @@ STANDARD = Standard(
         "GHA-003":  ["EX-6"],
         "GHA-119":  ["EX-6"],# untrusted context into an agentic AI CLI
         "GHA-120":  ["EX-6"],# trust_remote_code model load = code exec
+        "GHA-122":  ["EX-6"],# unsafe pickle deser of fetched artifact = code exec
         "GHA-117":  ["EX-6"],# IaC apply on untrusted PR trigger
         "GHA-118":  ["EX-6"],# untrusted content into $GITHUB_ENV / $GITHUB_PATH
         "GHA-002":  ["EX-6", "PE-1"],
         "GL-002":   ["EX-6"],
+        "GL-045":   ["EX-6"],# trust_remote_code model load = code exec
+        "GL-047":   ["EX-6"],# unsafe pickle deser of fetched artifact = code exec
+        "GL-048":   ["EX-6"],# untrusted MR context into agentic CLI = prompt injection
+        "GL-049":   ["DE-1"],# agentic CLI output lands without review
         "BB-002":   ["EX-6"],
+        "BB-035":   ["EX-6"],   # trust_remote_code model load = code exec
         "ADO-002":  ["EX-6"],
+        "ADO-034":  ["EX-6"],   # trust_remote_code model load = code exec
         "JF-002":   ["EX-6"],
         "CC-002":   ["EX-6"],
         "BK-003":   ["EX-6"],
@@ -852,6 +865,7 @@ STANDARD = Standard(
         "GHA-052":  ["EX-6"],
         # Approval-gate / flow-control gaps
         "GHA-014":  ["DE-1"],
+        "GHA-123":  ["DE-1"],
         "GL-004":   ["DE-1"],
         "BB-004":   ["DE-1"],
         "ADO-004":  ["DE-1"],

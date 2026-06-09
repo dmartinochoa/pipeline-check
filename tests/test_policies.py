@@ -6,13 +6,16 @@ from pathlib import Path
 import pytest
 
 from pipeline_check.core.policies import (
+    BUILTIN_PACKS,
     POLICY_DIRS,
     Policy,
     PolicyError,
+    builtin_policies,
     discover_policies,
     load_policy,
     policy_to_config_map,
 )
+from pipeline_check.core.standards import available as _standards_available
 
 # ────────────────────────────────────────────────────────────────────────────
 # load_policy: resolution + parsing
@@ -366,3 +369,163 @@ def test_policy_dirs_contains_documented_paths() -> None:
     """``--list-policies`` help text claims these paths; lock them."""
     assert "policies" in POLICY_DIRS
     assert ".pipeline-check/policies" in POLICY_DIRS
+
+
+# ────────────────────────────────────────────────────────────────────────────
+# Built-in packs
+# ────────────────────────────────────────────────────────────────────────────
+
+
+class TestBuiltinPacks:
+    def test_builtin_policies_all_parse_and_validate(self) -> None:
+        """Every shipped pack round-trips through the same loader as a file."""
+        pols = builtin_policies()
+        assert {p.name for p in pols} == set(BUILTIN_PACKS)
+        for p in pols:
+            assert p.name, p
+            assert p.description, f"{p.name}: built-in packs must self-describe"
+            assert p.source.startswith("<built-in:")
+
+    def test_builtin_standards_filters_are_registered(self) -> None:
+        """A pack's ``standards`` focus must name real registered standards."""
+        registered = set(_standards_available())
+        for p in builtin_policies():
+            for std in p.standards:
+                assert std in registered, f"{p.name}: unknown standard {std!r}"
+
+    def test_load_builtin_by_name_from_empty_cwd(self, tmp_path: Path) -> None:
+        """A built-in pack resolves by name when no local policy dir exists."""
+        pol = load_policy("slsa-l3", cwd=tmp_path)
+        assert pol.name == "slsa-l3"
+        assert pol.fail_on == "HIGH"
+        assert "slsa" in pol.standards
+
+    def test_supply_chain_strict_override_normalized(self) -> None:
+        pol = load_policy("supply-chain-strict", cwd=Path("/nonexistent"))
+        assert pol.overrides == {"GHA-001": {"severity": "CRITICAL"}}
+        assert pol.min_grade == "B"
+
+    def test_local_file_shadows_builtin(self, tmp_path: Path) -> None:
+        """A local ``policies/<name>.yml`` wins over a same-named built-in."""
+        (tmp_path / "policies").mkdir()
+        (tmp_path / "policies" / "slsa-l3.yml").write_text(
+            "gate:\n  fail_on: LOW\n", encoding="utf-8",
+        )
+        pol = load_policy("slsa-l3", cwd=tmp_path)
+        assert pol.fail_on == "LOW"
+        assert not pol.source.startswith("<built-in:")
+
+    def test_unknown_name_error_lists_builtins(self, tmp_path: Path) -> None:
+        with pytest.raises(PolicyError) as exc:
+            load_policy("ghost", cwd=tmp_path)
+        # The error should point the user at the built-in packs.
+        assert "slsa-l3" in str(exc.value)
+
+    def test_discover_policies_stays_local_only(self, tmp_path: Path) -> None:
+        """Built-ins are surfaced by ``--list-policies`` (CLI), not by the
+        local-discovery helper, which keeps its on-disk-only contract."""
+        assert discover_policies(cwd=tmp_path) == []
+
+
+# ────────────────────────────────────────────────────────────────────────────
+# load_policy: remote (https URL) shareable packs
+# ────────────────────────────────────────────────────────────────────────────
+
+
+class _FakeResp:
+    """Minimal context-manager response with ``.read(n)``."""
+
+    def __init__(self, body: bytes) -> None:
+        self._body = body
+
+    def __enter__(self) -> _FakeResp:
+        return self
+
+    def __exit__(self, *exc: object) -> None:
+        return None
+
+    def read(self, n: int = -1) -> bytes:
+        return self._body
+
+
+_REMOTE_YAML = (
+    b"name: fintech-strict\n"
+    b"description: shared gate\n"
+    b"gate:\n"
+    b"  fail_on: HIGH\n"
+    b"  min_grade: B\n"
+)
+
+_SAFE_HTTP = "pipeline_check.core.checks._primitives.safe_http.urlopen_https_only"
+
+
+class TestLoadPolicyURL:
+    def test_https_url_fetches_and_validates(self, monkeypatch, tmp_path) -> None:
+        monkeypatch.setattr(
+            "pipeline_check.core.policies._policy_cache_dir",
+            lambda: tmp_path / "cache",
+        )
+        monkeypatch.setattr(_SAFE_HTTP, lambda req, timeout: _FakeResp(_REMOTE_YAML))
+        url = "https://example.com/policies/fintech-strict.yml"
+        pol = load_policy(url)
+        assert pol.name == "fintech-strict"
+        assert pol.fail_on == "HIGH"
+        assert pol.min_grade == "B"
+        # The source is the verbatim URL (not the //-collapsed Path form).
+        assert pol.source == url
+
+    def test_http_url_rejected(self, monkeypatch, tmp_path) -> None:
+        monkeypatch.setattr(
+            "pipeline_check.core.policies._policy_cache_dir",
+            lambda: tmp_path / "cache",
+        )
+        with pytest.raises(PolicyError) as exc:
+            load_policy("http://example.com/p.yml")
+        assert "https" in str(exc.value)
+
+    def test_oversized_remote_policy_rejected(self, monkeypatch, tmp_path) -> None:
+        from pipeline_check.core.policies import _MAX_POLICY_BYTES
+
+        monkeypatch.setattr(
+            "pipeline_check.core.policies._policy_cache_dir",
+            lambda: tmp_path / "cache",
+        )
+        big = b"name: x\n" + b"#" * (_MAX_POLICY_BYTES + 10)
+        monkeypatch.setattr(_SAFE_HTTP, lambda req, timeout: _FakeResp(big))
+        with pytest.raises(PolicyError) as exc:
+            load_policy("https://example.com/big.yml")
+        assert "too large" in str(exc.value)
+
+    def test_fetch_failure_falls_back_to_cache(self, monkeypatch, tmp_path) -> None:
+        import urllib.error
+
+        cache = tmp_path / "cache"
+        monkeypatch.setattr(
+            "pipeline_check.core.policies._policy_cache_dir", lambda: cache
+        )
+        url = "https://example.com/p.yml"
+        # First call succeeds and populates the cache.
+        monkeypatch.setattr(_SAFE_HTTP, lambda req, timeout: _FakeResp(_REMOTE_YAML))
+        assert load_policy(url).name == "fintech-strict"
+        # Second call: the network is down; the cached copy still resolves.
+        def _boom(req, timeout):
+            raise urllib.error.URLError("offline")
+
+        monkeypatch.setattr(_SAFE_HTTP, _boom)
+        assert load_policy(url).name == "fintech-strict"
+
+    def test_fetch_failure_without_cache_raises(self, monkeypatch, tmp_path) -> None:
+        import urllib.error
+
+        monkeypatch.setattr(
+            "pipeline_check.core.policies._policy_cache_dir",
+            lambda: tmp_path / "cache",
+        )
+
+        def _boom(req, timeout):
+            raise urllib.error.URLError("offline")
+
+        monkeypatch.setattr(_SAFE_HTTP, _boom)
+        with pytest.raises(PolicyError) as exc:
+            load_policy("https://example.com/p.yml")
+        assert "could not fetch" in str(exc.value)

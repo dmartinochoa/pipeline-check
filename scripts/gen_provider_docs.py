@@ -1954,6 +1954,61 @@ analogue in other providers:
   CRITICAL.
 """,
     ),
+    "modelfile": (
+        "Modelfile",
+        "pipeline_check.core.checks.modelfile.rules",
+        _REPO_ROOT / "docs" / "providers" / "modelfile.md",
+        """\
+# Modelfile provider
+
+Parses model declarations on disk, text-only static analysis, no model
+pull, no Ollama daemon. Two formats: Ollama `Modelfile` recipes (the
+declarative file that pins a model into the local registry, so this
+provider is the "Dockerfile of models") and vendored Hugging Face
+`config.json` model configs. The MODEL-* rules reason over the `FROM`
+base model / `ADAPTER` references a Modelfile declares and the custom
+code a model config wires in. It is the static, declaration-side
+complement to the CI-script AI rules (GHA-120/121/122, GL-045..049) that
+catch model pulls in build scripts.
+
+## Producer workflow
+
+```bash
+# Defaults to scanning the working tree for a Modelfile / config.json.
+pipeline_check --pipeline modelfile
+
+# …or pass it explicitly.
+pipeline_check --pipeline modelfile --modelfile-path models/chat.Modelfile
+
+# Recursively scan a directory. The loader matches Modelfile,
+# *.Modelfile, Modelfile.<suffix>, and HF model config.json by default.
+pipeline_check --pipeline modelfile --modelfile-path models/
+```
+
+All other flags (`--output`, `--severity-threshold`, `--checks`,
+`--standard`, …) behave the same as with the other providers.
+
+### Modelfile-specific checks
+
+The MODEL-* pack covers the model supply chain a Modelfile declares:
+
+- **MODEL-001**, the `FROM` base model must pin an immutable tag or
+  `@sha256:` digest rather than a bare name or `:latest`. The
+  model-registry analogue of GHA-001 / DF-001.
+- **MODEL-002**, a `FROM hf.co/...` / `huggingface.co/...` base model
+  is pulled straight from a third-party hub, bypassing the curated
+  Ollama library (the source-trust axis).
+- **MODEL-003**, a `FROM ./model.gguf` local weights blob has no
+  registry provenance, and a `.bin` / `.pt` import is pickle-backed.
+- **MODEL-004**, an `ADAPTER` LoRA pulled from a remote source can
+  re-steer the model's behavior and deserves the same pin-and-verify
+  treatment as the base model.
+- **MODEL-005**, a vendored HF `config.json` whose `auto_map` wires the
+  transformers auto-classes to the model repo's own Python, which runs
+  under `trust_remote_code=True`. The model-side complement of GHA-120 /
+  GL-045 (which flag the `trust_remote_code` load in CI scripts).
+""",
+    ),
     "azure_cloud": (
         "Azure Cloud",
         "pipeline_check.core.checks.azure_cloud.rules",
@@ -2243,6 +2298,11 @@ _FOOTER_CONFIG: dict[str, dict[str, str]] = {
         "arg_kind": "``ArgoCDContext``",
     },
     "dockerfile": {"prefix": "DF",  "prefix_lc": "df",  "pkg": "dockerfile"},
+    "modelfile": {
+        "prefix": "MODEL", "prefix_lc": "model", "pkg": "modelfile",
+        "signature": "check(ctx: ModelfileContext) -> list[Finding]",
+        "arg_kind": "``ModelfileContext``",
+    },
     "kubernetes": {"prefix": "K8S", "prefix_lc": "k8s", "pkg": "kubernetes"},
     "npm": {
         "prefix": "NPM", "prefix_lc": "npm", "pkg": "npm",

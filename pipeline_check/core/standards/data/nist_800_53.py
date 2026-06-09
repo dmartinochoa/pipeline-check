@@ -144,6 +144,7 @@ STANDARD = Standard(
         "GHA-003":  ["CM-6", "SA-11", "SA-15"],          # script injection
         "GHA-119":  ["CM-6", "SA-11", "SA-15"],          # untrusted context into an agentic AI CLI
         "GHA-120":  ["CM-6", "SA-11", "SA-15"],          # trust_remote_code model load = code exec
+        "GHA-122":  ["CM-6", "SA-11", "SA-15"],          # unsafe pickle deser of fetched artifact = code exec
         "GHA-117":  ["CM-6", "SA-11", "SA-15"],          # IaC apply on untrusted PR trigger
         "GHA-118":  ["CM-6", "SA-11", "SA-15"],          # untrusted content into $GITHUB_ENV / $GITHUB_PATH
         "GHA-004":  ["AC-6", "CM-6", "CM-7"],            # unrestricted GITHUB_TOKEN
@@ -158,6 +159,7 @@ STANDARD = Standard(
         "GHA-105":  ["CM-6", "CM-7"],                    # self-hosted runner on PR trigger
         "GHA-013":  ["CM-6", "SA-11"],                   # issue_comment no author guard
         "GHA-014":  ["SA-10", "AC-3"],                   # deploy job missing environment
+        "GHA-123":  ["SA-10", "AC-3"],                   # agentic CLI output lands without review
         "GHA-015":  ["CM-6"],                            # job has no timeout-minutes
         "GHA-016":  ["SR-3", "SR-11"],                   # remote script piped to shell
         "GHA-017":  ["SR-3", "SR-11"],                   # package install insecure source
@@ -241,6 +243,10 @@ STANDARD = Standard(
         "GL-001":   ["SR-3", "SR-11", "SI-2"],
         "GL-037": ["CM-7", "SR-3"],  # CI env disables Go module verification
         "GL-002":   ["SI-7", "SA-11", "CM-6"],
+        "GL-045":   ["SI-7", "SA-11", "CM-6"],   # trust_remote_code model load = code exec
+        "GL-047":   ["CM-6", "SA-11", "SA-15"],   # unsafe pickle deser of fetched artifact = code exec
+        "GL-048":   ["SI-7", "SA-11", "CM-6"],   # untrusted MR context into agentic CLI = prompt injection
+        "GL-049":   ["SA-10", "AC-3"],   # agentic CLI output lands without review
         "GL-003":   ["IA-5"],
         "GL-004":   ["SA-10", "AC-3"],
         "GL-044":   ["SA-10", "AC-3"],                   # auto production deploy on an MR pipeline
@@ -249,6 +255,7 @@ STANDARD = Standard(
         "GL-006":   ["SI-7", "SR-4"],                    # unsigned artifacts
         "GL-007":   ["SR-4", "CM-8"],                    # no SBOM
         "GL-008":   ["IA-5"],                            # literal secrets
+        "DEV-008":   ["IA-5"],                           # literal secret in a devenv config
         "GL-009":   ["SR-3", "SR-11", "SI-2"],           # image not digest-pinned
         "GL-010":   ["SI-7", "SA-11"],                   # multi-project artifact unverified
         "GL-011":   ["CM-6", "SA-11"],                   # include: local on MR pipeline
@@ -283,6 +290,7 @@ STANDARD = Standard(
         # Bitbucket Pipelines
         "BB-001":   ["SR-3", "SR-11", "SI-2"],
         "BB-002":   ["SI-7", "SA-11", "CM-6"],
+        "BB-035":   ["SI-7", "SA-11", "CM-6"],   # trust_remote_code model load = code exec
         "BB-003":   ["IA-5"],
         "BB-004":   ["SA-10", "AC-3"],
         "BB-034":   ["SA-10", "AC-3"],                   # prod deploy on a PR pipeline
@@ -320,6 +328,7 @@ STANDARD = Standard(
         # Azure DevOps Pipelines
         "ADO-001":  ["SR-3", "SR-11", "SI-2"],
         "ADO-002":  ["SI-7", "SA-11", "CM-6"],
+        "ADO-034":  ["SI-7", "SA-11", "CM-6"],   # trust_remote_code model load = code exec
         "ADO-003":  ["IA-5"],
         "ADO-004":  ["SA-10", "AC-3"],
         "ADO-005":  ["SR-3", "SR-11", "CM-2"],
@@ -599,6 +608,11 @@ STANDARD = Standard(
         # Dockerfile, image build choices evidence supply-chain (SR)
         # and configuration (CM) controls primarily.
         "DF-001":   ["SR-3", "SR-11", "SI-2"],           # FROM not digest-pinned
+        "MODEL-001": ["SR-3", "SR-11", "SI-2"],          # unpinned base model
+        "MODEL-002": ["SR-3", "SR-11", "SI-2"],          # third-party hub base model
+        "MODEL-003": ["SR-3", "SR-11", "SI-2"],          # local unverified weights blob
+        "MODEL-004": ["SR-3", "SR-11", "SI-2"],          # remote LoRA adapter
+        "MODEL-005": ["SR-3", "SR-11", "SI-2"],          # config auto_map = custom loader code
         "DF-031":   ["SR-3", "SR-11", "SI-2"],           # COPY --from external image not digest-pinned
         "DF-002":   ["AC-6", "CM-6"],                    # no USER
         "DF-003":   ["SR-3", "SR-11", "SI-7"],           # ADD URL no checksum
@@ -1041,6 +1055,7 @@ STANDARD = Standard(
         # Developer-environment auto-execution
         "DEV-001":   ["CM-7"],                             # vscode folderOpen task
         "DEV-006":   ["CM-7"],                             # vscode settings exec-path / env injection
+        "DEV-007":   ["CM-7"],                             # committed MCP config auto-launches a command server
         "DEV-002":   ["CM-7"],                             # devcontainer lifecycle
         "DEV-003":   ["CM-7"],                             # committed claude hook
         "DEV-004":   ["SI-7", "CM-7"],                     # auto-run remote fetch+exec

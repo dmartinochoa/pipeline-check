@@ -155,6 +155,8 @@ STANDARD = Standard(
         "GHA-003":  ["PW.6.1", "PW.9.1"],              # script injection
         "GHA-119":  ["PW.6.1", "PW.9.1"],              # untrusted context into an agentic AI CLI
         "GHA-120":  ["PW.6.1", "PW.9.1"],              # trust_remote_code model load = code exec
+        "GHA-122":  ["PW.6.1", "PW.9.1"],              # unsafe pickle deser of fetched artifact = code exec
+        "GHA-121":  ["PW.4.1", "PW.4.4"],              # model pulled without a pinned revision
         "GHA-117":  ["PW.6.1", "PW.9.1"],              # IaC apply on untrusted PR trigger
         "GHA-118":  ["PW.6.1", "PW.9.1"],              # untrusted content into $GITHUB_ENV / $GITHUB_PATH
         "GHA-004":  ["PO.5.1"],                        # no explicit permissions
@@ -169,6 +171,7 @@ STANDARD = Standard(
         "GHA-105":  ["PO.5.2", "PW.9.1"],              # self-hosted runner on PR trigger
         "GHA-013":  ["PO.5.1", "PW.9.1"],              # issue_comment no author guard
         "GHA-014":  ["PO.5.1"],                        # deploy job missing environment
+        "GHA-123":  ["PO.5.1"],                        # agentic CLI output lands without review
         "GHA-015":  ["PO.5.2", "PW.9.1"],              # job has no timeout-minutes
         "GHA-016":  ["PW.4.1", "PW.4.4"],              # remote script piped to shell
         "GHA-017":  ["PW.4.1", "PW.4.4"],              # package install insecure source
@@ -252,6 +255,11 @@ STANDARD = Standard(
         "GL-001":   ["PW.4.1", "PW.4.4"],
         "GL-037": ["PW.4.4"],  # CI env disables Go module verification
         "GL-002":   ["PW.6.1", "PW.9.1"],
+        "GL-045":   ["PW.6.1", "PW.9.1"],   # trust_remote_code model load = code exec
+        "GL-046":   ["PW.4.1", "PW.4.4"],   # model pulled without a pinned revision
+        "GL-047":   ["PW.6.1", "PW.9.1"],   # unsafe pickle deser of fetched artifact = code exec
+        "GL-048":   ["PW.6.1", "PW.9.1"],   # untrusted MR context into agentic CLI = prompt injection
+        "GL-049":   ["PO.5.1"],   # agentic CLI output lands without review
         "GL-003":   ["PS.1.1"],
         "GL-004":   ["PO.5.1"],
         "GL-044":   ["PO.5.1"],                        # auto production deploy on an MR pipeline
@@ -260,6 +268,7 @@ STANDARD = Standard(
         "GL-006":   ["PS.2.1", "PS.3.2"],              # unsigned artifacts
         "GL-007":   ["PS.3.2"],                        # no SBOM
         "GL-008":   ["PS.1.1"],                        # literal secrets
+        "DEV-008":   ["PS.1.1"],                        # literal secret in a devenv config
         "GL-009":   ["PW.4.1", "PW.4.4"],              # image not digest-pinned
         "GL-010":   ["PO.5.1", "PW.9.1"],              # multi-project artifact unverified
         "GL-011":   ["PO.5.1", "PW.9.1"],              # include: local on MR pipeline
@@ -296,6 +305,7 @@ STANDARD = Standard(
         # Bitbucket Pipelines
         "BB-001":   ["PW.4.1", "PW.4.4"],
         "BB-002":   ["PW.6.1", "PW.9.1"],
+        "BB-035":   ["PW.6.1", "PW.9.1"],   # trust_remote_code model load = code exec
         "BB-003":   ["PS.1.1"],
         "BB-004":   ["PO.5.1"],
         "BB-005":   ["PO.5.2", "PW.9.1"],
@@ -328,6 +338,7 @@ STANDARD = Standard(
         # Azure DevOps Pipelines
         "ADO-001":  ["PW.4.1", "PW.4.4"],
         "ADO-002":  ["PW.6.1", "PW.9.1"],
+        "ADO-034":  ["PW.6.1", "PW.9.1"],   # trust_remote_code model load = code exec
         "ADO-003":  ["PS.1.1"],
         "ADO-004":  ["PO.5.1"],
         "ADO-005":  ["PW.4.1", "PW.4.4"],
@@ -507,6 +518,11 @@ STANDARD = Standard(
         # PW.9.1 (env separation, secure defaults); credential-shape
         # rules tie to PS.1.1 (least-privilege code storage).
         "DF-001":   ["PW.4.1", "PW.4.4"],              # FROM not digest-pinned
+        "MODEL-001": ["PW.4.1", "PW.4.4"],             # unpinned base model
+        "MODEL-002": ["PW.4.1", "PW.4.4"],             # third-party hub base model
+        "MODEL-003": ["PW.4.1", "PW.4.4"],             # local unverified weights blob
+        "MODEL-004": ["PW.4.1", "PW.4.4"],             # remote LoRA adapter
+        "MODEL-005": ["PW.4.1", "PW.4.4"],             # config auto_map = custom loader code
         "DF-031":   ["PW.4.1", "PW.4.4"],              # COPY --from external image not digest-pinned
         "DF-002":   ["PO.5.1", "PW.9.1"],              # runs as root
         "DF-003":   ["PW.4.4", "PS.2.1"],              # ADD remote, no integrity
@@ -1030,6 +1046,7 @@ STANDARD = Standard(
         # Developer-environment auto-execution
         "DEV-001":   ["PW.6.1", "PW.9.1"],
         "DEV-006":   ["PW.6.1", "PW.9.1"],
+        "DEV-007":   ["PW.6.1", "PW.9.1"],   # committed MCP config auto-launches a command server
         "DEV-002":   ["PW.6.1", "PW.9.1"],
         "DEV-003":   ["PW.6.1", "PW.9.1"],
         "DEV-004":   ["PW.4.1", "PW.4.4"],

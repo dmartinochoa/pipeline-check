@@ -120,6 +120,7 @@ STANDARD = Standard(
         "GHA-003":  ["6.5.1"],                           # script injection
         "GHA-119":  ["6.5.1"],                           # untrusted context into an agentic AI CLI
         "GHA-120":  ["6.5.1"],                           # trust_remote_code model load = code exec
+        "GHA-122":  ["6.5.1"],                           # unsafe pickle deser of fetched artifact = code exec
         "GHA-117":  ["6.5.1"],                           # IaC apply on untrusted PR trigger
         "GHA-118":  ["6.5.1"],                           # untrusted content into $GITHUB_ENV / $GITHUB_PATH
         "GHA-004":  ["7.2.5"],                           # unrestricted GITHUB_TOKEN
@@ -128,6 +129,10 @@ STANDARD = Standard(
         "GL-001":   ["6.3.3"],
         "GL-037": ["6.3.1"],  # CI env disables Go module verification
         "GL-002":   ["6.5.1"],
+        "GL-045":   ["6.5.1"],   # trust_remote_code model load = code exec
+        "GL-047":   ["6.5.1"],   # unsafe pickle deser of fetched artifact = code exec
+        "GL-048":   ["6.5.1"],   # untrusted MR context into agentic CLI = prompt injection
+        "GL-049":   ["6.4.3"],   # agentic CLI output lands without review
         "GL-003":   ["8.2.1", "6.5.1"],
         "GL-004":   ["6.4.3"],
         "GL-044":   ["6.4.3"],
@@ -136,6 +141,7 @@ STANDARD = Standard(
         # Bitbucket Pipelines
         "BB-001":   ["6.3.3"],
         "BB-002":   ["6.5.1"],
+        "BB-035":   ["6.5.1"],   # trust_remote_code model load = code exec
         "BB-003":   ["8.2.1", "6.5.1"],
         "BB-004":   ["6.4.3"],
         "BB-034":   ["6.4.3"],
@@ -147,6 +153,7 @@ STANDARD = Standard(
         # Azure DevOps Pipelines
         "ADO-001":  ["6.3.3"],
         "ADO-002":  ["6.5.1"],
+        "ADO-034":  ["6.5.1"],   # trust_remote_code model load = code exec
         "ADO-003":  ["8.2.1", "6.5.1"],
         "ADO-004":  ["6.4.3"],
         "ADO-005":  ["6.3.3"],
@@ -228,6 +235,11 @@ STANDARD = Standard(
         # (strong unique identifiers). Vuln-related rules tie to
         # 6.3.1 / 6.3.3.
         "DF-001": ["6.4.3", "6.5.1"],                    # FROM not digest-pinned
+        "MODEL-001": ["6.4.3", "6.5.1"],                 # unpinned base model
+        "MODEL-002": ["6.4.3", "6.5.1"],                 # third-party hub base model
+        "MODEL-003": ["6.4.3", "6.5.1"],                 # local unverified weights blob
+        "MODEL-004": ["6.4.3", "6.5.1"],                 # remote LoRA adapter
+        "MODEL-005": ["6.4.3", "6.5.1"],                 # config auto_map = custom loader code
         "DF-031": ["6.4.3", "6.5.1"],                    # COPY --from external image not digest-pinned
         "DF-002": ["6.4.1", "7.2.5"],                    # runs as root
         "DF-003": ["6.5.1", "6.3.3"],                    # ADD remote no integrity
@@ -356,6 +368,7 @@ STANDARD = Standard(
         "GHA-105":  ["6.4.1"],                           # self-hosted runner on PR trigger
         "GHA-013":  ["6.4.1", "6.5.1"],                  # issue_comment no author guard
         "GHA-014":  ["6.4.3"],                           # deploy job missing environment
+        "GHA-123":  ["6.4.3"],                           # agentic CLI output lands without review
         "GHA-015":  ["6.4.1"],                           # no timeout-minutes
         "GHA-016":  ["6.3.3", "6.5.1"],                  # remote script piped to shell
         "GHA-017":  ["6.3.3", "6.5.1"],                  # package install insecure source
@@ -439,6 +452,7 @@ STANDARD = Standard(
         "GL-006":   ["6.5.1", "10.3.2"],                 # unsigned artifacts
         "GL-007":   ["6.5.1"],                           # no SBOM
         "GL-008":   ["8.2.1", "6.5.1"],                  # literal secrets
+        "DEV-008":   ["8.2.1", "6.5.1"],                 # literal secret in a devenv config
         "GL-009":   ["6.3.3", "6.5.1"],                  # image not digest-pinned
         "GL-010":   ["6.4.1", "6.5.1"],                  # multi-project artifact unverified
         "GL-011":   ["6.4.1", "6.5.1"],                  # include: local on MR pipeline
@@ -1030,6 +1044,7 @@ STANDARD = Standard(
         # Developer-environment auto-execution
         "DEV-001":   ["6.5.1"],
         "DEV-006":   ["6.5.1"],
+        "DEV-007":   ["6.5.1"],   # committed MCP config auto-launches a command server
         "DEV-002":   ["6.5.1"],
         "DEV-003":   ["6.5.1"],
         "DEV-004":   ["6.3.3", "6.5.1"],

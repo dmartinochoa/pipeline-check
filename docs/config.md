@@ -176,7 +176,11 @@ overrides:
 
 Activate with `pipeline_check --policy pre-merge` (or
 `pipeline_check --list-policies` to enumerate everything
-discoverable). Policy values feed click's option defaults so the
+discoverable). Five curated packs ship built in (`pr-gate`,
+`release-gate`, `slsa-l3`, `pci-dss`, `supply-chain-strict`), so the
+common gates work by name without authoring a file; a local policy of
+the same name shadows the built-in. Policy values feed click's option
+defaults so the
 config file, env vars, and explicit CLI flags all override them
 where they overlap. Per-rule overrides merge with the config file's
 `overrides:` block on a per-key basis (config wins on conflicts).

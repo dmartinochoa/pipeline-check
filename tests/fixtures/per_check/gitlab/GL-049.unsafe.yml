@@ -1,0 +1,5 @@
+ai-fix:
+  script:
+    - claude -p "fix the failing unit test"
+    - git commit -am "ai fix"
+    - git push origin HEAD:main

@@ -164,6 +164,8 @@ STANDARD = Standard(
         "GHA-003":  ["2.1.3"],                           # script injection
         "GHA-119":  ["2.1.3"],                           # untrusted context into an agentic AI CLI
         "GHA-120":  ["2.1.3"],                           # trust_remote_code model load = code exec
+        "GHA-122":  ["2.1.3"],                           # unsafe pickle deser of fetched artifact = code exec
+        "GHA-121":  ["1.4.1", "3.1.5"],                  # model pulled without a pinned revision
         "GHA-117":  ["2.1.3"],                           # IaC apply on untrusted PR trigger
         "GHA-118":  ["2.1.3"],                           # untrusted content into $GITHUB_ENV / $GITHUB_PATH
         "GHA-004":  ["2.4.3"],                           # unrestricted GITHUB_TOKEN
@@ -178,6 +180,7 @@ STANDARD = Standard(
         "GHA-105":  ["2.2.2"],                           # self-hosted runner on PR trigger
         "GHA-013":  ["2.3.8", "2.1.3"],                  # issue_comment trigger no author guard
         "GHA-014":  ["5.1.4", "5.2.1"],                  # deploy job missing environment
+        "GHA-123":  ["5.1.4", "5.2.1"],                  # agentic CLI output lands without review
         "GHA-015":  ["2.2.2"],                           # job has no timeout-minutes
         "GHA-016":  ["1.4.1", "3.1.5"],                  # remote script piped to shell
         "GHA-017":  ["3.1.5", "1.4.1"],                  # package install from insecure source
@@ -261,6 +264,12 @@ STANDARD = Standard(
         "GL-001":   ["1.4.1", "3.1.5"],
         "GL-037": ["1.4.1"],  # CI env disables Go module verification
         "GL-002":   ["2.1.3", "2.3.8"],
+        "DEV-007":  ["2.1.3"],   # committed MCP config auto-launches a command server
+        "GL-045":   ["2.1.3"],   # trust_remote_code model load = code exec
+        "GL-046":   ["1.4.1", "3.1.5"],   # model pulled without a pinned revision
+        "GL-047":   ["2.1.3"],   # unsafe pickle deser of fetched artifact = code exec
+        "GL-048":   ["2.1.3"],   # untrusted MR context into agentic CLI = prompt injection
+        "GL-049":   ["5.1.4", "5.2.1"],   # agentic CLI output lands without review
         "GL-003":   ["1.5.1", "2.3.4", "2.4.3"],
         "GL-004":   ["5.1.4", "5.2.1"],
         "GL-005":   ["1.4.1", "3.1.3", "3.1.5"],
@@ -268,6 +277,7 @@ STANDARD = Standard(
         "GL-006":   ["4.1.1"],
         "GL-007":   ["4.4.1"],
         "GL-008":   ["1.5.1", "2.3.4"],                  # literal secrets
+        "DEV-008":  ["1.5.1", "2.3.4"],                  # literal secret in a devenv config
         "GL-009":   ["1.4.1", "3.1.3"],                  # image pinned to tag not digest
         "GL-010":   ["1.4.1", "2.3.8"],                  # multi-project pipeline upstream artifact unverified
         "GL-011":   ["2.1.3", "2.3.8"],                  # include: local file in MR pipeline
@@ -301,6 +311,7 @@ STANDARD = Standard(
         # Bitbucket Pipelines
         "BB-001":   ["1.4.1", "3.1.5"],
         "BB-002":   ["2.1.3", "2.3.8"],
+        "BB-035":   ["2.1.3"],   # trust_remote_code model load = code exec
         "BB-003":   ["1.5.1", "2.3.4", "2.4.3"],
         "BB-004":   ["5.1.4", "5.2.1"],
         "BB-005":   ["2.2.2"],
@@ -333,6 +344,7 @@ STANDARD = Standard(
         # Azure DevOps Pipelines
         "ADO-001":  ["1.4.1", "3.1.5"],
         "ADO-002":  ["2.1.3", "2.3.8"],
+        "ADO-034":  ["2.1.3"],   # trust_remote_code model load = code exec
         "ADO-003":  ["1.5.1", "2.3.4", "2.4.3"],
         "ADO-004":  ["5.1.4", "5.2.1"],
         "ADO-005":  ["1.4.1", "3.1.5"],
@@ -496,6 +508,11 @@ STANDARD = Standard(
         # to 2.1.3 (build env hardened); credential-shape rules tie
         # to 2.3.4 (scan for secrets).
         "DF-001": ["1.4.1", "3.1.3"],              # FROM not digest-pinned
+        "MODEL-001": ["1.4.1", "3.1.3"],           # unpinned base model
+        "MODEL-002": ["1.4.1", "3.1.3"],           # third-party hub base model
+        "MODEL-003": ["1.4.1", "3.1.3"],           # local unverified weights blob
+        "MODEL-004": ["1.4.1", "3.1.3"],           # remote LoRA adapter
+        "MODEL-005": ["1.4.1", "3.1.3"],           # config auto_map = custom loader code
         "DF-031": ["1.4.1", "3.1.3"],              # COPY --from external image not digest-pinned
         "DF-002": ["2.1.3"],                       # runs as root
         "DF-003": ["1.4.1", "3.1.3"],              # ADD remote, no integrity

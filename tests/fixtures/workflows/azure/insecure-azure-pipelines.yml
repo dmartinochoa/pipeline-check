@@ -75,6 +75,9 @@ stages:
     jobs:
       - job: InsecureSetup
         steps:
+          # ADO-034: model loaded with trust_remote_code (executes the
+          # model repo's own Python at load time = code execution).
+          - script: python -c "from transformers import AutoModel; AutoModel.from_pretrained('acme/m', trust_remote_code=True)"
           - script: curl https://example.com/install.sh | bash
           - script: docker run --privileged myimage
           - script: pip install --trusted-host pypi.internal.com package

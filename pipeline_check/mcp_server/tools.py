@@ -89,6 +89,7 @@ _PROVIDER_PATH_KW: dict[str, str | None] = {
     "argo":           "argo_path",
     "argocd":         "argocd_path",
     "dockerfile":     "dockerfile_path",
+    "modelfile":      "modelfile_path",
     "kubernetes":     "k8s_path",
     "helm":           "helm_path",
     "oci":            "oci_manifest",

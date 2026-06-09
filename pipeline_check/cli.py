@@ -92,8 +92,8 @@ from .core.inline_ignore import (
     extract_inline_ignores,
 )
 from .core.policies import (
-    POLICY_DIRS,
     PolicyError,
+    builtin_policies,
     discover_policies,
     load_policy,
     policy_to_config_map,
@@ -192,17 +192,26 @@ class _GroupedCommand(click.Command):
             "--drone-path", "--npm-path", "--pypi-path",
             "--maven-path", "--nuget-path", "--gomod-path",
             "--cargo-path", "--pulumi-path", "--composer-path",
-            "--rubygems-path", "--devenv-path",
+            "--rubygems-path", "--devenv-path", "--modelfile-path",
+            "--gitea-path", "--pipelines",
+            "--scm-platform", "--scm-repo", "--scm-fixture-dir",
+            "--gh-token", "--gitlab-token", "--gitlab-url",
+            "--resolve-remote", "--gha-search-path", "--gha-resolve-depth",
+            "--npm-base-ref", "--audit-runs-logs", "--no-cache",
         })),
         ("Filtering", frozenset({
             "--checks", "--severity-threshold", "--min-confidence",
-            "--no-best-practice",
+            "--no-best-practice", "--only-known-attacked",
             "--secret-pattern", "--detect-entropy", "--custom-rules",
             "--rego-rules",
+            "--verify-secrets", "--verify-secrets-show-identity",
+            "--annotate-fp", "--fp-file",
         })),
         ("Output", frozenset({
             "--output", "--output-file", "--standard",
             "--inventory", "--inventory-type", "--inventory-only",
+            "--show-passed", "--show-controls", "--no-group",
+            "--inline-explain", "--ingest",
         })),
         ("Gate", frozenset({
             "--fail-on", "--min-grade", "--max-failures",
@@ -211,16 +220,18 @@ class _GroupedCommand(click.Command):
             "--write-baseline",
             "--diff-base", "--pr-diff", "--ignore-file", "--no-inline-ignore",
             "--fail-on-chain", "--fail-on-any-chain",
+            "--warn-expiring-suppressions",
         })),
         ("Attack chains", frozenset({
             "--no-chains", "--list-chains", "--explain-chain",
+            "--chains-require-dataflow", "--chains-require-reachability",
         })),
         ("Autofix", frozenset({"--fix", "--apply", "--list-fixers", "--safety"})),
         ("Info & Help", frozenset({
             "--list-checks", "--list-standards", "--standard-report",
-            "--explain", "--man", "--config-check",
+            "--explain", "--man", "--config-check", "--config-strict",
             "--install-completion", "--config", "--version",
-            "--policy", "--list-policies",
+            "--policy", "--list-policies", "--serve",
             "--help", "--verbose", "--quiet",
         })),
         ("AI augmentation (opt-in)", frozenset({
@@ -679,6 +690,7 @@ _PROVIDER_PATH_KWARG: dict[str, str] = {
     "argocd": "argocd_path",
     "cloudformation": "cfn_template",
     "dockerfile": "dockerfile_path",
+    "modelfile": "modelfile_path",
     "kubernetes": "k8s_path",
     "helm": "helm_path",
     "terraform": "tf_source",
@@ -877,14 +889,12 @@ def _list_policies_callback(
     """Print every discoverable policy and exit. Eager, no scan runs."""
     if not value:
         return
-    policies = discover_policies()
-    if not policies:
-        click.echo(
-            "[list-policies] no policies found. Searched: "
-            + ", ".join(POLICY_DIRS),
-            err=True,
-        )
-        ctx.exit(3)
+    local = discover_policies()
+    # Built-in packs always exist; a local policy of the same name
+    # shadows the built-in (matching ``load_policy`` resolution order).
+    local_names = {p.name for p in local}
+    builtins = [p for p in builtin_policies() if p.name not in local_names]
+    policies = local + builtins
     name_w = max(len(p.name) for p in policies)
     for p in policies:
         suffix = f"  -- {p.description}" if p.description else ""
@@ -1009,13 +1019,18 @@ def _install_completion_callback(
     callback=_load_policy_callback,
     help=(
         "Load a named scan profile from ./policies/<NAME>.yml or "
-        "./.pipeline-check/policies/<NAME>.yml. Policies bundle a "
-        "rule filter, standards filter, gate thresholds, and "
-        "per-rule severity overrides into a single file. Values "
-        "become click defaults: explicit CLI flags, env vars, and "
-        "the config file override them. Run --list-policies to see "
-        "what's available. A NAME with a path separator is treated "
-        "as a literal path."
+        "./.pipeline-check/policies/<NAME>.yml, or one of the built-in "
+        "packs (pr-gate, release-gate, slsa-l3, pci-dss, "
+        "supply-chain-strict) shipped with the tool. A local policy of "
+        "the same name shadows the built-in. Policies bundle a rule "
+        "filter, standards filter, gate thresholds, and per-rule "
+        "severity overrides. Values become click defaults: explicit CLI "
+        "flags, env vars, and the config file override them. Run "
+        "--list-policies to see what's available. A NAME with a path "
+        "separator is treated as a literal path; an https:// URL fetches "
+        "a shareable policy pack (cached for offline reuse). A remote "
+        "policy can only configure the gate, never run code, but it can "
+        "weaken the gate, so its source is printed when it loads."
     ),
 )
 @click.option(
@@ -1490,6 +1505,16 @@ def _install_completion_callback(
         "--pipeline devenv). Defaults to the current directory and "
         "discovers the editor / agent / container configs that "
         "auto-execute on repo open."
+    ),
+)
+@click.option(
+    "--modelfile-path",
+    default=None,
+    metavar="PATH",
+    help=(
+        "Path to an Ollama Modelfile or a directory containing one "
+        "(used when --pipeline modelfile). Defaults to the current "
+        "directory and discovers Modelfile / *.Modelfile declarations."
     ),
 )
 @click.option(
@@ -2396,6 +2421,7 @@ def scan(
     rubygems_path: str | None,
     pulumi_path: str | None,
     devenv_path: str | None,
+    modelfile_path: str | None,
     helm_values: tuple[str, ...],
     helm_set: tuple[str, ...],
     oci_manifest: str | None,
@@ -2473,8 +2499,18 @@ def scan(
 ) -> None:
     """Pipeline-Check. CI/CD Security Posture Scanner.
 
-    Analyzes CI/CD configurations and scores them against the
-    OWASP Top 10 CI/CD Security Risks framework.
+    Scores CI/CD configs against the OWASP Top 10 CI/CD Security Risks
+    and 17 other compliance frameworks, then grades the result A-D.
+
+    \b
+    Getting started:
+      pipeline_check                   scan the current repo (auto-detects providers)
+      pipeline_check init              set up a CI gate + baseline, with next steps
+      pipeline_check --policy pr-gate  block PRs on new HIGH+ findings
+      pipeline_check explain GHA-001   understand one finding and how to fix it
+      pipeline_check --man recipes     copy-paste recipes for common workflows
+
+    Run --man for the full topic list; the flags below are grouped by task.
     """
     # --quiet wins over --verbose.
     verbose = verbose and not quiet
@@ -2749,6 +2785,7 @@ def scan(
         rubygems_path=_paths.rubygems_path,
         pulumi_path=_paths.pulumi_path,
         devenv_path=devenv_path,
+        modelfile_path=modelfile_path,
         scm_platform=scm_platform,
         scm_repo=scm_repo,
         scm_fixture_dir=scm_fixture_dir,
@@ -2756,25 +2793,38 @@ def scan(
     )
 
     scanner: Scanner | MultiScanner
-    if pipelines_list:
-        # Multi-provider mode. Each sub-scanner's chain pass is
-        # suppressed regardless; ``MultiScanner.run`` evaluates
-        # chains once over the union (when ``chains_enabled=True``)
-        # so cross-provider chains (XPC-NNN) fire. Single-provider
-        # chains still match in that union pass, so AC-NNN coverage
-        # carries through. ``--no-chains`` disables the union pass
-        # too.
-        scanner = MultiScanner(
-            pipelines=pipelines_list,
-            chains_enabled=not no_chains,
-            **_scanner_kwargs,
-        )
-    else:
-        scanner = Scanner(
-            pipeline=pipeline_lc,
-            chains_enabled=not no_chains,
-            **_scanner_kwargs,
-        )
+    # A provider's ``build_context()`` runs during Scanner construction
+    # (it loads the target up front). Providers that need a flag the
+    # path-resolver doesn't validate (``scm`` / ``runs``) raise
+    # ``ValueError`` on a missing / malformed value, and the live-cloud
+    # SDK providers (``gcp`` / ``azure_cloud``) raise ``ImportError`` when
+    # their optional extra isn't installed. Catch both and surface the
+    # provider's own (already user-friendly) message as a clean exit-2
+    # error rather than a raw traceback. Narrowly scoped so a genuine bug
+    # still surfaces its stack.
+    try:
+        if pipelines_list:
+            # Multi-provider mode. Each sub-scanner's chain pass is
+            # suppressed regardless; ``MultiScanner.run`` evaluates
+            # chains once over the union (when ``chains_enabled=True``)
+            # so cross-provider chains (XPC-NNN) fire. Single-provider
+            # chains still match in that union pass, so AC-NNN coverage
+            # carries through. ``--no-chains`` disables the union pass
+            # too.
+            scanner = MultiScanner(
+                pipelines=pipelines_list,
+                chains_enabled=not no_chains,
+                **_scanner_kwargs,
+            )
+        else:
+            scanner = Scanner(
+                pipeline=pipeline_lc,
+                chains_enabled=not no_chains,
+                **_scanner_kwargs,
+            )
+    except (ValueError, ImportError) as exc:
+        click.echo(f"Error: {exc}", err=True)
+        raise click.exceptions.Exit(2) from exc
 
     if verbose:
         meta = scanner.metadata
@@ -2830,12 +2880,19 @@ def scan(
                 standards=list(standards) if standards else None,
             )
         except Exception as exc:
-            # Print the traceback to stderr so operators have something to
-            # take to support. Keep the single-line summary above it for
-            # teams that grep logs for "[error] Scan failed".
-            import traceback
+            # Always print the one-line summary (teams grep logs for
+            # "[error] Scan failed"). The full traceback is noise for an
+            # operator unless they're filing a bug, so gate it behind
+            # --verbose and otherwise point them at the flag.
             click.echo(f"[error] Scan failed: {exc}", err=True)
-            click.echo(traceback.format_exc(), err=True, nl=False)
+            if verbose:
+                import traceback
+                click.echo(traceback.format_exc(), err=True, nl=False)
+            else:
+                click.echo(
+                    "[error] Re-run with --verbose for the full traceback.",
+                    err=True,
+                )
             raise click.exceptions.Exit(2) from exc
 
     # Stderr nudge: when secret-shaped findings were found but live
@@ -4670,6 +4727,7 @@ _INIT_SCANNER_KWARGS: dict[str, tuple[str, tuple[str, ...]]] = {
     ),
     "drone": ("drone_path", (".drone.yml", ".drone.yaml")),
     "dockerfile": ("dockerfile_path", ("Dockerfile", "Containerfile")),
+    "modelfile": ("modelfile_path", ("Modelfile",)),
     "kubernetes": ("k8s_path", ("kubernetes", "k8s", "manifests")),
     "helm": ("helm_path", (".",)),
     "devenv": ("devenv_path", (".",)),
