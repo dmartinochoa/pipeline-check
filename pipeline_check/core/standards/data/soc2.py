@@ -532,6 +532,7 @@ STANDARD = Standard(
         "BB-029":   ["CC8.1"],              # step + service image not pinned
         "BB-030":   ["CC8.1"],              # npm install without audit signatures
         "BB-031":   ["CC8.1"],              # pip install without --require-hashes
+        "BB-038":   ["CC8.1"],              # model pulled without a pinned revision
         # ── Azure DevOps Pipelines ───────────────────────────────
         "ADO-005":  ["CC8.1"],              # unpinned container
         "ADO-006":  ["CC8.1"],              # unsigned artifacts
@@ -548,6 +549,7 @@ STANDARD = Standard(
         "ADO-028":  ["CC8.1"],              # install bypasses registry integrity
         "ADO-029":  ["CC8.1"],              # service-conn job w/o env gate
         "ADO-030":  ["CC6.8"],              # pool interpolates untrusted
+        "ADO-037":  ["CC8.1"],              # model pulled without a pinned revision
         # ── CircleCI ──────────────────────────────────────────────
         "CC-003":   ["CC8.1"],              # image not pinned to digest
         "CC-004":   ["CC6.1"],              # unrestricted context

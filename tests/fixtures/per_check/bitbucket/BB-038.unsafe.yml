@@ -1,0 +1,6 @@
+pipelines:
+  default:
+    - step:
+        name: fetch-model
+        script:
+          - python -c "from transformers import AutoModel; AutoModel.from_pretrained('vendor/llm')"

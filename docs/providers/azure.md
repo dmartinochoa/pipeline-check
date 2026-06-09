@@ -30,7 +30,7 @@ The walker handles every layout ADO supports:
 
 ## What it covers
 
-36 checks · 11 have an autofix patch (``--fix``).
+37 checks · 11 have an autofix patch (``--fix``).
 
 | Check | Title | Severity | Fix |
 |-------|-------|----------|-----|
@@ -70,6 +70,7 @@ The walker handles every layout ADO supports:
 | [ADO-034](#ado-034) | ML model loaded with trust_remote_code (code execution) | <span class="pg-sev pg-sev--high">HIGH</span> |  |
 | [ADO-035](#ado-035) | Untrusted PR/commit context reaches an agentic AI CLI (prompt injection) | <span class="pg-sev pg-sev--high">HIGH</span> |  |
 | [ADO-036](#ado-036) | Unsafe deserialization of a fetched artifact (pickle RCE) | <span class="pg-sev pg-sev--high">HIGH</span> |  |
+| [ADO-037](#ado-037) | AI model pulled without a pinned revision | <span class="pg-sev pg-sev--medium">MEDIUM</span> |  |
 
 ---
 
@@ -833,6 +834,32 @@ Fires per script body (``script`` / ``bash`` / ``pwsh`` / ``powershell`` or a ta
 **Recommended action**
 
 Load models / artifacts through a non-executing format: prefer ``safetensors``, or pass ``weights_only=True`` to ``torch.load`` (default in PyTorch 2.6+). Never ``pickle.load`` / ``joblib.load`` / ``numpy.load(allow_pickle=True)`` a file fetched at build time, and pin + checksum any model you must deserialize.
+
+</div>
+
+</div>
+
+<div class="pg-rule pg-rule--medium" markdown>
+
+## ADO-037: AI model pulled without a pinned revision { #ado-037 }
+
+<div class="pg-rule__tags">
+<span class="pg-sev pg-sev--medium">MEDIUM</span> <span class="pg-tag pg-tag--owasp">CICD-SEC-3</span> <span class="pg-tag pg-tag--esf">ESF-S-PIN-DEPS</span> <span class="pg-tag pg-tag--esf">ESF-S-VERIFY-DEPS</span> <span class="pg-tag pg-tag--cwe">CWE-494</span> <span class="pg-tag pg-tag--cwe">CWE-829</span>
+</div>
+
+Fires on a step ``script`` / ``bash`` / ``pwsh`` / ``powershell`` body (or a task-based step's ``inputs.script``) that fetches a model by a mutable registry reference and supplies no revision pin. Detected fetch forms: ``from_pretrained("org/model")``, ``hf_hub_download`` / ``snapshot_download`` with a ``org/model`` repo id, and ``huggingface-cli download org/model`` / ``hf download org/model``.
+
+Does NOT fire when a revision is pinned in the same command (``revision='<sha>'`` / ``--revision <sha>``), when the reference is a local path (``./model``, ``/models/x``) or a variable interpolation (the value can't be judged statically), or on a bare single-segment canonical hub name (``bert-base-uncased``) that has no ``org/`` namespace, since those are first-party and the org-scoped third-party models are the higher-risk surface.
+
+**Known false-positive modes**
+
+- A team that re-pulls its own org's model on every run may treat the latest revision as intentional. The right fix is still to pin the revision (it makes an upstream compromise visible); if a rolling pull is genuinely wanted, suppress on the specific step with a rationale naming the model and who controls it.
+
+<div class="pg-rule__rec" markdown>
+
+**Recommended action**
+
+Pin the model to an immutable revision. Pass an exact commit ``revision=`` to ``from_pretrained`` / ``hf_hub_download`` / ``snapshot_download`` (a 40-char commit SHA, not a branch or a tag, both of which the owner can move), or ``--revision <sha>`` to ``huggingface-cli download``. A pinned revision is what makes a swapped-weights or swapped-loader-code attack show up as a diff in your repo instead of silently landing on the next build. Pair with ``trust_remote_code=False`` (ADO-034) and prefer safetensors weights over pickle.
 
 </div>
 

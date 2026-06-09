@@ -125,6 +125,11 @@ pipelines:
           script:
             - curl -o model.bin https://example.com/model.bin
             - python -c "import torch; torch.load('model.bin', weights_only=False)"
+      # BB-038 — model fetched from a registry with no pinned revision.
+      - step:
+          name: fetch model
+          script:
+            - huggingface-cli download vendor/llm
 
 # BB-020 — full clone depth.
 clone:

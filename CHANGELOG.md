@@ -12,6 +12,27 @@ release commit collapses this section into `## [X.Y.Z] - <date>`.
 
 ### Added
 
+- **BB-038 / ADO-037: AI model pulled without a pinned revision
+  (Bitbucket, Azure DevOps).** Completes model-pinning coverage across the
+  script-based CI providers, bringing the rule to the two that lacked it
+  (GHA-121 / GL-046 already shipped). A step ``script`` fetches a model
+  from a registry (Hugging Face Hub and friends) by a *mutable* reference,
+  ``from_pretrained("org/model")``, ``hf_hub_download`` /
+  ``snapshot_download`` with a bare ``repo_id``, or
+  ``huggingface-cli download org/model`` with no ``--revision``. Without a
+  pinned revision the registry serves whatever the repo's default branch
+  points at now, so the model owner (or anyone who compromises the account
+  or the upstream repo) can swap the weights, the tokenizer, or the custom
+  loader code under a green build with no diff in your repo. It is the
+  model-registry analog of pinning a dependency to a lockfile, and the
+  prerequisite for the ``trust_remote_code`` execution path BB-035 /
+  ADO-034 flags: pinning the revision is the one control that makes a
+  poisoned-model swap detectable. Reuses the shared
+  ``_primitives/model_ref`` detection; scoped to org-namespaced ids
+  (``org/model``) so it targets third-party models, not the canonical
+  first-party hub names (``bert-base-uncased``). Does not fire on a pinned
+  ``revision`` / ``--revision``, a local path, or a variable
+  interpolation. MEDIUM. bitbucket 37 -> 38, azure 36 -> 37.
 - **BB-037 / ADO-036: unsafe deserialization of a fetched artifact
   (pickle RCE) (Bitbucket, Azure DevOps).** Brings the model-deserialization
   RCE rule (GHA-122 / GL-047) to the two remaining script-based providers.

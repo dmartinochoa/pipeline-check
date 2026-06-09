@@ -100,6 +100,8 @@ stages:
           - script: claude -p "Triage this PR from commit $(Build.SourceVersionMessage)"
           # ADO-036: fetched artifact deserialized through pickle (RCE at load).
           - script: python -c "import torch; torch.load('model.bin', weights_only=False)"
+          # ADO-037: model fetched from a registry with no pinned revision.
+          - script: huggingface-cli download vendor/llm
 
   - stage: Deploy
     dependsOn: Build
