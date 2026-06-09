@@ -12,6 +12,23 @@ release commit collapses this section into `## [X.Y.Z] - <date>`.
 
 ### Added
 
+- **AC-040: prompt-injected agent commits its output with no human review
+  (attack chain).** Correlates the two legs of the agentic-AI rule pack
+  into a CRITICAL kill chain, across all four script-based providers. Fires
+  when one pipeline file both feeds untrusted PR / branch / commit context
+  into an agentic CLI's prompt (the injection leg: GHA-119 / GL-048 /
+  BB-036 / ADO-035) AND lands that agent's output with no review gate (the
+  autoland leg: GHA-123 / GL-049 / BB-039 / ADO-038). Independently each
+  leg is a finding; together they close the loop with no human in it: a
+  prompt-injection line in the PR redirects the agent to write a malicious
+  change, and the autoland step (a `git push`, an auto-merge, or a
+  push-action) commits or merges it, so the attacker's injected instruction
+  becomes committed code that then runs on the next pipeline with the
+  repository's credentials. The cross-provider, content-injection sibling
+  of AC-035 (the GitHub reviewer-and-committer loop). Per-resource
+  co-occurrence within one provider; the legs never mix across providers.
+  Maps to MITRE T1195.002 / T1059 / T1078.004. Chain count 53 -> 54
+  (40 AC).
 - **BB-039 / ADO-038: agentic-CLI output lands without human review
   (Bitbucket, Azure DevOps).** Completes the AI/LLM-pipeline rule pack's
   flow-control leg across the script-based CI providers (GHA-123 / GL-049

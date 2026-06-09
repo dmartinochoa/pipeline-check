@@ -76,6 +76,7 @@ references, recommendation).
 | [`AC-037`](#ac-037) | AI agent applies attacker-influenced IaC to the cloud | <span class="pg-sev pg-sev--critical">CRITICAL</span> | github | ([`GHA-058`](providers/github.md#gha-058) or [`GHA-103`](providers/github.md#gha-103)) + [`GHA-111`](providers/github.md#gha-111) |
 | [`AC-038`](#ac-038) | Untrusted branch reaches OIDC trusted publish | <span class="pg-sev pg-sev--critical">CRITICAL</span> | github | [`GHA-113`](providers/github.md#gha-113) + [`GHA-114`](providers/github.md#gha-114) |
 | [`AC-039`](#ac-039) | Untrusted trigger reaches a bulk-secrets serialization | <span class="pg-sev pg-sev--critical">CRITICAL</span> | github | ([`GHA-002`](providers/github.md#gha-002) or [`GHA-009`](providers/github.md#gha-009) or [`GHA-013`](providers/github.md#gha-013)) + [`GHA-116`](providers/github.md#gha-116) |
+| [`AC-040`](#ac-040) | Prompt-injected agent commits its output with no human review | <span class="pg-sev pg-sev--critical">CRITICAL</span> | github, gitlab, bitbucket, azure | ([`GHA-119`](providers/github.md#gha-119) + [`GHA-123`](providers/github.md#gha-123)) or ([`GL-048`](providers/gitlab.md#gl-048) + [`GL-049`](providers/gitlab.md#gl-049)) or ([`BB-036`](providers/bitbucket.md#bb-036) + [`BB-039`](providers/bitbucket.md#bb-039)) or ([`ADO-035`](providers/azure.md#ado-035) + [`ADO-038`](providers/azure.md#ado-038)) |
 
 ### Cross-provider chains (`XPC-NNN`)
 
@@ -1315,6 +1316,34 @@ A single workflow combines an attacker-influenced trigger (GHA-002 / GHA-009 / G
 **Recommended action**
 
 Break the lane at either leg. Either: (a) drop the untrusted trigger from this workflow (re-trigger on ``push`` to the default branch / a tag, or gate ``pull_request_target`` / ``issue_comment`` / ``workflow_run`` behind an environment with required reviewers), or (b) stop serializing the whole secrets context, reference only the specific secrets each step needs by name and prefer short-lived OIDC tokens. Doing (b) is the stronger fix because ``toJSON(secrets)`` is dangerous on any trigger; removing the untrusted trigger alone still leaves the full-secret dump a push away.
+
+</div>
+
+</div>
+
+<div class="pg-rule pg-rule--critical" markdown>
+
+### AC-040: Prompt-injected agent commits its output with no human review { #ac-040 }
+
+<div class="pg-rule__tags">
+<span class="pg-sev pg-sev--critical">CRITICAL</span> <span class="pg-tag" title="MITRE ATT&CK technique">MITRE T1195.002</span> <span class="pg-tag" title="MITRE ATT&CK technique">MITRE T1059</span> <span class="pg-tag" title="MITRE ATT&CK technique">MITRE T1078.004</span> <span class="pg-tag" title="kill-chain phase">initial-access (prompt injection via untrusted PR / branch / commit) -> execution (the agent follows the injected instruction and edits the tree) -> defense-evasion (no human reviews the diff) -> impact (the autoland step pushes or merges the agent's change to a branch)</span> <span class="pg-tag pg-tag--owasp">github</span> <span class="pg-tag pg-tag--owasp">gitlab</span> <span class="pg-tag pg-tag--owasp">bitbucket</span> <span class="pg-tag pg-tag--owasp">azure</span>
+</div>
+
+Untrusted PR / branch / commit context reaches an agentic CLI's prompt (GHA-119 / GL-048 / BB-036 / ADO-035) AND the same pipeline lands that agent's output with no review gate (GHA-123 / GL-049 / BB-039 / ADO-038): a git push, an auto-merge, or a push-action. A prompt-injection line in the PR or commit makes the agent write a malicious change that the autoland step commits or merges, with no human between the untrusted input and the push.
+
+**References**
+
+- <https://owasp.org/www-project-top-10-ci-cd-security-risks/CICD-SEC-04-Poisoned-Pipeline-Execution-PPE>
+- <https://docs.github.com/en/actions/security-for-github-actions/security-guides/security-hardening-for-github-actions>
+
+<div class="pg-rule__rec" markdown>
+
+**Recommended action**
+
+Break either leg:
+  1. Cut the untrusted-input path: don't pass attacker-authored text (a PR title / branch name / commit message) into an agentic CLI's prompt; if the agent must see PR content, run it on a job with no write credentials and no tool / shell access (GHA-119 / GL-048 / BB-036 / ADO-035).
+  2. Take away the no-review landing: have the agent only open a pull request for human review, and drop the in-job ``git push`` / auto-merge / push-action (GHA-123 / GL-049 / BB-039 / ADO-038).
+Best: never let one pipeline both feed an agent untrusted input and land that agent's output without a human reviewing the diff.
 
 </div>
 
