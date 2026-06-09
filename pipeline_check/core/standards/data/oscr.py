@@ -404,6 +404,7 @@ STANDARD = Standard(
         "BB-036":   ["EX-6"],   # untrusted PR context into agentic CLI = prompt injection
         "BB-037":   ["EX-6"],   # unsafe pickle deser of fetched artifact = code exec
         "BB-039":   ["DE-1"],   # agentic CLI output lands without review
+        "JF-038":   ["DE-1"],   # agentic CLI output lands without review
         "ADO-002":  ["EX-6"],
         "ADO-034":  ["EX-6"],   # trust_remote_code model load = code exec
         "ADO-035":  ["EX-6"],   # untrusted PR context into agentic CLI = prompt injection

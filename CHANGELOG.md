@@ -12,6 +12,16 @@ release commit collapses this section into `## [X.Y.Z] - <date>`.
 
 ### Added
 
+- **JF-038: agentic-CLI output lands without human review (Jenkins).**
+  Completes Jenkins's AI flow-control coverage alongside JF-037, the
+  Jenkins analog of GHA-123 / GL-049 / BB-039 / ADO-038. Fires when one
+  Jenkinsfile both invokes an agentic CLI (``claude`` / ``gemini`` /
+  ``cursor-agent`` / ``aider`` / ``openhands`` / ``goose`` / ``q chat``) in
+  a ``sh`` / ``bat`` / ``powershell`` step and, in the same pipeline, lands
+  the result with a ``git push`` (the Jenkins commit-to-a-branch idiom).
+  Coupling is pipeline-level because the stages of one pipeline share a
+  checkout. A ``git push --dry-run`` is ignored, and an agent that only
+  opens a PR does not fire. HIGH. jenkins 37 -> 38.
 - **JF-037: untrusted PR/build context reaches an agentic AI CLI
   (Jenkins).** Brings the flagship AI prompt-injection rule (GHA-119 /
   GL-048 / BB-036 / ADO-035) to Jenkins, the largest CI install base and
@@ -183,6 +193,13 @@ release commit collapses this section into `## [X.Y.Z] - <date>`.
 
 ### Changed
 
+- **AC-040 (prompt-injected agent commits unreviewed) now covers Jenkins.**
+  With JF-037 + JF-038 shipped, the injection->autoland kill chain extends
+  to a fifth provider: the chain fires when a Jenkinsfile both feeds
+  untrusted context into an agentic CLI (JF-037) and pushes the agent's
+  output without review (JF-038). No chain-count change (AC-040 already
+  existed); ``providers`` gains ``jenkins`` and the ``JF-037`` / ``JF-038``
+  pair joins the per-provider match list.
 - **RUN-006 now scans ordinary `push` / `pull_request` runs, not just the
   privileged-trigger subset.** The tj-actions / Trivy / Checkmarx
   compromised-action campaigns ran on regular CI, so limiting RUN-006 to
