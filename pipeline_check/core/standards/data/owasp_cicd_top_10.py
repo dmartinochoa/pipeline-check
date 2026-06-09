@@ -301,6 +301,7 @@ STANDARD = Standard(
         "BB-035":   ["CICD-SEC-4"],   # trust_remote_code model load = code exec
         "BB-036":   ["CICD-SEC-4"],   # untrusted PR context into agentic CLI = prompt injection
         "BB-037":   ["CICD-SEC-4"],   # unsafe pickle deser of fetched artifact = code exec
+        "BB-038":   ["CICD-SEC-3"],   # model pulled without a pinned revision
         "BB-003":   ["CICD-SEC-6"],
         "BB-004":   ["CICD-SEC-1"],
         "BB-005":   ["CICD-SEC-7"],
@@ -336,6 +337,7 @@ STANDARD = Standard(
         "ADO-034":  ["CICD-SEC-4"],   # trust_remote_code model load = code exec
         "ADO-035":  ["CICD-SEC-4"],   # untrusted PR context into agentic CLI = prompt injection
         "ADO-036":  ["CICD-SEC-4"],   # unsafe pickle deser of fetched artifact = code exec
+        "ADO-037":  ["CICD-SEC-3"],   # model pulled without a pinned revision
         "ADO-003":  ["CICD-SEC-6"],
         "ADO-004":  ["CICD-SEC-1"],
         "ADO-005":  ["CICD-SEC-3"],

@@ -295,6 +295,7 @@ STANDARD = Standard(
         "BB-035":   ["SI-7", "SA-11", "CM-6"],   # trust_remote_code model load = code exec
         "BB-036":   ["SI-7", "SA-11", "CM-6"],   # untrusted PR context into agentic CLI = prompt injection
         "BB-037":   ["CM-6", "SA-11", "SA-15"],   # unsafe pickle deser of fetched artifact = code exec
+        "BB-038":   ["SR-3", "SR-11", "SI-2"],   # model pulled without a pinned revision
         "BB-003":   ["IA-5"],
         "BB-004":   ["SA-10", "AC-3"],
         "BB-034":   ["SA-10", "AC-3"],                   # prod deploy on a PR pipeline
@@ -335,6 +336,7 @@ STANDARD = Standard(
         "ADO-034":  ["SI-7", "SA-11", "CM-6"],   # trust_remote_code model load = code exec
         "ADO-035":  ["SI-7", "SA-11", "CM-6"],   # untrusted PR context into agentic CLI = prompt injection
         "ADO-036":  ["CM-6", "SA-11", "SA-15"],   # unsafe pickle deser of fetched artifact = code exec
+        "ADO-037":  ["SR-3", "SR-11", "SI-2"],   # model pulled without a pinned revision
         "ADO-003":  ["IA-5"],
         "ADO-004":  ["SA-10", "AC-3"],
         "ADO-005":  ["SR-3", "SR-11", "CM-2"],

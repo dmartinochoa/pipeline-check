@@ -517,11 +517,13 @@ STANDARD = Standard(
         "BB-029":   ["6.3.3", "6.5.1"],                  # step + service image not pinned
         "BB-030":   ["6.3.3", "6.5.1"],                  # npm install without audit signatures
         "BB-031":   ["6.3.3", "6.5.1"],                  # pip install without --require-hashes
+        "BB-038":   ["6.3.3", "6.5.1"],                  # model pulled without a pinned revision
         # ── Azure DevOps Pipelines ───────────────────────────────
         "ADO-006":  ["6.5.1", "10.3.2"],                 # unsigned artifacts
         "ADO-007":  ["6.5.1"],                           # no SBOM
         "ADO-008":  ["8.2.1", "6.5.1"],                  # literal secrets
         "ADO-009":  ["6.3.3", "6.5.1"],                  # container image not digest-pinned
+        "ADO-037":  ["6.3.3", "6.5.1"],                  # model pulled without a pinned revision
         "ADO-010":  ["6.4.1", "6.5.1"],                  # cross-pipeline download unverified
         "ADO-011":  ["6.4.1", "6.5.1"],                  # template: local on PR-validated
         "ADO-012":  ["6.4.1", "6.5.1"],                  # Cache@2 PullRequest context

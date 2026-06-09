@@ -591,10 +591,12 @@ STANDARD = Standard(
         "BB-029":  ["GV.SC-05"],                # step+service image not pinned
         "BB-030":  ["GV.SC-05"],                # npm install without audit signatures
         "BB-031":  ["GV.SC-05"],                # pip install without --require-hashes
+        "BB-038":  ["GV.SC-05"],                # model pulled without a pinned revision
         # ── Azure DevOps Pipelines ───────────────────────────────
         "ADO-004": ["PR.PS-06"],                # deploy missing environment
         "ADO-029": ["PR.PS-06"],                # service-conn job w/o env gate
         "ADO-030": ["PR.PS-05"],                # pool interpolates untrusted
+        "ADO-037": ["GV.SC-05"],                # model pulled without a pinned revision
         # ── CircleCI ──────────────────────────────────────────────
         "CC-004":  ["PR.AA-01"],                # unrestricted context
         "CC-009":  ["PR.PS-06"],                # job missing approval gate
