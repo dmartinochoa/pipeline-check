@@ -101,7 +101,7 @@ CloudFormation templates before provisioning. Same rule IDs, same severities.
 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>
 </div>
 ### Attack-chain correlation
-53 multi-finding chains mapped to MITRE ATT&CK, including the cross-provider
+54 multi-finding chains mapped to MITRE ATT&CK, including the cross-provider
 `XPC-NNN` family that fires when GitHub Actions, Dockerfile, Helm, and OCI
 findings line up in one scan. The `TAINT-NNN` dataflow engine follows
 attacker-controllable input across cross-step boundaries on five providers

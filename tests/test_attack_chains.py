@@ -193,6 +193,7 @@ class TestEngine:
             "AC-025", "AC-026", "AC-027", "AC-028", "AC-029",
             "AC-030", "AC-031", "AC-032", "AC-033", "AC-034",
             "AC-035", "AC-036", "AC-037", "AC-038", "AC-039",
+            "AC-040",
             "XPC-001", "XPC-002", "XPC-003", "XPC-004", "XPC-005",
             "XPC-006", "XPC-007", "XPC-008", "XPC-009", "XPC-010",
             "CXPC-001", "CXPC-002", "CXPC-003", "CXPC-004",
@@ -3940,3 +3941,72 @@ class TestAC039UntrustedTriggerBulkSecrets:
             _f("GHA-116", self.WF, passed=True),
         ])
         assert out == []
+
+
+class TestChainAC040:
+    """AC-040: prompt-injected agent commits its output with no human
+    review (injection leg + autoland leg, per provider, same resource)."""
+
+    def _ac040(self, findings):
+        return [c for c in chains_pkg.evaluate(findings) if c.chain_id == "AC-040"]
+
+    def test_github_pair_fires_critical(self):
+        wf = ".github/workflows/ai.yml"
+        out = self._ac040([_f("GHA-119", wf), _f("GHA-123", wf)])
+        assert len(out) == 1
+        assert out[0].severity is Severity.CRITICAL
+        assert out[0].triggering_check_ids == ["GHA-119", "GHA-123"]
+        assert out[0].resources == [wf]
+
+    def test_gitlab_pair_fires(self):
+        f = ".gitlab-ci.yml"
+        out = self._ac040([_f("GL-048", f), _f("GL-049", f)])
+        assert len(out) == 1
+        assert out[0].triggering_check_ids == ["GL-048", "GL-049"]
+
+    def test_bitbucket_pair_fires(self):
+        f = "bitbucket-pipelines.yml"
+        out = self._ac040([_f("BB-036", f), _f("BB-039", f)])
+        assert len(out) == 1
+        assert out[0].triggering_check_ids == ["BB-036", "BB-039"]
+
+    def test_azure_pair_fires(self):
+        f = "azure-pipelines.yml"
+        out = self._ac040([_f("ADO-035", f), _f("ADO-038", f)])
+        assert len(out) == 1
+        assert out[0].triggering_check_ids == ["ADO-035", "ADO-038"]
+
+    def test_no_chain_without_autoland_leg(self):
+        wf = ".github/workflows/ai.yml"
+        assert self._ac040([_f("GHA-119", wf)]) == []
+
+    def test_no_chain_without_injection_leg(self):
+        wf = ".github/workflows/ai.yml"
+        assert self._ac040([_f("GHA-123", wf)]) == []
+
+    def test_no_cross_provider_mix(self):
+        # An injection leg in one provider and an autoland leg in another
+        # never compose, even if (pathologically) on the same resource key.
+        f = "shared.yml"
+        assert self._ac040([_f("GHA-119", f), _f("GL-049", f)]) == []
+
+    def test_no_chain_across_different_resources(self):
+        out = self._ac040([
+            _f("GHA-119", ".github/workflows/a.yml"),
+            _f("GHA-123", ".github/workflows/b.yml"),
+        ])
+        assert out == []
+
+    def test_passed_finding_does_not_chain(self):
+        wf = ".github/workflows/ai.yml"
+        out = self._ac040([_f("GHA-119", wf), _f("GHA-123", wf, passed=True)])
+        assert out == []
+
+    def test_confidence_inherits_weakest_leg(self):
+        wf = ".github/workflows/ai.yml"
+        out = self._ac040([
+            _f("GHA-119", wf, confidence=Confidence.HIGH),
+            _f("GHA-123", wf, confidence=Confidence.MEDIUM),
+        ])
+        assert len(out) == 1
+        assert out[0].confidence is Confidence.MEDIUM
