@@ -337,6 +337,44 @@ class TestScannerVerification:
         assert finding.confidence == Confidence.LOW
         assert "revoked or rotated" in finding.description
 
+    @patch(
+        "pipeline_check.core.checks._primitives.secret_verifiers.github.bearer_probe",
+    )
+    def test_devenv_config_secret_is_verified(
+        self, mock_probe: MagicMock,
+    ) -> None:
+        # A credential committed in a developer-environment config (DEV-008,
+        # e.g. an MCP server's env block) must be live-verifiable: the
+        # devenv WorkspaceFile carries a parsed ``data`` dict, which the
+        # doc-map and raw-token re-extraction now understand.
+        from pipeline_check.core.checks.base import Severity
+        from pipeline_check.core.checks.devenv.base import (
+            KIND_MCP_CONFIG,
+            DevEnvContext,
+            WorkspaceFile,
+        )
+        from pipeline_check.core.scanner import _verify_and_enrich_findings
+
+        mock_probe.return_value = ProbeResponse(
+            status=200, body=json.dumps({"login": "octocat"}).encode(),
+        )
+        token = "ghp_abcdefghijklmnopqrstuvwxyz1234567890"
+        data = {
+            "mcpServers": {
+                "gh": {"command": "npx", "env": {"GITHUB_TOKEN": token}}
+            }
+        }
+        wf = WorkspaceFile(
+            path=".mcp.json", kind=KIND_MCP_CONFIG,
+            data=data, raw=json.dumps(data),
+        )
+        finding = self._make_finding("DEV-008", ".mcp.json", passed=False)
+
+        _verify_and_enrich_findings([finding], DevEnvContext([wf]))
+
+        assert finding.severity == Severity.CRITICAL
+        assert "VERIFIED ACTIVE" in finding.description
+
     def test_passed_finding_is_skipped(self) -> None:
         from pipeline_check.core.scanner import _verify_and_enrich_findings
 

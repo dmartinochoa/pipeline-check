@@ -667,7 +667,7 @@ class MultiScanner:
 #: :func:`~pipeline_check.core.checks._secrets.find_secret_values`.
 _SECRET_CHECK_IDS: frozenset[str] = frozenset({
     "GHA-008", "GL-008", "BB-008", "ADO-008",
-    "CC-008", "JF-008", "GCB-012",
+    "CC-008", "JF-008", "GCB-012", "DEV-008",
 })
 
 
@@ -693,8 +693,17 @@ def _build_doc_map(context: Any) -> dict[str, Any]:
     if isinstance(files, list):
         for item in files:
             path = getattr(item, "path", None)
+            if not path:
+                continue
+            # The ``devenv`` WorkspaceFile carries a parsed dict (``data``);
+            # Jenkins files carry raw text (``text``). Map each to the shape
+            # the raw-token re-extraction (``classify_tokens_raw``) accepts.
+            data = getattr(item, "data", None)
+            if isinstance(data, dict):
+                docs[path] = data
+                continue
             text = getattr(item, "text", None)
-            if path and text is not None:
+            if text is not None:
                 docs[path] = [text]
     return docs
 
