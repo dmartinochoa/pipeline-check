@@ -12,6 +12,22 @@ release commit collapses this section into `## [X.Y.Z] - <date>`.
 
 ### Added
 
+- **``gitlab_runs`` provider: GitLab pipeline run-history forensics
+  (GLRUN-001).** The GitLab analog of the ``runs`` provider, and the first
+  step of run-forensics beyond GitHub. ``--pipeline gitlab_runs --scm-repo
+  group/project`` pulls recent pipelines via the GitLab REST API
+  (``GET /projects/:id/pipelines``) and audits what *actually executed*,
+  not just what ``.gitlab-ci.yml`` could do. GLRUN-001 (MEDIUM) flags
+  pipelines that ran on a merge-request event
+  (``source: merge_request_event`` / ``external_pull_request_event``):
+  contributor-proposed code that executed in CI, and (when "Run pipelines
+  for fork merge requests" is enabled) fork code in the project's context.
+  Metadata-only, so it needs no log download. Authenticated with
+  ``--gitlab-token`` / ``$GITLAB_TOKEN``; ``--gitlab-url`` points it at a
+  self-managed instance. A missing token / 404 / network error degrades to
+  a warning rather than crashing. Provider count 35 -> 36. (Fork-origin
+  detection and job-trace secret / OIDC scanning are deferred to later
+  GLRUN rules.)
 - **JF-038: agentic-CLI output lands without human review (Jenkins).**
   Completes Jenkins's AI flow-control coverage alongside JF-037, the
   Jenkins analog of GHA-123 / GL-049 / BB-039 / ADO-038. Fires when one

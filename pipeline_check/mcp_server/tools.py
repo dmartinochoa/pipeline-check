@@ -108,6 +108,7 @@ _PROVIDER_PATH_KW: dict[str, str | None] = {
     "gcp":            None,
     "scm":            None,
     "runs":           None,
+    "gitlab_runs":    None,
 }
 
 PROVIDERS: tuple[str, ...] = tuple(sorted(_PROVIDER_PATH_KW))
@@ -196,6 +197,17 @@ def _provider_kwarg(
                     )
                 runs_out["scm_fixture_dir"] = str(resolved_fx)
             return runs_out
+        if provider == "gitlab_runs":
+            # ``gitlab_runs`` is path-less: it audits a GitLab project's
+            # recent pipelines over the REST API, reusing ``scm_repo``
+            # (group/project). No fixture-dir replay (no portable filename
+            # for the ``?per_page=`` query); offline tests use a fake fetcher.
+            if not scm_repo:
+                raise ValueError(
+                    "provider 'gitlab_runs' requires scm_repo in "
+                    "'group/project' form."
+                )
+            return {"scm_repo": scm_repo}
         # AWS: no path, but accept ``path`` silently when supplied
         # so an agent guessing the call shape doesn't trip over it.
         return {}
@@ -791,14 +803,14 @@ def scan_pr_diff(
 
     Notes for callers:
 
-    * Live providers (``aws``, ``scm``, ``runs``) don't have a meaningful
-      BASE side and are rejected up front, the CLI rejects the same
-      combination.
+    * Live providers (``aws``, ``scm``, ``runs``, ``gitlab_runs``) don't
+      have a meaningful BASE side and are rejected up front, the CLI
+      rejects the same combination.
     * ``fail-on`` semantics aren't applied here; the agent can read
       ``summary.introduced_by_severity`` and decide itself whether
       to block the PR.
     """
-    if provider in ("aws", "scm", "runs"):
+    if provider in ("aws", "scm", "runs", "gitlab_runs"):
         raise ValueError(
             f"provider {provider!r} has no local BASE ref to diff against; "
             f"scan_pr_diff is only meaningful for file-based providers."
@@ -1193,8 +1205,8 @@ TOOL_SPECS: list[dict[str, Any]] = [
             "BASE is scanned in a throwaway ``git worktree`` "
             "subprocess. Returns structured introduced / resolved / "
             "preserved lists plus the rendered Markdown PR comment. "
-            "Not supported for the ``aws``, ``scm``, or ``runs`` live "
-            "providers."
+            "Not supported for the ``aws``, ``scm``, ``runs``, or "
+            "``gitlab_runs`` live providers."
         ),
         "input_schema": {
             "type": "object",
@@ -1203,7 +1215,7 @@ TOOL_SPECS: list[dict[str, Any]] = [
                     "type": "string",
                     "enum": [
                         p for p in _PROVIDER_ENUM
-                        if p not in ("aws", "scm", "runs")
+                        if p not in ("aws", "scm", "runs", "gitlab_runs")
                     ],
                 },
                 "base_ref": {

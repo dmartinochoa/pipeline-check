@@ -140,6 +140,7 @@ STANDARD = Standard(
         "GHA-002":  ["CM-6", "SI-7", "SA-11"],           # pull_request_target + PR head
         "RUN-001":  ["CM-6", "SI-7", "SA-11"],           # forensics: fork PR ran on privileged trigger
         "RUN-002":  ["CM-6", "SI-7", "SA-11"],           # forensics: privileged trigger fired
+        "GLRUN-001": ["CM-6", "SI-7", "SA-11"],  # gitlab forensics: merge-request pipeline executed
         "RUN-003":  ["CM-6", "SI-7", "SA-11"],           # forensics: secret leaked in run logs
         "RUN-004":  ["CM-6", "SI-7", "SA-11", "AC-6"],   # forensics: fork run minted a cloud OIDC token
         "RUN-005":  ["CM-6", "SI-7", "SA-11", "SC-7"],   # forensics: fork run on a self-hosted runner
