@@ -12,6 +12,21 @@ release commit collapses this section into `## [X.Y.Z] - <date>`.
 
 ### Added
 
+- **GL-049: agentic CLI output lands without human review (GitLab).** The
+  GitLab analog of GHA-123 and the flow-control leg of the GitLab AI/model
+  pack (GL-045..049), completing parity with the GitHub agentic-AI rules.
+  Fires when one job both invokes an agentic CLI (`claude` / `gemini` /
+  `cursor-agent` / `aider` / `openhands` / `goose` / `q chat`) and, in the
+  same job, lands the result with no review gate: a `glab mr merge` with an
+  auto / non-interactive flag (`--auto-merge` / `--yes` / `-y` /
+  `--when-pipeline-succeeds`), a `git push` carrying the
+  `merge_request.merge_when_pipeline_succeeds` push option, or a plain
+  `git push` (the GitLab idiom for committing straight to a branch). Does
+  not fire when the agent only opens an MR for review (`glab mr create`),
+  on a push job with no agent, or on a `git push --dry-run`. The landing
+  idioms are GitLab-specific so the detection is its own; the agentic-CLI
+  catalog reuses the shared `_primitives/agentic_cli` helper. HIGH. gitlab
+  50 -> 51.
 - **GL-048: untrusted MR/commit context reaches an agentic AI CLI
   (GitLab).** The GitLab analog of GHA-119 and the AI face of GL-002
   (script injection). Fires when a job `script` line invokes an agentic

@@ -392,6 +392,7 @@ STANDARD = Standard(
         "GL-045":   ["EX-6"],# trust_remote_code model load = code exec
         "GL-047":   ["EX-6"],# unsafe pickle deser of fetched artifact = code exec
         "GL-048":   ["EX-6"],# untrusted MR context into agentic CLI = prompt injection
+        "GL-049":   ["DE-1"],# agentic CLI output lands without review
         "BB-002":   ["EX-6"],
         "ADO-002":  ["EX-6"],
         "JF-002":   ["EX-6"],

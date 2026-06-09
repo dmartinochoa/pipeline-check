@@ -25,7 +25,7 @@ axis.
 
 - **Controls in this standard:** 86
 - **Controls evidenced by at least one check:** 61 / 86
-- **Distinct checks evidencing this standard:** 670
+- **Distinct checks evidencing this standard:** 671
 - **Of those, autofixable with `--fix`:** 105
 
 _Severity levels (`CRITICAL` / `HIGH` / `MEDIUM` / `LOW` / `INFO`) follow the same scale across every provider and standard. See [How to read severity](README.md#how-to-read-severity) on the standards overview for the definitions._
@@ -98,7 +98,7 @@ Click a control ID to jump to the per-control section with the full check list. 
 | [`PER-8`](#ctrl-per-8) | Create access token | 5 | 4H · 1M |
 | [`PE-1`](#ctrl-pe-1) | Inject malicious dependency to privileged user repository | 7 | 2C · 5H |
 | [`PE-2`](#ctrl-pe-2) | Runners / agents running with high user privileges | 45 | 11C · 22H · 10M · 2L |
-| [`DE-1`](#ctrl-de-1) | Bypass review using admin permission | 35 | 10H · 23M · 2L |
+| [`DE-1`](#ctrl-de-1) | Bypass review using admin permission | 36 | 11H · 23M · 2L |
 | [`DE-2`](#ctrl-de-2) | SaaS sprawl | 1 | 1M |
 | [`DE-3`](#ctrl-de-3) | Misconfigured audit log settings | 33 | 3H · 7M · 7L · 16I |
 | [`DE-4`](#ctrl-de-4) | Misconfiguration of security measures | 86 | 1C · 14H · 50M · 21L |
@@ -965,7 +965,7 @@ _No checks in this scanner currently evidence this control. Open an issue if you
 
 ### DE-1: Bypass review using admin permission { #ctrl-de-1 }
 
-**Evidenced by 35 checks** across 9 providers (AWS, Azure DevOps, Bitbucket, Buildkite, CircleCI, GitHub Actions, GitLab CI, Jenkins, SCM).
+**Evidenced by 36 checks** across 9 providers (AWS, Azure DevOps, Bitbucket, Buildkite, CircleCI, GitHub Actions, GitLab CI, Jenkins, SCM).
 
 | Check | Title | Severity | Provider | Fix |
 |-------|-------|----------|----------|-----|
@@ -987,6 +987,7 @@ _No checks in this scanner currently evidence this control. Open an issue if you
 | [`GHA-123`](../providers/github.md#gha-123) | Agentic CLI output lands without human review | <span class="pg-sev pg-sev--high">HIGH</span> | [GitHub Actions](../providers/github.md) |  |
 | [`GL-004`](../providers/gitlab.md#gl-004) | Deploy job lacks manual approval or environment gate | <span class="pg-sev pg-sev--medium">MEDIUM</span> | [GitLab CI](../providers/gitlab.md) |  |
 | [`GL-029`](../providers/gitlab.md#gl-029) | Manual deploy job defaults to allow_failure: true | <span class="pg-sev pg-sev--medium">MEDIUM</span> | [GitLab CI](../providers/gitlab.md) |  |
+| [`GL-049`](../providers/gitlab.md#gl-049) | Agentic CLI output lands without human review | <span class="pg-sev pg-sev--high">HIGH</span> | [GitLab CI](../providers/gitlab.md) |  |
 | [`JF-005`](../providers/jenkins.md#jf-005) | Deploy stage missing manual `input` approval | <span class="pg-sev pg-sev--medium">MEDIUM</span> | [Jenkins](../providers/jenkins.md) |  |
 | [`JF-024`](../providers/jenkins.md#jf-024) | `input` approval step missing submitter restriction | <span class="pg-sev pg-sev--medium">MEDIUM</span> | [Jenkins](../providers/jenkins.md) |  |
 | [`JF-026`](../providers/jenkins.md#jf-026) | `build job:` trigger ignores downstream failure | <span class="pg-sev pg-sev--medium">MEDIUM</span> | [Jenkins](../providers/jenkins.md) |  |

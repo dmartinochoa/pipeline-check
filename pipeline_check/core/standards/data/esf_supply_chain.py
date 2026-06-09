@@ -149,6 +149,7 @@ STANDARD = Standard(
         "GL-046":   ["ESF-S-PIN-DEPS", "ESF-S-VERIFY-DEPS"],   # unpinned model registry ref
         "GL-047":   ["ESF-D-INJECTION"],   # unsafe pickle deser of fetched artifact = code exec
         "GL-048":   ["ESF-D-INJECTION"],   # untrusted MR context into agentic CLI = prompt injection
+        "GL-049":   ["ESF-C-APPROVAL"],   # agentic CLI output lands without review
         "GL-003":   ["ESF-D-SECRETS"],
         "GL-004":   ["ESF-C-APPROVAL", "ESF-C-ENV-SEP"],
         "GL-044":   ["ESF-C-APPROVAL", "ESF-C-ENV-SEP"],  # auto production deploy on an MR pipeline
