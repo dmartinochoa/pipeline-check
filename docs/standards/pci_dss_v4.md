@@ -13,7 +13,7 @@ scanner can witness.
 
 - **Controls in this standard:** 13
 - **Controls evidenced by at least one check:** 13 / 13
-- **Distinct checks evidencing this standard:** 931
+- **Distinct checks evidencing this standard:** 933
 - **Of those, autofixable with `--fix`:** 111
 
 _Severity levels (`CRITICAL` / `HIGH` / `MEDIUM` / `LOW` / `INFO`) follow the same scale across every provider and standard. See [How to read severity](README.md#how-to-read-severity) on the standards overview for the definitions._
@@ -28,7 +28,7 @@ Click a control ID to jump to the per-control section with the full check list. 
 | [`6.3.3`](#ctrl-6-3-3) | All system components protected from known vulnerabilities by installing applicable patches | 181 | 14C · 85H · 70M · 12L |
 | [`6.4.1`](#ctrl-6-4-1) | Public-facing web apps are protected against attacks (secure build/config) | 145 | 23C · 65H · 46M · 11L |
 | [`6.4.3`](#ctrl-6-4-3) | Changes to systems are managed via documented change control | 77 | 4C · 29H · 36M · 8L |
-| [`6.5.1`](#ctrl-6-5-1) | Changes to system components follow secure development procedures | 376 | 52C · 171H · 123M · 29L · 1I |
+| [`6.5.1`](#ctrl-6-5-1) | Changes to system components follow secure development procedures | 378 | 52C · 173H · 123M · 29L · 1I |
 | [`7.2.1`](#ctrl-7-2-1) | Access control is defined per job role with least privilege | 40 | 5C · 24H · 10M · 1L |
 | [`7.2.2`](#ctrl-7-2-2) | Access is assigned based on job classification and function | 8 | 1C · 2H · 5M |
 | [`7.2.5`](#ctrl-7-2-5) | System and application accounts have least-privilege access | 73 | 10C · 37H · 26M |
@@ -626,7 +626,7 @@ pipeline_check --pipeline aws --standard pci_dss_v4 --standard owasp_cicd_top_10
 
 ### 6.5.1: Changes to system components follow secure development procedures { #ctrl-6-5-1 }
 
-**Evidenced by 376 checks** across 31 providers (AWS, Actions run history, Argo CD, Argo Workflows, Azure Cloud, Azure DevOps, Bitbucket, Buildkite, Cargo, CircleCI, Cloud Build, Developer environment, Dockerfile, Drone CI, GCP, GitHub Actions, GitLab CI, GitLab pipeline run history, Go modules, Helm, Jenkins, Kubernetes, Modelfile, NuGet, OCI manifest, Pulumi, PyPI, SCM, Tekton, maven, npm).
+**Evidenced by 378 checks** across 31 providers (AWS, Actions run history, Argo CD, Argo Workflows, Azure Cloud, Azure DevOps, Bitbucket, Buildkite, Cargo, CircleCI, Cloud Build, Developer environment, Dockerfile, Drone CI, GCP, GitHub Actions, GitLab CI, GitLab pipeline run history, Go modules, Helm, Jenkins, Kubernetes, Modelfile, NuGet, OCI manifest, Pulumi, PyPI, SCM, Tekton, maven, npm).
 
 | Check | Title | Severity | Provider | Fix |
 |-------|-------|----------|----------|-----|
@@ -882,6 +882,8 @@ pipeline_check --pipeline aws --standard pci_dss_v4 --standard owasp_cicd_top_10
 | [`GL-048`](../providers/gitlab.md#gl-048) | Untrusted MR/commit context reaches an agentic AI CLI (prompt injection) | <span class="pg-sev pg-sev--high">HIGH</span> | [GitLab CI](../providers/gitlab.md) |  |
 | [`GLRUN-001`](../providers/gitlab_runs.md#glrun-001) | Merge-request pipeline exercised in run history | <span class="pg-sev pg-sev--medium">MEDIUM</span> | [GitLab pipeline run history](../providers/gitlab_runs.md) |  |
 | [`GLRUN-002`](../providers/gitlab_runs.md#glrun-002) | Fork merge-request pipeline executed in run history | <span class="pg-sev pg-sev--high">HIGH</span> | [GitLab pipeline run history](../providers/gitlab_runs.md) |  |
+| [`GLRUN-003`](../providers/gitlab_runs.md#glrun-003) | Secret leaked in a fork pipeline's job trace | <span class="pg-sev pg-sev--high">HIGH</span> | [GitLab pipeline run history](../providers/gitlab_runs.md) |  |
+| [`GLRUN-004`](../providers/gitlab_runs.md#glrun-004) | Fork pipeline minted a cloud OIDC token | <span class="pg-sev pg-sev--high">HIGH</span> | [GitLab pipeline run history](../providers/gitlab_runs.md) |  |
 | [`GOMOD-005`](../providers/gomod.md) | go.mod does not declare a minimum Go toolchain version | <span class="pg-sev pg-sev--low">LOW</span> | [Go modules](../providers/gomod.md) |  |
 | [`HELM-002`](../providers/helm.md#helm-002) | Chart.lock missing per-dependency digests | <span class="pg-sev pg-sev--high">HIGH</span> | [Helm](../providers/helm.md) | <span class="pg-fix" title="`--fix` will patch this rule">🔧 fix</span> |
 | [`HELM-004`](../providers/helm.md#helm-004) | Chart dependency version is a range, not an exact pin | <span class="pg-sev pg-sev--medium">MEDIUM</span> | [Helm](../providers/helm.md) |  |

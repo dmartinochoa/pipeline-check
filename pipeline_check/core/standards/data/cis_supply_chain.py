@@ -165,6 +165,8 @@ STANDARD = Standard(
         "RUN-002":  ["2.1.3", "2.3.8"],                  # forensics: privileged trigger fired
         "GLRUN-001": ["2.1.3", "2.3.8"],  # gitlab forensics: merge-request pipeline executed
         "GLRUN-002": ["2.1.3", "2.3.8"],  # gitlab forensics: fork merge-request pipeline executed
+        "GLRUN-003": ["2.1.3", "2.3.8"],  # gitlab forensics: secret leaked in fork pipeline trace
+        "GLRUN-004": ["2.1.3", "2.3.8"],  # gitlab forensics: fork pipeline minted a cloud OIDC token
         "RUN-003":  ["2.1.3", "2.3.8"],                  # forensics: secret leaked in run logs
         "RUN-004":  ["2.1.3", "2.3.8"],                  # forensics: fork run minted a cloud OIDC token
         "RUN-005":  ["2.1.3", "2.3.8"],                  # forensics: fork run on a self-hosted runner

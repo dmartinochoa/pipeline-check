@@ -339,6 +339,8 @@ STANDARD = Standard(
         "RUN-002":  ["PR.IR-01"],
         "GLRUN-001": ["PR.IR-01"],  # gitlab forensics: merge-request pipeline executed
         "GLRUN-002": ["PR.IR-01"],  # gitlab forensics: fork merge-request pipeline executed
+        "GLRUN-003": ["PR.IR-01"],  # gitlab forensics: secret leaked in fork pipeline trace
+        "GLRUN-004": ["PR.IR-01"],  # gitlab forensics: fork pipeline minted a cloud OIDC token
         "RUN-003":  ["PR.IR-01"],
         "RUN-004":  ["PR.IR-01"],
         "RUN-005":  ["PR.IR-01"],
