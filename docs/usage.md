@@ -175,6 +175,12 @@ pipeline_check --pipeline runs --scm-repo owner/name \
 # needs the actions:read scope.
 pipeline_check --pipeline runs --scm-repo owner/name \
     --gh-token "$GITHUB_TOKEN" --audit-runs-logs
+
+# GitLab pipeline run-history forensics. Audits recent pipelines via the
+# GitLab REST API for merge-request executions. Token from --gitlab-token
+# or $GITLAB_TOKEN (needs read_api); --gitlab-url for self-managed.
+pipeline_check --pipeline gitlab_runs --scm-repo group/project \
+    --gitlab-token "$GITLAB_TOKEN"
 ```
 
 Full per-provider reference: [providers/](providers/README.md).

@@ -976,6 +976,36 @@ pipeline_check --pipeline runs --scm-repo owner/name \\
 ```
 """,
     ),
+    "gitlab_runs": (
+        "GitLab pipeline run forensics",
+        "pipeline_check.core.checks.gitlab_runs.rules",
+        _REPO_ROOT / "docs" / "providers" / "gitlab_runs.md",
+        """\
+# GitLab pipeline run forensics
+
+Where the `gitlab` provider reasons about what a `.gitlab-ci.yml` *could*
+do, the `gitlab_runs` provider audits what *actually executed*. It pulls
+recent pipelines via the GitLab REST API
+(`GET /projects/:id/pipelines`) and flags pipelines that ran on a
+merge-request event: code a contributor proposed, and (when "Run
+pipelines for fork merge requests" is enabled) code from a fork running
+in the project's CI context. This is the GitLab analog of the `runs`
+provider's GitHub Actions forensics.
+
+Findings carry the pipeline's URL and trigger source so an operator can
+open the pipeline directly. A missing token, a 404, or a network error
+degrades to a warning (every rule then sees an empty pipeline list and
+passes) rather than crashing the scan.
+
+## Producer workflow
+
+```bash
+# Token comes from --gitlab-token or $GITLAB_TOKEN (needs ``read_api``).
+pipeline_check --pipeline gitlab_runs --scm-repo group/project \\
+               --gitlab-token "$GITLAB_TOKEN"
+```
+""",
+    ),
     "scm": (
         "SCM posture (GitHub)",
         "pipeline_check.core.checks.scm.rules",
