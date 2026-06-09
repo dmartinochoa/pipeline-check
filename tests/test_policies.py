@@ -529,3 +529,25 @@ class TestLoadPolicyURL:
         with pytest.raises(PolicyError) as exc:
             load_policy("https://example.com/p.yml")
         assert "could not fetch" in str(exc.value)
+
+    def test_non_utf8_body_raises_and_does_not_fall_back_to_cache(
+        self, monkeypatch, tmp_path
+    ) -> None:
+        # A successful (200) fetch that isn't valid UTF-8 is a bad response,
+        # not a network failure: it must surface, never silently serve the
+        # stale cached copy (which could mask a changed / hijacked endpoint).
+        cache = tmp_path / "cache"
+        monkeypatch.setattr(
+            "pipeline_check.core.policies._policy_cache_dir", lambda: cache
+        )
+        url = "https://example.com/p.yml"
+        # Prime the cache with a good fetch.
+        monkeypatch.setattr(_SAFE_HTTP, lambda req, timeout: _FakeResp(_REMOTE_YAML))
+        assert load_policy(url).name == "fintech-strict"
+        # Now the endpoint returns a non-UTF-8 body: must raise, not fall back.
+        monkeypatch.setattr(
+            _SAFE_HTTP, lambda req, timeout: _FakeResp(b"\xff\xfe\x00\x80bad")
+        )
+        with pytest.raises(PolicyError) as exc:
+            load_policy(url)
+        assert "UTF-8" in str(exc.value)

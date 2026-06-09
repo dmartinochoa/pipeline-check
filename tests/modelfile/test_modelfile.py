@@ -5,6 +5,8 @@ from pipeline_check.core.checks.base import Severity
 from pipeline_check.core.checks.modelfile.base import (
     is_hf_model_config,
     parse_modelfile,
+    ref_is_hub,
+    ref_is_local,
 )
 
 from .conftest import run_check, run_config_check
@@ -169,3 +171,35 @@ class TestModel005ConfigCustomCode:
             {"model_type": "llama", "auto_map": {}}, "MODEL-005"
         )
         assert f.passed
+
+
+class TestHubRefWithWeightsExtension:
+    """Regression: ``FROM hf.co/org/model.gguf`` is a remote hub pull, not a
+    local weights file. The weights-extension classifier used to win over the
+    hub classifier, suppressing MODEL-001 (false negative) and false-firing
+    MODEL-003 on a documented Ollama syntax."""
+
+    REF = "hf.co/TheBloke/Llama-2-7B-GGUF/model.gguf"
+
+    def test_ref_is_not_local(self):
+        assert ref_is_hub(self.REF) is True
+        assert ref_is_local(self.REF) is False
+
+    def test_model001_fires_unpinned(self):
+        # An unpinned (no tag / digest) remote hub pull must be flagged.
+        f = run_check(f"FROM {self.REF}\n", "MODEL-001")
+        assert not f.passed
+
+    def test_model002_fires_third_party_hub(self):
+        f = run_check(f"FROM {self.REF}\n", "MODEL-002")
+        assert not f.passed
+
+    def test_model003_does_not_false_fire(self):
+        # It is a remote pull, so the local-weights-blob rule must pass.
+        f = run_check(f"FROM {self.REF}\n", "MODEL-003")
+        assert f.passed
+
+    def test_genuine_local_weights_still_local(self):
+        assert ref_is_local("./model.gguf") is True
+        assert ref_is_local("model.gguf") is True
+        assert ref_is_local("/models/weights.bin") is True

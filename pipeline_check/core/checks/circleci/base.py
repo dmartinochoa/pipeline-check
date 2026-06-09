@@ -148,11 +148,6 @@ def iter_workflow_jobs(doc: dict[str, Any]) -> Iterator[tuple[str, str, dict[str
                     yield wf_name, job_name, job_cfg
 
 
-def get_docker_images(doc: dict[str, Any]) -> list[str]:
-    """Return every docker image referenced in jobs and executors."""
-    return [img for img, _ in iter_docker_image_anchors(doc)]
-
-
 def iter_docker_image_anchors(
     doc: dict[str, Any],
 ) -> Iterator[tuple[str, dict[str, Any]]]:

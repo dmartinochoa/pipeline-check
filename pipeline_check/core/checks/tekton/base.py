@@ -189,18 +189,3 @@ def iter_step_scripts(doc: TektonDoc) -> Iterator[tuple[str, str]]:
         script = step.get("script")
         if isinstance(script, str) and script:
             yield step_name(step, idx), script
-
-
-def iter_step_commands(doc: TektonDoc) -> Iterator[tuple[str, list[str]]]:
-    """Yield ``(step_name, command_args)`` for every step using
-    ``command:`` / ``args:``. Returns the joined arg list as strings."""
-    for idx, step in enumerate(task_steps(doc)):
-        parts: list[str] = []
-        cmd = step.get("command")
-        if isinstance(cmd, list):
-            parts.extend(c for c in cmd if isinstance(c, str))
-        args = step.get("args")
-        if isinstance(args, list):
-            parts.extend(a for a in args if isinstance(a, str))
-        if parts:
-            yield step_name(step, idx), parts

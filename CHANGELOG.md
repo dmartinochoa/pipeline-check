@@ -10,6 +10,25 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 PRs landing on `dev` between releases append entries below. The
 release commit collapses this section into `## [X.Y.Z] - <date>`.
 
+### Fixed
+
+- **modelfile: a hub model pulled by a file path (`FROM
+  hf.co/org/model.gguf`) was misclassified as a local weights file.** The
+  weights-extension check (`.gguf` / `.safetensors` / `.bin` / …) won over
+  the hub check, so a documented Ollama "pull this GGUF from Hugging Face"
+  line suppressed MODEL-001 (unpinned base model, a false negative) and
+  false-fired MODEL-003 (local weights blob). The hub classification now
+  wins: such a ref correctly fires MODEL-001 + MODEL-002 and not MODEL-003.
+  Genuine local files (`./model.gguf`, bare `model.gguf`, `/x/weights.bin`)
+  are unchanged.
+- **A remote policy pack that returns a non-UTF-8 body no longer silently
+  serves a stale cached copy.** `--policy <https-url>` folded a decode
+  failure into the network-failure path, so a 200 response with a
+  corrupt / changed / hijacked non-UTF-8 body would fall back to the last
+  good cache and mask the bad response. A decode failure on a successful
+  fetch now raises a clear error; the cache fallback fires only on an
+  actual network / IO failure.
+
 ## [1.13.0] - 2026-06-09
 
 ### Added
