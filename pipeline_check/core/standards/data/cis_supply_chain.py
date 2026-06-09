@@ -265,6 +265,7 @@ STANDARD = Standard(
         "GL-037": ["1.4.1"],  # CI env disables Go module verification
         "GL-002":   ["2.1.3", "2.3.8"],
         "GL-045":   ["2.1.3"],   # trust_remote_code model load = code exec
+        "GL-046":   ["1.4.1", "3.1.5"],   # model pulled without a pinned revision
         "GL-003":   ["1.5.1", "2.3.4", "2.4.3"],
         "GL-004":   ["5.1.4", "5.2.1"],
         "GL-005":   ["1.4.1", "3.1.3", "3.1.5"],
