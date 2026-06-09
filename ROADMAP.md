@@ -748,13 +748,15 @@ product. Grouped by horizon; effort (S/M/L) and impact noted.
 - **Runtime / run-log forensics (`--audit-runs`) (L, very high).** Pull
   recent Actions / GitLab pipeline run logs + metadata via API and check
   what actually executed, not just what the config could: workflows that
-  ran on `pull_request_target`, jobs that minted OIDC tokens,
-  secret-shaped strings echoed in logs, runtime-resolved third-party
-  actions. The 2025 tj-actions/changed-files (CVE-2025-30066) and
-  GhostAction incidents were visible in run history first. Every
-  competitor (and the tool today) is purely static; this is the biggest
-  true capability gap and the most defensible differentiation. Builds on
-  the SCM REST fetchers + `_primitives/log_leak.py`.
+  ran on `pull_request_target` (shipped, RUN-001/002), jobs that minted
+  OIDC tokens (shipped, RUN-004: fork run minted a cloud OIDC token),
+  secret-shaped strings echoed in logs (shipped, RUN-003). Still open:
+  GitLab pipeline run logs, and runtime-resolved third-party actions. The
+  2025 tj-actions/changed-files (CVE-2025-30066) and GhostAction
+  incidents were visible in run history first. Every competitor is purely
+  static; this is the biggest true capability gap and the most defensible
+  differentiation. Builds on the SCM REST fetchers + the `runs` provider's
+  bounded log-download path.
 - **Live org-wide SCM governance (`--scm-org ORG`) (M, high).** The
   55-rule SCM pack runs one repo at a time today; fleet clones configs.
   Enumerate every repo + org-level settings (org-secret scoping, Actions

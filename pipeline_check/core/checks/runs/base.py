@@ -14,6 +14,7 @@ crash (every rule then sees an empty run list and passes).
 from __future__ import annotations
 
 import io
+import re
 import zipfile
 from dataclasses import dataclass, field
 from typing import Any
@@ -41,6 +42,19 @@ _MAX_LOG_TOTAL_BYTES = 50 * 1024 * 1024
 PRIVILEGED_TRIGGERS: frozenset[str] = frozenset({
     "pull_request_target", "workflow_run",
 })
+
+#: Markers that a run's logs exercised cloud OIDC token minting. Tight by
+#: design (near-zero false positive): these strings essentially only occur
+#: in an OIDC flow -- GitHub's OIDC issuer / token-request env, the AWS STS
+#: web-identity call, and GCP workload-identity federation. Recall is
+#: best-effort (log content varies and registered secrets are masked),
+#: matching the best-effort nature of run-log forensics.
+_OIDC_MARKERS_RE = re.compile(
+    r"token\.actions\.githubusercontent\.com"
+    r"|ACTIONS_ID_TOKEN_REQUEST_(?:URL|TOKEN)"
+    r"|AssumeRoleWithWebIdentity"
+    r"|workloadIdentityPools",
+)
 
 
 def _str(value: Any) -> str:
@@ -94,8 +108,11 @@ class RunsContext:
     #: run_id -> sorted, deduped "detector:redacted" labels for secrets
     #: found in that run's logs (only populated when ``scan_logs=True``).
     log_leaks: dict[int, list[str]] = field(default_factory=dict)
-    #: True once log scanning was requested + attempted, so RUN-003 can
-    #: tell "no leaks found" from "logs were never scanned".
+    #: run_ids whose logs show a cloud OIDC token was minted (only
+    #: populated when ``scan_logs=True``); RUN-004 escalates the fork subset.
+    oidc_mint_runs: set[int] = field(default_factory=set)
+    #: True once log scanning was requested + attempted, so RUN-003 / RUN-004
+    #: can tell "nothing found" from "logs were never scanned".
     logs_scanned: bool = False
 
     @property
@@ -176,9 +193,11 @@ class RunsContext:
             )
             if not raw:
                 continue
-            leaks = _scan_log_zip(raw)
+            leaks, oidc_minted = _scan_log_zip(raw)
             if leaks:
                 self.log_leaks[run.run_id] = leaks
+            if oidc_minted:
+                self.oidc_mint_runs.add(run.run_id)
 
 
 def _to_record(entry: Any) -> RunRecord | None:
@@ -216,22 +235,27 @@ def _to_record(entry: Any) -> RunRecord | None:
     )
 
 
-def _scan_log_zip(raw: bytes) -> list[str]:
-    """Scan a run-logs ZIP for secret-shaped strings.
+def _scan_log_zip(raw: bytes) -> tuple[list[str], bool]:
+    """Scan a run-logs ZIP for secret-shaped strings and OIDC-mint markers.
 
-    GitHub masks registered secrets in logs, so a hit here is a secret
-    that leaked *past* masking (a credential a tool printed, a value
-    never registered as a secret, a base64/transformed token) -- exactly
-    the high-signal case. Bounded per-file and in total against a
+    GitHub masks registered secrets in logs, so a secret hit is one that
+    leaked *past* masking (a credential a tool printed, a value never
+    registered as a secret, a base64/transformed token) -- exactly the
+    high-signal case. The OIDC pass flags that the run exercised cloud
+    OIDC token minting (the fork subset is RUN-004). Both run on the same
+    single decompress pass. Bounded per-file and in total against a
     pathological archive; ``find_secret_values`` is imported lazily so a
     metadata-only scan never pays for the detector catalog.
+
+    Returns ``(sorted_secret_labels, oidc_minted)``.
     """
     from .._secrets import find_secret_values
     try:
         archive = zipfile.ZipFile(io.BytesIO(raw))
     except (zipfile.BadZipFile, OSError, EOFError):
-        return []
+        return [], False
     leaks: set[str] = set()
+    oidc_minted = False
     consumed = 0
     with archive:
         for info in archive.infolist():
@@ -245,7 +269,9 @@ def _scan_log_zip(raw: bytes) -> list[str]:
             except (OSError, RuntimeError, zipfile.BadZipFile):
                 continue
             leaks.update(find_secret_values([text]))
-    return sorted(leaks)
+            if not oidc_minted and _OIDC_MARKERS_RE.search(text):
+                oidc_minted = True
+    return sorted(leaks), oidc_minted
 
 
 def run_resource(ctx: RunsContext, run: RunRecord) -> str:

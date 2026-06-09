@@ -10,6 +10,23 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 PRs landing on `dev` between releases append entries below. The
 release commit collapses this section into `## [X.Y.Z] - <date>`.
 
+### Added
+
+- **RUN-004: a fork PR's run minted a cloud OIDC token (run forensics).**
+  The sharpest live escalation of RUN-001 and the run-history confirmation
+  of the static CI->cloud OIDC-trust link (AC-016). When a run both
+  executed untrusted fork code on a privileged trigger and minted an OIDC
+  token, attacker-controlled code reached cloud federation: it could
+  exchange the GitHub OIDC token for the federated AWS / GCP / Azure role
+  and act as it. Reuses the privileged-trigger run logs RUN-003 already
+  downloads under `--audit-runs-logs` (no extra fetches), flagging the
+  OIDC-mint markers (`token.actions.githubusercontent.com`, the
+  `ACTIONS_ID_TOKEN_REQUEST_*` env, AWS `AssumeRoleWithWebIdentity`, GCP
+  `workloadIdentityPools`). Scoped to fork-originated runs, so a
+  trusted-branch deploy that uses OIDC normally does not fire; detection
+  is high-precision but best-effort on recall (log content varies). HIGH.
+  runs 3 -> 4.
+
 ### Fixed
 
 - **modelfile: a hub model pulled by a file path (`FROM
