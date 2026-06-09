@@ -12,6 +12,16 @@ release commit collapses this section into `## [X.Y.Z] - <date>`.
 
 ### Added
 
+- **ADO-034: ML model loaded with `trust_remote_code` (Azure DevOps).**
+  Completes the cross-provider coverage of the flagship model-RCE rule
+  (GHA-120 / GL-045 / BB-035 / ADO-034) across every script-based CI
+  provider. Fires on `trust_remote_code=True` / `--trust-remote-code` in a
+  step's `script` / `bash` / `pwsh` / `powershell` body or a task-based
+  step's `inputs.script`: the transformers / huggingface_hub loader
+  executes the model repo's own Python at load time, so an untrusted or
+  unpinned model is arbitrary code execution on the agent with its
+  service-connection credentials in scope. Reuses the shared
+  `_primitives/model_trust` detector. HIGH. azure 33 -> 34.
 - **BB-035: ML model loaded with `trust_remote_code` (Bitbucket).** Brings
   the flagship model-RCE rule to the #3 script-based CI provider,
   completing its cross-provider coverage (GHA-120 / GL-045 / BB-035).

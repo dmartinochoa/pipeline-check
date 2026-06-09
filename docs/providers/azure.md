@@ -30,7 +30,7 @@ The walker handles every layout ADO supports:
 
 ## What it covers
 
-33 checks · 11 have an autofix patch (``--fix``).
+34 checks · 11 have an autofix patch (``--fix``).
 
 | Check | Title | Severity | Fix |
 |-------|-------|----------|-----|
@@ -67,6 +67,7 @@ The walker handles every layout ADO supports:
 | [ADO-031](#ado-031) | Secret variable echoed / printed in a script step | <span class="pg-sev pg-sev--high">HIGH</span> |  |
 | [ADO-032](#ado-032) | checkout persistCredentials leaves the pipeline token in .git/config | <span class="pg-sev pg-sev--high">HIGH</span> |  |
 | [ADO-033](#ado-033) | IaC apply on a PR-validated pipeline | <span class="pg-sev pg-sev--critical">CRITICAL</span> |  |
+| [ADO-034](#ado-034) | ML model loaded with trust_remote_code (code execution) | <span class="pg-sev pg-sev--high">HIGH</span> |  |
 
 ---
 
@@ -770,6 +771,26 @@ Fires when a pipeline declares PR validation (`pr:` set to anything other than `
 **Recommended action**
 
 Never run `terraform apply` (or `cloudformation deploy` / `cdk deploy` / `pulumi up` / `sam deploy` / `terragrunt apply`) in a pipeline that opts into PR validation (`pr:`). The PR branch's IaC executes at apply time, so an `external` data source, a `local-exec` provisioner, or a hijacked provider runs arbitrary code on the agent with whatever cloud credentials (often a federated service connection) the apply uses, before the change is reviewed or merged. On PR validation run a read-only `plan`; move the `apply` onto the default-branch (`trigger:`) leg, gated by a protected `environment:`.
+
+</div>
+
+</div>
+
+<div class="pg-rule pg-rule--high" markdown>
+
+## ADO-034: ML model loaded with trust_remote_code (code execution) { #ado-034 }
+
+<div class="pg-rule__tags">
+<span class="pg-sev pg-sev--high">HIGH</span> <span class="pg-tag pg-tag--owasp">CICD-SEC-4</span> <span class="pg-tag pg-tag--esf">ESF-D-INJECTION</span> <span class="pg-tag pg-tag--cwe">CWE-494</span> <span class="pg-tag pg-tag--cwe">CWE-829</span>
+</div>
+
+Fires on ``trust_remote_code=True`` / ``--trust-remote-code`` in a step's ``script`` / ``bash`` / ``pwsh`` / ``powershell`` body or a task-based step's ``inputs.script``. The transformers / huggingface_hub loader executes the model repo's own Python at load time, so an untrusted or unpinned model is arbitrary code execution on the agent with its credentials in scope.
+
+<div class="pg-rule__rec" markdown>
+
+**Recommended action**
+
+Load models with ``trust_remote_code=False`` (the library default). If a model genuinely needs custom code, vet it and pin an exact revision (a commit SHA, not a tag or branch), run the load in a job scoped to no production service connections, and prefer safetensors weights over pickle.
 
 </div>
 

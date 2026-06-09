@@ -153,6 +153,7 @@ STANDARD = Standard(
         # Azure DevOps Pipelines
         "ADO-001":  ["6.3.3"],
         "ADO-002":  ["6.5.1"],
+        "ADO-034":  ["6.5.1"],   # trust_remote_code model load = code exec
         "ADO-003":  ["8.2.1", "6.5.1"],
         "ADO-004":  ["6.4.3"],
         "ADO-005":  ["6.3.3"],

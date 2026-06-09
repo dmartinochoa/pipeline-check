@@ -253,6 +253,7 @@ STANDARD = Standard(
         # ── Azure DevOps Pipelines ────────────────────────────────
         "ADO-001":  ["Build.L3.NonFalsifiable"],                   # unpinned task
         "ADO-002":  ["Build.L3.Isolated"],                         # script injection
+        "ADO-034":  ["Build.L3.Isolated"],                         # trust_remote_code model load = code exec
         "ADO-005":  ["Build.L3.NonFalsifiable"],                   # unpinned container
         "ADO-006":  ["Build.L2.Signed"],
         "ADO-007":  ["Build.L1.Provenance"],

@@ -133,7 +133,7 @@ for inputs, idempotency, and fork-PR fallback behavior.
 | **GitHub Actions run forensics** | Live Actions REST API | `--pipeline runs` | 3 checks · `RUN-001..003` · audits run history for what actually executed (fork-originated runs, privileged-trigger runs that fired, secrets leaked in run logs via `--audit-runs-logs`) vs. what the static config could do |
 | **GitLab CI** | `.gitlab-ci.yml` | `--gitlab-path` | 51 checks · `GL-001..049` + `TAINT-004`/`008` · `CI_JOB_TOKEN` cross-project scope, DinD TLS bypass, debug-trace secret leaks, MR-pipeline IaC apply + prod deploy, disabled native scanners, `trust_remote_code` + unpinned + pickle model loads, agentic-CLI prompt injection + autoland, mutable `include: component:` |
 | **Bitbucket Pipelines** | `bitbucket-pipelines.yml` | `--bitbucket-path` | 35 checks · `BB-001..035` · PR-pipeline IaC apply + prod deploy, `trust_remote_code` model loads |
-| **Azure DevOps** | `azure-pipelines.yml` | `--azure-path` | 33 checks · `ADO-001..033` · incl. IaC apply on a PR-validated pipeline |
+| **Azure DevOps** | `azure-pipelines.yml` | `--azure-path` | 34 checks · `ADO-001..034` · incl. IaC apply on a PR-validated pipeline, `trust_remote_code` model loads |
 | **Jenkins** | `Jenkinsfile` (Declarative / Scripted) | `--jenkinsfile-path` | 36 checks · `JF-001..036` |
 | **CircleCI** | `.circleci/config.yml` | `--circleci-path` | 33 checks · `CC-001..033` · incl. Go-module-verification bypass |
 | **Google Cloud Build** | `cloudbuild.yaml` | `--cloudbuild-path` | 27 checks · `GCB-001..027` |
@@ -533,7 +533,7 @@ pipeline_check/
         ├── runs/rules/        # RUN-001 .. RUN-003 — GitHub Actions run-history forensics via the live Actions REST API (fork-originated runs, privileged-trigger runs that fired, secrets leaked in run logs)
         ├── gitlab/rules/      # GL-001 .. GL-049 + TAINT-004 / TAINT-008
         ├── bitbucket/rules/   # BB-001 .. BB-035
-        ├── azure/rules/       # ADO-001 .. ADO-033
+        ├── azure/rules/       # ADO-001 .. ADO-034
         ├── jenkins/rules/     # JF-001 .. JF-036
         ├── circleci/rules/    # CC-001 .. CC-033
         ├── cloudbuild/rules/  # GCB-001 .. GCB-027

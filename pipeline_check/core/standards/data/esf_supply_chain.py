@@ -212,6 +212,7 @@ STANDARD = Standard(
         # ── Azure DevOps Pipelines ─────────────────────────────────
         "ADO-001":  ["ESF-S-PIN-DEPS", "ESF-S-VERIFY-DEPS"],
         "ADO-002":  ["ESF-D-INJECTION"],
+        "ADO-034":  ["ESF-D-INJECTION"],   # trust_remote_code model load = code exec
         "ADO-003":  ["ESF-D-SECRETS"],
         "ADO-004":  ["ESF-C-APPROVAL", "ESF-C-ENV-SEP"],
         "ADO-005":  ["ESF-S-PIN-DEPS", "ESF-S-TRUSTED-REG"],

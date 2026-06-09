@@ -265,6 +265,7 @@ STANDARD = Standard(
         "BB-025":   ["Dangerous-Workflow"],                            # malicious activity
         "BB-026":   ["Dangerous-Workflow"],
         "ADO-002":  ["Dangerous-Workflow"],
+        "ADO-034":  ["Dangerous-Workflow"],   # trust_remote_code model load = code exec
         "ADO-011":  ["Dangerous-Workflow"],
         "ADO-012":  ["Dangerous-Workflow"],
         "ADO-019":  ["Dangerous-Workflow"],

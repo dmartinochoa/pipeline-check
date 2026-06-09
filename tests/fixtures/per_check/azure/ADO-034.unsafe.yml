@@ -1,0 +1,4 @@
+jobs:
+  - job: Eval
+    steps:
+      - script: python -c "from transformers import AutoModel; AutoModel.from_pretrained('acme/m', trust_remote_code=True)"

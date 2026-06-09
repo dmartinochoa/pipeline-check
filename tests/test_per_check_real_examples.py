@@ -448,6 +448,7 @@ CASES: list[CheckCase] = [
     CheckCase("ADO-031", "CICD-SEC-6", ("ESF-D-SECRETS",)),
     CheckCase("ADO-032", "CICD-SEC-6", ("ESF-D-SECRETS",)),
     CheckCase("ADO-033", "CICD-SEC-4", ("ESF-D-INJECTION",)),
+    CheckCase("ADO-034", "CICD-SEC-4", ("ESF-D-INJECTION",)),
     # ── Jenkins backfill (JF-030..035) ───────────────────────────────
     CheckCase("JF-030", "CICD-SEC-4", ("ESF-D-INJECTION",)),
     CheckCase("JF-031", "CICD-SEC-3", ("ESF-S-PIN-DEPS", "ESF-S-VERIFY-DEPS")),
