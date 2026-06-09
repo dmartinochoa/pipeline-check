@@ -159,6 +159,13 @@ release commit collapses this section into `## [X.Y.Z] - <date>`.
   has a map. The README Quick Start surfaces the same PR-gate one-liner
   and `--man recipes` pointer, and notes that both `pipeline-check` and
   `pipeline_check` work.
+- **`--help` flag grouping cleanup.** Twenty-eight flags that fell into
+  the catch-all `Other` bucket are now sorted into their proper sections
+  (`--pipelines` / `--gitea-path` / the `--scm-*` and token flags →
+  Target, `--show-passed` / `--no-group` / `--inline-explain` → Output,
+  `--only-known-attacked` / `--verify-secrets` → Filtering, the
+  `--chains-require-*` flags → Attack chains, `--serve` → Info & Help),
+  leaving only `--no-cache` in `Other`.
 - **Scan-time errors no longer dump a full traceback by default.** A
   runtime failure prints the one-line `[error] Scan failed: ...` summary
   plus a nudge to re-run with `--verbose`; the full stack trace is shown
@@ -174,6 +181,11 @@ release commit collapses this section into `## [X.Y.Z] - <date>`.
   `azure_cloud`) without their optional extra installed crashed with a
   raw traceback at exit 1. The construction is now guarded: the
   provider's own message is surfaced as a clean `Error: ...` at exit 2.
+- **A bad AWS profile is now a clean error, not a botocore traceback.**
+  `--profile <typo>` (or an `AWS_PROFILE` env value) that doesn't exist
+  raised a raw `botocore` `ProfileNotFound` stack trace; the AWS provider
+  now catches it and re-raises a named, actionable `ValueError` that the
+  construction guard maps to a clean exit 2.
 - **`--man` accuracy.** The `output` topic now lists the `cyclonedx`,
   `spdx`, and `codequality` formats it was missing, and the `secrets`
   topic lists the Drone `DR-004` literal-secret rule.
