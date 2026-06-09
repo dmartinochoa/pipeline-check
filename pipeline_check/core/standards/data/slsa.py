@@ -291,6 +291,7 @@ STANDARD = Standard(
         # ── Jenkins ───────────────────────────────────────────────
         "JF-001":   ["Build.L3.NonFalsifiable"],                   # unpinned shared library
         "JF-002":   ["Build.L3.Isolated"],                         # script injection
+        "JF-037":   ["Build.L3.Isolated"],                         # agentic CLI prompt injection
         "JF-003":   ["Build.L3.Isolated"],                         # agent any, no isolation
         "JF-006":   ["Build.L2.Signed"],                           # unsigned artifacts
         "JF-007":   ["Build.L1.Provenance"],                       # no SBOM

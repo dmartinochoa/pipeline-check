@@ -12,6 +12,21 @@ release commit collapses this section into `## [X.Y.Z] - <date>`.
 
 ### Added
 
+- **JF-037: untrusted PR/build context reaches an agentic AI CLI
+  (Jenkins).** Brings the flagship AI prompt-injection rule (GHA-119 /
+  GL-048 / BB-036 / ADO-035) to Jenkins, the largest CI install base and
+  the worst injection surface (Groovy interpolation). Fires when a ``sh`` /
+  ``bat`` / ``powershell`` step invokes an agentic CLI (``claude`` /
+  ``gemini`` / ``cursor-agent`` / ``aider`` / ``openhands`` / ``goose`` /
+  ``q chat``) AND attacker-controllable Jenkins context reaches it: an
+  SCM-event env var (``$BRANCH_NAME`` / ``$CHANGE_TITLE`` /
+  ``$CHANGE_BRANCH`` / ``$TAG_NAME`` / ``$GIT_*``) or a ``${params.X}``
+  build parameter (reusing the ``LABEL_TAINT_RE`` catalog JF-032 / JF-036
+  share). The AI face of JF-002: unlike command injection, Groovy
+  single-quoting does not defang this (the model ingests the value as
+  prompt text regardless of quote style), so both single- and
+  double-quoted step bodies are flagged. Reuses the shared
+  ``_primitives/agentic_cli`` catalog. HIGH. jenkins 36 -> 37.
 - **AC-041: a compromised action executed and exfiltrated credentials in
   the same run (attack chain).** The first run-forensics attack chain, and
   the strongest signal the tool produces, a supply-chain attack confirmed

@@ -1,0 +1,10 @@
+pipeline {
+  agent any
+  stages {
+    stage('ai-triage') {
+      steps {
+        sh "claude -p 'Triage this pull request titled ${env.CHANGE_TITLE}'"
+      }
+    }
+  }
+}

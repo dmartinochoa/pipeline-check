@@ -372,6 +372,7 @@ STANDARD = Standard(
         # Jenkins
         "JF-001":   ["CICD-SEC-3"],
         "JF-002":   ["CICD-SEC-4"],
+        "JF-037":   ["CICD-SEC-4"],   # agentic CLI ingests untrusted context (prompt injection)
         "JF-003":   ["CICD-SEC-5"],
         "JF-004":   ["CICD-SEC-6"],
         "JF-005":   ["CICD-SEC-1"],

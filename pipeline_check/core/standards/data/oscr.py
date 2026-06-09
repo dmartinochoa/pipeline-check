@@ -410,6 +410,7 @@ STANDARD = Standard(
         "ADO-036":  ["EX-6"],   # unsafe pickle deser of fetched artifact = code exec
         "ADO-038":  ["DE-1"],   # agentic CLI output lands without review
         "JF-002":   ["EX-6"],
+        "JF-037":   ["EX-6"],   # agentic CLI ingests untrusted context (prompt injection)
         "CC-002":   ["EX-6"],
         "BK-003":   ["EX-6"],
         "TKN-003":  ["EX-6"],

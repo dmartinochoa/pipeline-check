@@ -282,6 +282,7 @@ STANDARD = Standard(
         "ADO-026":  ["Dangerous-Workflow"],                            # malicious activity
         "ADO-027":  ["Dangerous-Workflow"],
         "JF-002":   ["Dangerous-Workflow"],
+        "JF-037":   ["Dangerous-Workflow"],   # agentic CLI ingests untrusted context (prompt injection)
         "JF-012":   ["Dangerous-Workflow"],
         "JF-013":   ["Dangerous-Workflow"],
         "JF-019":   ["Dangerous-Workflow"],
