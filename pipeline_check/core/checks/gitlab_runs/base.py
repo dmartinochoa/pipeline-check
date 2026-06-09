@@ -16,6 +16,7 @@ crash (every rule then sees an empty pipeline list and passes).
 from __future__ import annotations
 
 import json
+import re
 import urllib.parse
 import urllib.request
 from dataclasses import dataclass, field
@@ -33,8 +34,25 @@ DEFAULT_PIPELINE_LIMIT = 100
 #: bounded to this many fork MRs.
 DEFAULT_MR_FETCH_LIMIT = 25
 
+#: Job-trace scanning (GLRUN-003 / GLRUN-004) downloads each job's trace,
+#: so it is bounded to this many fork pipelines (one ``/jobs`` page each,
+#: then one ``/trace`` per job).
+DEFAULT_TRACE_FETCH_LIMIT = 10
+
 _TIMEOUT = 10.0
 _MAX_RESPONSE_BYTES = 10 * 1024 * 1024
+_MAX_TRACE_BYTES = 5 * 1024 * 1024
+
+#: Markers that a job trace exercised cloud OIDC token minting. Tight by
+#: design (near-zero false positive): these strings essentially only occur
+#: in an OIDC federation exchange -- the AWS STS web-identity call and GCP
+#: workload-identity federation. GitLab CI mints the token via
+#: ``id_tokens:`` and the cloud-side call is the high-signal evidence,
+#: regardless of issuer. Recall is best-effort (trace content varies and
+#: masked variables are redacted), matching run-log forensics.
+_GITLAB_OIDC_MARKERS_RE = re.compile(
+    r"AssumeRoleWithWebIdentity|workloadIdentityPools",
+)
 
 #: Pipeline ``source`` values that mean a merge request's code was the
 #: trigger, the GitLab surface where a contributor (and, when "run
@@ -92,6 +110,22 @@ class HttpGitLabFetcher:
             return parsed
         return None
 
+    def fetch_text(self, path: str) -> str | None:
+        """Fetch a plain-text endpoint (a job ``/trace``); not JSON."""
+        url = f"{self.gitlab_url}/api/v4/{path.lstrip('/')}"
+        req = urllib.request.Request(url)
+        req.add_header("User-Agent", "pipeline-check-gitlab-runs")
+        if self.token:
+            req.add_header("PRIVATE-TOKEN", self.token)
+        try:
+            with urlopen_https_only(req, timeout=_TIMEOUT) as resp:
+                body: bytes = resp.read(_MAX_TRACE_BYTES + 1)
+        except Exception:
+            return None
+        if len(body) > _MAX_TRACE_BYTES:
+            body = body[:_MAX_TRACE_BYTES]
+        return body.decode("utf-8", errors="replace")
+
 
 @dataclass(frozen=True, slots=True)
 class GitLabPipelineRecord:
@@ -130,6 +164,13 @@ class GitLabRunsContext:
     #: True once the fork-resolution pass ran, so GLRUN-002 can tell
     #: "no fork pipelines" from "never resolved".
     forks_resolved: bool = False
+    #: pipeline_id -> sorted "detector:redacted" labels for secrets found in
+    #: that fork pipeline's job traces (only populated when the deep pass ran
+    #: and the fetcher can download traces); GLRUN-003 reports it.
+    trace_leaks: dict[int, list[str]] = field(default_factory=dict)
+    #: fork pipeline_ids whose job traces show a cloud OIDC token was minted
+    #: (only populated under the deep pass); GLRUN-004 reports it.
+    oidc_mint_pipelines: set[int] = field(default_factory=set)
 
     @property
     def slug(self) -> str:
@@ -164,6 +205,7 @@ class GitLabRunsContext:
         if resolve_forks:
             ctx.forks_resolved = True
             ctx._resolve_forks(fetcher, encoded, mr_fetch_limit)
+            ctx._scan_fork_traces(fetcher, encoded, DEFAULT_TRACE_FETCH_LIMIT)
         return ctx
 
     def _resolve_forks(
@@ -216,6 +258,62 @@ class GitLabRunsContext:
                 f"[gitlab-runs] {self.project}: resolved the {fetch_limit} "
                 f"most recent fork merge request(s) of {len(fork_iids)}; "
                 "older fork MRs were not fetched."
+            )
+
+    def _scan_fork_traces(
+        self, fetcher: GitLabFetcher, encoded: str, fetch_limit: int,
+    ) -> None:
+        """Download + scan fork pipelines' job traces for leaked secrets and
+        cloud OIDC token minting (GLRUN-003 / GLRUN-004).
+
+        Scoped to the fork pipelines resolved above (the untrusted-code
+        surface) and bounded to *fetch_limit* of them. For each, lists its
+        jobs and reads each job's ``/trace`` (plain text), scanning for
+        secret-shaped strings that leaked past GitLab's variable masking and
+        for cloud-federation OIDC markers. Needs a fetcher exposing
+        ``fetch_text`` (the live one does; an offline fixture fetcher may
+        not). ``find_secret_values`` is imported lazily so a metadata-only
+        scan never pays for the detector catalog.
+        """
+        fetch_text = getattr(fetcher, "fetch_text", None)
+        if not callable(fetch_text):
+            if self.fork_pipelines:
+                self.warnings.append(
+                    "[gitlab-runs] job-trace scanning needs a fetcher that "
+                    "can download traces; the configured fetcher cannot, so "
+                    "GLRUN-003 / GLRUN-004 were skipped."
+                )
+            return
+        from .._secrets import find_secret_values
+        for rec in self.fork_pipelines[:fetch_limit]:
+            jobs = fetcher.fetch(
+                f"projects/{encoded}/pipelines/{rec.pipeline_id}/jobs?per_page=100"
+            )
+            if not isinstance(jobs, list):
+                continue
+            leaks: set[str] = set()
+            oidc = False
+            for job in jobs:
+                if not isinstance(job, dict):
+                    continue
+                jid = job.get("id")
+                if not isinstance(jid, int):
+                    continue
+                text = fetch_text(f"projects/{encoded}/jobs/{jid}/trace")
+                if not text:
+                    continue
+                leaks.update(find_secret_values([text]))
+                if not oidc and _GITLAB_OIDC_MARKERS_RE.search(text):
+                    oidc = True
+            if leaks:
+                self.trace_leaks[rec.pipeline_id] = sorted(leaks)
+            if oidc:
+                self.oidc_mint_pipelines.add(rec.pipeline_id)
+        if len(self.fork_pipelines) > fetch_limit:
+            self.warnings.append(
+                f"[gitlab-runs] {self.project}: scanned the {fetch_limit} "
+                f"most recent fork pipeline(s) of {len(self.fork_pipelines)} "
+                "for trace leaks; older fork pipelines were not fetched."
             )
 
 

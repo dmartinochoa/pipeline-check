@@ -24,12 +24,14 @@ pipeline_check --pipeline gitlab_runs --scm-repo group/project \
 
 ## What it covers
 
-2 checks · 0 have an autofix patch (``--fix``).
+4 checks · 0 have an autofix patch (``--fix``).
 
 | Check | Title | Severity | Fix |
 |-------|-------|----------|-----|
 | [GLRUN-001](#glrun-001) | Merge-request pipeline exercised in run history | <span class="pg-sev pg-sev--medium">MEDIUM</span> |  |
 | [GLRUN-002](#glrun-002) | Fork merge-request pipeline executed in run history | <span class="pg-sev pg-sev--high">HIGH</span> |  |
+| [GLRUN-003](#glrun-003) | Secret leaked in a fork pipeline's job trace | <span class="pg-sev pg-sev--high">HIGH</span> |  |
+| [GLRUN-004](#glrun-004) | Fork pipeline minted a cloud OIDC token | <span class="pg-sev pg-sev--high">HIGH</span> |  |
 
 ---
 
@@ -68,6 +70,46 @@ Only evaluated with ``--audit-runs-logs``. Resolves fork-origin via the GitLab M
 **Recommended action**
 
 Treat fork merge-request pipelines as running untrusted code. Require a project member to approve fork-MR pipelines before they run (the 'Pipelines must be approved' setting), keep protected CI/CD variables and protected runners away from them, and run fork-MR jobs on isolated, ephemeral runners with no standing cloud credentials. If fork-MR pipelines are not needed, disable 'Run pipelines for fork merge requests'.
+
+</div>
+
+</div>
+
+<div class="pg-rule pg-rule--high" markdown>
+
+## GLRUN-003: Secret leaked in a fork pipeline's job trace { #glrun-003 }
+
+<div class="pg-rule__tags">
+<span class="pg-sev pg-sev--high">HIGH</span> <span class="pg-tag pg-tag--owasp">CICD-SEC-4</span>
+</div>
+
+Only evaluated with ``--audit-runs-logs``. Downloads each resolved fork pipeline's job traces (the GitLab REST API ``GET /projects/:id/jobs/:job_id/trace``) and scans the text with the shared secret-shape catalog (``find_secret_values``). GitLab masks marked variables, so a match is a credential that leaked past masking. Scoped to the fork pipelines GLRUN-002 resolves (the untrusted-code surface); the token value is redacted in the finding.
+
+<div class="pg-rule__rec" markdown>
+
+**Recommended action**
+
+Rotate the leaked credential immediately, then stop it reaching the trace: mark it a masked (and protected) CI/CD variable so GitLab redacts it, avoid ``set -x`` / ``env`` dumps in jobs that hold it, and pipe tool output that may echo credentials through a redactor. Keep protected variables away from fork merge-request pipelines entirely.
+
+</div>
+
+</div>
+
+<div class="pg-rule pg-rule--high" markdown>
+
+## GLRUN-004: Fork pipeline minted a cloud OIDC token { #glrun-004 }
+
+<div class="pg-rule__tags">
+<span class="pg-sev pg-sev--high">HIGH</span> <span class="pg-tag pg-tag--owasp">CICD-SEC-4</span>
+</div>
+
+Only evaluated with ``--audit-runs-logs``. Reuses the fork-pipeline job traces GLRUN-003 downloads and flags a fork pipeline whose trace shows cloud OIDC federation (AWS ``AssumeRoleWithWebIdentity`` or GCP ``workloadIdentityPools``). Scoped to fork pipelines, so a trusted-branch pipeline that uses OIDC normally does not fire. Detection is high-precision but best-effort on recall (trace content varies; masked variables are redacted).
+
+<div class="pg-rule__rec" markdown>
+
+**Recommended action**
+
+Treat this as untrusted code that reached cloud federation: rotate / review the federated role's recent activity and assume the pipeline could act as that role. Restrict the cloud trust policy so a fork / merge-request ref cannot assume it (bind the subject to your protected branches and the project's own ID-token audience), and keep ``id_tokens:`` jobs out of fork merge-request pipelines.
 
 </div>
 

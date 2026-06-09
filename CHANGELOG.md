@@ -13,7 +13,7 @@ release commit collapses this section into `## [X.Y.Z] - <date>`.
 ### Added
 
 - **``gitlab_runs`` provider: GitLab pipeline run-history forensics
-  (GLRUN-001 / GLRUN-002).** The GitLab analog of the ``runs`` provider,
+  (GLRUN-001 .. GLRUN-004).** The GitLab analog of the ``runs`` provider,
   and the first step of run-forensics beyond GitHub. ``--pipeline
   gitlab_runs --scm-repo group/project`` pulls recent pipelines via the
   GitLab REST API (``GET /projects/:id/pipelines``) and audits what
@@ -26,11 +26,18 @@ release commit collapses this section into `## [X.Y.Z] - <date>`.
   requests, keeps the ones whose ``source_project_id`` differs from the
   ``target_project_id``, and pulls each such MR's pipelines, confirming that
   untrusted fork code executed in the project's CI (the GitLab analog of
-  RUN-001). Authenticated with ``--gitlab-token`` / ``$GITLAB_TOKEN``;
+  RUN-001). GLRUN-003 / GLRUN-004 (HIGH, also under ``--audit-runs-logs``)
+  go deeper: they download those fork pipelines' job traces
+  (``GET /jobs/:id/trace``) and scan them, GLRUN-003 for secret-shaped
+  strings that leaked past GitLab's variable masking (the RUN-003 analog),
+  GLRUN-004 for a cloud OIDC token mint (AWS ``AssumeRoleWithWebIdentity`` /
+  GCP ``workloadIdentityPools``, the RUN-004 analog, meaning untrusted fork
+  code reached cloud federation). Authenticated with ``--gitlab-token`` /
+  ``$GITLAB_TOKEN``;
   ``--gitlab-url`` points it at a self-managed instance. A missing token /
-  404 / network error degrades to a warning rather than crashing. Provider
-  count 35 -> 36. (Job-trace secret / OIDC scanning is deferred to later
-  GLRUN rules.)
+  404 / network error degrades to a warning rather than crashing. The deep
+  passes are bounded (most recent fork MRs / pipelines). Provider count
+  35 -> 36.
 - **JF-038: agentic-CLI output lands without human review (Jenkins).**
   Completes Jenkins's AI flow-control coverage alongside JF-037, the
   Jenkins analog of GHA-123 / GL-049 / BB-039 / ADO-038. Fires when one

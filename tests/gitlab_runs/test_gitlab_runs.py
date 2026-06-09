@@ -19,7 +19,31 @@ _PIPELINES_PATH = f"projects/{_ENCODED}/pipelines?per_page={DEFAULT_PIPELINE_LIM
 
 
 class FakeFetcher:
-    """In-memory ``path -> json`` map; anything else returns ``None``."""
+    """In-memory ``path -> json`` map; anything else returns ``None``.
+
+    ``traces`` is the text side (``fetch_text``) used for the job ``/trace``
+    endpoint. A fetcher built without it still exposes ``fetch_text`` (so
+    the trace pass sees an empty result rather than skipping).
+    """
+
+    def __init__(
+        self, mapping: dict[str, Any], traces: dict[str, str] | None = None,
+    ) -> None:
+        self.mapping = mapping
+        self.traces = traces or {}
+        self.calls: list[str] = []
+
+    def fetch(self, path: str) -> Any:
+        self.calls.append(path)
+        return self.mapping.get(path)
+
+    def fetch_text(self, path: str) -> str | None:
+        self.calls.append(path)
+        return self.traces.get(path)
+
+
+class NoTextFetcher:
+    """A fetcher with no ``fetch_text`` (an offline JSON-only fixture)."""
 
     def __init__(self, mapping: dict[str, Any]) -> None:
         self.mapping = mapping
@@ -214,3 +238,95 @@ class TestGLRun002:
         )
         assert ctx.forks_resolved is True
         assert ctx.fork_pipelines == []
+
+
+# ── GLRUN-003 / GLRUN-004: fork-pipeline job-trace scanning ───────────────
+
+_LEAKED_TOKEN = "ghp_016d8d1f2a3b4c5d6e7f8a9b0c1d2e3f4a5b"
+
+
+def _jobs_path(pid: int) -> str:
+    return f"projects/{_ENCODED}/pipelines/{pid}/jobs?per_page=100"
+
+
+def _trace_path(jid: int) -> str:
+    return f"projects/{_ENCODED}/jobs/{jid}/trace"
+
+
+def _ctx_traces(fork_pid: int, jobs: list[dict], traces: dict[str, str]):
+    """A context whose single fork pipeline has the given jobs / traces."""
+    iid = 7
+    mapping: dict[str, Any] = {
+        _PIPELINES_PATH: [],
+        _mrs_path(): [_mr(iid, fork=True)],
+        _mr_pipelines_path(iid): [_pipeline(fork_pid, "merge_request_event")],
+        _jobs_path(fork_pid): jobs,
+    }
+    return GitLabRunsContext.for_project(
+        _PROJECT, FakeFetcher(mapping, traces), resolve_forks=True,
+    )
+
+
+class TestGLRun003And004:
+    def test_skip_note_when_not_resolved(self):
+        ctx = _ctx(_pipeline(1, "merge_request_event"))
+        for cid in ("GLRUN-003", "GLRUN-004"):
+            f = _for(_findings(ctx), cid)
+            assert f and all(x.passed for x in f)
+            assert "not enabled" in f[0].description
+
+    def test_secret_leak_in_trace_fires_glrun003(self):
+        ctx = _ctx_traces(
+            50, [{"id": 900}],
+            {_trace_path(900): f"Running build\nTOKEN={_LEAKED_TOKEN}\n"},
+        )
+        assert 50 in ctx.trace_leaks
+        failing = [f for f in _for(_findings(ctx), "GLRUN-003") if not f.passed]
+        assert len(failing) == 1
+        assert failing[0].severity == Severity.HIGH
+        assert "#pipeline/50" in failing[0].resource
+        # The raw token is redacted, never echoed in the finding.
+        assert _LEAKED_TOKEN not in failing[0].description
+
+    def test_oidc_mint_in_trace_fires_glrun004(self):
+        ctx = _ctx_traces(
+            51, [{"id": 901}],
+            {_trace_path(901): "aws sts AssumeRoleWithWebIdentity ...\n"},
+        )
+        assert 51 in ctx.oidc_mint_pipelines
+        failing = [f for f in _for(_findings(ctx), "GLRUN-004") if not f.passed]
+        assert len(failing) == 1
+        assert "#pipeline/51" in failing[0].resource
+
+    def test_gcp_wif_marker_also_detected(self):
+        ctx = _ctx_traces(
+            52, [{"id": 902}],
+            {_trace_path(902): "POST .../workloadIdentityPools/.../token\n"},
+        )
+        assert 52 in ctx.oidc_mint_pipelines
+
+    def test_clean_trace_passes(self):
+        ctx = _ctx_traces(
+            53, [{"id": 903}],
+            {_trace_path(903): "Building the project\nall green\n"},
+        )
+        assert ctx.trace_leaks == {}
+        assert ctx.oidc_mint_pipelines == set()
+        for cid in ("GLRUN-003", "GLRUN-004"):
+            f = _for(_findings(ctx), cid)
+            assert f and all(x.passed for x in f)
+
+    def test_fetcher_without_fetch_text_skips_with_warning(self):
+        iid = 7
+        fpid = 70
+        mapping = {
+            _PIPELINES_PATH: [],
+            _mrs_path(): [_mr(iid, fork=True)],
+            _mr_pipelines_path(iid): [_pipeline(fpid, "merge_request_event")],
+            _jobs_path(fpid): [{"id": 1}],
+        }
+        ctx = GitLabRunsContext.for_project(
+            _PROJECT, NoTextFetcher(mapping), resolve_forks=True,
+        )
+        assert ctx.trace_leaks == {}
+        assert any("job-trace scanning needs" in w for w in ctx.warnings)
