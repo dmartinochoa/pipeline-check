@@ -12,6 +12,26 @@ release commit collapses this section into `## [X.Y.Z] - <date>`.
 
 ### Added
 
+- **BB-039 / ADO-038: agentic-CLI output lands without human review
+  (Bitbucket, Azure DevOps).** Completes the AI/LLM-pipeline rule pack's
+  flow-control leg across the script-based CI providers (GHA-123 / GL-049
+  already shipped), and with it the full agentic-AI matrix
+  (prompt-injection / trust_remote_code / model-pinning / unsafe-deser /
+  autoland) across GitHub, GitLab, Bitbucket, and Azure DevOps. Fires when
+  one execution unit both invokes an agentic CLI (``claude`` / ``gemini`` /
+  ``cursor-agent`` / ``aider`` / ``openhands`` / ``goose`` / ``q chat``)
+  and, with no review gate, lands the result: a ``git push`` straight to a
+  branch (both providers), or an ``az repos pr create`` / ``update`` set to
+  ``--auto-complete`` (Azure). AI-authored changes then reach a branch (or
+  a merge) with no human in the loop, and if the agent's prompt is at all
+  influenced by untrusted input (BB-036 / ADO-035) that is prompt-injection
+  straight to committed code. Coupling is scoped to a single Bitbucket
+  step (each step runs in its own container with a fresh clone) and to a
+  single Azure job (its steps share one checkout), mirroring each
+  provider's execution model. Reuses the shared ``_primitives/agentic_cli``
+  catalog; a ``git push --dry-run`` is ignored, and an agent that only
+  opens a PR for review does not fire. HIGH. bitbucket 38 -> 39, azure
+  37 -> 38.
 - **BB-038 / ADO-037: AI model pulled without a pinned revision
   (Bitbucket, Azure DevOps).** Completes model-pinning coverage across the
   script-based CI providers, bringing the rule to the two that lacked it

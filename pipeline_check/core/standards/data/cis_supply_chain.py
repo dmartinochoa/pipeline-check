@@ -320,6 +320,7 @@ STANDARD = Standard(
         "BB-036":   ["2.1.3", "2.3.8"],                  # untrusted PR context into agentic CLI
         "BB-037":   ["2.1.3"],                           # unsafe pickle deser of fetched artifact
         "BB-038":   ["1.4.1", "3.1.5"],                  # model pulled without a pinned revision
+        "BB-039":   ["5.1.4", "5.2.1"],                  # agentic CLI output lands without review
         "BB-003":   ["1.5.1", "2.3.4", "2.4.3"],
         "BB-004":   ["5.1.4", "5.2.1"],
         "BB-005":   ["2.2.2"],
@@ -356,6 +357,7 @@ STANDARD = Standard(
         "ADO-035":  ["2.1.3", "2.3.8"],                  # untrusted PR context into agentic CLI
         "ADO-036":  ["2.1.3"],                           # unsafe pickle deser of fetched artifact
         "ADO-037":  ["1.4.1", "3.1.5"],                  # model pulled without a pinned revision
+        "ADO-038":  ["5.1.4", "5.2.1"],                  # agentic CLI output lands without review
         "ADO-003":  ["1.5.1", "2.3.4", "2.4.3"],
         "ADO-004":  ["5.1.4", "5.2.1"],
         "ADO-005":  ["1.4.1", "3.1.5"],

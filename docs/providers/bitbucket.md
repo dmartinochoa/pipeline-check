@@ -15,7 +15,7 @@ pipeline_check --pipeline bitbucket --bitbucket-path ci/
 
 ## What it covers
 
-38 checks · 11 have an autofix patch (``--fix``).
+39 checks · 11 have an autofix patch (``--fix``).
 
 | Check | Title | Severity | Fix |
 |-------|-------|----------|-----|
@@ -57,6 +57,7 @@ pipeline_check --pipeline bitbucket --bitbucket-path ci/
 | [BB-036](#bb-036) | Untrusted PR/branch context reaches an agentic AI CLI (prompt injection) | <span class="pg-sev pg-sev--high">HIGH</span> |  |
 | [BB-037](#bb-037) | Unsafe deserialization of a fetched artifact (pickle RCE) | <span class="pg-sev pg-sev--high">HIGH</span> |  |
 | [BB-038](#bb-038) | AI model pulled without a pinned revision | <span class="pg-sev pg-sev--medium">MEDIUM</span> |  |
+| [BB-039](#bb-039) | Agentic CLI output lands without human review | <span class="pg-sev pg-sev--high">HIGH</span> |  |
 
 ---
 
@@ -885,6 +886,32 @@ Does NOT fire when a revision is pinned in the same command (``revision='<sha>'`
 **Recommended action**
 
 Pin the model to an immutable revision. Pass an exact commit ``revision=`` to ``from_pretrained`` / ``hf_hub_download`` / ``snapshot_download`` (a 40-char commit SHA, not a branch or a tag, both of which the owner can move), or ``--revision <sha>`` to ``huggingface-cli download``. A pinned revision is what makes a swapped-weights or swapped-loader-code attack show up as a diff in your repo instead of silently landing on the next build. Pair with ``trust_remote_code=False`` (BB-035) and prefer safetensors weights over pickle.
+
+</div>
+
+</div>
+
+<div class="pg-rule pg-rule--high" markdown>
+
+## BB-039: Agentic CLI output lands without human review { #bb-039 }
+
+<div class="pg-rule__tags">
+<span class="pg-sev pg-sev--high">HIGH</span> <span class="pg-tag pg-tag--owasp">CICD-SEC-1</span> <span class="pg-tag pg-tag--esf">ESF-C-APPROVAL</span> <span class="pg-tag pg-tag--cwe">CWE-94</span> <span class="pg-tag pg-tag--cwe">CWE-693</span>
+</div>
+
+Fires when one ``script:`` step both invokes an agentic CLI (``claude`` / ``gemini`` / ``cursor-agent`` / ``aider`` / ``openhands`` / ``goose`` / ``q chat``) and, in the same step, lands the result with a ``git push`` (the Bitbucket idiom for committing straight to a branch, since there are no ``uses:`` actions). Coupling is per step because each Bitbucket step runs in its own container with a fresh clone.
+
+Does NOT fire when the agent only opens a pull request for review, nor on a push step that does not run an agent (ordinary formatting / generated-file bots). The agent-plus-push coupling is the signal. A ``git push --dry-run`` is ignored.
+
+**Known false-positive modes**
+
+- A step that runs an agent for a read-only task (triage, labeling) but also pushes an unrelated generated file would match by co-location. Split the agent and the push into separate steps, or suppress on the step with a rationale noting the agent does not write the pushed paths.
+
+<div class="pg-rule__rec" markdown>
+
+**Recommended action**
+
+Don't let an agentic CLI's output reach a branch without a human review gate. Have the agent open a normal pull request (no auto-merge) so a person reviews the diff before it lands, and don't pair the agent with a ``git push`` straight to a branch in the same step. If the agent's prompt can be influenced by untrusted input (a PR title / description, a fetched page), treat the committed result as attacker-controlled.
 
 </div>
 

@@ -1,0 +1,5 @@
+jobs:
+  - job: AiAutofix
+    steps:
+      - script: claude -p "Fix the failing test and commit the change"
+      - script: git push origin HEAD

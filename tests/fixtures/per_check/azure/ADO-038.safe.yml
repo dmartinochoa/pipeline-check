@@ -1,0 +1,4 @@
+jobs:
+  - job: AiSuggest
+    steps:
+      - script: claude -p "Suggest a fix and open a pull request for review"
