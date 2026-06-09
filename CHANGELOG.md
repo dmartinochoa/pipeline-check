@@ -10,8 +10,29 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 PRs landing on `dev` between releases append entries below. The
 release commit collapses this section into `## [X.Y.Z] - <date>`.
 
+## [1.13.0] - 2026-06-09
+
 ### Added
 
+- **Provenance verification gate (`verify-artifact REF`).** A new
+  subcommand that turns the static "you should sign" findings (GHA-100
+  and the attestation rules) into a runtime pass/fail check. It shells
+  out to the supply-chain verifiers already on PATH (`cosign`,
+  `slsa-verifier`, `gh attestation`), building an injection-safe argv
+  per tool, and folds the outcomes into one verdict: **PASS** when at
+  least one tool ran and verified and none failed, **FAIL** when any
+  verification failed, **INCONCLUSIVE** when no installed tool matched
+  the supplied policy. `REF` is an OCI image (`ghcr.io/acme/api:1.2.3`,
+  optionally `@sha256:...`) or a local file. The policy flags select
+  which verifiers run: `--source-uri` (+ `--builder-id` / `--provenance`)
+  for slsa-verifier, `--certificate-identity[-regexp]` with
+  `--certificate-oidc-issuer` or `--key` for cosign, `--owner` for
+  `gh attestation`. Exit codes follow the canonical contract: `0`
+  verified, `1` verification failed (gateable in CI), `3` could not
+  verify. A missing verifier binary degrades to INCONCLUSIVE rather than
+  crashing, mirroring the `opa` / `helm` shell-out pattern. `--json`
+  emits a machine-readable result. (Closes the provenance-verification
+  candidate in ROADMAP.)
 - **Shareable policy packs (`--policy <url>`).** `--policy` now accepts an
   `https://` URL (in addition to a built-in name or a local path), so an
   organization can publish one gate policy and have every repo consume it
@@ -236,13 +257,14 @@ release commit collapses this section into `## [X.Y.Z] - <date>`.
   has a map. The README Quick Start surfaces the same PR-gate one-liner
   and `--man recipes` pointer, and notes that both `pipeline-check` and
   `pipeline_check` work.
-- **`--help` flag grouping cleanup.** Twenty-eight flags that fell into
-  the catch-all `Other` bucket are now sorted into their proper sections
-  (`--pipelines` / `--gitea-path` / the `--scm-*` and token flags →
-  Target, `--show-passed` / `--no-group` / `--inline-explain` → Output,
-  `--only-known-attacked` / `--verify-secrets` → Filtering, the
-  `--chains-require-*` flags → Attack chains, `--serve` → Info & Help),
-  leaving only `--no-cache` in `Other`.
+- **`--help` flag grouping cleanup.** The flags that fell into the
+  catch-all `Other` bucket are now sorted into their proper sections
+  (`--pipelines` / `--gitea-path` / the `--scm-*` and token flags /
+  `--no-cache` → Target, `--show-passed` / `--no-group` /
+  `--inline-explain` → Output, `--only-known-attacked` /
+  `--verify-secrets` → Filtering, the `--chains-require-*` flags →
+  Attack chains, `--serve` → Info & Help), so `--help` no longer shows
+  an `Other` section at all.
 - **Scan-time errors no longer dump a full traceback by default.** A
   runtime failure prints the one-line `[error] Scan failed: ...` summary
   plus a nudge to re-run with `--verbose`; the full stack trace is shown
@@ -266,30 +288,6 @@ release commit collapses this section into `## [X.Y.Z] - <date>`.
 - **`--man` accuracy.** The `output` topic now lists the `cyclonedx`,
   `spdx`, and `codequality` formats it was missing, and the `secrets`
   topic lists the Drone `DR-004` literal-secret rule.
-
-## [1.13.0] - 2026-06-08
-
-### Added
-
-- **Provenance verification gate (`verify-artifact REF`).** A new
-  subcommand that turns the static "you should sign" findings (GHA-100
-  and the attestation rules) into a runtime pass/fail check. It shells
-  out to the supply-chain verifiers already on PATH (`cosign`,
-  `slsa-verifier`, `gh attestation`), building an injection-safe argv
-  per tool, and folds the outcomes into one verdict: **PASS** when at
-  least one tool ran and verified and none failed, **FAIL** when any
-  verification failed, **INCONCLUSIVE** when no installed tool matched
-  the supplied policy. `REF` is an OCI image (`ghcr.io/acme/api:1.2.3`,
-  optionally `@sha256:...`) or a local file. The policy flags select
-  which verifiers run: `--source-uri` (+ `--builder-id` / `--provenance`)
-  for slsa-verifier, `--certificate-identity[-regexp]` with
-  `--certificate-oidc-issuer` or `--key` for cosign, `--owner` for
-  `gh attestation`. Exit codes follow the canonical contract: `0`
-  verified, `1` verification failed (gateable in CI), `3` could not
-  verify. A missing verifier binary degrades to INCONCLUSIVE rather than
-  crashing, mirroring the `opa` / `helm` shell-out pattern. `--json`
-  emits a machine-readable result. (Closes the provenance-verification
-  candidate in ROADMAP.)
 
 ## [1.12.0] - 2026-06-08
 
