@@ -173,6 +173,7 @@ STANDARD = Standard(
         "BB-036":   ["CC6.8"],   # untrusted PR context into agentic CLI = prompt injection
         "BB-037":   ["CC6.8"],   # unsafe pickle deser of fetched artifact = code exec
         "BB-039":   ["CC8.1"],   # agentic CLI output lands without review
+        "JF-038":   ["CC8.1"],   # agentic CLI output lands without review
         "BB-012":   ["CC6.8"],
         "BB-015":   ["CC6.8"],
         "BB-025":   ["CC6.8"],

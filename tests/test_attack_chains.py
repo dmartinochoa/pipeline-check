@@ -3976,6 +3976,12 @@ class TestChainAC040:
         assert len(out) == 1
         assert out[0].triggering_check_ids == ["ADO-035", "ADO-038"]
 
+    def test_jenkins_pair_fires(self):
+        f = "Jenkinsfile"
+        out = self._ac040([_f("JF-037", f), _f("JF-038", f)])
+        assert len(out) == 1
+        assert out[0].triggering_check_ids == ["JF-037", "JF-038"]
+
     def test_no_chain_without_autoland_leg(self):
         wf = ".github/workflows/ai.yml"
         assert self._ac040([_f("GHA-119", wf)]) == []

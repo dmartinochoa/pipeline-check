@@ -225,6 +225,7 @@ STANDARD = Standard(
         "BB-036":   ["Build.L3.Isolated"],                         # untrusted PR context into agentic CLI
         "BB-037":   ["Build.L3.Isolated"],                         # unsafe pickle deser of fetched artifact
         "BB-039":   ["Build.L3.NonFalsifiable"],                         # agentic CLI output lands without review
+        "JF-038":   ["Build.L3.NonFalsifiable"],                         # agentic CLI output lands without review
         "BB-005":   ["Build.L3.Ephemeral"],                        # unbounded runtime
         "BB-006":   ["Build.L2.Signed"],
         "BB-007":   ["Build.L1.Provenance"],

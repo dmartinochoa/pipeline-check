@@ -298,6 +298,7 @@ STANDARD = Standard(
         "BB-037":   ["CM-6", "SA-11", "SA-15"],   # unsafe pickle deser of fetched artifact = code exec
         "BB-038":   ["SR-3", "SR-11", "SI-2"],   # model pulled without a pinned revision
         "BB-039":   ["SA-10", "AC-3"],   # agentic CLI output lands without review
+        "JF-038":   ["SA-10", "AC-3"],   # agentic CLI output lands without review
         "BB-003":   ["IA-5"],
         "BB-004":   ["SA-10", "AC-3"],
         "BB-034":   ["SA-10", "AC-3"],                   # prod deploy on a PR pipeline

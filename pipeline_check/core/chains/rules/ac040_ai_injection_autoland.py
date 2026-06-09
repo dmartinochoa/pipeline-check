@@ -1,16 +1,16 @@
 """AC-040. Prompt-injected agent commits its output with no human review.
 
-Two legs on the same pipeline file, in any of the four script-based
+Two legs on the same pipeline file, in any of the five script-based
 providers that carry the agentic-AI rule pack:
 
   * An *injection* leg: untrusted PR / branch / commit context reaches an
     agentic CLI's prompt (``GHA-119`` / ``GL-048`` / ``BB-036`` /
-    ``ADO-035``). A pull-request author controls text the model ingests as
-    instructions.
+    ``ADO-035`` / ``JF-037``). A pull-request author (or build queuer)
+    controls text the model ingests as instructions.
   * An *autoland* leg: the same workflow lets that agent's output reach a
     branch (or a merge) with no human review (``GHA-123`` / ``GL-049`` /
-    ``BB-039`` / ``ADO-038``): a ``git push`` straight to a branch, an
-    auto-merge (``gh pr merge --auto`` / ``glab mr merge`` /
+    ``BB-039`` / ``ADO-038`` / ``JF-038``): a ``git push`` straight to a
+    branch, an auto-merge (``gh pr merge --auto`` / ``glab mr merge`` /
     ``az repos pr --auto-complete``), or a push-action.
 
 Independently each leg is already a finding: the injection leg is an
@@ -43,10 +43,10 @@ RULE = ChainRule(
     severity=Severity.CRITICAL,
     summary=(
         "Untrusted PR / branch / commit context reaches an agentic CLI's "
-        "prompt (GHA-119 / GL-048 / BB-036 / ADO-035) AND the same "
+        "prompt (GHA-119 / GL-048 / BB-036 / ADO-035 / JF-037) AND the same "
         "pipeline lands that agent's output with no review gate (GHA-123 / "
-        "GL-049 / BB-039 / ADO-038): a git push, an auto-merge, or a "
-        "push-action. A prompt-injection line in the PR or commit makes the "
+        "GL-049 / BB-039 / ADO-038 / JF-038): a git push, an auto-merge, or "
+        "a push-action. A prompt-injection line in the PR or commit makes the "
         "agent write a malicious change that the autoland step commits or "
         "merges, with no human between the untrusted input and the push."
     ),
@@ -81,12 +81,13 @@ RULE = ChainRule(
         "Best: never let one pipeline both feed an agent untrusted input "
         "and land that agent's output without a human reviewing the diff."
     ),
-    providers=("github", "gitlab", "bitbucket", "azure"),
+    providers=("github", "gitlab", "bitbucket", "azure", "jenkins"),
     triggering_check_ids=(
         "GHA-119", "GHA-123",
         "GL-048", "GL-049",
         "BB-036", "BB-039",
         "ADO-035", "ADO-038",
+        "JF-037", "JF-038",
     ),
 )
 
@@ -97,6 +98,7 @@ _PAIRS = (
     ("GL-048", "GL-049"),
     ("BB-036", "BB-039"),
     ("ADO-035", "ADO-038"),
+    ("JF-037", "JF-038"),
 )
 
 
