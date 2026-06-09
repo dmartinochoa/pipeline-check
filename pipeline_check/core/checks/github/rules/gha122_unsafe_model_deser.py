@@ -30,9 +30,9 @@ ref) as the deserialization leg of the AI/LLM-pipeline pack.
 """
 from __future__ import annotations
 
-import re
 from typing import Any
 
+from ..._primitives.unsafe_deser import unsafe_deser_label as _unsafe_deser_label
 from ...base import Finding, Location, Severity
 from ...rule import Rule
 from ..base import iter_jobs, iter_steps, step_location
@@ -80,46 +80,9 @@ RULE = Rule(
     ),
 )
 
-# Explicit, unambiguous opt-ins to unsafe deserialization.
-_EXPLICIT_UNSAFE_RE = re.compile(
-    r"weights_only\s*=\s*False|allow_pickle\s*=\s*True",
-    re.IGNORECASE,
-)
-
-# Pickle-backed loaders (the unsafe deserialization sinks).
-_PICKLE_LOADER_RE = re.compile(
-    r"\b(?:torch\.load|c?pickle\.loads?|joblib\.load)\s*\(",
-    re.IGNORECASE,
-)
-
-# A remote artifact fetch in the same step.
-_FETCH_RE = re.compile(
-    r"\b(?:curl|wget)\b"
-    r"|\b(?:hf_hub_download|snapshot_download|urlretrieve|urlopen)\s*\("
-    r"|\brequests\.(?:get|post)\s*\("
-    r"|\bhuggingface-cli\s+download\b"
-    r"|\bhf\s+download\b",
-    re.IGNORECASE,
-)
-
-# The safe path: tensor-only torch load, or safetensors.
-_SAFE_PATH_RE = re.compile(
-    r"weights_only\s*=\s*True|\bsafetensors\b|\b(?:safe_open|load_file)\s*\(",
-    re.IGNORECASE,
-)
-
-
-def _unsafe_deser_label(body: str) -> str | None:
-    """Return a short label for the unsafe shape in *body*, or ``None``."""
-    if _EXPLICIT_UNSAFE_RE.search(body):
-        return "explicit unsafe opt-in (weights_only=False / allow_pickle=True)"
-    if (
-        _PICKLE_LOADER_RE.search(body)
-        and _FETCH_RE.search(body)
-        and not _SAFE_PATH_RE.search(body)
-    ):
-        return "fetched artifact deserialized via pickle"
-    return None
+# The two-shape unsafe-deserialization detection is shared with GL-047; it
+# lives in ``_primitives/unsafe_deser`` and is imported as
+# ``_unsafe_deser_label`` above.
 
 
 def check(path: str, doc: dict[str, Any]) -> Finding:

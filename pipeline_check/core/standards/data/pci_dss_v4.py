@@ -130,6 +130,7 @@ STANDARD = Standard(
         "GL-037": ["6.3.1"],  # CI env disables Go module verification
         "GL-002":   ["6.5.1"],
         "GL-045":   ["6.5.1"],   # trust_remote_code model load = code exec
+        "GL-047":   ["6.5.1"],   # unsafe pickle deser of fetched artifact = code exec
         "GL-003":   ["8.2.1", "6.5.1"],
         "GL-004":   ["6.4.3"],
         "GL-044":   ["6.4.3"],

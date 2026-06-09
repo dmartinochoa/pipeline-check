@@ -244,6 +244,7 @@ STANDARD = Standard(
         "GL-037": ["CM-7", "SR-3"],  # CI env disables Go module verification
         "GL-002":   ["SI-7", "SA-11", "CM-6"],
         "GL-045":   ["SI-7", "SA-11", "CM-6"],   # trust_remote_code model load = code exec
+        "GL-047":   ["CM-6", "SA-11", "SA-15"],   # unsafe pickle deser of fetched artifact = code exec
         "GL-003":   ["IA-5"],
         "GL-004":   ["SA-10", "AC-3"],
         "GL-044":   ["SA-10", "AC-3"],                   # auto production deploy on an MR pipeline

@@ -177,6 +177,7 @@ STANDARD = Standard(
         "GL-037": ["Build.L3.NonFalsifiable"],  # CI env disables Go module verification
         "GL-002":   ["Build.L3.Isolated"],                         # script injection
         "GL-045":   ["Build.L3.Isolated"],                         # trust_remote_code model load = code exec
+        "GL-047":   ["Build.L3.Isolated"],                         # unsafe pickle deser of fetched artifact = code exec
         "GL-005":   ["Build.L3.NonFalsifiable"],                   # unpinned include
         "GL-042":   ["Build.L3.NonFalsifiable"],                   # unpinned component include
         "GL-006":   ["Build.L2.Signed"],
