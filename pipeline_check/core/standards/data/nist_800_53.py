@@ -290,6 +290,7 @@ STANDARD = Standard(
         # Bitbucket Pipelines
         "BB-001":   ["SR-3", "SR-11", "SI-2"],
         "BB-002":   ["SI-7", "SA-11", "CM-6"],
+        "BB-035":   ["SI-7", "SA-11", "CM-6"],   # trust_remote_code model load = code exec
         "BB-003":   ["IA-5"],
         "BB-004":   ["SA-10", "AC-3"],
         "BB-034":   ["SA-10", "AC-3"],                   # prod deploy on a PR pipeline

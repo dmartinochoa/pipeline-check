@@ -311,6 +311,7 @@ STANDARD = Standard(
         # Bitbucket Pipelines
         "BB-001":   ["1.4.1", "3.1.5"],
         "BB-002":   ["2.1.3", "2.3.8"],
+        "BB-035":   ["2.1.3"],   # trust_remote_code model load = code exec
         "BB-003":   ["1.5.1", "2.3.4", "2.4.3"],
         "BB-004":   ["5.1.4", "5.2.1"],
         "BB-005":   ["2.2.2"],

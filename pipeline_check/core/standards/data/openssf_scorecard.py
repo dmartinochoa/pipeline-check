@@ -259,6 +259,7 @@ STANDARD = Standard(
         "GL-034":   ["Signed-Releases", "Pinned-Dependencies"],        # npm install without audit signatures
         "GL-035":   ["Pinned-Dependencies"],                           # pip install without --require-hashes
         "BB-002":   ["Dangerous-Workflow"],
+        "BB-035":   ["Dangerous-Workflow"],   # trust_remote_code model load = code exec
         "BB-018":   ["Dangerous-Workflow"],
         "BB-023":   ["Dangerous-Workflow"],
         "BB-025":   ["Dangerous-Workflow"],                            # malicious activity

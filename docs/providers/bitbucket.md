@@ -15,7 +15,7 @@ pipeline_check --pipeline bitbucket --bitbucket-path ci/
 
 ## What it covers
 
-34 checks · 11 have an autofix patch (``--fix``).
+35 checks · 11 have an autofix patch (``--fix``).
 
 | Check | Title | Severity | Fix |
 |-------|-------|----------|-----|
@@ -53,6 +53,7 @@ pipeline_check --pipeline bitbucket --bitbucket-path ci/
 | [BB-032](#bb-032) | Secret-named variable echoed / printed in a script block | <span class="pg-sev pg-sev--high">HIGH</span> |  |
 | [BB-033](#bb-033) | IaC apply on a pull-request pipeline | <span class="pg-sev pg-sev--critical">CRITICAL</span> |  |
 | [BB-034](#bb-034) | Production deployment on a pull-request pipeline | <span class="pg-sev pg-sev--critical">CRITICAL</span> |  |
+| [BB-035](#bb-035) | ML model loaded with trust_remote_code (code execution) | <span class="pg-sev pg-sev--high">HIGH</span> |  |
 
 ---
 
@@ -795,6 +796,26 @@ Fires when a step under the `pull-requests:` section declares a production-tier 
 **Recommended action**
 
 Don't bind a `pull-requests:` step to a production `deployment:` environment. A pull-request pipeline runs the PR branch's code, so this ships unreviewed (and on fork PRs, untrusted) changes straight to production with the production environment's scoped credentials, before any reviewer or merge gate. On pull requests deploy only to an ephemeral preview or `test` environment; move the production `deployment:` into the `branches:` section for your default branch (or a manual `custom:` pipeline) so it runs against merged, reviewed code with the environment's required reviewers enforced.
+
+</div>
+
+</div>
+
+<div class="pg-rule pg-rule--high" markdown>
+
+## BB-035: ML model loaded with trust_remote_code (code execution) { #bb-035 }
+
+<div class="pg-rule__tags">
+<span class="pg-sev pg-sev--high">HIGH</span> <span class="pg-tag pg-tag--owasp">CICD-SEC-4</span> <span class="pg-tag pg-tag--esf">ESF-D-INJECTION</span> <span class="pg-tag pg-tag--cwe">CWE-494</span> <span class="pg-tag pg-tag--cwe">CWE-829</span>
+</div>
+
+Fires on ``trust_remote_code=True`` / ``--trust-remote-code`` in a step's ``script``. The transformers / huggingface_hub loader executes the model repo's own Python at load time, so an untrusted or unpinned model is arbitrary code execution in the pipeline with the step's credentials in scope.
+
+<div class="pg-rule__rec" markdown>
+
+**Recommended action**
+
+Load models with ``trust_remote_code=False`` (the library default). If a model genuinely needs custom code, vet it and pin an exact revision (a commit SHA, not a tag or branch), run the load in a step scoped to no production deployment credentials, and prefer safetensors weights over pickle.
 
 </div>
 

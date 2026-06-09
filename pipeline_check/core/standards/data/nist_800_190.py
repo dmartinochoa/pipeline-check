@@ -91,6 +91,7 @@ STANDARD = Standard(
         "GL-025":   ["4.1.3"],
         "GL-026":   ["4.1.3"],
         "BB-002":   ["4.1.3"],
+        "BB-035":   ["4.1.3"],   # trust_remote_code model load = code exec
         "BB-012":   ["4.1.3"],
         "BB-025":   ["4.1.3"],
         "BB-026":   ["4.1.3"],
