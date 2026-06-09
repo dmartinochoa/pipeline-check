@@ -390,6 +390,7 @@ STANDARD = Standard(
         "GHA-002":  ["EX-6", "PE-1"],
         "GL-002":   ["EX-6"],
         "GL-045":   ["EX-6"],# trust_remote_code model load = code exec
+        "GL-047":   ["EX-6"],# unsafe pickle deser of fetched artifact = code exec
         "BB-002":   ["EX-6"],
         "ADO-002":  ["EX-6"],
         "JF-002":   ["EX-6"],

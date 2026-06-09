@@ -12,6 +12,22 @@ release commit collapses this section into `## [X.Y.Z] - <date>`.
 
 ### Added
 
+- **GL-047: unsafe deserialization of a fetched artifact (GitLab).** The
+  GitLab analog of GHA-122 and the deserialization leg of the GitLab
+  AI/model pack (alongside GL-045 `trust_remote_code` and GL-046 unpinned
+  model ref). Loading a downloaded model / artifact through a
+  pickle-backed deserializer runs arbitrary Python embedded in the file
+  at load time, which in CI is remote code execution under the job's
+  `CI_JOB_TOKEN` and secrets. Fires per job in two shapes: an explicit
+  unsafe opt-in (`weights_only=False`, or `allow_pickle=True` on
+  `numpy.load`) always; or a remote fetch (`curl` / `wget` /
+  `hf_hub_download` / `snapshot_download` / `huggingface-cli download` /
+  `requests`) alongside a pickle-backed loader (`torch.load` /
+  `pickle.load(s)` / `joblib.load`) with no safe path (`weights_only=True`
+  or safetensors) in the same job. Does not fire on the safe path or a
+  bare local load with no fetch. The two-shape detection now lives in a
+  shared `_primitives/unsafe_deser` helper that GHA-122 and GL-047 both
+  call. HIGH. gitlab 48 -> 49.
 - **GL-046: AI model pulled without a pinned revision (GitLab).** The
   GitLab analog of GHA-121 and the pinning leg GL-045's own
   recommendation points to. Fires on a job's `script` /

@@ -16,7 +16,7 @@ pipeline_check --pipeline gitlab --gitlab-path ci/
 
 ## What it covers
 
-48 checks · 12 have an autofix patch (``--fix``).
+49 checks · 12 have an autofix patch (``--fix``).
 
 | Check | Title | Severity | Fix |
 |-------|-------|----------|-----|
@@ -66,6 +66,7 @@ pipeline_check --pipeline gitlab --gitlab-path ci/
 | [GL-044](#gl-044) | Automatic production deployment on a merge-request pipeline | <span class="pg-sev pg-sev--critical">CRITICAL</span> |  |
 | [GL-045](#gl-045) | ML model loaded with trust_remote_code (code execution) | <span class="pg-sev pg-sev--high">HIGH</span> |  |
 | [GL-046](#gl-046) | AI model pulled without a pinned revision | <span class="pg-sev pg-sev--medium">MEDIUM</span> |  |
+| [GL-047](#gl-047) | Unsafe deserialization of a fetched artifact (pickle RCE) | <span class="pg-sev pg-sev--high">HIGH</span> |  |
 | [TAINT-004](#taint-004) | Untrusted input flows across jobs via dotenv artifact | <span class="pg-sev pg-sev--high">HIGH</span> |  |
 | [TAINT-008](#taint-008) | Untrusted input flows via GitLab ``extends:`` template inheritance | <span class="pg-sev pg-sev--high">HIGH</span> |  |
 
@@ -1078,6 +1079,32 @@ Does NOT fire when a revision is pinned in the same command (``revision='<sha>'`
 **Recommended action**
 
 Pin the model to an immutable revision. Pass an exact commit ``revision=`` to ``from_pretrained`` / ``hf_hub_download`` / ``snapshot_download`` (a 40-char commit SHA, not a branch or a tag, both of which the owner can move), or ``--revision <sha>`` to ``huggingface-cli download``. A pinned revision is what makes a swapped-weights or swapped-loader-code attack show up as a diff in your repo instead of silently landing on the next build. Pair with ``trust_remote_code=False`` (GL-045) and prefer safetensors weights over pickle.
+
+</div>
+
+</div>
+
+<div class="pg-rule pg-rule--high" markdown>
+
+## GL-047: Unsafe deserialization of a fetched artifact (pickle RCE) { #gl-047 }
+
+<div class="pg-rule__tags">
+<span class="pg-sev pg-sev--high">HIGH</span> <span class="pg-tag pg-tag--owasp">CICD-SEC-4</span> <span class="pg-tag pg-tag--esf">ESF-D-INJECTION</span> <span class="pg-tag pg-tag--cwe">CWE-502</span> <span class="pg-tag pg-tag--cwe">CWE-494</span> <span class="pg-tag pg-tag--cwe">CWE-829</span>
+</div>
+
+Fires per job (across ``script`` / ``before_script`` / ``after_script``) in two shapes. **(A) Explicit unsafe opt-in**, always: ``weights_only=False`` on a load, or ``allow_pickle=True`` on ``numpy.load`` / ``np.load``. **(B) Fetch + unpickle**, only when both appear in the same job: a remote fetch (``curl`` / ``wget`` / ``hf_hub_download`` / ``snapshot_download`` / ``huggingface-cli download`` / ``hf download`` / ``requests.get`` / ``urlretrieve`` / ``urlopen``) alongside a pickle-backed loader (``torch.load`` / ``pickle.load`` / ``pickle.loads`` / ``joblib.load``).
+
+Does NOT fire when the job takes the safe path (``weights_only=True``, or safetensors via ``safe_open`` / ``load_file``), nor on a bare ``torch.load`` / ``pickle.load`` with no remote fetch in the same job (a load of a locally produced, trusted artifact).
+
+**Known false-positive modes**
+
+- A job that downloads a non-pickle file for one purpose and separately unpickles a trusted local file for another would match shape B by co-location. Split the two concerns into separate jobs, or suppress on the specific job with a rationale naming the artifact's verified source.
+
+<div class="pg-rule__rec" markdown>
+
+**Recommended action**
+
+Don't deserialize a downloaded artifact through pickle. Load weights with safetensors, or pass ``weights_only=True`` to ``torch.load`` (the PyTorch 2.6+ default) so only tensors, not arbitrary Python, are unpickled. Drop ``allow_pickle=True`` from ``numpy.load``. If a pickle / joblib artifact is unavoidable, pin and verify its source (a pinned model revision, a checksum, or a signature) and load it in a job scoped to no production secrets, not one carrying the ``CI_JOB_TOKEN`` and pipeline credentials.
 
 </div>
 
