@@ -13,9 +13,9 @@ The GitLab analog of GHA-120.
 """
 from __future__ import annotations
 
-import re
 from typing import Any
 
+from ..._primitives.model_trust import TRUST_REMOTE_CODE_RE
 from ..._yaml_lines import line_of as _line_of
 from ...base import Finding, Location, Severity
 from ...rule import Rule
@@ -45,17 +45,12 @@ RULE = Rule(
     ),
 )
 
-_TRUST_REMOTE_RE = re.compile(
-    r"trust_remote_code\s*=\s*True|--trust[-_]remote[-_]code\b",
-    re.IGNORECASE,
-)
-
 
 def check(path: str, doc: dict[str, Any]) -> Finding:
     offenders: list[str] = []
     locations: list[Location] = []
     for job_id, job in iter_jobs(doc):
-        if any(_TRUST_REMOTE_RE.search(line) for line in job_scripts(job)):
+        if any(TRUST_REMOTE_CODE_RE.search(line) for line in job_scripts(job)):
             offenders.append(job_id)
             line = _line_of(job)
             locations.append(Location(path=path, start_line=line, end_line=line))

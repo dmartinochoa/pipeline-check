@@ -15,6 +15,13 @@ pipelines:
         artifacts:
           - dist/**
 
+    # BB-035 — model loaded with trust_remote_code (executes the model
+    # repo's own Python at load time = code execution in the pipeline).
+    - step:
+        name: eval-model
+        script:
+          - python -c "from transformers import AutoModel; AutoModel.from_pretrained('acme/m', trust_remote_code=True)"
+
     # BB-004 — deploy step missing `deployment:` env gate.
     # BB-011 — inline long-lived AWS key in script.
     - step:

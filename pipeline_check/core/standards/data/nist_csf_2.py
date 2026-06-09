@@ -273,6 +273,7 @@ STANDARD = Standard(
         "GL-025":   ["PR.PS-05"],
         "GL-026":   ["PR.PS-05"],
         "BB-002":   ["PR.PS-05"],
+        "BB-035":   ["PR.PS-05"],   # trust_remote_code model load = code exec
         "BB-012":   ["PR.PS-05"],
         "BB-025":   ["PR.PS-05"],
         "BB-026":   ["PR.PS-05"],

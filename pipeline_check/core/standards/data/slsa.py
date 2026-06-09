@@ -221,6 +221,7 @@ STANDARD = Standard(
         # ── Bitbucket Pipelines ───────────────────────────────────
         "BB-001":   ["Build.L3.NonFalsifiable"],                   # unpinned pipe
         "BB-002":   ["Build.L3.Isolated"],                         # script injection
+        "BB-035":   ["Build.L3.Isolated"],                         # trust_remote_code model load = code exec
         "BB-005":   ["Build.L3.Ephemeral"],                        # unbounded runtime
         "BB-006":   ["Build.L2.Signed"],
         "BB-007":   ["Build.L1.Provenance"],

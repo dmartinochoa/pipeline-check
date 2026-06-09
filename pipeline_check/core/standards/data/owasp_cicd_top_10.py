@@ -296,6 +296,7 @@ STANDARD = Standard(
         # Bitbucket Pipelines
         "BB-001":   ["CICD-SEC-3", "CICD-SEC-8"],
         "BB-002":   ["CICD-SEC-4"],
+        "BB-035":   ["CICD-SEC-4"],   # trust_remote_code model load = code exec
         "BB-003":   ["CICD-SEC-6"],
         "BB-004":   ["CICD-SEC-1"],
         "BB-005":   ["CICD-SEC-7"],

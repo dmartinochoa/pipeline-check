@@ -191,7 +191,7 @@ class TestGitLabFixtures:
 
 
 class TestBitbucketFixtures:
-    EXPECTED_IDS = {f"BB-{i:03d}" for i in range(1, 35)}
+    EXPECTED_IDS = {f"BB-{i:03d}" for i in range(1, 36)}
 
     def _scan(self, filename: str):
         ctx = BitbucketContext.from_path(FIXTURES / "bitbucket" / filename)

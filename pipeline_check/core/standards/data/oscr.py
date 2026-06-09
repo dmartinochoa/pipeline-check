@@ -400,6 +400,7 @@ STANDARD = Standard(
         "GL-048":   ["EX-6"],# untrusted MR context into agentic CLI = prompt injection
         "GL-049":   ["DE-1"],# agentic CLI output lands without review
         "BB-002":   ["EX-6"],
+        "BB-035":   ["EX-6"],   # trust_remote_code model load = code exec
         "ADO-002":  ["EX-6"],
         "JF-002":   ["EX-6"],
         "CC-002":   ["EX-6"],

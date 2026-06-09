@@ -12,6 +12,16 @@ release commit collapses this section into `## [X.Y.Z] - <date>`.
 
 ### Added
 
+- **BB-035: ML model loaded with `trust_remote_code` (Bitbucket).** Brings
+  the flagship model-RCE rule to the #3 script-based CI provider,
+  completing its cross-provider coverage (GHA-120 / GL-045 / BB-035).
+  Fires on `trust_remote_code=True` / `--trust-remote-code` in a step's
+  `script`: the transformers / huggingface_hub loader executes the model
+  repo's own Python at load time, so an untrusted or unpinned model is
+  arbitrary code execution in the pipeline with the step's credentials in
+  scope. The `trust_remote_code` detection now lives in a shared
+  `_primitives/model_trust` helper that GHA-120, GL-045, and BB-035 all
+  use. HIGH. bitbucket 34 -> 35.
 - **MODEL-005: a vendored model config declares custom loader code
   (`auto_map`).** Extends the `modelfile` provider to also parse vendored
   Hugging Face `config.json` model configs (recognized by their
