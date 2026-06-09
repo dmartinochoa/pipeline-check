@@ -12,6 +12,21 @@ release commit collapses this section into `## [X.Y.Z] - <date>`.
 
 ### Added
 
+- **AC-041: a compromised action executed and exfiltrated credentials in
+  the same run (attack chain).** The first run-forensics attack chain, and
+  the strongest signal the tool produces, a supply-chain attack confirmed
+  to have *succeeded* rather than merely been possible. Fires when RUN-006
+  (a known-compromised action actually executed in a run) pairs on the
+  *same run* with RUN-003 (a secret-shaped string leaked in that run's
+  logs) or RUN-004 (that run minted a cloud OIDC token): the malicious
+  action ran and a credential left the run in one execution, the
+  tj-actions/changed-files (CVE-2025-30066) pattern of printing harvested
+  secrets into the log. Reachability is structural, not co-occurrence,
+  since both legs carry the same ``github:owner/repo#run/<id>`` resource,
+  so the chain is emitted ``confirmed_reachable`` at HIGH confidence (the
+  run-history analog of AC-005's shared-image-digest pairing) and survives
+  ``--chains-require-reachability``. CRITICAL. Maps to MITRE T1195.002 /
+  T1552 / T1567. Chain count 54 -> 55 (41 AC).
 - **RUN-006: a known-compromised action actually executed in run history
   (run forensics).** The runtime confirmation behind GHA-040. Where the
   static rule flags a known-compromised action *reference* in the current

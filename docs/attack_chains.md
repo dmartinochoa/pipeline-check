@@ -77,6 +77,7 @@ references, recommendation).
 | [`AC-038`](#ac-038) | Untrusted branch reaches OIDC trusted publish | <span class="pg-sev pg-sev--critical">CRITICAL</span> | github | [`GHA-113`](providers/github.md#gha-113) + [`GHA-114`](providers/github.md#gha-114) |
 | [`AC-039`](#ac-039) | Untrusted trigger reaches a bulk-secrets serialization | <span class="pg-sev pg-sev--critical">CRITICAL</span> | github | ([`GHA-002`](providers/github.md#gha-002) or [`GHA-009`](providers/github.md#gha-009) or [`GHA-013`](providers/github.md#gha-013)) + [`GHA-116`](providers/github.md#gha-116) |
 | [`AC-040`](#ac-040) | Prompt-injected agent commits its output with no human review | <span class="pg-sev pg-sev--critical">CRITICAL</span> | github, gitlab, bitbucket, azure | ([`GHA-119`](providers/github.md#gha-119) + [`GHA-123`](providers/github.md#gha-123)) or ([`GL-048`](providers/gitlab.md#gl-048) + [`GL-049`](providers/gitlab.md#gl-049)) or ([`BB-036`](providers/bitbucket.md#bb-036) + [`BB-039`](providers/bitbucket.md#bb-039)) or ([`ADO-035`](providers/azure.md#ado-035) + [`ADO-038`](providers/azure.md#ado-038)) |
+| [`AC-041`](#ac-041) | Compromised action executed and exfiltrated credentials in the same run | <span class="pg-sev pg-sev--critical">CRITICAL</span> | runs | [`RUN-006`](providers/runs.md#run-006) + ([`RUN-003`](providers/runs.md#run-003) or [`RUN-004`](providers/runs.md#run-004)) |
 
 ### Cross-provider chains (`XPC-NNN`)
 
@@ -1344,6 +1345,31 @@ Break either leg:
   1. Cut the untrusted-input path: don't pass attacker-authored text (a PR title / branch name / commit message) into an agentic CLI's prompt; if the agent must see PR content, run it on a job with no write credentials and no tool / shell access (GHA-119 / GL-048 / BB-036 / ADO-035).
   2. Take away the no-review landing: have the agent only open a pull request for human review, and drop the in-job ``git push`` / auto-merge / push-action (GHA-123 / GL-049 / BB-039 / ADO-038).
 Best: never let one pipeline both feed an agent untrusted input and land that agent's output without a human reviewing the diff.
+
+</div>
+
+</div>
+
+<div class="pg-rule pg-rule--critical" markdown>
+
+### AC-041: Compromised action executed and exfiltrated credentials in the same run { #ac-041 }
+
+<div class="pg-rule__tags">
+<span class="pg-sev pg-sev--critical">CRITICAL</span> <span class="pg-tag" title="MITRE ATT&CK technique">MITRE T1195.002</span> <span class="pg-tag" title="MITRE ATT&CK technique">MITRE T1552</span> <span class="pg-tag" title="MITRE ATT&CK technique">MITRE T1567</span> <span class="pg-tag" title="kill-chain phase">initial-access (a compromised third-party action is pulled into the run) -> execution (the malicious action runs) -> credential-access (a secret is exposed in the run, or an OIDC token is minted) -> exfiltration (the compromised action ships the credential out, the leak / mint is the evidence)</span> <span class="pg-tag pg-tag--owasp">runs</span>
+</div>
+
+A known-compromised action actually executed in a workflow run (RUN-006) AND the same run exposed a credential: a secret-shaped string leaked in its logs (RUN-003) or it minted a cloud OIDC token (RUN-004). Both legs on one run is the run-history confirmation that the supply-chain attack succeeded, the malicious action ran and a credential left the run in the same execution (the tj-actions/changed-files pattern).
+
+**References**
+
+- <https://www.cve.org/CVERecord?id=CVE-2025-30066>
+- <https://owasp.org/www-project-top-10-ci-cd-security-risks/CICD-SEC-04-Poisoned-Pipeline-Execution-PPE>
+
+<div class="pg-rule__rec" markdown>
+
+**Recommended action**
+
+Respond as to a confirmed breach: rotate every credential and token the affected run could reach (the leaked secret, the federated cloud role for an OIDC mint, the GITHUB_TOKEN), review the run's outbound network and any pushes / deployments it made, and audit downstream systems the credential can reach. Then close the entry point: pin the action to a known-good commit SHA (GHA-040 / RUN-006) and stop the credential reaching the log (RUN-003) or scope the OIDC role's trust policy (RUN-004).
 
 </div>
 
