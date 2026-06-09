@@ -144,6 +144,7 @@ STANDARD = Standard(
         #   Hardcoded secrets in CI config are the attacker's target.
         "GHA-008":  ["REC-2", "CA-6"],
         "GL-008":   ["REC-2", "CA-6"],
+        "DEV-008":   ["REC-2", "CA-6"],   # literal secret in a devenv config
         "BB-008":   ["REC-2", "CA-6"],
         "ADO-008":  ["REC-2", "CA-6"],
         "JF-008":   ["REC-2", "CA-6"],

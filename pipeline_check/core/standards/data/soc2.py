@@ -81,6 +81,7 @@ STANDARD = Standard(
         "GHA-008":  ["CC6.2"],
         "GL-003":   ["CC6.2"],
         "GL-008":   ["CC6.2"],
+        "DEV-008":   ["CC6.2"],   # literal secret in a devenv config
         "GL-013":   ["CC6.2", "CC6.3"],
         "BB-003":   ["CC6.2"],
         "BB-008":   ["CC6.2"],

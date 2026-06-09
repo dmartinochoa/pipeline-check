@@ -185,6 +185,7 @@ STANDARD = Standard(
         "GL-006":   ["Build.L2.Signed"],
         "GL-007":   ["Build.L1.Provenance"],
         "GL-008":   ["Build.L3.NonFalsifiable"],                   # leaked creds
+        "DEV-008":   ["Build.L3.NonFalsifiable"],                  # literal secret in a devenv config
         "GL-009":   ["Build.L3.NonFalsifiable"],                   # tag-pinned not digest
         "GL-010":   ["Build.L3.Isolated"],                         # multi-project artifact ingestion
         "GL-011":   ["Build.L3.Isolated"],                         # include: local on MR pipeline

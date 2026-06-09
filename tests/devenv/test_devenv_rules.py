@@ -331,3 +331,37 @@ class TestDEV007:
     def test_passes_on_non_mcp_kind(self):
         f = run_check('{"version": "2.0.0"}', KIND_VSCODE_TASKS, "DEV-007")
         assert f.passed
+
+
+class TestDEV008:
+    """Credential-shaped literal committed in a developer-environment config."""
+
+    def test_fires_on_token_in_mcp_env(self):
+        f = run_check(
+            '{"mcpServers": {"gh": {"command": "npx", '
+            '"env": {"GITHUB_TOKEN": '
+            '"ghp_abcdef1234567890abcdef1234567890abcd"}}}}',
+            KIND_MCP_CONFIG, "DEV-008",
+        )
+        assert not f.passed
+        assert f.severity is Severity.CRITICAL
+
+    def test_fires_on_token_in_devcontainer_env(self):
+        f = run_check(
+            '{"image": "node", "remoteEnv": '
+            '{"AWS_ACCESS_KEY_ID": "AKIAQYLPMN5HABCDEFGH"}}',
+            KIND_DEVCONTAINER, "DEV-008",
+        )
+        assert not f.passed
+
+    def test_passes_on_clean_config(self):
+        f = run_check(
+            '{"mcpServers": {"gh": {"command": "npx", '
+            '"env": {"GITHUB_TOKEN": "${env:GITHUB_TOKEN}"}}}}',
+            KIND_MCP_CONFIG, "DEV-008",
+        )
+        assert f.passed
+
+    def test_passes_on_unrelated_settings(self):
+        f = run_check('{"editor.tabSize": 2}', KIND_VSCODE_SETTINGS, "DEV-008")
+        assert f.passed

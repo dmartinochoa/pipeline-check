@@ -12,6 +12,18 @@ release commit collapses this section into `## [X.Y.Z] - <date>`.
 
 ### Added
 
+- **DEV-008: a credential-shaped literal committed in a dev-environment
+  config.** The developer-environment member of the cross-provider
+  literal-secret `*-008` family (GHA-008 / GL-008 / …). Editor / agent /
+  container configs routinely carry credentials, an MCP server's `env`
+  block (a `GITHUB_TOKEN` / API key passed to the tool server), a
+  devcontainer `remoteEnv` / `containerEnv`, a VS Code setting, a Claude
+  Code hook, and a committed literal is exposed to everyone with repo
+  access and lives in git history. Scans every string in the parsed
+  config (`.vscode/` tasks / settings, `.devcontainer`,
+  `.claude/settings.json`, and the MCP configs `.mcp.json` /
+  `.cursor/mcp.json` / `.vscode/mcp.json`) against the shared
+  credential-shape catalog. CRITICAL. devenv 7 -> 8.
 - **DEV-007: a committed MCP config auto-launches a local command server.**
   Extends the `devenv` provider (the auto-execute-on-repo-open surface) to
   Model Context Protocol configs: `.mcp.json` (Claude Code),

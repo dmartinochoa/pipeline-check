@@ -277,6 +277,7 @@ STANDARD = Standard(
         "GL-006":   ["4.1.1"],
         "GL-007":   ["4.4.1"],
         "GL-008":   ["1.5.1", "2.3.4"],                  # literal secrets
+        "DEV-008":  ["1.5.1", "2.3.4"],                  # literal secret in a devenv config
         "GL-009":   ["1.4.1", "3.1.3"],                  # image pinned to tag not digest
         "GL-010":   ["1.4.1", "2.3.8"],                  # multi-project pipeline upstream artifact unverified
         "GL-011":   ["2.1.3", "2.3.8"],                  # include: local file in MR pipeline

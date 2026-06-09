@@ -268,6 +268,7 @@ STANDARD = Standard(
         "GL-006":   ["PS.2.1", "PS.3.2"],              # unsigned artifacts
         "GL-007":   ["PS.3.2"],                        # no SBOM
         "GL-008":   ["PS.1.1"],                        # literal secrets
+        "DEV-008":   ["PS.1.1"],                        # literal secret in a devenv config
         "GL-009":   ["PW.4.1", "PW.4.4"],              # image not digest-pinned
         "GL-010":   ["PO.5.1", "PW.9.1"],              # multi-project artifact unverified
         "GL-011":   ["PO.5.1", "PW.9.1"],              # include: local on MR pipeline
