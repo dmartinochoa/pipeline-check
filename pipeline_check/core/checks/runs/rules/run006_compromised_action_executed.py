@@ -17,12 +17,13 @@ cannot:
     still records that the compromised action executed with the repo's
     secrets and ``GITHUB_TOKEN`` in scope.
 
-Only meaningful under ``--audit-runs-logs``: the match is read from the
-same privileged-trigger run logs RUN-003 / RUN-004 already download, so it
-adds no fetches. That scopes it to the highest-impact subset (a
-``pull_request_target`` / ``workflow_run`` run, where repo secrets and a
-write-scoped token are in scope); detection is exact on the IOC registry
-but recall is bounded to the runs whose logs were fetched.
+Only meaningful under ``--audit-runs-logs``. The compromised-action
+campaigns ran on ordinary ``push`` / ``pull_request`` runs, not just the
+privileged triggers, so the scan covers both: the privileged-trigger logs
+RUN-003 / RUN-004 already download, plus a bounded pass over the most
+recent non-privileged runs (IOC-line scan only, no secret detector).
+Detection is exact on the IOC registry; recall is bounded to the runs
+whose logs were fetched.
 """
 from __future__ import annotations
 
@@ -54,9 +55,12 @@ RULE = Rule(
         "(tj-actions/changed-files, reviewdog/action-setup, the 2026 "
         "aquasecurity / checkmarx campaigns). Matching the resolved SHA is "
         "what catches a tag-repoint: a workflow pinned to ``@v44`` whose "
-        "tag was force-moved to a malicious commit. Scoped to the fetched "
-        "privileged-trigger run logs (repo secrets + write token in scope), "
-        "so recall is bounded to those runs; the IOC match itself is exact."
+        "tag was force-moved to a malicious commit. Covers both the "
+        "privileged-trigger run logs and a bounded set of the most recent "
+        "non-privileged (``push`` / ``pull_request``) runs, since the "
+        "tj-actions / Trivy / Checkmarx campaigns ran on ordinary CI; "
+        "recall is bounded to the fetched runs, the IOC match itself is "
+        "exact."
     ),
 )
 
@@ -108,8 +112,8 @@ def check(ctx: RunsContext) -> list[Finding]:
                 f"Run #{run_id} ("
                 + (f"{run.name or 'workflow'} on `{run.event}`, " if run else "")
                 + f"executed a known-compromised action: {labels}. The "
-                f"compromised code ran with the run's secrets and token in "
-                f"scope. {advisory}{url}".rstrip()
+                f"compromised code ran in your CI with whatever credentials "
+                f"that run carried. {advisory}{url}".rstrip()
             ),
             recommendation=RULE.recommendation,
             passed=False,

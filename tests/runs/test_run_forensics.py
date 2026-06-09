@@ -239,14 +239,18 @@ class TestRun003LogScan:
         assert run003 and all(f.passed for f in run003)
         assert "No secret-shaped" in run003[0].description
 
-    def test_only_privileged_runs_have_logs_fetched(self):
-        run = _run(1, "push")  # not a privileged trigger
+    def test_secret_scan_stays_privileged_only(self):
+        # A push run is not a privileged trigger, so its leaked token is NOT
+        # flagged (RUN-003 is privileged-scoped). The log is still fetched
+        # for the compromised-action (RUN-006) pass, but the secret detector
+        # is skipped on non-privileged runs.
+        run = _run(1, "push")
         payload = {"total_count": 1, "workflow_runs": [run]}
         blobs = {"repos/owner/r/actions/runs/1/logs": _log_zip(f"T={_LEAKED_TOKEN}")}
         fetcher = FakeFetcher({_RUNS_PATH: payload}, blobs)
         ctx = RunsContext.for_repo("owner", "r", fetcher, scan_logs=True)
-        assert not any("/logs" in c for c in fetcher.calls)
-        assert ctx.log_leaks == {}
+        assert ctx.log_leaks == {}                       # secret scan skipped...
+        assert any("/logs" in c for c in fetcher.calls)  # ...but log was fetched
 
     def test_corrupt_zip_degrades_without_crashing(self):
         run = _run(1, "pull_request_target", fork=True)
@@ -476,3 +480,30 @@ class TestRun006CompromisedActionExecuted:
         )
         ctx = self._ctx_with_log(run, log)
         assert ctx.compromised_action_runs == {}
+
+    def test_fires_on_non_privileged_push_run(self):
+        # The headline tj-actions case ran on an ordinary push / PR run, not
+        # a privileged trigger. The bounded any-trigger pass must catch it.
+        run = _run(1, "push")
+        ctx = self._ctx_with_log(run, _TAG_REPOINT_LOG)
+        assert 1 in ctx.compromised_action_runs
+        failing = [f for f in _for(_findings(ctx), "RUN-006") if not f.passed]
+        assert len(failing) == 1
+        assert "tj-actions/changed-files@v44" in failing[0].description
+
+    def test_action_log_scan_bounded_with_warning(self):
+        # More non-privileged runs than the fetch cap -> a truncation warning.
+        from pipeline_check.core.checks.runs.base import (
+            DEFAULT_ACTION_LOG_FETCH_LIMIT,
+        )
+        runs = [_run(i, "push") for i in range(1, DEFAULT_ACTION_LOG_FETCH_LIMIT + 5)]
+        payload = {"total_count": len(runs), "workflow_runs": runs}
+        blobs = {
+            f"repos/owner/r/actions/runs/{i}/logs": _log_zip("clean build\n")
+            for i in range(1, DEFAULT_ACTION_LOG_FETCH_LIMIT + 5)
+        }
+        ctx = RunsContext.for_repo(
+            "owner", "r", FakeFetcher({_RUNS_PATH: payload}, blobs),
+            scan_logs=True,
+        )
+        assert any("non-privileged" in w for w in ctx.warnings)
