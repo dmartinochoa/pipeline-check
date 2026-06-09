@@ -1,0 +1,3 @@
+review-mr:
+  script:
+    - claude -p "Summarize the test results in build.txt"

@@ -73,6 +73,9 @@ unit-tests:
     # GL-047 — unsafe deserialization of a fetched artifact: weights_only=False
     # unpickles arbitrary Python embedded in the downloaded checkpoint.
     - python -c "import torch; torch.load('model.pt', weights_only=False)"
+    # GL-048 — untrusted MR context reaches an agentic CLI (prompt injection):
+    # the model ingests the MR title as instructions and then acts.
+    - claude -p "Triage this failure for MR $CI_MERGE_REQUEST_TITLE"
 
 # GL-010 — multi-project artifact ingestion without verification.
 ingest-upstream:

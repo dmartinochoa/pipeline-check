@@ -16,7 +16,7 @@ pipeline_check --pipeline gitlab --gitlab-path ci/
 
 ## What it covers
 
-49 checks · 12 have an autofix patch (``--fix``).
+50 checks · 12 have an autofix patch (``--fix``).
 
 | Check | Title | Severity | Fix |
 |-------|-------|----------|-----|
@@ -67,6 +67,7 @@ pipeline_check --pipeline gitlab --gitlab-path ci/
 | [GL-045](#gl-045) | ML model loaded with trust_remote_code (code execution) | <span class="pg-sev pg-sev--high">HIGH</span> |  |
 | [GL-046](#gl-046) | AI model pulled without a pinned revision | <span class="pg-sev pg-sev--medium">MEDIUM</span> |  |
 | [GL-047](#gl-047) | Unsafe deserialization of a fetched artifact (pickle RCE) | <span class="pg-sev pg-sev--high">HIGH</span> |  |
+| [GL-048](#gl-048) | Untrusted MR/commit context reaches an agentic AI CLI (prompt injection) | <span class="pg-sev pg-sev--high">HIGH</span> |  |
 | [TAINT-004](#taint-004) | Untrusted input flows across jobs via dotenv artifact | <span class="pg-sev pg-sev--high">HIGH</span> |  |
 | [TAINT-008](#taint-008) | Untrusted input flows via GitLab ``extends:`` template inheritance | <span class="pg-sev pg-sev--high">HIGH</span> |  |
 
@@ -1105,6 +1106,26 @@ Does NOT fire when the job takes the safe path (``weights_only=True``, or safete
 **Recommended action**
 
 Don't deserialize a downloaded artifact through pickle. Load weights with safetensors, or pass ``weights_only=True`` to ``torch.load`` (the PyTorch 2.6+ default) so only tensors, not arbitrary Python, are unpickled. Drop ``allow_pickle=True`` from ``numpy.load``. If a pickle / joblib artifact is unavoidable, pin and verify its source (a pinned model revision, a checksum, or a signature) and load it in a job scoped to no production secrets, not one carrying the ``CI_JOB_TOKEN`` and pipeline credentials.
+
+</div>
+
+</div>
+
+<div class="pg-rule pg-rule--high" markdown>
+
+## GL-048: Untrusted MR/commit context reaches an agentic AI CLI (prompt injection) { #gl-048 }
+
+<div class="pg-rule__tags">
+<span class="pg-sev pg-sev--high">HIGH</span> <span class="pg-tag pg-tag--owasp">CICD-SEC-4</span> <span class="pg-tag pg-tag--esf">ESF-D-INJECTION</span> <span class="pg-tag pg-tag--cwe">CWE-94</span> <span class="pg-tag pg-tag--cwe">CWE-77</span>
+</div>
+
+The AI analog of GL-002 (script injection). Fires when a job ``script`` line invokes an agentic CLI (claude / gemini / cursor-agent / aider / openhands / goose / ``q chat``) AND attacker-controllable GitLab context reaches that line, either a predefined untrusted variable interpolated directly (``$CI_MERGE_REQUEST_TITLE``) or a ``variables:`` entry whose value carries one. Unlike a shell, an LLM ingests a quoted / variable-routed value as prompt text, so the GL-002 mitigation (route through a quoted variable) does not apply, which is why this is a separate rule.
+
+<div class="pg-rule__rec" markdown>
+
+**Recommended action**
+
+Do not place attacker-controllable context (MR / commit / branch-name metadata) in an agentic CLI's prompt. A quoted ``variables:`` entry does NOT sanitize a prompt the way it does a shell command, the model still reads the value. If the agent must see MR content, run it with no write-scoped ``CI_JOB_TOKEN`` and no tool / shell access on a job gated to no production secrets, and treat its output as untrusted.
 
 </div>
 
