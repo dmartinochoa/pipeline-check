@@ -11,7 +11,7 @@ and artifact controls covering the full pipeline trust chain.
 
 - **Controls in this standard:** 25
 - **Controls evidenced by at least one check:** 25 / 25
-- **Distinct checks evidencing this standard:** 918
+- **Distinct checks evidencing this standard:** 919
 - **Of those, autofixable with `--fix`:** 110
 
 _Severity levels (`CRITICAL` / `HIGH` / `MEDIUM` / `LOW` / `INFO`) follow the same scale across every provider and standard. See [How to read severity](README.md#how-to-read-severity) on the standards overview for the definitions._
@@ -28,7 +28,7 @@ Click a control ID to jump to the per-control section with the full check list. 
 | [`1.1.8`](#ctrl-1-1-8) | Ensure scanners are in place to identify and confirm presence of vulnerabilities (SCA) | 24 | 1C · 6H · 14M · 3L |
 | [`1.1.17`](#ctrl-1-1-17) | Ensure default branches' commits are protected from being deleted/rewritten | 13 | 1C · 6H · 3M · 3L |
 | [`1.3.4`](#ctrl-1-3-4) | Ensure organization identity is required for contribution (no long-lived personal tokens) | 52 | 3C · 36H · 12M · 1L |
-| [`1.4.1`](#ctrl-1-4-1) | Ensure third-party artifacts and open-source libraries are verified | 273 | 24C · 143H · 96M · 10L |
+| [`1.4.1`](#ctrl-1-4-1) | Ensure third-party artifacts and open-source libraries are verified | 274 | 25C · 143H · 96M · 10L |
 | [`1.5.1`](#ctrl-1-5-1) | Ensure scanners are in place to identify and prevent sensitive data in code | 73 | 27C · 39H · 5M · 2L |
 | [`2.1.3`](#ctrl-2-1-3) | Ensure the build environment is hardened | 144 | 30C · 86H · 23M · 5L |
 | [`2.1.6`](#ctrl-2-1-6) | Ensure build workers have minimal network connectivity | 40 | 4C · 17H · 16M · 3L |
@@ -38,7 +38,7 @@ Click a control ID to jump to the per-control section with the full check list. 
 | [`2.3.8`](#ctrl-2-3-8) | Ensure pipeline configuration files are reviewed before execution | 67 | 13C · 39H · 12M · 3L |
 | [`2.4.2`](#ctrl-2-4-2) | Ensure pipeline integrity, artifacts are signed by the pipeline | 16 | 5H · 11M |
 | [`2.4.3`](#ctrl-2-4-3) | Ensure access to the pipeline execution environment is restricted | 84 | 17C · 41H · 25M · 1L |
-| [`3.1.3`](#ctrl-3-1-3) | Ensure signed metadata of dependencies is verified | 109 | 10C · 45H · 49M · 5L |
+| [`3.1.3`](#ctrl-3-1-3) | Ensure signed metadata of dependencies is verified | 110 | 11C · 45H · 49M · 5L |
 | [`3.1.5`](#ctrl-3-1-5) | Ensure only trusted package managers and repositories are used | 78 | 1C · 55H · 21M · 1L |
 | [`4.1.1`](#ctrl-4-1-1) | Ensure all artifacts on all releases are verified (signed, integrity-checked) | 47 | 16H · 28M · 2L · 1I |
 | [`4.2.1`](#ctrl-4-2-1) | Ensure access to artifacts is limited | 20 | 5C · 9H · 6M |
@@ -236,7 +236,7 @@ pipeline_check --pipeline aws --standard cis_supply_chain --standard owasp_cicd_
 
 ### 1.4.1: Ensure third-party artifacts and open-source libraries are verified { #ctrl-1-4-1 }
 
-**Evidenced by 273 checks** across 30 providers (AWS, Argo CD, Argo Workflows, Azure Cloud, Azure DevOps, Bitbucket, Buildkite, Cargo, CircleCI, Cloud Build, Composer, Dockerfile, Drone CI, GCP, GitHub Actions, GitLab CI, Go modules, Helm, Jenkins, Kubernetes, Modelfile, NuGet, OCI manifest, Pulumi, PyPI, RubyGems, SCM, Tekton, maven, npm).
+**Evidenced by 274 checks** across 31 providers (AWS, Actions run history, Argo CD, Argo Workflows, Azure Cloud, Azure DevOps, Bitbucket, Buildkite, Cargo, CircleCI, Cloud Build, Composer, Dockerfile, Drone CI, GCP, GitHub Actions, GitLab CI, Go modules, Helm, Jenkins, Kubernetes, Modelfile, NuGet, OCI manifest, Pulumi, PyPI, RubyGems, SCM, Tekton, maven, npm).
 
 | Check | Title | Severity | Provider | Fix |
 |-------|-------|----------|----------|-----|
@@ -506,6 +506,7 @@ pipeline_check --pipeline aws --standard cis_supply_chain --standard owasp_cicd_
 | [`PYPI-016`](../providers/pypi.md#pypi-016) | requirements.txt repoints the primary index at a non-PyPI host | <span class="pg-sev pg-sev--high">HIGH</span> | [PyPI](../providers/pypi.md) |  |
 | [`PYPI-017`](../providers/pypi.md#pypi-017) | requirements.txt uses a remote --find-links source | <span class="pg-sev pg-sev--medium">MEDIUM</span> | [PyPI](../providers/pypi.md) |  |
 | [`PYPI-018`](../providers/pypi.md#pypi-018) | requirements.txt forces source builds via --no-binary | <span class="pg-sev pg-sev--medium">MEDIUM</span> | [PyPI](../providers/pypi.md) |  |
+| [`RUN-006`](../providers/runs.md#run-006) | Known-compromised action executed in run history | <span class="pg-sev pg-sev--critical">CRITICAL</span> | [Actions run history](../providers/runs.md) |  |
 | [`SCM-016`](../providers/scm_github.md#scm-016) | Private vulnerability reporting is not enabled | <span class="pg-sev pg-sev--low">LOW</span> | [SCM](../providers/scm_github.md) |  |
 | [`SCM-022`](../providers/scm_github.md#scm-022) | Repo Actions permissions allow any source (no allow-list) | <span class="pg-sev pg-sev--medium">MEDIUM</span> | [SCM](../providers/scm_github.md) |  |
 | [`TKN-001`](../providers/tekton.md#tkn-001) | Tekton step image not pinned to a digest | <span class="pg-sev pg-sev--high">HIGH</span> | [Tekton](../providers/tekton.md) |  |
@@ -1118,7 +1119,7 @@ pipeline_check --pipeline aws --standard cis_supply_chain --standard owasp_cicd_
 
 ### 3.1.3: Ensure signed metadata of dependencies is verified { #ctrl-3-1-3 }
 
-**Evidenced by 109 checks** across 21 providers (AWS, Argo Workflows, Azure DevOps, Bitbucket, Buildkite, CircleCI, Cloud Build, Dockerfile, Drone CI, GitHub Actions, GitLab CI, Helm, Jenkins, Kubernetes, Modelfile, NuGet, OCI manifest, PyPI, Tekton, maven, npm).
+**Evidenced by 110 checks** across 22 providers (AWS, Actions run history, Argo Workflows, Azure DevOps, Bitbucket, Buildkite, CircleCI, Cloud Build, Dockerfile, Drone CI, GitHub Actions, GitLab CI, Helm, Jenkins, Kubernetes, Modelfile, NuGet, OCI manifest, PyPI, Tekton, maven, npm).
 
 | Check | Title | Severity | Provider | Fix |
 |-------|-------|----------|----------|-----|
@@ -1228,6 +1229,7 @@ pipeline_check --pipeline aws --standard cis_supply_chain --standard owasp_cicd_
 | [`PYPI-008`](../providers/pypi.md#pypi-008) | Direct dependency was published within the cooldown window | <span class="pg-sev pg-sev--high">HIGH</span> | [PyPI](../providers/pypi.md) |  |
 | [`PYPI-009`](../providers/pypi.md#pypi-009) | PyPI package has a known OSV advisory | <span class="pg-sev pg-sev--critical">CRITICAL</span> | [PyPI](../providers/pypi.md) |  |
 | [`PYPI-015`](../providers/pypi.md#pypi-015) | requirements.txt installs from a direct artifact URL | <span class="pg-sev pg-sev--high">HIGH</span> | [PyPI](../providers/pypi.md) |  |
+| [`RUN-006`](../providers/runs.md#run-006) | Known-compromised action executed in run history | <span class="pg-sev pg-sev--critical">CRITICAL</span> | [Actions run history](../providers/runs.md) |  |
 | [`TKN-001`](../providers/tekton.md#tkn-001) | Tekton step image not pinned to a digest | <span class="pg-sev pg-sev--high">HIGH</span> | [Tekton](../providers/tekton.md) |  |
 | [`TKN-012`](../providers/tekton.md#tkn-012) | No vulnerability scanning step | <span class="pg-sev pg-sev--medium">MEDIUM</span> | [Tekton](../providers/tekton.md) |  |
 | [`TKN-016`](../providers/tekton.md#tkn-016) | Remote resolver taskRef / pipelineRef not pinned to an immutable revision | <span class="pg-sev pg-sev--high">HIGH</span> | [Tekton](../providers/tekton.md) |  |

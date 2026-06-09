@@ -420,6 +420,7 @@ STANDARD = Standard(
         "RUN-003":  ["CC6.6", "CC6.8"],     # forensics: secret leaked in run logs
         "RUN-004":  ["CC6.6", "CC6.8"],     # forensics: fork run minted a cloud OIDC token
         "RUN-005":  ["CC6.6", "CC6.8"],     # forensics: fork run on a self-hosted runner
+        "RUN-006":  ["CC6.8", "CC8.1"],     # forensics: known-compromised action executed
         "GHA-006":  ["CC8.1"],              # unsigned artifacts
         "GHA-007":  ["CC8.1"],              # no SBOM
         "GHA-009":  ["CC6.6", "CC6.8"],     # workflow_run upstream artifact unverified

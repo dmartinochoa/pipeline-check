@@ -12,7 +12,7 @@ opinion. Use this page to prepare CC6 / CC7 / CC8 evidence walks.
 
 - **Controls in this standard:** 11
 - **Controls evidenced by at least one check:** 11 / 11
-- **Distinct checks evidencing this standard:** 926
+- **Distinct checks evidencing this standard:** 927
 - **Of those, autofixable with `--fix`:** 111
 
 _Severity levels (`CRITICAL` / `HIGH` / `MEDIUM` / `LOW` / `INFO`) follow the same scale across every provider and standard. See [How to read severity](README.md#how-to-read-severity) on the standards overview for the definitions._
@@ -28,12 +28,12 @@ Click a control ID to jump to the per-control section with the full check list. 
 | [`CC6.3`](#ctrl-cc6-3) | Access modifications (including revocation) are tracked and timely | 29 | 2C · 16H · 11M |
 | [`CC6.6`](#ctrl-cc6-6) | Boundary-protection measures restrict access from outside the system boundary | 121 | 23C · 48H · 40M · 10L |
 | [`CC6.7`](#ctrl-cc6-7) | Data in transit is protected from unauthorized disclosure | 37 | 31H · 5M · 1L |
-| [`CC6.8`](#ctrl-cc6-8) | Controls prevent or detect the introduction of malicious software | 196 | 44C · 108H · 34M · 10L |
+| [`CC6.8`](#ctrl-cc6-8) | Controls prevent or detect the introduction of malicious software | 197 | 45C · 108H · 34M · 10L |
 | [`CC7.1`](#ctrl-cc7-1) | Detection procedures identify configuration changes that introduce vulnerabilities | 49 | 8C · 14H · 12M · 14L · 1I |
 | [`CC7.2`](#ctrl-cc7-2) | System components are monitored for anomalies indicative of malicious acts or failures | 57 | 6H · 27M · 8L · 16I |
 | [`CC7.3`](#ctrl-cc7-3) | Security events are evaluated to determine if they require response | 16 | 2H · 11M · 3L |
 | [`CC7.4`](#ctrl-cc7-4) | Identified security incidents trigger a response process | 9 | 6M · 3L |
-| [`CC8.1`](#ctrl-cc8-1) | Changes to infrastructure, data, software, and procedures are authorized, designed, tested, approved, and implemented | 375 | 13C · 161H · 164M · 37L |
+| [`CC8.1`](#ctrl-cc8-1) | Changes to infrastructure, data, software, and procedures are authorized, designed, tested, approved, and implemented | 376 | 14C · 161H · 164M · 37L |
 
 ## Filter at runtime
 
@@ -499,7 +499,7 @@ pipeline_check --pipeline aws --standard soc2 --standard owasp_cicd_top_10
 
 ### CC6.8: Controls prevent or detect the introduction of malicious software { #ctrl-cc6-8 }
 
-**Evidenced by 196 checks** across 23 providers (AWS, Actions run history, Argo Workflows, Azure Cloud, Azure DevOps, Bitbucket, Buildkite, CircleCI, Cloud Build, Developer environment, Dockerfile, Drone CI, GCP, GitHub Actions, GitLab CI, Jenkins, Kubernetes, NuGet, PyPI, SCM, Tekton, maven, npm).
+**Evidenced by 197 checks** across 23 providers (AWS, Actions run history, Argo Workflows, Azure Cloud, Azure DevOps, Bitbucket, Buildkite, CircleCI, Cloud Build, Developer environment, Dockerfile, Drone CI, GCP, GitHub Actions, GitLab CI, Jenkins, Kubernetes, NuGet, PyPI, SCM, Tekton, maven, npm).
 
 | Check | Title | Severity | Provider | Fix |
 |-------|-------|----------|----------|-----|
@@ -685,6 +685,7 @@ pipeline_check --pipeline aws --standard soc2 --standard owasp_cicd_top_10
 | [`RUN-003`](../providers/runs.md#run-003) | Secret leaked in workflow run logs | <span class="pg-sev pg-sev--high">HIGH</span> | [Actions run history](../providers/runs.md) |  |
 | [`RUN-004`](../providers/runs.md#run-004) | Fork PR run minted a cloud OIDC token | <span class="pg-sev pg-sev--high">HIGH</span> | [Actions run history](../providers/runs.md) |  |
 | [`RUN-005`](../providers/runs.md#run-005) | Fork PR run executed on a self-hosted runner | <span class="pg-sev pg-sev--high">HIGH</span> | [Actions run history](../providers/runs.md) |  |
+| [`RUN-006`](../providers/runs.md#run-006) | Known-compromised action executed in run history | <span class="pg-sev pg-sev--critical">CRITICAL</span> | [Actions run history](../providers/runs.md) |  |
 | [`SCM-022`](../providers/scm_github.md#scm-022) | Repo Actions permissions allow any source (no allow-list) | <span class="pg-sev pg-sev--medium">MEDIUM</span> | [SCM](../providers/scm_github.md) |  |
 | [`TAINT-001`](../providers/github.md#taint-001) | Untrusted input flows across step boundaries via step outputs | <span class="pg-sev pg-sev--high">HIGH</span> | [GitHub Actions](../providers/github.md) |  |
 | [`TAINT-002`](../providers/github.md#taint-002) | Untrusted input flows across jobs via ``jobs.<id>.outputs:`` | <span class="pg-sev pg-sev--high">HIGH</span> | [GitHub Actions](../providers/github.md) |  |
@@ -861,7 +862,7 @@ pipeline_check --pipeline aws --standard soc2 --standard owasp_cicd_top_10
 
 ### CC8.1: Changes to infrastructure, data, software, and procedures are authorized, designed, tested, approved, and implemented { #ctrl-cc8-1 }
 
-**Evidenced by 375 checks** across 29 providers (AWS, Argo CD, Argo Workflows, Azure Cloud, Azure DevOps, Bitbucket, Buildkite, Cargo, CircleCI, Cloud Build, Composer, Dockerfile, Drone CI, GitHub Actions, GitLab CI, Go modules, Helm, Jenkins, Kubernetes, Modelfile, NuGet, OCI manifest, Pulumi, PyPI, RubyGems, SCM, Tekton, maven, npm).
+**Evidenced by 376 checks** across 30 providers (AWS, Actions run history, Argo CD, Argo Workflows, Azure Cloud, Azure DevOps, Bitbucket, Buildkite, Cargo, CircleCI, Cloud Build, Composer, Dockerfile, Drone CI, GitHub Actions, GitLab CI, Go modules, Helm, Jenkins, Kubernetes, Modelfile, NuGet, OCI manifest, Pulumi, PyPI, RubyGems, SCM, Tekton, maven, npm).
 
 | Check | Title | Severity | Provider | Fix |
 |-------|-------|----------|----------|-----|
@@ -1198,6 +1199,7 @@ pipeline_check --pipeline aws --standard soc2 --standard owasp_cicd_top_10
 | [`PYPI-019`](../providers/pypi.md#pypi-019) | Direct dependency published without PEP 740 provenance | <span class="pg-sev pg-sev--low">LOW</span> | [PyPI](../providers/pypi.md) |  |
 | [`PYPI-020`](../providers/pypi.md#pypi-020) | Direct dependency has a low OpenSSF Scorecard | <span class="pg-sev pg-sev--low">LOW</span> | [PyPI](../providers/pypi.md) |  |
 | [`PYPI-021`](../providers/pypi.md#pypi-021) | Direct dependency provenance built from a non-release ref | <span class="pg-sev pg-sev--low">LOW</span> | [PyPI](../providers/pypi.md) |  |
+| [`RUN-006`](../providers/runs.md#run-006) | Known-compromised action executed in run history | <span class="pg-sev pg-sev--critical">CRITICAL</span> | [Actions run history](../providers/runs.md) |  |
 | [`SCM-001`](../providers/scm_github.md#scm-001) | Default branch has no protection rule | <span class="pg-sev pg-sev--high">HIGH</span> | [SCM](../providers/scm_github.md) |  |
 | [`SCM-002`](../providers/scm_github.md#scm-002) | Default branch protection does not require pull request reviews | <span class="pg-sev pg-sev--high">HIGH</span> | [SCM](../providers/scm_github.md) |  |
 | [`SCM-003`](../providers/scm_github.md#scm-003) | GitHub default code scanning is not enabled | <span class="pg-sev pg-sev--medium">MEDIUM</span> | [SCM](../providers/scm_github.md) |  |

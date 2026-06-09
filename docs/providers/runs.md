@@ -26,7 +26,7 @@ pipeline_check --pipeline runs --scm-repo owner/name \
 
 ## What it covers
 
-5 checks · 0 have an autofix patch (``--fix``).
+6 checks · 0 have an autofix patch (``--fix``).
 
 | Check | Title | Severity | Fix |
 |-------|-------|----------|-----|
@@ -35,6 +35,7 @@ pipeline_check --pipeline runs --scm-repo owner/name \
 | [RUN-003](#run-003) | Secret leaked in workflow run logs | <span class="pg-sev pg-sev--high">HIGH</span> |  |
 | [RUN-004](#run-004) | Fork PR run minted a cloud OIDC token | <span class="pg-sev pg-sev--high">HIGH</span> |  |
 | [RUN-005](#run-005) | Fork PR run executed on a self-hosted runner | <span class="pg-sev pg-sev--high">HIGH</span> |  |
+| [RUN-006](#run-006) | Known-compromised action executed in run history | <span class="pg-sev pg-sev--critical">CRITICAL</span> |  |
 
 ---
 
@@ -133,6 +134,26 @@ Only evaluated with ``--audit-runs-logs``. Fetches job metadata (the Actions RES
 **Recommended action**
 
 Do not run fork pull-request code on self-hosted runners. Set the repository / org policy to require approval for first-time (and ideally all) outside-contributor workflow runs, and run any fork-triggered job on GitHub-hosted ephemeral runners instead. If self-hosted runners are required, isolate them (ephemeral / single-use VMs, a locked-down network, no standing cloud credentials) and scope them to trusted workflows only.
+
+</div>
+
+</div>
+
+<div class="pg-rule pg-rule--critical" markdown>
+
+## RUN-006: Known-compromised action executed in run history { #run-006 }
+
+<div class="pg-rule__tags">
+<span class="pg-sev pg-sev--critical">CRITICAL</span> <span class="pg-tag pg-tag--owasp">CICD-SEC-3</span> <span class="pg-tag pg-tag--owasp">CICD-SEC-4</span> <span class="pg-tag pg-tag--cwe">CWE-506</span> <span class="pg-tag pg-tag--cwe">CWE-829</span>
+</div>
+
+Only evaluated with ``--audit-runs-logs``. Scans the privileged-trigger run logs RUN-003 / RUN-004 already download for GitHub's ``Download action repository 'owner/repo@ref' (SHA:...)`` lines and matches both the pinned ref and the resolved commit SHA against the curated GHA-040 known-compromised-action registry (tj-actions/changed-files, reviewdog/action-setup, the 2026 aquasecurity / checkmarx campaigns). Matching the resolved SHA is what catches a tag-repoint: a workflow pinned to ``@v44`` whose tag was force-moved to a malicious commit. Scoped to the fetched privileged-trigger run logs (repo secrets + write token in scope), so recall is bounded to those runs; the IOC match itself is exact.
+
+<div class="pg-rule__rec" markdown>
+
+**Recommended action**
+
+Treat this as a confirmed supply-chain compromise that ran in your CI: rotate every secret and token that was in scope for the affected run(s), review what the run accessed or pushed, and pin the action to a known-good commit SHA (never a tag, which the attacker can force-move). Cross-check the cited advisory for the clean post-incident version. If the workflow still references the compromised action, fix it now (GHA-040).
 
 </div>
 

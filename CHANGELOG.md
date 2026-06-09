@@ -12,6 +12,26 @@ release commit collapses this section into `## [X.Y.Z] - <date>`.
 
 ### Added
 
+- **RUN-006: a known-compromised action actually executed in run history
+  (run forensics).** The runtime confirmation behind GHA-040. Where the
+  static rule flags a known-compromised action *reference* in the current
+  workflow, RUN-006 reads the run logs and confirms the action's
+  ``Download action repository 'owner/repo@ref' (SHA:...)`` line is
+  present, so the compromised code provably ran. It matches both the
+  pinned ref and the resolved commit SHA against the curated IOC registry
+  (tj-actions/changed-files CVE-2025-30066, reviewdog/action-setup, the
+  2026 aquasecurity / checkmarx campaigns), which catches two things the
+  static scan cannot: a **tag-repoint** (the workflow pins ``@v44`` but the
+  log shows v44 resolved to the malicious commit, the exact tj-actions
+  vector) and a **since-reverted workflow** (the bad ref was removed after
+  the fact, so GHA-040 is now clean, yet run history still records the
+  compromised execution with secrets in scope). Reads the same
+  privileged-trigger run logs RUN-003 / RUN-004 already download under
+  ``--audit-runs-logs`` (no extra fetches), scoping it to the
+  highest-impact runs (repo secrets + write-scoped token in scope); the
+  IOC match is exact, recall bounded to the fetched runs. CRITICAL. runs
+  5 -> 6. Directly addresses the roadmap's "runtime-resolved third-party
+  actions (tag-repoint detection)" run-forensics item.
 - **AC-040: prompt-injected agent commits its output with no human review
   (attack chain).** Correlates the two legs of the agentic-AI rule pack
   into a CRITICAL kill chain, across all four script-based providers. Fires
