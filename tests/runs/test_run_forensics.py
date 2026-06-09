@@ -334,3 +334,72 @@ class TestRun004ForkOidcMint:
             run = _run(1, "pull_request_target", fork=True)
             ctx = self._ctx_with_log(run, f"step\n{marker}\n")
             assert ctx.oidc_mint_runs == {1}, marker
+
+
+# ── RUN-005: fork run on a self-hosted runner (--audit-runs-logs) ────────────
+
+def _jobs(*label_lists: list[str]) -> dict:
+    return {
+        "total_count": len(label_lists),
+        "jobs": [
+            {"name": f"job{i}", "labels": labels}
+            for i, labels in enumerate(label_lists)
+        ],
+    }
+
+
+class TestRun005SelfHostedForkRun:
+    def _ctx(self, run: dict, jobs: dict | None) -> RunsContext:
+        mapping: dict = {_RUNS_PATH: {"total_count": 1, "workflow_runs": [run]}}
+        if jobs is not None:
+            mapping[f"repos/owner/r/actions/runs/{run['id']}/jobs"] = jobs
+        return RunsContext.for_repo(
+            "owner", "r", FakeFetcher(mapping), scan_logs=True,
+        )
+
+    def test_passes_with_skip_note_when_not_audited(self):
+        # Default metadata-only run must not imply job runners were checked.
+        ctx = _ctx(_run(1, "pull_request", fork=True))
+        assert ctx.logs_scanned is False
+        run005 = _for(_findings(ctx), "RUN-005")
+        assert run005 and all(f.passed for f in run005)
+        assert "not enabled" in run005[0].description
+
+    def test_fires_on_fork_run_on_self_hosted_runner(self):
+        # A plain (unprivileged) fork pull_request on a self-hosted runner:
+        # untrusted code on your infra, independent of RUN-001's privileged set.
+        run = _run(1, "pull_request", fork=True)
+        ctx = self._ctx(run, _jobs(["self-hosted", "linux", "x64"]))
+        assert ctx.self_hosted_runs == {1: "self-hosted, linux, x64"}
+        failing = [f for f in _for(_findings(ctx), "RUN-005") if not f.passed]
+        assert len(failing) == 1
+        f = failing[0]
+        assert f.severity == Severity.HIGH
+        assert "#run/1" in f.resource
+        assert "self-hosted" in f.description
+
+    def test_does_not_fire_on_github_hosted_runner(self):
+        run = _run(1, "pull_request", fork=True)
+        ctx = self._ctx(run, _jobs(["ubuntu-latest"]))
+        assert ctx.self_hosted_runs == {}
+        run005 = _for(_findings(ctx), "RUN-005")
+        assert run005 and all(f.passed for f in run005)
+        assert "No fork-originated run" in run005[0].description
+
+    def test_non_fork_run_jobs_not_fetched(self):
+        run = _run(1, "push", fork=False)
+        mapping = {
+            _RUNS_PATH: {"total_count": 1, "workflow_runs": [run]},
+            "repos/owner/r/actions/runs/1/jobs": _jobs(["self-hosted"]),
+        }
+        fetcher = FakeFetcher(mapping)
+        ctx = RunsContext.for_repo("owner", "r", fetcher, scan_logs=True)
+        assert not any("/jobs" in c for c in fetcher.calls)
+        assert ctx.self_hosted_runs == {}
+
+    def test_missing_jobs_payload_degrades_without_crashing(self):
+        run = _run(1, "pull_request", fork=True)
+        ctx = self._ctx(run, None)  # jobs endpoint returns None
+        assert ctx.self_hosted_runs == {}
+        run005 = _for(_findings(ctx), "RUN-005")
+        assert run005 and all(f.passed for f in run005)

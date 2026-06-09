@@ -750,8 +750,9 @@ product. Grouped by horizon; effort (S/M/L) and impact noted.
   what actually executed, not just what the config could: workflows that
   ran on `pull_request_target` (shipped, RUN-001/002), jobs that minted
   OIDC tokens (shipped, RUN-004: fork run minted a cloud OIDC token),
-  secret-shaped strings echoed in logs (shipped, RUN-003). Still open:
-  GitLab pipeline run logs, and runtime-resolved third-party actions. The
+  secret-shaped strings echoed in logs (shipped, RUN-003), fork code on a
+  self-hosted runner (shipped, RUN-005). Still open: GitLab pipeline run
+  logs, and runtime-resolved third-party actions (tag-repoint detection). The
   2025 tj-actions/changed-files (CVE-2025-30066) and GhostAction
   incidents were visible in run history first. Every competitor is purely
   static; this is the biggest true capability gap and the most defensible

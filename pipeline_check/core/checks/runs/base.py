@@ -34,6 +34,10 @@ DEFAULT_LOG_FETCH_LIMIT = 25
 _MAX_LOG_FILE_BYTES = 5 * 1024 * 1024
 _MAX_LOG_TOTAL_BYTES = 50 * 1024 * 1024
 
+#: Job-metadata fetch (for self-hosted-runner detection) downloads one
+#: ``.../jobs`` page per fork run, so it is bounded the same way.
+DEFAULT_JOBS_FETCH_LIMIT = 25
+
 #: Triggers that execute in the *base* repository's privileged context
 #: (repo secrets + a write-scoped ``GITHUB_TOKEN``) while potentially
 #: handling PR-controlled content. A run that actually fired on one of
@@ -111,8 +115,11 @@ class RunsContext:
     #: run_ids whose logs show a cloud OIDC token was minted (only
     #: populated when ``scan_logs=True``); RUN-004 escalates the fork subset.
     oidc_mint_runs: set[int] = field(default_factory=set)
-    #: True once log scanning was requested + attempted, so RUN-003 / RUN-004
-    #: can tell "nothing found" from "logs were never scanned".
+    #: run_id -> the self-hosted runner's joined labels, for fork runs that
+    #: executed on a self-hosted runner (only populated when ``scan_logs=True``).
+    self_hosted_runs: dict[int, str] = field(default_factory=dict)
+    #: True once deep auditing (logs + job metadata) was requested + attempted,
+    #: so RUN-003 / RUN-004 / RUN-005 can tell "nothing found" from "never run".
     logs_scanned: bool = False
 
     @property
@@ -164,6 +171,7 @@ class RunsContext:
         if scan_logs:
             ctx.logs_scanned = True
             ctx._scan_logs(fetcher, log_fetch_limit)
+            ctx._scan_jobs(fetcher, DEFAULT_JOBS_FETCH_LIMIT)
         return ctx
 
     def _scan_logs(self, fetcher: Any, fetch_limit: int) -> None:
@@ -199,6 +207,33 @@ class RunsContext:
             if oidc_minted:
                 self.oidc_mint_runs.add(run.run_id)
 
+    def _scan_jobs(self, fetcher: Any, fetch_limit: int) -> None:
+        """Fetch job metadata for fork runs to flag self-hosted-runner use.
+
+        A fork PR that ran on a self-hosted runner executed untrusted code
+        on infrastructure you own (RCE on the runner host, network pivot,
+        persistence) regardless of whether secrets were in scope, which is
+        GitHub's most-warned-about self-hosted-runner risk. The runner type
+        only appears per job (``.../jobs``), not in the run list, and GitHub
+        labels every self-hosted runner's jobs with ``self-hosted``. Bounded
+        to *fetch_limit* fork runs; a 404 / network error degrades to a skip.
+        """
+        targets = [r for r in self.runs if r.from_fork]
+        for run in targets[:fetch_limit]:
+            raw = fetcher.fetch(
+                f"repos/{self.owner}/{self.name}/actions/runs/"
+                f"{run.run_id}/jobs"
+            )
+            labels = _self_hosted_labels(raw)
+            if labels:
+                self.self_hosted_runs[run.run_id] = labels
+        if len(targets) > fetch_limit:
+            self.warnings.append(
+                f"[runs] {self.slug}: checked the {fetch_limit} most recent "
+                f"fork run(s) of {len(targets)} for self-hosted runners; "
+                "older fork runs were not fetched."
+            )
+
 
 def _to_record(entry: Any) -> RunRecord | None:
     if not isinstance(entry, dict):
@@ -233,6 +268,32 @@ def _to_record(entry: Any) -> RunRecord | None:
         html_url=_str(entry.get("html_url")),
         created_at=_str(entry.get("created_at")),
     )
+
+
+def _self_hosted_labels(raw: Any) -> str:
+    """Return the joined labels of a self-hosted runner in a ``.../jobs``
+    payload, or ``""`` when every job ran on a GitHub-hosted runner.
+
+    GitHub automatically adds the ``self-hosted`` label to every
+    self-hosted runner, so a job whose ``labels`` contain it (case
+    insensitive) ran on infrastructure the repo owner controls. Defensive
+    against a missing / malformed payload (degrades to ``""``).
+    """
+    if not isinstance(raw, dict):
+        return ""
+    jobs = raw.get("jobs")
+    if not isinstance(jobs, list):
+        return ""
+    for job in jobs:
+        if not isinstance(job, dict):
+            continue
+        labels = job.get("labels")
+        if not isinstance(labels, list):
+            continue
+        names = [str(label) for label in labels if isinstance(label, str)]
+        if any(name.lower() == "self-hosted" for name in names):
+            return ", ".join(names)
+    return ""
 
 
 def _scan_log_zip(raw: bytes) -> tuple[list[str], bool]:
