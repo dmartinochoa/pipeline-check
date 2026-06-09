@@ -424,6 +424,7 @@ providers:
   DR-004    Drone CI
   TKN-005   Tekton
   ARGO-006  Argo Workflows
+  DEV-008   Developer-environment configs (.mcp.json, devcontainer, …)
 
 Built-in detector catalog ({len(_BUILTIN_PATTERNS)} entries):
 

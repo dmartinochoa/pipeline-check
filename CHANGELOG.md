@@ -220,6 +220,15 @@ release commit collapses this section into `## [X.Y.Z] - <date>`.
 
 ### Changed
 
+- **`--verify-secrets` now covers developer-environment configs.** A
+  credential committed in a `devenv` config (DEV-008, e.g. a token in an
+  MCP server's `env` block or a devcontainer `remoteEnv`) is now
+  live-verifiable: the doc-map the verifier re-extracts raw tokens from
+  understands the devenv `WorkspaceFile`'s parsed `data` (it previously
+  only handled the workflow / pipeline / Jenkinsfile contexts), and
+  DEV-008 joined the secret-verification check set. A verified-active
+  committed token promotes to CRITICAL with its resolved identity; a
+  revoked one demotes to LOW.
 - **`--help` now leads with a "Getting started" block.** The top of
   `--help` lists the five commands a new user actually reaches for
   (auto-detect scan, `init`, `--policy pr-gate`, `explain`, `--man
