@@ -12,6 +12,19 @@ release commit collapses this section into `## [X.Y.Z] - <date>`.
 
 ### Added
 
+- **RUN-005: a fork PR's run executed on a self-hosted runner (run
+  forensics).** GitHub's most-warned-about self-hosted-runner risk,
+  confirmed live: a fork PR runs attacker-controlled code, and on a
+  self-hosted runner that code executes on infrastructure the repo owner
+  controls (command execution on the runner host, a pivot into the
+  internal network, and persistence into later jobs since self-hosted
+  runners are not ephemeral by default). It holds even on an
+  unprivileged `pull_request` trigger with no secrets, so it is
+  independent of RUN-001. Under `--audit-runs-logs`, fetches job metadata
+  (the Actions REST API `.../jobs` endpoint) for recent fork runs and
+  flags any whose jobs ran on a self-hosted runner (GitHub adds the
+  `self-hosted` label to every such runner). Detection is exact; the
+  fork-run fetch is bounded to the most recent runs. HIGH. runs 4 -> 5.
 - **RUN-004: a fork PR's run minted a cloud OIDC token (run forensics).**
   The sharpest live escalation of RUN-001 and the run-history confirmation
   of the static CI->cloud OIDC-trust link (AC-016). When a run both

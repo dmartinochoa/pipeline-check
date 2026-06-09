@@ -153,6 +153,7 @@ STANDARD = Standard(
         "RUN-002":  ["PO.5.1", "PW.9.1"],              # forensics: privileged trigger fired
         "RUN-003":  ["PO.5.1", "PW.9.1"],              # forensics: secret leaked in run logs
         "RUN-004":  ["PO.5.1", "PW.9.1"],              # forensics: fork run minted a cloud OIDC token
+        "RUN-005":  ["PO.5.1", "PW.9.1"],              # forensics: fork run on a self-hosted runner
         "GHA-003":  ["PW.6.1", "PW.9.1"],              # script injection
         "GHA-119":  ["PW.6.1", "PW.9.1"],              # untrusted context into an agentic AI CLI
         "GHA-120":  ["PW.6.1", "PW.9.1"],              # trust_remote_code model load = code exec

@@ -26,7 +26,7 @@ pipeline_check --pipeline runs --scm-repo owner/name \
 
 ## What it covers
 
-4 checks · 0 have an autofix patch (``--fix``).
+5 checks · 0 have an autofix patch (``--fix``).
 
 | Check | Title | Severity | Fix |
 |-------|-------|----------|-----|
@@ -34,6 +34,7 @@ pipeline_check --pipeline runs --scm-repo owner/name \
 | [RUN-002](#run-002) | Privileged trigger exercised in run history | <span class="pg-sev pg-sev--medium">MEDIUM</span> |  |
 | [RUN-003](#run-003) | Secret leaked in workflow run logs | <span class="pg-sev pg-sev--high">HIGH</span> |  |
 | [RUN-004](#run-004) | Fork PR run minted a cloud OIDC token | <span class="pg-sev pg-sev--high">HIGH</span> |  |
+| [RUN-005](#run-005) | Fork PR run executed on a self-hosted runner | <span class="pg-sev pg-sev--high">HIGH</span> |  |
 
 ---
 
@@ -112,6 +113,26 @@ Only evaluated with ``--audit-runs-logs``. Reuses the privileged-trigger run log
 **Recommended action**
 
 Treat this as untrusted code that reached cloud federation: rotate / review the federated role's recent activity and assume the run could act as that role. Restrict the role's trust policy so a fork / PR ref cannot assume it (pin the subject to your protected branches and environments), and move any OIDC-authenticated step out of the privileged ``pull_request_target`` / ``workflow_run`` path that handles PR content (the label-then-deploy pattern).
+
+</div>
+
+</div>
+
+<div class="pg-rule pg-rule--high" markdown>
+
+## RUN-005: Fork PR run executed on a self-hosted runner { #run-005 }
+
+<div class="pg-rule__tags">
+<span class="pg-sev pg-sev--high">HIGH</span> <span class="pg-tag pg-tag--owasp">CICD-SEC-4</span> <span class="pg-tag pg-tag--cwe">CWE-94</span>
+</div>
+
+Only evaluated with ``--audit-runs-logs``. Fetches job metadata (the Actions REST API ``.../jobs`` endpoint) for recent fork-originated runs and flags any whose jobs ran on a self-hosted runner (GitHub adds the ``self-hosted`` label to every such runner). Independent of the trigger, so it catches a plain fork ``pull_request`` run on your own infrastructure. The fork-run fetch is bounded to the most recent runs.
+
+<div class="pg-rule__rec" markdown>
+
+**Recommended action**
+
+Do not run fork pull-request code on self-hosted runners. Set the repository / org policy to require approval for first-time (and ideally all) outside-contributor workflow runs, and run any fork-triggered job on GitHub-hosted ephemeral runners instead. If self-hosted runners are required, isolate them (ephemeral / single-use VMs, a locked-down network, no standing cloud credentials) and scope them to trusted workflows only.
 
 </div>
 

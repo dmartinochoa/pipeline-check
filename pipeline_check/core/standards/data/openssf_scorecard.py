@@ -228,6 +228,7 @@ STANDARD = Standard(
         "RUN-002":  ["Dangerous-Workflow"],
         "RUN-003":  ["Dangerous-Workflow"],
         "RUN-004":  ["Dangerous-Workflow"],
+        "RUN-005":  ["Dangerous-Workflow"],
         "GHA-003":  ["Dangerous-Workflow"],
         "GHA-119":  ["Dangerous-Workflow"],# untrusted context into an agentic AI CLI
         "GHA-120":  ["Dangerous-Workflow"],# trust_remote_code model load = code exec
