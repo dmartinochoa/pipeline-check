@@ -434,6 +434,7 @@ STANDARD = Standard(
         # ── Jenkins ─────────────────────────────────────────────
         "JF-001":   ["PW.4.1", "PW.4.4"],              # shared library not pinned
         "JF-002":   ["PW.6.1", "PW.9.1"],              # script step untrusted env
+        "JF-037":   ["PW.6.1", "PW.9.1"],              # agentic CLI ingests untrusted context (prompt injection)
         "JF-003":   ["PO.5.1"],                        # agent any (no executor isolation)
         "JF-004":   ["PS.1.1"],                        # AWS long-lived keys via withCredentials
         "JF-005":   ["PO.5.1"],                        # deploy stage missing manual input

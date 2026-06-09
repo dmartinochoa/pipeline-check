@@ -289,6 +289,7 @@ STANDARD = Standard(
         "ADO-026":  ["PR.PS-05"],
         "ADO-027":  ["PR.PS-05"],
         "JF-002":   ["PR.PS-05"],
+        "JF-037":   ["PR.PS-05"],   # agentic CLI ingests untrusted context (prompt injection)
         "JF-012":   ["PR.PS-05"],
         "JF-016":   ["PR.PS-05"],
         "JF-019":   ["PR.PS-05"],

@@ -105,6 +105,7 @@ STANDARD = Standard(
         "ADO-026":  ["4.1.3"],
         "ADO-027":  ["4.1.3"],
         "JF-002":   ["4.1.3"],
+        "JF-037":   ["4.1.3"],   # agentic CLI ingests untrusted context (prompt injection)
         "JF-016":   ["4.1.3"],
         "JF-029":   ["4.1.3"],
         "JF-030":   ["4.1.3"],

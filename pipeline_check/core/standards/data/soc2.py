@@ -187,6 +187,7 @@ STANDARD = Standard(
         "ADO-026":  ["CC6.8"],
         "ADO-027":  ["CC6.8"],
         "JF-002":   ["CC6.8"],
+        "JF-037":   ["CC6.8"],   # agentic CLI ingests untrusted context (prompt injection)
         "JF-016":   ["CC6.8"],
         "JF-020":   ["CC6.8"],
         "JF-029":   ["CC6.8"],

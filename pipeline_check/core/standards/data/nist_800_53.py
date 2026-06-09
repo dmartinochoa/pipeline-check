@@ -412,6 +412,7 @@ STANDARD = Standard(
         "JF-034":   ["IA-5", "SC-28"],                   # password() build parameter
         "JF-035":   ["SC-8", "SC-13"],                   # httpRequest ignoreSslErrors
         "JF-002":   ["CM-6", "SA-11"],                   # script step untrusted env
+        "JF-037":   ["CM-6", "SA-11"],                   # agentic CLI ingests untrusted context (prompt injection)
         "JF-003":   ["AC-6", "CM-6"],                    # agent any (no executor isolation)
         "JF-005":   ["SA-10", "SA-15"],                  # deploy stage missing manual input
         "JF-006":   ["SI-7", "SR-4"],                    # artifacts not signed

@@ -465,6 +465,7 @@ CASES: list[CheckCase] = [
     CheckCase("JF-034", "CICD-SEC-6"),
     CheckCase("JF-035", "CICD-SEC-3"),
     CheckCase("JF-036", "CICD-SEC-4", ("ESF-D-INJECTION",)),
+    CheckCase("JF-037", "CICD-SEC-4", ("ESF-D-INJECTION",)),
     # Category 3 — reusable-workflow / template pinning
     CheckCase("GHA-025", "CICD-SEC-3", ("ESF-S-PIN-DEPS", "ESF-S-VERIFY-DEPS")),
     CheckCase("ADO-025", "CICD-SEC-3", ("ESF-S-PIN-DEPS", "ESF-S-VERIFY-DEPS")),

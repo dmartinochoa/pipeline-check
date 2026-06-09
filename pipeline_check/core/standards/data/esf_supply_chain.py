@@ -250,6 +250,7 @@ STANDARD = Standard(
         # ── Jenkins ────────────────────────────────────────────────
         "JF-001":   ["ESF-S-PIN-DEPS", "ESF-S-VERIFY-DEPS"],
         "JF-002":   ["ESF-D-INJECTION"],
+        "JF-037":   ["ESF-D-INJECTION"],   # agentic CLI ingests untrusted context (prompt injection)
         "JF-003":   ["ESF-D-BUILD-ENV", "ESF-D-PRIV-BUILD"],
         "JF-004":   ["ESF-D-TOKEN-HYGIENE"],
         "JF-005":   ["ESF-C-APPROVAL"],

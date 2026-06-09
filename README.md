@@ -134,7 +134,7 @@ for inputs, idempotency, and fork-PR fallback behavior.
 | **GitLab CI** | `.gitlab-ci.yml` | `--gitlab-path` | 51 checks · `GL-001..049` + `TAINT-004`/`008` · `CI_JOB_TOKEN` cross-project scope, DinD TLS bypass, debug-trace secret leaks, MR-pipeline IaC apply + prod deploy, disabled native scanners, `trust_remote_code` + unpinned + pickle model loads, agentic-CLI prompt injection + autoland, mutable `include: component:` |
 | **Bitbucket Pipelines** | `bitbucket-pipelines.yml` | `--bitbucket-path` | 39 checks · `BB-001..039` · PR-pipeline IaC apply + prod deploy, `trust_remote_code` model loads, untrusted PR context into an agentic AI CLI, unsafe pickle deserialization, unpinned model pulls, agentic-CLI output pushed without review |
 | **Azure DevOps** | `azure-pipelines.yml` | `--azure-path` | 38 checks · `ADO-001..038` · incl. IaC apply on a PR-validated pipeline, `trust_remote_code` model loads, untrusted PR context into an agentic AI CLI, unsafe pickle deserialization, unpinned model pulls, agentic-CLI output pushed without review |
-| **Jenkins** | `Jenkinsfile` (Declarative / Scripted) | `--jenkinsfile-path` | 36 checks · `JF-001..036` |
+| **Jenkins** | `Jenkinsfile` (Declarative / Scripted) | `--jenkinsfile-path` | 37 checks · `JF-001..037` · incl. untrusted PR/build context into an agentic AI CLI |
 | **CircleCI** | `.circleci/config.yml` | `--circleci-path` | 33 checks · `CC-001..033` · incl. Go-module-verification bypass |
 | **Google Cloud Build** | `cloudbuild.yaml` | `--cloudbuild-path` | 27 checks · `GCB-001..027` |
 | **Buildkite** | `.buildkite/pipeline.yml` | `--buildkite-path` | 17 checks · `BK-001..016` + `TAINT-005` |
@@ -534,7 +534,7 @@ pipeline_check/
         ├── gitlab/rules/      # GL-001 .. GL-049 + TAINT-004 / TAINT-008
         ├── bitbucket/rules/   # BB-001 .. BB-039
         ├── azure/rules/       # ADO-001 .. ADO-038
-        ├── jenkins/rules/     # JF-001 .. JF-036
+        ├── jenkins/rules/     # JF-001 .. JF-037
         ├── circleci/rules/    # CC-001 .. CC-033
         ├── cloudbuild/rules/  # GCB-001 .. GCB-027
         ├── buildkite/rules/   # BK-001 .. BK-016 + TAINT-005

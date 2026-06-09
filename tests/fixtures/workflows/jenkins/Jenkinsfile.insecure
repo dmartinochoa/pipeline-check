@@ -39,6 +39,8 @@ pipeline {
                 // JF-036 — build parameter spliced into a double-quoted sh.
                 sh "make ${params.BUILD_TARGET}"
                 sh "make build"
+                // JF-037 — untrusted PR context fed into an agentic AI CLI prompt.
+                sh "claude -p 'Triage this PR titled ${env.CHANGE_TITLE}'"
                 // JF-013 -- ingests build output from another job
                 // with no integrity check.
                 copyArtifacts(projectName: 'platform-build', filter: 'dist/*')
