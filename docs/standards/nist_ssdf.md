@@ -20,7 +20,7 @@ risk language.
 
 - **Controls in this standard:** 13
 - **Controls evidenced by at least one check:** 13 / 13
-- **Distinct checks evidencing this standard:** 897
+- **Distinct checks evidencing this standard:** 901
 - **Of those, autofixable with `--fix`:** 111
 
 _Severity levels (`CRITICAL` / `HIGH` / `MEDIUM` / `LOW` / `INFO`) follow the same scale across every provider and standard. See [How to read severity](README.md#how-to-read-severity) on the standards overview for the definitions._
@@ -39,8 +39,8 @@ Click a control ID to jump to the per-control section with the full check list. 
 | [`PS.2.1`](#ctrl-ps-2-1) | Make software integrity verification information available to acquirers | 36 | 11H · 25M |
 | [`PS.3.1`](#ctrl-ps-3-1) | Securely archive the necessary files and data for each software release | 11 | 5H · 5M · 1I |
 | [`PS.3.2`](#ctrl-ps-3-2) | Collect, safeguard, maintain, and share provenance data for releases | 58 | 12H · 39M · 7L |
-| [`PW.4.1`](#ctrl-pw-4-1) | Acquire and maintain well-secured 3rd-party software components | 129 | 11C · 71H · 41M · 6L |
-| [`PW.4.4`](#ctrl-pw-4-4) | Verify that acquired components are what is expected and behave as expected | 259 | 20C · 150H · 84M · 5L |
+| [`PW.4.1`](#ctrl-pw-4-1) | Acquire and maintain well-secured 3rd-party software components | 133 | 11C · 71H · 44M · 7L |
+| [`PW.4.4`](#ctrl-pw-4-4) | Verify that acquired components are what is expected and behave as expected | 263 | 20C · 150H · 87M · 6L |
 | [`PW.6.1`](#ctrl-pw-6-1) | Use compiler, interpreter, and build tool features to improve security | 58 | 11C · 38H · 3M · 6L |
 | [`PW.9.1`](#ctrl-pw-9-1) | Configure software to have secure settings by default | 177 | 31C · 98H · 39M · 9L |
 | [`RV.1.1`](#ctrl-rv-1-1) | Gather information about potential vulnerabilities in released software | 66 | 18C · 19H · 23M · 6L |
@@ -765,7 +765,7 @@ pipeline_check --pipeline aws --standard nist_ssdf --standard owasp_cicd_top_10
 
 ### PW.4.1: Acquire and maintain well-secured 3rd-party software components { #ctrl-pw-4-1 }
 
-**Evidenced by 129 checks** across 22 providers (AWS, Argo Workflows, Azure Cloud, Azure DevOps, Bitbucket, Buildkite, CircleCI, Cloud Build, Developer environment, Dockerfile, Drone CI, GitHub Actions, GitLab CI, Helm, Jenkins, Kubernetes, NuGet, PyPI, SCM, Tekton, maven, npm).
+**Evidenced by 133 checks** across 23 providers (AWS, Argo Workflows, Azure Cloud, Azure DevOps, Bitbucket, Buildkite, CircleCI, Cloud Build, Developer environment, Dockerfile, Drone CI, GitHub Actions, GitLab CI, Helm, Jenkins, Kubernetes, Modelfile, NuGet, PyPI, SCM, Tekton, maven, npm).
 
 | Check | Title | Severity | Provider | Fix |
 |-------|-------|----------|----------|-----|
@@ -857,6 +857,10 @@ pipeline_check --pipeline aws --standard nist_ssdf --standard owasp_cicd_top_10
 | [`JF-031`](../providers/jenkins.md#jf-031) | Package install bypasses registry integrity (git / path / tarball source) | <span class="pg-sev pg-sev--medium">MEDIUM</span> | [Jenkins](../providers/jenkins.md) |  |
 | [`K8S-001`](../providers/kubernetes.md#k8s-001) | Container image not pinned by sha256 digest | <span class="pg-sev pg-sev--high">HIGH</span> | [Kubernetes](../providers/kubernetes.md) | <span class="pg-fix" title="`--fix` will patch this rule">🔧 fix</span> |
 | [`K8S-036`](../providers/kubernetes.md#k8s-036) | ServiceAccount imagePullSecrets references missing Secret | <span class="pg-sev pg-sev--medium">MEDIUM</span> | [Kubernetes](../providers/kubernetes.md) |  |
+| [`MODEL-001`](../providers/modelfile.md#model-001) | Base model pulled without a pinned reference | <span class="pg-sev pg-sev--medium">MEDIUM</span> | [Modelfile](../providers/modelfile.md) |  |
+| [`MODEL-002`](../providers/modelfile.md#model-002) | Base model pulled from a third-party hub | <span class="pg-sev pg-sev--medium">MEDIUM</span> | [Modelfile](../providers/modelfile.md) |  |
+| [`MODEL-003`](../providers/modelfile.md#model-003) | Base model loaded from a local unverified weights blob | <span class="pg-sev pg-sev--low">LOW</span> | [Modelfile](../providers/modelfile.md) |  |
+| [`MODEL-004`](../providers/modelfile.md#model-004) | LoRA adapter applied from a remote source | <span class="pg-sev pg-sev--medium">MEDIUM</span> | [Modelfile](../providers/modelfile.md) |  |
 | [`MVN-001`](../providers/maven.md#mvn-001) | pom.xml dependency uses a floating version range | <span class="pg-sev pg-sev--medium">MEDIUM</span> | [maven](../providers/maven.md) |  |
 | [`MVN-002`](../providers/maven.md#mvn-002) | pom.xml depends on a mutable SNAPSHOT version | <span class="pg-sev pg-sev--medium">MEDIUM</span> | [maven](../providers/maven.md) |  |
 | [`MVN-003`](../providers/maven.md#mvn-003) | pom.xml declares a plaintext-HTTP Maven repository | <span class="pg-sev pg-sev--high">HIGH</span> | [maven](../providers/maven.md) |  |
@@ -901,7 +905,7 @@ pipeline_check --pipeline aws --standard nist_ssdf --standard owasp_cicd_top_10
 
 ### PW.4.4: Verify that acquired components are what is expected and behave as expected { #ctrl-pw-4-4 }
 
-**Evidenced by 259 checks** across 29 providers (AWS, Argo Workflows, Azure Cloud, Azure DevOps, Bitbucket, Buildkite, Cargo, CircleCI, Cloud Build, Composer, Developer environment, Dockerfile, Drone CI, GCP, GitHub Actions, GitLab CI, Go modules, Helm, Jenkins, Kubernetes, NuGet, OCI manifest, Pulumi, PyPI, RubyGems, SCM, Tekton, maven, npm).
+**Evidenced by 263 checks** across 30 providers (AWS, Argo Workflows, Azure Cloud, Azure DevOps, Bitbucket, Buildkite, Cargo, CircleCI, Cloud Build, Composer, Developer environment, Dockerfile, Drone CI, GCP, GitHub Actions, GitLab CI, Go modules, Helm, Jenkins, Kubernetes, Modelfile, NuGet, OCI manifest, Pulumi, PyPI, RubyGems, SCM, Tekton, maven, npm).
 
 | Check | Title | Severity | Provider | Fix |
 |-------|-------|----------|----------|-----|
@@ -1094,6 +1098,10 @@ pipeline_check --pipeline aws --standard nist_ssdf --standard owasp_cicd_top_10
 | [`JF-031`](../providers/jenkins.md#jf-031) | Package install bypasses registry integrity (git / path / tarball source) | <span class="pg-sev pg-sev--medium">MEDIUM</span> | [Jenkins](../providers/jenkins.md) |  |
 | [`JF-035`](../providers/jenkins.md#jf-035) | httpRequest step disables SSL verification | <span class="pg-sev pg-sev--high">HIGH</span> | [Jenkins](../providers/jenkins.md) |  |
 | [`K8S-001`](../providers/kubernetes.md#k8s-001) | Container image not pinned by sha256 digest | <span class="pg-sev pg-sev--high">HIGH</span> | [Kubernetes](../providers/kubernetes.md) | <span class="pg-fix" title="`--fix` will patch this rule">🔧 fix</span> |
+| [`MODEL-001`](../providers/modelfile.md#model-001) | Base model pulled without a pinned reference | <span class="pg-sev pg-sev--medium">MEDIUM</span> | [Modelfile](../providers/modelfile.md) |  |
+| [`MODEL-002`](../providers/modelfile.md#model-002) | Base model pulled from a third-party hub | <span class="pg-sev pg-sev--medium">MEDIUM</span> | [Modelfile](../providers/modelfile.md) |  |
+| [`MODEL-003`](../providers/modelfile.md#model-003) | Base model loaded from a local unverified weights blob | <span class="pg-sev pg-sev--low">LOW</span> | [Modelfile](../providers/modelfile.md) |  |
+| [`MODEL-004`](../providers/modelfile.md#model-004) | LoRA adapter applied from a remote source | <span class="pg-sev pg-sev--medium">MEDIUM</span> | [Modelfile](../providers/modelfile.md) |  |
 | [`MVN-001`](../providers/maven.md#mvn-001) | pom.xml dependency uses a floating version range | <span class="pg-sev pg-sev--medium">MEDIUM</span> | [maven](../providers/maven.md) |  |
 | [`MVN-002`](../providers/maven.md#mvn-002) | pom.xml depends on a mutable SNAPSHOT version | <span class="pg-sev pg-sev--medium">MEDIUM</span> | [maven](../providers/maven.md) |  |
 | [`MVN-003`](../providers/maven.md#mvn-003) | pom.xml declares a plaintext-HTTP Maven repository | <span class="pg-sev pg-sev--high">HIGH</span> | [maven](../providers/maven.md) |  |

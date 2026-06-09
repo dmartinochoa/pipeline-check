@@ -628,6 +628,10 @@ STANDARD = Standard(
         # includes, and packages. ``FROM image:tag`` without a
         # digest is the canonical image-not-pinned failure.
         "DF-001": ["Pinned-Dependencies"],                              # FROM not digest-pinned
+        "MODEL-001": ["Pinned-Dependencies"],                           # unpinned base model
+        "MODEL-002": ["Pinned-Dependencies"],                           # third-party hub base model
+        "MODEL-003": ["Pinned-Dependencies"],                           # local unverified weights blob
+        "MODEL-004": ["Pinned-Dependencies"],                           # remote LoRA adapter
         "DF-031": ["Pinned-Dependencies"],                              # COPY --from external image not digest-pinned
         "DF-003": ["Pinned-Dependencies"],                              # ADD remote no integrity
         "DF-004": ["Pinned-Dependencies", "Dangerous-Workflow"],        # curl-pipe

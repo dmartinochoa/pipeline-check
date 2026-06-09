@@ -192,7 +192,7 @@ class _GroupedCommand(click.Command):
             "--drone-path", "--npm-path", "--pypi-path",
             "--maven-path", "--nuget-path", "--gomod-path",
             "--cargo-path", "--pulumi-path", "--composer-path",
-            "--rubygems-path", "--devenv-path",
+            "--rubygems-path", "--devenv-path", "--modelfile-path",
         })),
         ("Filtering", frozenset({
             "--checks", "--severity-threshold", "--min-confidence",
@@ -679,6 +679,7 @@ _PROVIDER_PATH_KWARG: dict[str, str] = {
     "argocd": "argocd_path",
     "cloudformation": "cfn_template",
     "dockerfile": "dockerfile_path",
+    "modelfile": "modelfile_path",
     "kubernetes": "k8s_path",
     "helm": "helm_path",
     "terraform": "tf_source",
@@ -1490,6 +1491,16 @@ def _install_completion_callback(
         "--pipeline devenv). Defaults to the current directory and "
         "discovers the editor / agent / container configs that "
         "auto-execute on repo open."
+    ),
+)
+@click.option(
+    "--modelfile-path",
+    default=None,
+    metavar="PATH",
+    help=(
+        "Path to an Ollama Modelfile or a directory containing one "
+        "(used when --pipeline modelfile). Defaults to the current "
+        "directory and discovers Modelfile / *.Modelfile declarations."
     ),
 )
 @click.option(
@@ -2396,6 +2407,7 @@ def scan(
     rubygems_path: str | None,
     pulumi_path: str | None,
     devenv_path: str | None,
+    modelfile_path: str | None,
     helm_values: tuple[str, ...],
     helm_set: tuple[str, ...],
     oci_manifest: str | None,
@@ -2749,6 +2761,7 @@ def scan(
         rubygems_path=_paths.rubygems_path,
         pulumi_path=_paths.pulumi_path,
         devenv_path=devenv_path,
+        modelfile_path=modelfile_path,
         scm_platform=scm_platform,
         scm_repo=scm_repo,
         scm_fixture_dir=scm_fixture_dir,
@@ -4670,6 +4683,7 @@ _INIT_SCANNER_KWARGS: dict[str, tuple[str, tuple[str, ...]]] = {
     ),
     "drone": ("drone_path", (".drone.yml", ".drone.yaml")),
     "dockerfile": ("dockerfile_path", ("Dockerfile", "Containerfile")),
+    "modelfile": ("modelfile_path", ("Modelfile",)),
     "kubernetes": ("k8s_path", ("kubernetes", "k8s", "manifests")),
     "helm": ("helm_path", (".",)),
     "devenv": ("devenv_path", (".",)),

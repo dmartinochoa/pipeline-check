@@ -605,6 +605,10 @@ STANDARD = Standard(
         # Dockerfile, image build choices evidence supply-chain (SR)
         # and configuration (CM) controls primarily.
         "DF-001":   ["SR-3", "SR-11", "SI-2"],           # FROM not digest-pinned
+        "MODEL-001": ["SR-3", "SR-11", "SI-2"],          # unpinned base model
+        "MODEL-002": ["SR-3", "SR-11", "SI-2"],          # third-party hub base model
+        "MODEL-003": ["SR-3", "SR-11", "SI-2"],          # local unverified weights blob
+        "MODEL-004": ["SR-3", "SR-11", "SI-2"],          # remote LoRA adapter
         "DF-031":   ["SR-3", "SR-11", "SI-2"],           # COPY --from external image not digest-pinned
         "DF-002":   ["AC-6", "CM-6"],                    # no USER
         "DF-003":   ["SR-3", "SR-11", "SI-7"],           # ADD URL no checksum

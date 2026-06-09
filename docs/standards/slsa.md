@@ -20,7 +20,7 @@ the source-control side of the chain.
 
 - **Controls in this standard:** 7
 - **Controls evidenced by at least one check:** 6 / 7
-- **Distinct checks evidencing this standard:** 642
+- **Distinct checks evidencing this standard:** 646
 - **Of those, autofixable with `--fix`:** 92
 
 _Severity levels (`CRITICAL` / `HIGH` / `MEDIUM` / `LOW` / `INFO`) follow the same scale across every provider and standard. See [How to read severity](README.md#how-to-read-severity) on the standards overview for the definitions._
@@ -37,7 +37,7 @@ Click a control ID to jump to the per-control section with the full check list. 
 | [`Build.L2.Signed`](#ctrl-build-l2-signed) | Build L2: Provenance is authenticated and cannot be forged by tenants | 43 | 8H · 32M · 3L |
 | [`Build.L3.Isolated`](#ctrl-build-l3-isolated) | Build L3: Build runs in an isolated environment not influenced by other builds | 196 | 30C · 120H · 41M · 5L |
 | [`Build.L3.Ephemeral`](#ctrl-build-l3-ephemeral) | Build L3: Build environment is ephemeral and provisioned fresh for each run | 21 | 2H · 14M · 5L |
-| [`Build.L3.NonFalsifiable`](#ctrl-build-l3-nonfalsifiable) | Build L3: Provenance cannot be falsified by the build's own tenant | 402 | 48C · 205H · 134M · 14L · 1I |
+| [`Build.L3.NonFalsifiable`](#ctrl-build-l3-nonfalsifiable) | Build L3: Provenance cannot be falsified by the build's own tenant | 406 | 48C · 205H · 137M · 15L · 1I |
 
 ## Filter at runtime
 
@@ -423,7 +423,7 @@ Build environments are provisioned per run and torn down after, so a compromised
 
 The build platform's provenance signature is bound to inputs the tenant cannot influence (e.g. a backend-controlled identity), so a tenant-controlled compromise cannot mint forged provenance.
 
-**Evidenced by 402 checks** across 26 providers (AWS, Argo Workflows, Azure Cloud, Azure DevOps, Bitbucket, Buildkite, CircleCI, Cloud Build, CloudFormation, Composer, Dockerfile, Drone CI, GCP, GitHub Actions, GitLab CI, Helm, Jenkins, NuGet, OCI manifest, PyPI, RubyGems, SCM, Tekton, Terraform, maven, npm).
+**Evidenced by 406 checks** across 27 providers (AWS, Argo Workflows, Azure Cloud, Azure DevOps, Bitbucket, Buildkite, CircleCI, Cloud Build, CloudFormation, Composer, Dockerfile, Drone CI, GCP, GitHub Actions, GitLab CI, Helm, Jenkins, Modelfile, NuGet, OCI manifest, PyPI, RubyGems, SCM, Tekton, Terraform, maven, npm).
 
 | Check | Title | Severity | Provider | Fix |
 |-------|-------|----------|----------|-----|
@@ -735,6 +735,10 @@ The build platform's provenance signature is bound to inputs the tenant cannot i
 | [`JF-033`](../providers/jenkins.md#jf-033) | withCredentials secret leaked via Groovy ${...} interpolation in sh step | <span class="pg-sev pg-sev--high">HIGH</span> | [Jenkins](../providers/jenkins.md) |  |
 | [`JF-034`](../providers/jenkins.md#jf-034) | Pipeline declares a password() build parameter | <span class="pg-sev pg-sev--high">HIGH</span> | [Jenkins](../providers/jenkins.md) |  |
 | [`JF-035`](../providers/jenkins.md#jf-035) | httpRequest step disables SSL verification | <span class="pg-sev pg-sev--high">HIGH</span> | [Jenkins](../providers/jenkins.md) |  |
+| [`MODEL-001`](../providers/modelfile.md#model-001) | Base model pulled without a pinned reference | <span class="pg-sev pg-sev--medium">MEDIUM</span> | [Modelfile](../providers/modelfile.md) |  |
+| [`MODEL-002`](../providers/modelfile.md#model-002) | Base model pulled from a third-party hub | <span class="pg-sev pg-sev--medium">MEDIUM</span> | [Modelfile](../providers/modelfile.md) |  |
+| [`MODEL-003`](../providers/modelfile.md#model-003) | Base model loaded from a local unverified weights blob | <span class="pg-sev pg-sev--low">LOW</span> | [Modelfile](../providers/modelfile.md) |  |
+| [`MODEL-004`](../providers/modelfile.md#model-004) | LoRA adapter applied from a remote source | <span class="pg-sev pg-sev--medium">MEDIUM</span> | [Modelfile](../providers/modelfile.md) |  |
 | [`MVN-001`](../providers/maven.md#mvn-001) | pom.xml dependency uses a floating version range | <span class="pg-sev pg-sev--medium">MEDIUM</span> | [maven](../providers/maven.md) |  |
 | [`MVN-002`](../providers/maven.md#mvn-002) | pom.xml depends on a mutable SNAPSHOT version | <span class="pg-sev pg-sev--medium">MEDIUM</span> | [maven](../providers/maven.md) |  |
 | [`MVN-003`](../providers/maven.md#mvn-003) | pom.xml declares a plaintext-HTTP Maven repository | <span class="pg-sev pg-sev--high">HIGH</span> | [maven](../providers/maven.md) |  |

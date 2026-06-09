@@ -363,6 +363,10 @@ STANDARD = Standard(
         # tracking and updating OSS; REB-2 / REB-3 cover signing
         # and SBOMs of produced artifacts.
         "DF-001":  ["ING-1", "UPD-1"],   # FROM not digest-pinned
+        "MODEL-001": ["ING-1", "UPD-1"],  # unpinned base model
+        "MODEL-002": ["ING-1", "UPD-1"],  # third-party hub base model
+        "MODEL-003": ["ING-1", "UPD-1"],  # local unverified weights blob
+        "MODEL-004": ["ING-1", "UPD-1"],  # remote LoRA adapter
         "DF-031":  ["ING-1", "UPD-1"],   # COPY --from external image not digest-pinned
         "DF-003":  ["ING-1", "UPD-1"],   # ADD remote no integrity
         "DF-004":  ["ING-1"],            # curl-pipe

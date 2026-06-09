@@ -12,7 +12,7 @@ for taking a third-party dependency safely.
 
 - **Controls in this standard:** 11
 - **Controls evidenced by at least one check:** 11 / 11
-- **Distinct checks evidencing this standard:** 374
+- **Distinct checks evidencing this standard:** 378
 - **Of those, autofixable with `--fix`:** 41
 
 _Severity levels (`CRITICAL` / `HIGH` / `MEDIUM` / `LOW` / `INFO`) follow the same scale across every provider and standard. See [How to read severity](README.md#how-to-read-severity) on the standards overview for the definitions._
@@ -23,11 +23,11 @@ Click a control ID to jump to the per-control section with the full check list. 
 
 | Control | Title | Checks | Severity mix |
 |---------|-------|-------:|--------------|
-| [`ING-1`](#ctrl-ing-1) | L1: Use package managers trusted by your organization | 81 | 1C · 62H · 17M · 1L |
+| [`ING-1`](#ctrl-ing-1) | L1: Use package managers trusted by your organization | 85 | 1C · 62H · 20M · 2L |
 | [`ING-3`](#ctrl-ing-3) | L1: Have the capability to deny-list specific vulnerable / malicious OSS | 29 | 10C · 15H · 4M |
 | [`SCA-1`](#ctrl-sca-1) | L1: Scan OSS for known vulnerabilities | 16 | 3H · 13M |
 | [`SCA-3`](#ctrl-sca-3) | L2: Scan OSS for malware | 36 | 18C · 12H · 6M |
-| [`UPD-1`](#ctrl-upd-1) | L1: Update vulnerable OSS manually (pin + track versions) | 81 | 46H · 29M · 6L |
+| [`UPD-1`](#ctrl-upd-1) | L1: Update vulnerable OSS manually (pin + track versions) | 85 | 46H · 32M · 7L |
 | [`UPD-2`](#ctrl-upd-2) | L3: Enable automated OSS updates (Dependabot / Renovate) | 6 | 6M |
 | [`ENF-1`](#ctrl-enf-1) | L2: Enforce security policy of OSS usage (block on violation) | 66 | 4C · 26H · 33M · 2L · 1I |
 | [`ENF-2`](#ctrl-enf-2) | L2: Break the build when a violation is detected | 26 | 5H · 20M · 1L |
@@ -54,7 +54,7 @@ pipeline_check --pipeline aws --standard s2c2f --standard owasp_cicd_top_10
 
 ### ING-1: L1: Use package managers trusted by your organization { #ctrl-ing-1 }
 
-**Evidenced by 81 checks** across 22 providers (AWS, Argo Workflows, Azure Cloud, Azure DevOps, Bitbucket, Buildkite, CircleCI, Cloud Build, Composer, Dockerfile, Drone CI, GCP, GitHub Actions, GitLab CI, Helm, Jenkins, NuGet, PyPI, RubyGems, Tekton, maven, npm).
+**Evidenced by 85 checks** across 23 providers (AWS, Argo Workflows, Azure Cloud, Azure DevOps, Bitbucket, Buildkite, CircleCI, Cloud Build, Composer, Dockerfile, Drone CI, GCP, GitHub Actions, GitLab CI, Helm, Jenkins, Modelfile, NuGet, PyPI, RubyGems, Tekton, maven, npm).
 
 | Check | Title | Severity | Provider | Fix |
 |-------|-------|----------|----------|-----|
@@ -116,6 +116,10 @@ pipeline_check --pipeline aws --standard s2c2f --standard owasp_cicd_top_10
 | [`JF-023`](../providers/jenkins.md#jf-023) | TLS / certificate verification bypass | <span class="pg-sev pg-sev--high">HIGH</span> | [Jenkins](../providers/jenkins.md) | <span class="pg-fix" title="`--fix` will patch this rule">🔧 fix</span> |
 | [`JF-031`](../providers/jenkins.md#jf-031) | Package install bypasses registry integrity (git / path / tarball source) | <span class="pg-sev pg-sev--medium">MEDIUM</span> | [Jenkins](../providers/jenkins.md) |  |
 | [`JF-035`](../providers/jenkins.md#jf-035) | httpRequest step disables SSL verification | <span class="pg-sev pg-sev--high">HIGH</span> | [Jenkins](../providers/jenkins.md) |  |
+| [`MODEL-001`](../providers/modelfile.md#model-001) | Base model pulled without a pinned reference | <span class="pg-sev pg-sev--medium">MEDIUM</span> | [Modelfile](../providers/modelfile.md) |  |
+| [`MODEL-002`](../providers/modelfile.md#model-002) | Base model pulled from a third-party hub | <span class="pg-sev pg-sev--medium">MEDIUM</span> | [Modelfile](../providers/modelfile.md) |  |
+| [`MODEL-003`](../providers/modelfile.md#model-003) | Base model loaded from a local unverified weights blob | <span class="pg-sev pg-sev--low">LOW</span> | [Modelfile](../providers/modelfile.md) |  |
+| [`MODEL-004`](../providers/modelfile.md#model-004) | LoRA adapter applied from a remote source | <span class="pg-sev pg-sev--medium">MEDIUM</span> | [Modelfile](../providers/modelfile.md) |  |
 | [`MVN-003`](../providers/maven.md#mvn-003) | pom.xml declares a plaintext-HTTP Maven repository | <span class="pg-sev pg-sev--high">HIGH</span> | [maven](../providers/maven.md) |  |
 | [`MVN-007`](../providers/maven.md#mvn-007) | settings.xml mirror routes external traffic through one repo | <span class="pg-sev pg-sev--medium">MEDIUM</span> | [maven](../providers/maven.md) |  |
 | [`NPM-003`](../providers/npm.md#npm-003) | package-lock.json entry resolves from a non-registry source | <span class="pg-sev pg-sev--high">HIGH</span> | [npm](../providers/npm.md) |  |
@@ -244,7 +248,7 @@ pipeline_check --pipeline aws --standard s2c2f --standard owasp_cicd_top_10
 
 ### UPD-1: L1: Update vulnerable OSS manually (pin + track versions) { #ctrl-upd-1 }
 
-**Evidenced by 81 checks** across 23 providers (AWS, Argo Workflows, Azure Cloud, Azure DevOps, Bitbucket, Buildkite, CircleCI, Cloud Build, Composer, Dockerfile, Drone CI, GCP, GitHub Actions, GitLab CI, Helm, Jenkins, NuGet, OCI manifest, PyPI, RubyGems, Tekton, maven, npm).
+**Evidenced by 85 checks** across 24 providers (AWS, Argo Workflows, Azure Cloud, Azure DevOps, Bitbucket, Buildkite, CircleCI, Cloud Build, Composer, Dockerfile, Drone CI, GCP, GitHub Actions, GitLab CI, Helm, Jenkins, Modelfile, NuGet, OCI manifest, PyPI, RubyGems, Tekton, maven, npm).
 
 | Check | Title | Severity | Provider | Fix |
 |-------|-------|----------|----------|-----|
@@ -310,6 +314,10 @@ pipeline_check --pipeline aws --standard s2c2f --standard owasp_cicd_top_10
 | [`JF-001`](../providers/jenkins.md#jf-001) | Shared library not pinned to a tag or commit | <span class="pg-sev pg-sev--high">HIGH</span> | [Jenkins](../providers/jenkins.md) |  |
 | [`JF-009`](../providers/jenkins.md#jf-009) | Agent docker image not pinned to sha256 digest | <span class="pg-sev pg-sev--high">HIGH</span> | [Jenkins](../providers/jenkins.md) |  |
 | [`JF-021`](../providers/jenkins.md#jf-021) | Package install without lockfile enforcement | <span class="pg-sev pg-sev--medium">MEDIUM</span> | [Jenkins](../providers/jenkins.md) | <span class="pg-fix" title="`--fix` will patch this rule">🔧 fix</span> |
+| [`MODEL-001`](../providers/modelfile.md#model-001) | Base model pulled without a pinned reference | <span class="pg-sev pg-sev--medium">MEDIUM</span> | [Modelfile](../providers/modelfile.md) |  |
+| [`MODEL-002`](../providers/modelfile.md#model-002) | Base model pulled from a third-party hub | <span class="pg-sev pg-sev--medium">MEDIUM</span> | [Modelfile](../providers/modelfile.md) |  |
+| [`MODEL-003`](../providers/modelfile.md#model-003) | Base model loaded from a local unverified weights blob | <span class="pg-sev pg-sev--low">LOW</span> | [Modelfile](../providers/modelfile.md) |  |
+| [`MODEL-004`](../providers/modelfile.md#model-004) | LoRA adapter applied from a remote source | <span class="pg-sev pg-sev--medium">MEDIUM</span> | [Modelfile](../providers/modelfile.md) |  |
 | [`MVN-001`](../providers/maven.md#mvn-001) | pom.xml dependency uses a floating version range | <span class="pg-sev pg-sev--medium">MEDIUM</span> | [maven](../providers/maven.md) |  |
 | [`MVN-002`](../providers/maven.md#mvn-002) | pom.xml depends on a mutable SNAPSHOT version | <span class="pg-sev pg-sev--medium">MEDIUM</span> | [maven](../providers/maven.md) |  |
 | [`MVN-004`](../providers/maven.md#mvn-004) | pom.xml dependency omits an explicit ``<version>`` | <span class="pg-sev pg-sev--medium">MEDIUM</span> | [maven](../providers/maven.md) |  |

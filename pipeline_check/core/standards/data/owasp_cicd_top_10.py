@@ -519,6 +519,10 @@ STANDARD = Standard(
         "HELM-017": ["CICD-SEC-4"],  # tpl of an untrusted .Values value
         # Dockerfile
         "DF-001":   ["CICD-SEC-3"],   # FROM not digest-pinned
+        "MODEL-001": ["CICD-SEC-3"],   # unpinned base model
+        "MODEL-002": ["CICD-SEC-3"],   # base model from a third-party hub
+        "MODEL-003": ["CICD-SEC-3"],   # local unverified weights blob
+        "MODEL-004": ["CICD-SEC-3"],   # remote LoRA adapter
         "DF-031":   ["CICD-SEC-3"],   # COPY --from external image not digest-pinned
         "DF-002":   ["CICD-SEC-7"],   # no USER
         "DF-003":   ["CICD-SEC-3", "CICD-SEC-9"],   # ADD URL no checksum
