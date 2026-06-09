@@ -96,6 +96,7 @@ STANDARD = Standard(
         "BB-025":   ["4.1.3"],
         "BB-026":   ["4.1.3"],
         "ADO-002":  ["4.1.3"],
+        "ADO-034":  ["4.1.3"],   # trust_remote_code model load = code exec
         "ADO-016":  ["4.1.3"],
         "ADO-026":  ["4.1.3"],
         "ADO-027":  ["4.1.3"],

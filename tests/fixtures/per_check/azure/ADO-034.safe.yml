@@ -1,0 +1,4 @@
+jobs:
+  - job: Eval
+    steps:
+      - script: python -c "AutoModel.from_pretrained('acme/m', trust_remote_code=False)"

@@ -338,6 +338,7 @@ STANDARD = Standard(
         # Azure DevOps Pipelines
         "ADO-001":  ["PW.4.1", "PW.4.4"],
         "ADO-002":  ["PW.6.1", "PW.9.1"],
+        "ADO-034":  ["PW.6.1", "PW.9.1"],   # trust_remote_code model load = code exec
         "ADO-003":  ["PS.1.1"],
         "ADO-004":  ["PO.5.1"],
         "ADO-005":  ["PW.4.1", "PW.4.4"],
