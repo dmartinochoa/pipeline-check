@@ -191,7 +191,7 @@ class TestGitLabFixtures:
 
 
 class TestBitbucketFixtures:
-    EXPECTED_IDS = {f"BB-{i:03d}" for i in range(1, 39)}
+    EXPECTED_IDS = {f"BB-{i:03d}" for i in range(1, 40)}
 
     def _scan(self, filename: str):
         ctx = BitbucketContext.from_path(FIXTURES / "bitbucket" / filename)
@@ -223,7 +223,7 @@ class TestBitbucketFixtures:
 
 
 class TestAzureFixtures:
-    EXPECTED_IDS = {f"ADO-{i:03d}" for i in range(1, 38)}
+    EXPECTED_IDS = {f"ADO-{i:03d}" for i in range(1, 39)}
 
     def _scan(self, filename: str):
         ctx = AzureContext.from_path(FIXTURES / "azure" / filename)

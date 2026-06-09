@@ -14,7 +14,7 @@ side that Scorecard also covers.
 
 - **Controls in this standard:** 10
 - **Controls evidenced by at least one check:** 10 / 10
-- **Distinct checks evidencing this standard:** 678
+- **Distinct checks evidencing this standard:** 680
 - **Of those, autofixable with `--fix`:** 86
 
 _Severity levels (`CRITICAL` / `HIGH` / `MEDIUM` / `LOW` / `INFO`) follow the same scale across every provider and standard. See [How to read severity](README.md#how-to-read-severity) on the standards overview for the definitions._
@@ -26,7 +26,7 @@ Click a control ID to jump to the per-control section with the full check list. 
 | Control | Title | Checks | Severity mix |
 |---------|-------|-------:|--------------|
 | [`Branch-Protection`](#ctrl-branch-protection) | Default branch is protected against force-push, deletion, and direct push without review | 44 | 11H · 26M · 7L |
-| [`Code-Review`](#ctrl-code-review) | Changes merged to the default branch require review | 34 | 15H · 18M · 1L |
+| [`Code-Review`](#ctrl-code-review) | Changes merged to the default branch require review | 36 | 17H · 18M · 1L |
 | [`Dangerous-Workflow`](#ctrl-dangerous-workflow) | No dangerous patterns in CI workflows (untrusted checkout, script injection) | 189 | 35C · 118H · 31M · 5L |
 | [`Dependency-Update-Tool`](#ctrl-dependency-update-tool) | Project uses an automated dependency-update tool (Dependabot / Renovate) | 7 | 7M |
 | [`Pinned-Dependencies`](#ctrl-pinned-dependencies) | Dependencies (actions, images, includes, packages) are pinned to immutable references from trusted sources | 195 | 10C · 113H · 64M · 8L |
@@ -106,14 +106,16 @@ pipeline_check --pipeline aws --standard openssf_scorecard --standard owasp_cicd
 
 ### Code-Review: Changes merged to the default branch require review { #ctrl-code-review }
 
-**Evidenced by 34 checks** across 9 providers (AWS, Azure DevOps, Bitbucket, Buildkite, CircleCI, GitHub Actions, GitLab CI, Jenkins, SCM).
+**Evidenced by 36 checks** across 9 providers (AWS, Azure DevOps, Bitbucket, Buildkite, CircleCI, GitHub Actions, GitLab CI, Jenkins, SCM).
 
 | Check | Title | Severity | Provider | Fix |
 |-------|-------|----------|----------|-----|
 | [`ADO-004`](../providers/azure.md#ado-004) | Deployment job missing environment binding | <span class="pg-sev pg-sev--medium">MEDIUM</span> | [Azure DevOps](../providers/azure.md) |  |
 | [`ADO-029`](../providers/azure.md#ado-029) | Service-connection-using job without environment or branch gate | <span class="pg-sev pg-sev--high">HIGH</span> | [Azure DevOps](../providers/azure.md) |  |
+| [`ADO-038`](../providers/azure.md#ado-038) | Agentic CLI output lands without human review | <span class="pg-sev pg-sev--high">HIGH</span> | [Azure DevOps](../providers/azure.md) |  |
 | [`BB-004`](../providers/bitbucket.md#bb-004) | Deploy step missing `deployment:` environment gate | <span class="pg-sev pg-sev--medium">MEDIUM</span> | [Bitbucket](../providers/bitbucket.md) |  |
 | [`BB-028`](../providers/bitbucket.md#bb-028) | OIDC step without deployment-gated environment | <span class="pg-sev pg-sev--high">HIGH</span> | [Bitbucket](../providers/bitbucket.md) |  |
+| [`BB-039`](../providers/bitbucket.md#bb-039) | Agentic CLI output lands without human review | <span class="pg-sev pg-sev--high">HIGH</span> | [Bitbucket](../providers/bitbucket.md) |  |
 | [`BK-007`](../providers/buildkite.md#bk-007) | Deploy step not gated by a manual block / input | <span class="pg-sev pg-sev--medium">MEDIUM</span> | [Buildkite](../providers/buildkite.md) |  |
 | [`BK-013`](../providers/buildkite.md#bk-013) | Deploy step has no branches: filter | <span class="pg-sev pg-sev--medium">MEDIUM</span> | [Buildkite](../providers/buildkite.md) |  |
 | [`CB-008`](../providers/aws.md#cb-008) | CodeBuild buildspec is inline (not sourced from a protected repo) | <span class="pg-sev pg-sev--high">HIGH</span> | [AWS](../providers/aws.md) |  |

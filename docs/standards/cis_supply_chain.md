@@ -11,7 +11,7 @@ and artifact controls covering the full pipeline trust chain.
 
 - **Controls in this standard:** 25
 - **Controls evidenced by at least one check:** 25 / 25
-- **Distinct checks evidencing this standard:** 916
+- **Distinct checks evidencing this standard:** 918
 - **Of those, autofixable with `--fix`:** 110
 
 _Severity levels (`CRITICAL` / `HIGH` / `MEDIUM` / `LOW` / `INFO`) follow the same scale across every provider and standard. See [How to read severity](README.md#how-to-read-severity) on the standards overview for the definitions._
@@ -44,8 +44,8 @@ Click a control ID to jump to the per-control section with the full check list. 
 | [`4.2.1`](#ctrl-4-2-1) | Ensure access to artifacts is limited | 20 | 5C · 9H · 6M |
 | [`4.3.3`](#ctrl-4-3-3) | Ensure package registries use authentication and authorization | 10 | 3C · 6H · 1M |
 | [`4.4.1`](#ctrl-4-4-1) | Ensure artifacts have provenance/SBOM metadata | 40 | 5H · 26M · 9L |
-| [`5.1.4`](#ctrl-5-1-4) | Ensure deployment configuration manifests are reviewed before apply | 54 | 2C · 24H · 25M · 3L |
-| [`5.2.1`](#ctrl-5-2-1) | Ensure deployment environments are separated | 27 | 14H · 11M · 2L |
+| [`5.1.4`](#ctrl-5-1-4) | Ensure deployment configuration manifests are reviewed before apply | 56 | 2C · 26H · 25M · 3L |
+| [`5.2.1`](#ctrl-5-2-1) | Ensure deployment environments are separated | 29 | 16H · 11M · 2L |
 | [`5.2.3`](#ctrl-5-2-3) | Ensure deployment environment activity is audited | 15 | 3H · 6M · 3L · 3I |
 
 ## Filter at runtime
@@ -1464,16 +1464,18 @@ pipeline_check --pipeline aws --standard cis_supply_chain --standard owasp_cicd_
 
 ### 5.1.4: Ensure deployment configuration manifests are reviewed before apply { #ctrl-5-1-4 }
 
-**Evidenced by 54 checks** across 11 providers (AWS, Argo CD, Azure DevOps, Bitbucket, Buildkite, CircleCI, GitHub Actions, GitLab CI, Jenkins, Kubernetes, SCM).
+**Evidenced by 56 checks** across 11 providers (AWS, Argo CD, Azure DevOps, Bitbucket, Buildkite, CircleCI, GitHub Actions, GitLab CI, Jenkins, Kubernetes, SCM).
 
 | Check | Title | Severity | Provider | Fix |
 |-------|-------|----------|----------|-----|
 | [`ADO-004`](../providers/azure.md#ado-004) | Deployment job missing environment binding | <span class="pg-sev pg-sev--medium">MEDIUM</span> | [Azure DevOps](../providers/azure.md) |  |
 | [`ADO-029`](../providers/azure.md#ado-029) | Service-connection-using job without environment or branch gate | <span class="pg-sev pg-sev--high">HIGH</span> | [Azure DevOps](../providers/azure.md) |  |
+| [`ADO-038`](../providers/azure.md#ado-038) | Agentic CLI output lands without human review | <span class="pg-sev pg-sev--high">HIGH</span> | [Azure DevOps](../providers/azure.md) |  |
 | [`ARGOCD-003`](../providers/argocd.md#argocd-003) | Argo CD Application auto-sync prunes without selfHeal guardrail | <span class="pg-sev pg-sev--medium">MEDIUM</span> | [Argo CD](../providers/argocd.md) |  |
 | [`ARGOCD-006`](../providers/argocd.md#argocd-006) | Argo CD ApplicationSet PR/SCM generator without project allowlist | <span class="pg-sev pg-sev--high">HIGH</span> | [Argo CD](../providers/argocd.md) |  |
 | [`ARGOCD-007`](../providers/argocd.md#argocd-007) | Argo CD Helm parameters interpolate generator output without goTemplate | <span class="pg-sev pg-sev--high">HIGH</span> | [Argo CD](../providers/argocd.md) |  |
 | [`BB-004`](../providers/bitbucket.md#bb-004) | Deploy step missing `deployment:` environment gate | <span class="pg-sev pg-sev--medium">MEDIUM</span> | [Bitbucket](../providers/bitbucket.md) |  |
+| [`BB-039`](../providers/bitbucket.md#bb-039) | Agentic CLI output lands without human review | <span class="pg-sev pg-sev--high">HIGH</span> | [Bitbucket](../providers/bitbucket.md) |  |
 | [`BK-007`](../providers/buildkite.md#bk-007) | Deploy step not gated by a manual block / input | <span class="pg-sev pg-sev--medium">MEDIUM</span> | [Buildkite](../providers/buildkite.md) |  |
 | [`BK-013`](../providers/buildkite.md#bk-013) | Deploy step has no branches: filter | <span class="pg-sev pg-sev--medium">MEDIUM</span> | [Buildkite](../providers/buildkite.md) |  |
 | [`CC-009`](../providers/circleci.md#cc-009) | Deploy job missing manual approval gate | <span class="pg-sev pg-sev--medium">MEDIUM</span> | [CircleCI](../providers/circleci.md) |  |
@@ -1525,15 +1527,17 @@ pipeline_check --pipeline aws --standard cis_supply_chain --standard owasp_cicd_
 
 ### 5.2.1: Ensure deployment environments are separated { #ctrl-5-2-1 }
 
-**Evidenced by 27 checks** across 11 providers (AWS, Argo CD, Azure DevOps, Bitbucket, Buildkite, CircleCI, GitHub Actions, GitLab CI, Jenkins, Kubernetes, SCM).
+**Evidenced by 29 checks** across 11 providers (AWS, Argo CD, Azure DevOps, Bitbucket, Buildkite, CircleCI, GitHub Actions, GitLab CI, Jenkins, Kubernetes, SCM).
 
 | Check | Title | Severity | Provider | Fix |
 |-------|-------|----------|----------|-----|
 | [`ADO-004`](../providers/azure.md#ado-004) | Deployment job missing environment binding | <span class="pg-sev pg-sev--medium">MEDIUM</span> | [Azure DevOps](../providers/azure.md) |  |
 | [`ADO-029`](../providers/azure.md#ado-029) | Service-connection-using job without environment or branch gate | <span class="pg-sev pg-sev--high">HIGH</span> | [Azure DevOps](../providers/azure.md) |  |
+| [`ADO-038`](../providers/azure.md#ado-038) | Agentic CLI output lands without human review | <span class="pg-sev pg-sev--high">HIGH</span> | [Azure DevOps](../providers/azure.md) |  |
 | [`ARGOCD-002`](../providers/argocd.md#argocd-002) | Argo CD AppProject permits any destination cluster or namespace | <span class="pg-sev pg-sev--high">HIGH</span> | [Argo CD](../providers/argocd.md) |  |
 | [`BB-004`](../providers/bitbucket.md#bb-004) | Deploy step missing `deployment:` environment gate | <span class="pg-sev pg-sev--medium">MEDIUM</span> | [Bitbucket](../providers/bitbucket.md) |  |
 | [`BB-028`](../providers/bitbucket.md#bb-028) | OIDC step without deployment-gated environment | <span class="pg-sev pg-sev--high">HIGH</span> | [Bitbucket](../providers/bitbucket.md) |  |
+| [`BB-039`](../providers/bitbucket.md#bb-039) | Agentic CLI output lands without human review | <span class="pg-sev pg-sev--high">HIGH</span> | [Bitbucket](../providers/bitbucket.md) |  |
 | [`BK-013`](../providers/buildkite.md#bk-013) | Deploy step has no branches: filter | <span class="pg-sev pg-sev--medium">MEDIUM</span> | [Buildkite](../providers/buildkite.md) |  |
 | [`CC-030`](../providers/circleci.md#cc-030) | Workflow job uses context without branch filter or approval gate | <span class="pg-sev pg-sev--medium">MEDIUM</span> | [CircleCI](../providers/circleci.md) |  |
 | [`CC-031`](../providers/circleci.md#cc-031) | OIDC role assumption without branch filter or approval gate | <span class="pg-sev pg-sev--high">HIGH</span> | [CircleCI](../providers/circleci.md) |  |

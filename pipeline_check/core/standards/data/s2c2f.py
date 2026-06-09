@@ -273,6 +273,8 @@ STANDARD = Standard(
         "GHA-014":  ["ENF-1"],
         "GHA-123":  ["ENF-1"],
         "GL-049":   ["ENF-1"],   # agentic CLI output lands without review
+        "BB-039":   ["ENF-1"],   # agentic CLI output lands without review
+        "ADO-038":  ["ENF-1"],   # agentic CLI output lands without review
         "GL-004":   ["ENF-1", "ENF-2"],
         "GL-029":   ["ENF-2"],
         "BB-004":   ["ENF-1"],

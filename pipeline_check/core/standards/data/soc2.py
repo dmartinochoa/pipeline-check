@@ -172,6 +172,7 @@ STANDARD = Standard(
         "BB-035":   ["CC6.8"],   # trust_remote_code model load = code exec
         "BB-036":   ["CC6.8"],   # untrusted PR context into agentic CLI = prompt injection
         "BB-037":   ["CC6.8"],   # unsafe pickle deser of fetched artifact = code exec
+        "BB-039":   ["CC8.1"],   # agentic CLI output lands without review
         "BB-012":   ["CC6.8"],
         "BB-015":   ["CC6.8"],
         "BB-025":   ["CC6.8"],
@@ -180,6 +181,7 @@ STANDARD = Standard(
         "ADO-034":  ["CC6.8"],   # trust_remote_code model load = code exec
         "ADO-035":  ["CC6.8"],   # untrusted PR context into agentic CLI = prompt injection
         "ADO-036":  ["CC6.8"],   # unsafe pickle deser of fetched artifact = code exec
+        "ADO-038":  ["CC8.1"],   # agentic CLI output lands without review
         "ADO-016":  ["CC6.8"],
         "ADO-020":  ["CC6.8"],
         "ADO-026":  ["CC6.8"],

@@ -13,7 +13,7 @@ scanner can witness.
 
 - **Controls in this standard:** 13
 - **Controls evidenced by at least one check:** 13 / 13
-- **Distinct checks evidencing this standard:** 924
+- **Distinct checks evidencing this standard:** 926
 - **Of those, autofixable with `--fix`:** 111
 
 _Severity levels (`CRITICAL` / `HIGH` / `MEDIUM` / `LOW` / `INFO`) follow the same scale across every provider and standard. See [How to read severity](README.md#how-to-read-severity) on the standards overview for the definitions._
@@ -27,7 +27,7 @@ Click a control ID to jump to the per-control section with the full check list. 
 | [`6.3.1`](#ctrl-6-3-1) | Security vulnerabilities are identified and managed | 137 | 18C · 65H · 42M · 12L |
 | [`6.3.3`](#ctrl-6-3-3) | All system components protected from known vulnerabilities by installing applicable patches | 180 | 13C · 85H · 70M · 12L |
 | [`6.4.1`](#ctrl-6-4-1) | Public-facing web apps are protected against attacks (secure build/config) | 145 | 23C · 65H · 46M · 11L |
-| [`6.4.3`](#ctrl-6-4-3) | Changes to systems are managed via documented change control | 74 | 4C · 26H · 36M · 8L |
+| [`6.4.3`](#ctrl-6-4-3) | Changes to systems are managed via documented change control | 76 | 4C · 28H · 36M · 8L |
 | [`6.5.1`](#ctrl-6-5-1) | Changes to system components follow secure development procedures | 373 | 52C · 169H · 122M · 29L · 1I |
 | [`7.2.1`](#ctrl-7-2-1) | Access control is defined per job role with least privilege | 40 | 5C · 24H · 10M · 1L |
 | [`7.2.2`](#ctrl-7-2-2) | Access is assigned based on job classification and function | 8 | 1C · 2H · 5M |
@@ -540,14 +540,16 @@ pipeline_check --pipeline aws --standard pci_dss_v4 --standard owasp_cicd_top_10
 
 ### 6.4.3: Changes to systems are managed via documented change control { #ctrl-6-4-3 }
 
-**Evidenced by 74 checks** across 13 providers (AWS, Azure DevOps, Bitbucket, Buildkite, CircleCI, Cloud Build, Dockerfile, GitHub Actions, GitLab CI, Helm, Jenkins, Modelfile, SCM).
+**Evidenced by 76 checks** across 13 providers (AWS, Azure DevOps, Bitbucket, Buildkite, CircleCI, Cloud Build, Dockerfile, GitHub Actions, GitLab CI, Helm, Jenkins, Modelfile, SCM).
 
 | Check | Title | Severity | Provider | Fix |
 |-------|-------|----------|----------|-----|
 | [`ADO-004`](../providers/azure.md#ado-004) | Deployment job missing environment binding | <span class="pg-sev pg-sev--medium">MEDIUM</span> | [Azure DevOps](../providers/azure.md) |  |
 | [`ADO-029`](../providers/azure.md#ado-029) | Service-connection-using job without environment or branch gate | <span class="pg-sev pg-sev--high">HIGH</span> | [Azure DevOps](../providers/azure.md) |  |
+| [`ADO-038`](../providers/azure.md#ado-038) | Agentic CLI output lands without human review | <span class="pg-sev pg-sev--high">HIGH</span> | [Azure DevOps](../providers/azure.md) |  |
 | [`BB-004`](../providers/bitbucket.md#bb-004) | Deploy step missing `deployment:` environment gate | <span class="pg-sev pg-sev--medium">MEDIUM</span> | [Bitbucket](../providers/bitbucket.md) |  |
 | [`BB-034`](../providers/bitbucket.md#bb-034) | Production deployment on a pull-request pipeline | <span class="pg-sev pg-sev--critical">CRITICAL</span> | [Bitbucket](../providers/bitbucket.md) |  |
+| [`BB-039`](../providers/bitbucket.md#bb-039) | Agentic CLI output lands without human review | <span class="pg-sev pg-sev--high">HIGH</span> | [Bitbucket](../providers/bitbucket.md) |  |
 | [`BK-007`](../providers/buildkite.md#bk-007) | Deploy step not gated by a manual block / input | <span class="pg-sev pg-sev--medium">MEDIUM</span> | [Buildkite](../providers/buildkite.md) |  |
 | [`BK-013`](../providers/buildkite.md#bk-013) | Deploy step has no branches: filter | <span class="pg-sev pg-sev--medium">MEDIUM</span> | [Buildkite](../providers/buildkite.md) |  |
 | [`CB-008`](../providers/aws.md#cb-008) | CodeBuild buildspec is inline (not sourced from a protected repo) | <span class="pg-sev pg-sev--high">HIGH</span> | [AWS](../providers/aws.md) |  |

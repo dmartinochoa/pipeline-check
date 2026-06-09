@@ -130,6 +130,12 @@ pipelines:
           name: fetch model
           script:
             - huggingface-cli download vendor/llm
+      # BB-039 — agentic CLI output pushed straight to a branch (no review).
+      - step:
+          name: ai autoland
+          script:
+            - claude -p "Apply the fix and stage it"
+            - git push origin HEAD
 
 # BB-020 — full clone depth.
 clone:

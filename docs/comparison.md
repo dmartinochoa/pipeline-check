@@ -33,8 +33,8 @@ missing major surfaces or requires extra config. No = not in scope.
 | GitLab CI | Yes (51) | No | Partial | No | No | No |
 | Jenkins (Declarative + Scripted) | Yes (36) | No | No | Partial | No | No |
 | CircleCI | Yes (33) | No | Partial | No | No | No |
-| Azure DevOps | Yes (37) | No | Partial | No | No | No |
-| Bitbucket Pipelines | Yes (38) | No | No | No | No | No |
+| Azure DevOps | Yes (38) | No | Partial | No | No | No |
+| Bitbucket Pipelines | Yes (39) | No | No | No | No | No |
 | Google Cloud Build | Yes (27) | No | Partial | No | No | No |
 | Buildkite | Yes (17) | No | No | No | No | No |
 | Drone CI | Yes (17) | No | No | No | No | No |

@@ -102,6 +102,9 @@ stages:
           - script: python -c "import torch; torch.load('model.bin', weights_only=False)"
           # ADO-037: model fetched from a registry with no pinned revision.
           - script: huggingface-cli download vendor/llm
+          # ADO-038: agentic CLI output (claude step above) pushed straight
+          # to a branch in the same job, with no review gate.
+          - script: git push origin HEAD
 
   - stage: Deploy
     dependsOn: Build

@@ -30,7 +30,7 @@ The walker handles every layout ADO supports:
 
 ## What it covers
 
-37 checks · 11 have an autofix patch (``--fix``).
+38 checks · 11 have an autofix patch (``--fix``).
 
 | Check | Title | Severity | Fix |
 |-------|-------|----------|-----|
@@ -71,6 +71,7 @@ The walker handles every layout ADO supports:
 | [ADO-035](#ado-035) | Untrusted PR/commit context reaches an agentic AI CLI (prompt injection) | <span class="pg-sev pg-sev--high">HIGH</span> |  |
 | [ADO-036](#ado-036) | Unsafe deserialization of a fetched artifact (pickle RCE) | <span class="pg-sev pg-sev--high">HIGH</span> |  |
 | [ADO-037](#ado-037) | AI model pulled without a pinned revision | <span class="pg-sev pg-sev--medium">MEDIUM</span> |  |
+| [ADO-038](#ado-038) | Agentic CLI output lands without human review | <span class="pg-sev pg-sev--high">HIGH</span> |  |
 
 ---
 
@@ -860,6 +861,32 @@ Does NOT fire when a revision is pinned in the same command (``revision='<sha>'`
 **Recommended action**
 
 Pin the model to an immutable revision. Pass an exact commit ``revision=`` to ``from_pretrained`` / ``hf_hub_download`` / ``snapshot_download`` (a 40-char commit SHA, not a branch or a tag, both of which the owner can move), or ``--revision <sha>`` to ``huggingface-cli download``. A pinned revision is what makes a swapped-weights or swapped-loader-code attack show up as a diff in your repo instead of silently landing on the next build. Pair with ``trust_remote_code=False`` (ADO-034) and prefer safetensors weights over pickle.
+
+</div>
+
+</div>
+
+<div class="pg-rule pg-rule--high" markdown>
+
+## ADO-038: Agentic CLI output lands without human review { #ado-038 }
+
+<div class="pg-rule__tags">
+<span class="pg-sev pg-sev--high">HIGH</span> <span class="pg-tag pg-tag--owasp">CICD-SEC-1</span> <span class="pg-tag pg-tag--esf">ESF-C-APPROVAL</span> <span class="pg-tag pg-tag--cwe">CWE-94</span> <span class="pg-tag pg-tag--cwe">CWE-693</span>
+</div>
+
+Fires when one job both invokes an agentic CLI (``claude`` / ``gemini`` / ``cursor-agent`` / ``aider`` / ``openhands`` / ``goose`` / ``q chat``) in a step body (``script`` / ``bash`` / ``pwsh`` / ``powershell`` or a task-based step's ``inputs.script``) and, in the same job, lands the result with no review gate. The landing command is one of: an ``az repos pr create`` / ``update`` carrying ``--auto-complete`` (Azure Repos merges the PR once policies pass), or a plain ``git push`` (committing straight to a branch). Coupling is per job because the steps of one Azure job share a checkout.
+
+Does NOT fire when the agent only opens a pull request for review (``az repos pr create`` with no ``--auto-complete``), nor on a push / auto-complete job that does not run an agent (ordinary formatting / generated-file bots). The agent-plus-auto-land coupling is the signal. A ``git push --dry-run`` is ignored.
+
+**Known false-positive modes**
+
+- A job that runs an agent for a read-only task (triage, labeling) but also pushes an unrelated generated file would match by co-location. Split the agent and the push into separate jobs, or suppress on the job with a rationale noting the agent does not write the pushed paths.
+
+<div class="pg-rule__rec" markdown>
+
+**Recommended action**
+
+Don't let an agentic CLI's output reach a branch or a merge without a human review gate. Have the agent open a normal pull request (``az repos pr create`` with no ``--auto-complete``) so a person reviews the diff before it lands; drop ``--auto-complete`` from the agent's job, and don't pair the agent with a ``git push`` straight to a branch. If the agent's prompt can be influenced by untrusted input (a PR commit message, a fetched page), treat the committed result as attacker-controlled.
 
 </div>
 
