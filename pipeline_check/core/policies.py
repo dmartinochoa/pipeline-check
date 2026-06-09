@@ -47,7 +47,10 @@ tighten the bar without rewriting the YAML.
 """
 from __future__ import annotations
 
+import hashlib
 import sys
+import urllib.error
+import urllib.request
 from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any
@@ -56,6 +59,11 @@ import yaml
 
 from ._yaml_strict import safe_load_strict as _safe_load_strict
 from .checks.base import VALID_SEVERITY_NAMES as _VALID_SEVERITIES
+
+#: Remote-policy fetch bounds. A policy pack is a small YAML file; the cap
+#: protects against a pathological / hostile endpoint streaming gigabytes.
+_POLICY_FETCH_TIMEOUT = 15.0
+_MAX_POLICY_BYTES = 256 * 1024
 
 #: Search roots, in priority order, for policy YAML files relative to
 #: cwd. First existing directory wins; later directories are skipped so
@@ -190,14 +198,19 @@ def load_policy(name_or_path: str, cwd: Path | None = None) -> Policy:
 
     Resolution order:
 
+    0. ``name_or_path`` is an ``https://`` URL, fetch and load a shareable
+       remote policy pack.
     1. ``name_or_path`` matches an existing file on disk, load it
        directly.
     2. Walk :data:`POLICY_DIRS` looking for ``<name>.yml`` /
        ``<name>.yaml``. First hit wins.
+    3. A built-in pack of that name.
 
     Raises :class:`PolicyError` when no candidate matches or the YAML
     parse / shape check fails.
     """
+    if name_or_path.lower().startswith(("https://", "http://")):
+        return _load_policy_url(name_or_path)
     cwd = cwd or Path.cwd()
     p = Path(name_or_path)
     if p.is_file():
@@ -286,6 +299,81 @@ def builtin_policies() -> list[Policy]:
 # ────────────────────────────────────────────────────────────────────────────
 # Internal: file loading and schema coercion.
 # ────────────────────────────────────────────────────────────────────────────
+
+
+def _policy_cache_dir() -> Path:
+    """Cache directory for fetched remote policy packs."""
+    try:
+        import platformdirs
+
+        base = Path(platformdirs.user_cache_dir("pipeline-check"))
+    except Exception:
+        base = Path.home() / ".cache" / "pipeline-check"
+    return base / "policies"
+
+
+def _load_policy_url(url: str) -> Policy:
+    """Fetch and load a shareable policy pack from an ``https://`` URL.
+
+    HTTPS only (the fetch reuses the redirect-hardened opener that the
+    other remote resolvers use). The response is size-capped, validated
+    through the same schema loader as an on-disk policy, and cached so a
+    later offline run still resolves the gate. A successful fetch always
+    refreshes the cache; the cache is only read back when the network
+    fetch fails.
+
+    A remote policy can only *configure the gate* (thresholds, rule
+    filters, severity overrides), never run code, but note that it can
+    also *weaken* the gate, so the source URL is printed by the CLI when
+    a policy loads.
+    """
+    if not url.lower().startswith("https://"):
+        raise PolicyError(
+            f"a remote policy must be fetched over https; refused: {url}"
+        )
+    cache = _policy_cache_dir() / (
+        hashlib.sha256(url.encode("utf-8")).hexdigest() + ".yml"
+    )
+    text: str | None = None
+    try:
+        req = urllib.request.Request(
+            url, headers={"User-Agent": "pipeline-check"}
+        )
+        from .checks._primitives.safe_http import urlopen_https_only
+
+        with urlopen_https_only(req, timeout=_POLICY_FETCH_TIMEOUT) as resp:
+            raw_bytes = resp.read(_MAX_POLICY_BYTES + 1)
+        if len(raw_bytes) > _MAX_POLICY_BYTES:
+            raise PolicyError(
+                f"remote policy is too large (> {_MAX_POLICY_BYTES} bytes): {url}"
+            )
+        text = raw_bytes.decode("utf-8")
+        try:
+            cache.parent.mkdir(parents=True, exist_ok=True)
+            cache.write_text(text, encoding="utf-8")
+        except OSError:
+            pass  # caching is best-effort
+    except (urllib.error.URLError, OSError, UnicodeDecodeError) as exc:
+        # Network failure: fall back to the last good cached copy if any.
+        if cache.is_file():
+            text = cache.read_text(encoding="utf-8")
+        else:
+            raise PolicyError(
+                f"could not fetch remote policy {url}: {exc}"
+            ) from exc
+    try:
+        raw = _safe_load_strict(text)
+    except yaml.YAMLError as exc:
+        raise PolicyError(f"could not parse remote policy {url}: {exc}") from exc
+    if not isinstance(raw, dict):
+        raise PolicyError(
+            f"remote policy {url}: top-level value must be a mapping"
+        )
+    pol = _from_dict(raw, Path(url))
+    # ``str(Path(url))`` collapses ``//`` to ``/``; keep the verbatim URL
+    # so the ``[policy] loaded … from <url>`` notice is accurate.
+    pol.source = url
+    return pol
 
 
 def _load_policy_file(path: Path) -> Policy:

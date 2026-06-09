@@ -12,6 +12,17 @@ release commit collapses this section into `## [X.Y.Z] - <date>`.
 
 ### Added
 
+- **Shareable policy packs (`--policy <url>`).** `--policy` now accepts an
+  `https://` URL (in addition to a built-in name or a local path), so an
+  organization can publish one gate policy and have every repo consume it
+  by URL. The remote pack is fetched over HTTPS (redirects pinned to
+  HTTPS via the shared `safe_http` opener, response size-capped at 256 KB)
+  and cached, so a later offline run still resolves the gate. A remote
+  policy can only configure the gate (rule / standards filters,
+  thresholds, severity overrides), never run code; because it can also
+  *weaken* the gate, the source URL is printed on the `[policy] loaded …`
+  line so the choice is auditable in CI logs. Builds on the built-in
+  `--policy <name>` packs and the existing local-path support.
 - **ADO-034: ML model loaded with `trust_remote_code` (Azure DevOps).**
   Completes the cross-provider coverage of the flagship model-RCE rule
   (GHA-120 / GL-045 / BB-035 / ADO-034) across every script-based CI
