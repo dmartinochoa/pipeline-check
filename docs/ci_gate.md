@@ -249,6 +249,24 @@ annotation on findings (the full rule pack still runs and scores), so a
 framework pack sharpens the evidence without reducing coverage.
 `--list-policies` shows the built-ins alongside any local files.
 
+### Shareable packs (path or URL)
+
+`--policy` also accepts a literal path or an `https://` URL, so an
+organization can publish one gate and have every repo consume it:
+
+```bash
+pipeline_check --policy ./gates/fintech-strict.yml          # explicit path
+pipeline_check --policy https://policies.acme.internal/pci.yml   # shared pack
+```
+
+A remote pack is fetched over HTTPS (redirects are pinned to HTTPS, the
+response is size-capped) and cached, so a later offline run still
+resolves the gate. A remote policy can only *configure* the gate
+(thresholds, rule / standards filters, severity overrides), never run
+code, but note it can also *weaken* the gate, the source URL is printed
+on the `[policy] loaded … from <url>` line so the choice is auditable in
+CI logs.
+
 ## Gate summary on stderr
 
 Unless `--output json` is active (stdout must stay clean), every run

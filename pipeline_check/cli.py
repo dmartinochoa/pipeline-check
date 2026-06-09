@@ -1027,7 +1027,10 @@ def _install_completion_callback(
         "severity overrides. Values become click defaults: explicit CLI "
         "flags, env vars, and the config file override them. Run "
         "--list-policies to see what's available. A NAME with a path "
-        "separator is treated as a literal path."
+        "separator is treated as a literal path; an https:// URL fetches "
+        "a shareable policy pack (cached for offline reuse). A remote "
+        "policy can only configure the gate, never run code, but it can "
+        "weaken the gate, so its source is printed when it loads."
     ),
 )
 @click.option(
