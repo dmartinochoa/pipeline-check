@@ -30,6 +30,7 @@ class GitLabRunsProvider(BaseProvider):
         scm_repo: str | None = None,
         gitlab_token: str | None = None,
         gitlab_url: str | None = None,
+        audit_runs_logs: bool = False,
         **_: Any,
     ) -> GitLabRunsContext:
         if not scm_repo:
@@ -42,7 +43,12 @@ class GitLabRunsProvider(BaseProvider):
         fetcher = HttpGitLabFetcher(
             token=token, gitlab_url=gitlab_url or "https://gitlab.com",
         )
-        return GitLabRunsContext.for_project(scm_repo, fetcher)
+        # ``--audit-runs-logs`` is the deep run-forensics pass: for GitLab it
+        # resolves which merge-request pipelines came from a fork (GLRUN-002),
+        # which needs extra MR-API fetches beyond the one pipeline-list call.
+        return GitLabRunsContext.for_project(
+            scm_repo, fetcher, resolve_forks=audit_runs_logs,
+        )
 
     @property
     def check_classes(self) -> list[type[BaseCheck[Any]]]:

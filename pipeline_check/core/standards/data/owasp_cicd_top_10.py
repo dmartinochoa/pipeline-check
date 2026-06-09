@@ -142,6 +142,7 @@ STANDARD = Standard(
         "RUN-001":  ["CICD-SEC-4"],
         "RUN-002":  ["CICD-SEC-4"],
         "GLRUN-001": ["CICD-SEC-4"],  # gitlab forensics: merge-request pipeline executed
+        "GLRUN-002": ["CICD-SEC-4"],  # gitlab forensics: fork merge-request pipeline executed
         "RUN-003":  ["CICD-SEC-4"],
         "RUN-004":  ["CICD-SEC-4"],
         "RUN-005":  ["CICD-SEC-4"],

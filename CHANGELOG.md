@@ -13,20 +13,23 @@ release commit collapses this section into `## [X.Y.Z] - <date>`.
 ### Added
 
 - **``gitlab_runs`` provider: GitLab pipeline run-history forensics
-  (GLRUN-001).** The GitLab analog of the ``runs`` provider, and the first
-  step of run-forensics beyond GitHub. ``--pipeline gitlab_runs --scm-repo
-  group/project`` pulls recent pipelines via the GitLab REST API
-  (``GET /projects/:id/pipelines``) and audits what *actually executed*,
-  not just what ``.gitlab-ci.yml`` could do. GLRUN-001 (MEDIUM) flags
-  pipelines that ran on a merge-request event
-  (``source: merge_request_event`` / ``external_pull_request_event``):
-  contributor-proposed code that executed in CI, and (when "Run pipelines
-  for fork merge requests" is enabled) fork code in the project's context.
-  Metadata-only, so it needs no log download. Authenticated with
-  ``--gitlab-token`` / ``$GITLAB_TOKEN``; ``--gitlab-url`` points it at a
-  self-managed instance. A missing token / 404 / network error degrades to
-  a warning rather than crashing. Provider count 35 -> 36. (Fork-origin
-  detection and job-trace secret / OIDC scanning are deferred to later
+  (GLRUN-001 / GLRUN-002).** The GitLab analog of the ``runs`` provider,
+  and the first step of run-forensics beyond GitHub. ``--pipeline
+  gitlab_runs --scm-repo group/project`` pulls recent pipelines via the
+  GitLab REST API (``GET /projects/:id/pipelines``) and audits what
+  *actually executed*, not just what ``.gitlab-ci.yml`` could do. GLRUN-001
+  (MEDIUM) flags pipelines that ran on a merge-request event
+  (``source: merge_request_event`` / ``external_pull_request_event``),
+  metadata-only. GLRUN-002 (HIGH, the high-severity subset, under
+  ``--audit-runs-logs``) resolves which of those came from a *fork*: GitLab's
+  pipeline list doesn't carry the source/target project, so it lists merge
+  requests, keeps the ones whose ``source_project_id`` differs from the
+  ``target_project_id``, and pulls each such MR's pipelines, confirming that
+  untrusted fork code executed in the project's CI (the GitLab analog of
+  RUN-001). Authenticated with ``--gitlab-token`` / ``$GITLAB_TOKEN``;
+  ``--gitlab-url`` points it at a self-managed instance. A missing token /
+  404 / network error degrades to a warning rather than crashing. Provider
+  count 35 -> 36. (Job-trace secret / OIDC scanning is deferred to later
   GLRUN rules.)
 - **JF-038: agentic-CLI output lands without human review (Jenkins).**
   Completes Jenkins's AI flow-control coverage alongside JF-037, the

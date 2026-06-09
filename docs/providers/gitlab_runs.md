@@ -24,11 +24,12 @@ pipeline_check --pipeline gitlab_runs --scm-repo group/project \
 
 ## What it covers
 
-1 checks · 0 have an autofix patch (``--fix``).
+2 checks · 0 have an autofix patch (``--fix``).
 
 | Check | Title | Severity | Fix |
 |-------|-------|----------|-----|
 | [GLRUN-001](#glrun-001) | Merge-request pipeline exercised in run history | <span class="pg-sev pg-sev--medium">MEDIUM</span> |  |
+| [GLRUN-002](#glrun-002) | Fork merge-request pipeline executed in run history | <span class="pg-sev pg-sev--high">HIGH</span> |  |
 
 ---
 
@@ -47,6 +48,26 @@ Sourced from the GitLab REST API (``GET /projects/:id/pipelines``). Counts recen
 **Recommended action**
 
 Review the jobs that run on merge-request pipelines and confirm none execute contributor-controlled content while holding CI/CD variables or a deploy token. If 'Run pipelines for fork merge requests' is enabled, treat those pipelines as running untrusted code: scope protected variables and runners away from them, and require a maintainer to approve fork-MR pipelines before they run.
+
+</div>
+
+</div>
+
+<div class="pg-rule pg-rule--high" markdown>
+
+## GLRUN-002: Fork merge-request pipeline executed in run history { #glrun-002 }
+
+<div class="pg-rule__tags">
+<span class="pg-sev pg-sev--high">HIGH</span> <span class="pg-tag pg-tag--owasp">CICD-SEC-4</span>
+</div>
+
+Only evaluated with ``--audit-runs-logs``. Resolves fork-origin via the GitLab MR API: lists recent merge requests, keeps those whose ``source_project_id`` differs from the ``target_project_id`` (a fork), and pulls each such MR's pipelines (``/merge_requests/:iid/pipelines``). Each fork pipeline ran untrusted code in this project's CI. Independent of GLRUN-001's metadata pass; the fork-MR fetch is bounded to the most recent fork merge requests.
+
+<div class="pg-rule__rec" markdown>
+
+**Recommended action**
+
+Treat fork merge-request pipelines as running untrusted code. Require a project member to approve fork-MR pipelines before they run (the 'Pipelines must be approved' setting), keep protected CI/CD variables and protected runners away from them, and run fork-MR jobs on isolated, ephemeral runners with no standing cloud credentials. If fork-MR pipelines are not needed, disable 'Run pipelines for fork merge requests'.
 
 </div>
 
