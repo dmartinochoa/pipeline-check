@@ -308,6 +308,11 @@ _HUB_PREFIX_RE = re.compile(r"^(?:hf\.co|huggingface\.co)/", re.IGNORECASE)
 
 def ref_is_local(ref: str) -> bool:
     """True when *ref* names a local weights file rather than a registry pull."""
+    # A hub pull (``hf.co/org/model.gguf``) carries a weights extension too,
+    # so the hub classification has to win or the ext match misreads a remote
+    # pull as a local file (suppressing MODEL-001, false-firing MODEL-003).
+    if ref_is_hub(ref):
+        return False
     return bool(_LOCAL_PATH_RE.match(ref) or _WEIGHTS_EXT_RE.search(ref))
 
 
