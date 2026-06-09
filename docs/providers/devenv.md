@@ -33,7 +33,7 @@ All other flags (`--output`, `--severity-threshold`, `--checks`,
 
 ## What it covers
 
-6 checks · 0 have an autofix patch (``--fix``).
+7 checks · 0 have an autofix patch (``--fix``).
 
 | Check | Title | Severity | Fix |
 |-------|-------|----------|-----|
@@ -43,6 +43,7 @@ All other flags (`--output`, `--severity-threshold`, `--checks`,
 | [DEV-004](#dev-004) | Auto-run command fetches and executes remote code | <span class="pg-sev pg-sev--critical">CRITICAL</span> |  |
 | [DEV-005](#dev-005) | Devcontainer initializeCommand runs unsandboxed on the host | <span class="pg-sev pg-sev--high">HIGH</span> |  |
 | [DEV-006](#dev-006) | VS Code settings point a tool at a repo-local binary | <span class="pg-sev pg-sev--high">HIGH</span> |  |
+| [DEV-007](#dev-007) | Committed MCP config auto-launches a local command server | <span class="pg-sev pg-sev--medium">MEDIUM</span> |  |
 
 ---
 
@@ -169,6 +170,30 @@ Fires on a ``.vscode/settings.json`` that (a) sets a known executable-path key (
 **Recommended action**
 
 Don't commit a workspace ``.vscode/settings.json`` that points an executable-path setting (``git.path``, ``python.defaultInterpreterPath``, ``eslint.runtime``, ``go.alternateTools``, a terminal automation profile, ...) at a repo-relative path, injects a process-hijack variable through ``terminal.integrated.env.*`` (``PATH`` / ``LD_PRELOAD`` / ``NODE_OPTIONS``), or sets ``task.allowAutomaticTasks: on``. Keep tool paths pointing at system binaries (an absolute path or a bare command resolved from the user's ``PATH``), and let each developer configure machine-specific paths in their user settings, not a committed workspace file.
+
+</div>
+
+</div>
+
+<div class="pg-rule pg-rule--medium" markdown>
+
+## DEV-007: Committed MCP config auto-launches a local command server { #dev-007 }
+
+<div class="pg-rule__tags">
+<span class="pg-sev pg-sev--medium">MEDIUM</span> <span class="pg-tag pg-tag--owasp">CICD-SEC-4</span> <span class="pg-tag pg-tag--esf">ESF-D-INJECTION</span> <span class="pg-tag pg-tag--cwe">CWE-829</span> <span class="pg-tag pg-tag--cwe">CWE-94</span>
+</div>
+
+Fires when a committed MCP config (``.mcp.json``, ``.cursor/mcp.json``, ``.vscode/mcp.json``) defines a server with a ``command`` (a stdio server the editor / agent launches as a local process on project open). Both the ``mcpServers`` (Claude / Cursor) and ``servers`` (VS Code) block names are read. ``url``-only servers (``type: http`` / ``sse``) don't spawn a local process and don't fire. Commands that fetch an unpinned remote package (``npx -y`` / ``uvx`` / ``pnpm dlx`` / ``bunx`` / ``pipx run``) are called out as the sharpest case.
+
+**Known false-positive modes**
+
+- A first-party MCP server invoked from a checked-in, reviewed script (``node ./tools/mcp-server.js``) is intentional. The finding still flags that the config auto-launches a process on open; suppress on the file with a rationale naming the server.
+
+<div class="pg-rule__rec" markdown>
+
+**Recommended action**
+
+Treat a committed MCP server config as code that runs on project open. Prefer a first-party server invoked from a checked-in, reviewed script over a ``npx -y`` / ``uvx`` runner that pulls an unpinned remote package; if a remote package is required, pin it to an exact version (and ideally an integrity hash). Keep developer-specific or untrusted MCP servers in user-level config (``~/.cursor`` / user settings) rather than committing them to the repository where they auto-launch for every contributor.
 
 </div>
 

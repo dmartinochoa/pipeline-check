@@ -1042,6 +1042,7 @@ STANDARD = Standard(
         # Developer-environment auto-execution
         "DEV-001":   ["PW.6.1", "PW.9.1"],
         "DEV-006":   ["PW.6.1", "PW.9.1"],
+        "DEV-007":   ["PW.6.1", "PW.9.1"],   # committed MCP config auto-launches a command server
         "DEV-002":   ["PW.6.1", "PW.9.1"],
         "DEV-003":   ["PW.6.1", "PW.9.1"],
         "DEV-004":   ["PW.4.1", "PW.4.4"],

@@ -1098,6 +1098,7 @@ STANDARD = Standard(
         # Developer-environment auto-execution
         "DEV-001":   ["PR.PS-05"],
         "DEV-006":   ["PR.PS-05"],
+        "DEV-007":   ["PR.PS-05"],   # committed MCP config auto-launches a command server
         "DEV-002":   ["PR.PS-05"],
         "DEV-003":   ["PR.PS-05"],
         "DEV-004":   ["PR.PS-05"],

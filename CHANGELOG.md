@@ -12,6 +12,19 @@ release commit collapses this section into `## [X.Y.Z] - <date>`.
 
 ### Added
 
+- **DEV-007: a committed MCP config auto-launches a local command server.**
+  Extends the `devenv` provider (the auto-execute-on-repo-open surface) to
+  Model Context Protocol configs: `.mcp.json` (Claude Code),
+  `.cursor/mcp.json` (Cursor), and `.vscode/mcp.json` (VS Code). Fires when
+  a committed config defines a server with a `command` (a stdio server the
+  agent / editor launches as a local child process on project open, with
+  the developer's privileges). Both the `mcpServers` (Claude / Cursor) and
+  `servers` (VS Code) block names are read; `url`-only servers
+  (`type: http` / `sse`) don't spawn a local process and don't fire.
+  Commands that fetch an unpinned remote package (`npx -y`, `uvx`,
+  `pnpm dlx`, `bunx`, `pipx run`) are called out as the sharpest case: the
+  tool server becomes whatever the registry serves at open time. MEDIUM.
+  devenv 6 -> 7.
 - **Model-registry provider (`--pipeline modelfile`).** A new provider
   that parses Ollama `Modelfile` declarations on disk, the "Dockerfile of
   models", text-only with no model pull and no Ollama daemon. It is the
