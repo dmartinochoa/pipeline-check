@@ -1,0 +1,4 @@
+jobs:
+  - job: Load
+    steps:
+      - script: python -c "import torch; torch.load('model.bin', weights_only=False)"

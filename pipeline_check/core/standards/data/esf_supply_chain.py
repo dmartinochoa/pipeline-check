@@ -185,6 +185,7 @@ STANDARD = Standard(
         "BB-002":   ["ESF-D-INJECTION"],
         "BB-035":   ["ESF-D-INJECTION"],   # trust_remote_code model load = code exec
         "BB-036":   ["ESF-D-INJECTION"],   # untrusted PR context into agentic CLI = prompt injection
+        "BB-037":   ["ESF-D-INJECTION"],   # unsafe pickle deser of fetched artifact = code exec
         "BB-003":   ["ESF-D-SECRETS"],
         "BB-004":   ["ESF-C-APPROVAL", "ESF-C-ENV-SEP"],
         "BB-005":   ["ESF-D-BUILD-TIMEOUT"],
@@ -215,6 +216,7 @@ STANDARD = Standard(
         "ADO-002":  ["ESF-D-INJECTION"],
         "ADO-034":  ["ESF-D-INJECTION"],   # trust_remote_code model load = code exec
         "ADO-035":  ["ESF-D-INJECTION"],   # untrusted PR context into agentic CLI = prompt injection
+        "ADO-036":  ["ESF-D-INJECTION"],   # unsafe pickle deser of fetched artifact = code exec
         "ADO-003":  ["ESF-D-SECRETS"],
         "ADO-004":  ["ESF-C-APPROVAL", "ESF-C-ENV-SEP"],
         "ADO-005":  ["ESF-S-PIN-DEPS", "ESF-S-TRUSTED-REG"],

@@ -132,8 +132,8 @@ for inputs, idempotency, and fork-PR fallback behavior.
 | **Gitea / Forgejo Actions** | `.gitea/` or `.forgejo/workflows/*.yml` | `--gitea-path` | Reuses the full GitHub Actions rule pack; GitHub-only reputation rules pass silently without `--resolve-remote` metadata |
 | **GitHub Actions run forensics** | Live Actions REST API | `--pipeline runs` | 5 checks · `RUN-001..005` · audits run history for what actually executed (fork-originated runs, privileged-trigger runs that fired, and via `--audit-runs-logs` secrets leaked in run logs, fork runs that minted a cloud OIDC token, and fork runs that executed on a self-hosted runner) vs. what the static config could do |
 | **GitLab CI** | `.gitlab-ci.yml` | `--gitlab-path` | 51 checks · `GL-001..049` + `TAINT-004`/`008` · `CI_JOB_TOKEN` cross-project scope, DinD TLS bypass, debug-trace secret leaks, MR-pipeline IaC apply + prod deploy, disabled native scanners, `trust_remote_code` + unpinned + pickle model loads, agentic-CLI prompt injection + autoland, mutable `include: component:` |
-| **Bitbucket Pipelines** | `bitbucket-pipelines.yml` | `--bitbucket-path` | 36 checks · `BB-001..036` · PR-pipeline IaC apply + prod deploy, `trust_remote_code` model loads, untrusted PR context into an agentic AI CLI |
-| **Azure DevOps** | `azure-pipelines.yml` | `--azure-path` | 35 checks · `ADO-001..035` · incl. IaC apply on a PR-validated pipeline, `trust_remote_code` model loads, untrusted PR context into an agentic AI CLI |
+| **Bitbucket Pipelines** | `bitbucket-pipelines.yml` | `--bitbucket-path` | 37 checks · `BB-001..037` · PR-pipeline IaC apply + prod deploy, `trust_remote_code` model loads, untrusted PR context into an agentic AI CLI, unsafe pickle deserialization |
+| **Azure DevOps** | `azure-pipelines.yml` | `--azure-path` | 36 checks · `ADO-001..036` · incl. IaC apply on a PR-validated pipeline, `trust_remote_code` model loads, untrusted PR context into an agentic AI CLI, unsafe pickle deserialization |
 | **Jenkins** | `Jenkinsfile` (Declarative / Scripted) | `--jenkinsfile-path` | 36 checks · `JF-001..036` |
 | **CircleCI** | `.circleci/config.yml` | `--circleci-path` | 33 checks · `CC-001..033` · incl. Go-module-verification bypass |
 | **Google Cloud Build** | `cloudbuild.yaml` | `--cloudbuild-path` | 27 checks · `GCB-001..027` |
@@ -532,8 +532,8 @@ pipeline_check/
         ├── github/rules/      # GHA-001 .. GHA-073, GHA-086..123 + TAINT-001..003, TAINT-009
         ├── runs/rules/        # RUN-001 .. RUN-005 — GitHub Actions run-history forensics via the live Actions REST API (fork-originated runs, privileged-trigger runs that fired, secrets leaked in run logs, fork runs that minted a cloud OIDC token, fork runs on a self-hosted runner)
         ├── gitlab/rules/      # GL-001 .. GL-049 + TAINT-004 / TAINT-008
-        ├── bitbucket/rules/   # BB-001 .. BB-036
-        ├── azure/rules/       # ADO-001 .. ADO-035
+        ├── bitbucket/rules/   # BB-001 .. BB-037
+        ├── azure/rules/       # ADO-001 .. ADO-036
         ├── jenkins/rules/     # JF-001 .. JF-036
         ├── circleci/rules/    # CC-001 .. CC-033
         ├── cloudbuild/rules/  # GCB-001 .. GCB-027

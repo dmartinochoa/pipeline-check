@@ -119,6 +119,12 @@ pipelines:
           name: AI triage
           script:
             - claude -p "Triage this pull request from branch $BITBUCKET_BRANCH"
+      # BB-037 — fetched artifact deserialized through pickle (RCE at load).
+      - step:
+          name: load model
+          script:
+            - curl -o model.bin https://example.com/model.bin
+            - python -c "import torch; torch.load('model.bin', weights_only=False)"
 
 # BB-020 — full clone depth.
 clone:

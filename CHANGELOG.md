@@ -12,6 +12,22 @@ release commit collapses this section into `## [X.Y.Z] - <date>`.
 
 ### Added
 
+- **BB-037 / ADO-036: unsafe deserialization of a fetched artifact
+  (pickle RCE) (Bitbucket, Azure DevOps).** Brings the model-deserialization
+  RCE rule (GHA-122 / GL-047) to the two remaining script-based providers.
+  Loading a model / artifact through a pickle-backed deserializer executes
+  arbitrary Python embedded in the file at load time, and in CI that file
+  is routinely downloaded, so it is remote code execution under the
+  pipeline's credentials. Two firing shapes (shared with GHA-122 / GL-047
+  via `_primitives/unsafe_deser`): an explicit unsafe opt-in
+  (`weights_only=False` / `allow_pickle=True`) always fires; or a remote
+  fetch (curl / wget / `hf_hub_download` / `snapshot_download` /
+  `huggingface-cli download` / `requests`) alongside a pickle-backed loader
+  (`torch.load` / `pickle.load(s)` / `joblib.load`) with no safe path
+  (`weights_only=True` or safetensors) in the same step. A bare local load
+  with no fetch does not fire. Pairs with the `trust_remote_code` rule
+  (BB-035 / ADO-034) as the second model-load RCE vector. HIGH. bitbucket
+  36 -> 37, azure 35 -> 36.
 - **BB-036 / ADO-035: untrusted PR context reaches an agentic AI CLI
   (Bitbucket, Azure DevOps).** Brings the flagship AI prompt-injection
   rule (GHA-119 / GL-048) to the two remaining script-based CI providers,

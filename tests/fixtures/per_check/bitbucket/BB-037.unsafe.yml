@@ -1,0 +1,6 @@
+pipelines:
+  default:
+    - step:
+        name: load-model
+        script:
+          - python -c "import torch; torch.load('model.bin', weights_only=False)"

@@ -30,7 +30,7 @@ The walker handles every layout ADO supports:
 
 ## What it covers
 
-35 checks · 11 have an autofix patch (``--fix``).
+36 checks · 11 have an autofix patch (``--fix``).
 
 | Check | Title | Severity | Fix |
 |-------|-------|----------|-----|
@@ -69,6 +69,7 @@ The walker handles every layout ADO supports:
 | [ADO-033](#ado-033) | IaC apply on a PR-validated pipeline | <span class="pg-sev pg-sev--critical">CRITICAL</span> |  |
 | [ADO-034](#ado-034) | ML model loaded with trust_remote_code (code execution) | <span class="pg-sev pg-sev--high">HIGH</span> |  |
 | [ADO-035](#ado-035) | Untrusted PR/commit context reaches an agentic AI CLI (prompt injection) | <span class="pg-sev pg-sev--high">HIGH</span> |  |
+| [ADO-036](#ado-036) | Unsafe deserialization of a fetched artifact (pickle RCE) | <span class="pg-sev pg-sev--high">HIGH</span> |  |
 
 ---
 
@@ -812,6 +813,26 @@ The AI analog of ADO-002 (script injection). Fires when a step's script body (``
 **Recommended action**
 
 Do not place attacker-controllable context (a PR's commit message, source branch, or `$(System.PullRequest.*)` metadata) in an agentic CLI's prompt. Routing through a quoted `env:` variable does NOT sanitize a prompt the way it does a shell command, the model still reads the value. If the agent must see PR content, run it on a job with no service-connection secrets and no tool / shell access, and treat its output as untrusted.
+
+</div>
+
+</div>
+
+<div class="pg-rule pg-rule--high" markdown>
+
+## ADO-036: Unsafe deserialization of a fetched artifact (pickle RCE) { #ado-036 }
+
+<div class="pg-rule__tags">
+<span class="pg-sev pg-sev--high">HIGH</span> <span class="pg-tag pg-tag--owasp">CICD-SEC-4</span> <span class="pg-tag pg-tag--esf">ESF-D-INJECTION</span> <span class="pg-tag pg-tag--cwe">CWE-502</span> <span class="pg-tag pg-tag--cwe">CWE-494</span> <span class="pg-tag pg-tag--cwe">CWE-829</span>
+</div>
+
+Fires per script body (``script`` / ``bash`` / ``pwsh`` / ``powershell`` or a task-based step's ``inputs.script``) in two shapes (shared with GHA-122 / GL-047 via ``_primitives/unsafe_deser``): an explicit unsafe opt-in (``weights_only=False`` / ``allow_pickle=True``) always; or a remote fetch (curl / wget / ``hf_hub_download`` / ``snapshot_download`` / ``huggingface-cli download`` / ``requests``) alongside a pickle-backed loader (``torch.load`` / ``pickle.load(s)`` / ``joblib.load``) with no safe path (``weights_only=True`` or safetensors) in the same body. A bare local load with no fetch does not fire.
+
+<div class="pg-rule__rec" markdown>
+
+**Recommended action**
+
+Load models / artifacts through a non-executing format: prefer ``safetensors``, or pass ``weights_only=True`` to ``torch.load`` (default in PyTorch 2.6+). Never ``pickle.load`` / ``joblib.load`` / ``numpy.load(allow_pickle=True)`` a file fetched at build time, and pin + checksum any model you must deserialize.
 
 </div>
 
