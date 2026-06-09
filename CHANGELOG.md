@@ -12,6 +12,21 @@ release commit collapses this section into `## [X.Y.Z] - <date>`.
 
 ### Added
 
+- **GL-048: untrusted MR/commit context reaches an agentic AI CLI
+  (GitLab).** The GitLab analog of GHA-119 and the AI face of GL-002
+  (script injection). Fires when a job `script` line invokes an agentic
+  CLI (`claude` / `gemini` / `cursor-agent` / `aider` / `openhands` /
+  `goose` / `q chat`) and attacker-controllable GitLab context reaches
+  that line, either a predefined untrusted variable interpolated directly
+  (`$CI_MERGE_REQUEST_TITLE`, `$CI_COMMIT_MESSAGE`) or a `variables:`
+  entry whose value carries one. Unlike a shell, an LLM ingests a quoted
+  or variable-routed value as prompt text, so the GL-002 mitigation
+  (route through a quoted variable) does not sanitize it, which is why
+  this is a separate rule: anyone who can open an MR can smuggle
+  instructions the agent then executes. The agentic-CLI catalog now lives
+  in a shared `_primitives/agentic_cli` helper (re-exported from the
+  GitHub `_helpers` so GHA-058/119/123 are unchanged). HIGH. gitlab
+  49 -> 50.
 - **GL-047: unsafe deserialization of a fetched artifact (GitLab).** The
   GitLab analog of GHA-122 and the deserialization leg of the GitLab
   AI/model pack (alongside GL-045 `trust_remote_code` and GL-046 unpinned

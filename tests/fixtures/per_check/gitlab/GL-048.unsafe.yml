@@ -1,0 +1,3 @@
+review-mr:
+  script:
+    - claude -p "Review this merge request $CI_MERGE_REQUEST_DESCRIPTION"

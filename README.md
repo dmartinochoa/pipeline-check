@@ -128,7 +128,7 @@ for inputs, idempotency, and fork-PR fallback behavior.
 | **GitHub Actions** | `.github/workflows/*.yml` | `--gha-path` | 114 checks · `GHA-001..073`, `GHA-086..123` + `TAINT-001..003`/`009` · SHA pinning, script injection, OIDC trusted-publishing abuse, agentic-CLI / IaC-apply RCE, prompt injection, `trust_remote_code` model loads, unpinned model refs, unsafe pickle deserialization, unreviewed AI-generated changes, compromised-action and npm-worm IOCs, `$GITHUB_ENV` poisoning. [Full reference →](docs/providers/github.md) |
 | **Gitea / Forgejo Actions** | `.gitea/` or `.forgejo/workflows/*.yml` | `--gitea-path` | Reuses the full GitHub Actions rule pack; GitHub-only reputation rules pass silently without `--resolve-remote` metadata |
 | **GitHub Actions run forensics** | Live Actions REST API | `--pipeline runs` | 3 checks · `RUN-001..003` · audits run history for what actually executed (fork-originated runs, privileged-trigger runs that fired, secrets leaked in run logs via `--audit-runs-logs`) vs. what the static config could do |
-| **GitLab CI** | `.gitlab-ci.yml` | `--gitlab-path` | 49 checks · `GL-001..047` + `TAINT-004`/`008` · `CI_JOB_TOKEN` cross-project scope, DinD TLS bypass, debug-trace secret leaks, MR-pipeline IaC apply + prod deploy, disabled native scanners, `trust_remote_code` + unpinned + pickle model loads, mutable `include: component:` |
+| **GitLab CI** | `.gitlab-ci.yml` | `--gitlab-path` | 50 checks · `GL-001..048` + `TAINT-004`/`008` · `CI_JOB_TOKEN` cross-project scope, DinD TLS bypass, debug-trace secret leaks, MR-pipeline IaC apply + prod deploy, disabled native scanners, `trust_remote_code` + unpinned + pickle model loads, agentic-CLI prompt injection, mutable `include: component:` |
 | **Bitbucket Pipelines** | `bitbucket-pipelines.yml` | `--bitbucket-path` | 34 checks · `BB-001..034` · PR-pipeline IaC apply + prod deploy |
 | **Azure DevOps** | `azure-pipelines.yml` | `--azure-path` | 33 checks · `ADO-001..033` · incl. IaC apply on a PR-validated pipeline |
 | **Jenkins** | `Jenkinsfile` (Declarative / Scripted) | `--jenkinsfile-path` | 36 checks · `JF-001..036` |
@@ -525,7 +525,7 @@ pipeline_check/
         ├── pulumi/rules/      # PULUMI-001 .. PULUMI-014 — Pulumi.yaml + stack config + project source IaC static analysis (plaintext secrets, wildcard IAM, public resources, unpinned plugins, deploy-time exec)
         ├── github/rules/      # GHA-001 .. GHA-073, GHA-086..123 + TAINT-001..003, TAINT-009
         ├── runs/rules/        # RUN-001 .. RUN-003 — GitHub Actions run-history forensics via the live Actions REST API (fork-originated runs, privileged-trigger runs that fired, secrets leaked in run logs)
-        ├── gitlab/rules/      # GL-001 .. GL-047 + TAINT-004 / TAINT-008
+        ├── gitlab/rules/      # GL-001 .. GL-048 + TAINT-004 / TAINT-008
         ├── bitbucket/rules/   # BB-001 .. BB-034
         ├── azure/rules/       # ADO-001 .. ADO-033
         ├── jenkins/rules/     # JF-001 .. JF-036

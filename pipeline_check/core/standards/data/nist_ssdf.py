@@ -258,6 +258,7 @@ STANDARD = Standard(
         "GL-045":   ["PW.6.1", "PW.9.1"],   # trust_remote_code model load = code exec
         "GL-046":   ["PW.4.1", "PW.4.4"],   # model pulled without a pinned revision
         "GL-047":   ["PW.6.1", "PW.9.1"],   # unsafe pickle deser of fetched artifact = code exec
+        "GL-048":   ["PW.6.1", "PW.9.1"],   # untrusted MR context into agentic CLI = prompt injection
         "GL-003":   ["PS.1.1"],
         "GL-004":   ["PO.5.1"],
         "GL-044":   ["PO.5.1"],                        # auto production deploy on an MR pipeline

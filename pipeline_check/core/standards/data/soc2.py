@@ -160,6 +160,7 @@ STANDARD = Standard(
         "GL-002":   ["CC6.8"],
         "GL-045":   ["CC6.8"],   # trust_remote_code model load = code exec
         "GL-047":   ["CC6.8"],   # unsafe pickle deser of fetched artifact = code exec
+        "GL-048":   ["CC6.8"],   # untrusted MR context into agentic CLI = prompt injection
         "GL-016":   ["CC6.8"],
         "GL-019":   ["CC6.8"],
         "GL-043":   ["CC6.8"],

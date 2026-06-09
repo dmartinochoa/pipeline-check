@@ -249,6 +249,7 @@ STANDARD = Standard(
         "GL-045":   ["CICD-SEC-4"],   # trust_remote_code model load = code exec
         "GL-046":   ["CICD-SEC-3"],   # model pulled without a pinned revision
         "GL-047":   ["CICD-SEC-4"],   # unsafe pickle deser of fetched artifact = code exec
+        "GL-048":   ["CICD-SEC-4"],   # untrusted MR context into agentic CLI = prompt injection
         "GL-003":   ["CICD-SEC-6"],
         "GL-004":   ["CICD-SEC-1"],
         "GL-044":   ["CICD-SEC-1"],   # auto production deploy on an MR pipeline
