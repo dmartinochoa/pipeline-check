@@ -178,7 +178,7 @@ STANDARD = Standard(
         "GL-002":   ["Build.L3.Isolated"],                         # script injection
         "GL-045":   ["Build.L3.Isolated"],                         # trust_remote_code model load = code exec
         "GL-047":   ["Build.L3.Isolated"],                         # unsafe pickle deser of fetched artifact = code exec
-        "GL-048":   ["Build.L3.Isolated"],                         # untrusted MR context into agentic CLI = prompt injection
+        "GL-048":   ["Build.L3.Isolated"],                         # MR context into agentic CLI = prompt injection
         "GL-049":   ["Build.L3.NonFalsifiable"],                   # agentic CLI output lands without review
         "GL-005":   ["Build.L3.NonFalsifiable"],                   # unpinned include
         "GL-042":   ["Build.L3.NonFalsifiable"],                   # unpinned component include

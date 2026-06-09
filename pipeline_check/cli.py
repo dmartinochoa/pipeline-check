@@ -197,7 +197,7 @@ class _GroupedCommand(click.Command):
             "--scm-platform", "--scm-repo", "--scm-fixture-dir",
             "--gh-token", "--gitlab-token", "--gitlab-url",
             "--resolve-remote", "--gha-search-path", "--gha-resolve-depth",
-            "--npm-base-ref", "--audit-runs-logs",
+            "--npm-base-ref", "--audit-runs-logs", "--no-cache",
         })),
         ("Filtering", frozenset({
             "--checks", "--severity-threshold", "--min-confidence",

@@ -237,6 +237,20 @@ class TestGroupedHelp:
         ):
             assert flag in result.output, f"missing from --help: {flag}"
 
+    def test_no_orphan_other_bucket(self, runner):
+        # Every option is assigned to a section; nothing falls into the
+        # catch-all "Other" bucket. Forces a new flag to be categorized in
+        # ``_SECTIONS`` rather than silently landing in "Other".
+        result = runner.invoke(scan, ["--help"])
+        assert "Other:" not in result.output
+
+    def test_help_leads_with_getting_started(self, runner):
+        # The orientation block surfaces the common commands above the
+        # ~150-flag reference.
+        result = runner.invoke(scan, ["--help"])
+        assert "Getting started:" in result.output
+        assert "pipeline_check init" in result.output
+
 
 # ── init subcommand ─────────────────────────────────────────────────────────
 

@@ -9,7 +9,8 @@ secrets and token. The safe default is the library default
 (``trust_remote_code=False``).
 
 Provider-neutral, so every CI provider that runs inline ML scripts can
-share one catalog: GHA-120 (GitHub), GL-045 (GitLab), BB-034 (Bitbucket).
+share one catalog: GHA-120 (GitHub), GL-045 (GitLab), BB-035 (Bitbucket),
+ADO-034 (Azure DevOps).
 """
 from __future__ import annotations
 
