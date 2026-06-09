@@ -151,6 +151,19 @@ release commit collapses this section into `## [X.Y.Z] - <date>`.
   is high-precision but best-effort on recall (log content varies). HIGH.
   runs 3 -> 4.
 
+### Changed
+
+- **RUN-006 now scans ordinary `push` / `pull_request` runs, not just the
+  privileged-trigger subset.** The tj-actions / Trivy / Checkmarx
+  compromised-action campaigns ran on regular CI, so limiting RUN-006 to
+  the privileged-trigger logs RUN-003 / RUN-004 download missed its
+  headline case. A second bounded pass under `--audit-runs-logs`
+  (`DEFAULT_ACTION_LOG_FETCH_LIMIT`, 25 by default) downloads the most
+  recent non-privileged run logs and scans them for the compromised-action
+  IOC match only (the secret detector still runs only on privileged-trigger
+  runs, so RUN-003's scope is unchanged). A truncation warning prints when
+  older non-privileged runs go unscanned.
+
 ### Fixed
 
 - **modelfile: a hub model pulled by a file path (`FROM

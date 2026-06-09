@@ -38,6 +38,15 @@ _MAX_LOG_TOTAL_BYTES = 50 * 1024 * 1024
 #: ``.../jobs`` page per fork run, so it is bounded the same way.
 DEFAULT_JOBS_FETCH_LIMIT = 25
 
+#: Known-compromised-action forensics (RUN-006) is not trigger-specific:
+#: the tj-actions / Trivy / Checkmarx campaigns ran on ordinary push / PR
+#: runs, not just the privileged-trigger subset RUN-003 / RUN-004 scan. So
+#: a separate bounded pass downloads logs for the most recent runs of *any*
+#: trigger and scans them for the IOC match only (no secret detector). The
+#: privileged subset is already covered by the secrets pass, so this pass
+#: skips it to avoid re-downloading.
+DEFAULT_ACTION_LOG_FETCH_LIMIT = 25
+
 #: Triggers that execute in the *base* repository's privileged context
 #: (repo secrets + a write-scoped ``GITHUB_TOKEN``) while potentially
 #: handling PR-controlled content. A run that actually fired on one of
@@ -217,10 +226,18 @@ class RunsContext:
             ctx._scan_jobs(fetcher, DEFAULT_JOBS_FETCH_LIMIT)
         return ctx
 
-    def _scan_logs(self, fetcher: Any, fetch_limit: int) -> None:
+    def _scan_logs(
+        self, fetcher: Any, fetch_limit: int,
+        action_fetch_limit: int = DEFAULT_ACTION_LOG_FETCH_LIMIT,
+    ) -> None:
         """Download + scan logs for the privileged-trigger runs (the risk
         surface), bounded to *fetch_limit* runs. A leaked secret-shaped
         string in CI output is recorded under ``log_leaks[run_id]``.
+
+        After the privileged subset, a second bounded pass
+        (``_scan_action_logs``, ``action_fetch_limit`` runs) scans the most
+        recent *non-privileged* runs for known-compromised actions only, so
+        RUN-006's coverage is not limited to the privileged subset.
 
         Needs a fetcher exposing ``fetch_bytes`` (the live HTTP fetcher
         does; an offline fixture fetcher may not). Each log fetch can 404
@@ -237,11 +254,13 @@ class RunsContext:
         targets = [
             r for r in self.runs if r.event in PRIVILEGED_TRIGGERS
         ][:fetch_limit]
+        scanned_ids: set[int] = set()
         for run in targets:
             raw = fetch_bytes(
                 f"repos/{self.owner}/{self.name}/actions/runs/"
                 f"{run.run_id}/logs"
             )
+            scanned_ids.add(run.run_id)
             if not raw:
                 continue
             leaks, oidc_minted, compromised = _scan_log_zip(raw)
@@ -251,6 +270,40 @@ class RunsContext:
                 self.oidc_mint_runs.add(run.run_id)
             if compromised:
                 self.compromised_action_runs[run.run_id] = compromised
+        self._scan_action_logs(fetch_bytes, scanned_ids, action_fetch_limit)
+
+    def _scan_action_logs(
+        self, fetch_bytes: Any, scanned_ids: set[int], fetch_limit: int,
+    ) -> None:
+        """Scan recent non-privileged run logs for known-compromised actions.
+
+        RUN-006 (a compromised action confirmed executing) is not
+        trigger-specific: the tj-actions / Trivy / Checkmarx campaigns ran
+        on ordinary ``push`` / ``pull_request`` runs, which the privileged
+        secrets pass above does not download. This pass fills that gap,
+        bounded to *fetch_limit* of the most recent runs not already
+        scanned, and runs only the cheap IOC-line scan (no secret
+        detector). Each 404 / expired-log archive degrades to a skip.
+        """
+        targets = [
+            r for r in self.runs if r.run_id not in scanned_ids
+        ]
+        for run in targets[:fetch_limit]:
+            raw = fetch_bytes(
+                f"repos/{self.owner}/{self.name}/actions/runs/"
+                f"{run.run_id}/logs"
+            )
+            if not raw:
+                continue
+            _, _, compromised = _scan_log_zip(raw, compromised_only=True)
+            if compromised:
+                self.compromised_action_runs[run.run_id] = compromised
+        if len(targets) > fetch_limit:
+            self.warnings.append(
+                f"[runs] {self.slug}: scanned the {fetch_limit} most recent "
+                f"non-privileged run(s) of {len(targets)} for "
+                "known-compromised actions; older runs were not fetched."
+            )
 
     def _scan_jobs(self, fetcher: Any, fetch_limit: int) -> None:
         """Fetch job metadata for fork runs to flag self-hosted-runner use.
@@ -341,7 +394,9 @@ def _self_hosted_labels(raw: Any) -> str:
     return ""
 
 
-def _scan_log_zip(raw: bytes) -> tuple[list[str], bool, dict[str, str]]:
+def _scan_log_zip(
+    raw: bytes, *, compromised_only: bool = False,
+) -> tuple[list[str], bool, dict[str, str]]:
     """Scan a run-logs ZIP for secret-shaped strings, OIDC-mint markers,
     and known-compromised action executions.
 
@@ -357,15 +412,22 @@ def _scan_log_zip(raw: bytes) -> tuple[list[str], bool, dict[str, str]]:
     imported lazily so a metadata-only scan never pays for the detector
     catalog.
 
+    With ``compromised_only=True`` the secret and OIDC passes are skipped
+    (the leak / OIDC findings are scoped to privileged-trigger runs), so a
+    non-privileged run downloaded purely for RUN-006 pays only for the
+    cheap IOC-line scan.
+
     Returns ``(sorted_secret_labels, oidc_minted, compromised_actions)``,
     where ``compromised_actions`` maps each offending ``owner/repo@ref``
     label to its advisory.
     """
-    from .._secrets import find_secret_values
     try:
         archive = zipfile.ZipFile(io.BytesIO(raw))
     except (zipfile.BadZipFile, OSError, EOFError):
         return [], False, {}
+    find_secret_values = None
+    if not compromised_only:
+        from .._secrets import find_secret_values
     leaks: set[str] = set()
     oidc_minted = False
     compromised: dict[str, str] = {}
@@ -381,9 +443,10 @@ def _scan_log_zip(raw: bytes) -> tuple[list[str], bool, dict[str, str]]:
                 text = archive.read(info).decode("utf-8", errors="replace")
             except (OSError, RuntimeError, zipfile.BadZipFile):
                 continue
-            leaks.update(find_secret_values([text]))
-            if not oidc_minted and _OIDC_MARKERS_RE.search(text):
-                oidc_minted = True
+            if find_secret_values is not None:
+                leaks.update(find_secret_values([text]))
+                if not oidc_minted and _OIDC_MARKERS_RE.search(text):
+                    oidc_minted = True
             compromised.update(_scan_compromised_actions(text))
     return sorted(leaks), oidc_minted, compromised
 
