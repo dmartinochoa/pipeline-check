@@ -441,6 +441,7 @@ CASES: list[CheckCase] = [
     CheckCase("BB-034", "CICD-SEC-1", ("ESF-C-APPROVAL", "ESF-C-ENV-SEP")),
     CheckCase("BB-035", "CICD-SEC-4", ("ESF-D-INJECTION",)),
     CheckCase("BB-036", "CICD-SEC-4", ("ESF-D-INJECTION",)),
+    CheckCase("BB-037", "CICD-SEC-4", ("ESF-D-INJECTION",)),
     # ── Azure DevOps backfill (ADO-027..030) ─────────────────────────
     CheckCase("ADO-027", "CICD-SEC-4", ("ESF-D-INJECTION",)),
     CheckCase("ADO-028", "CICD-SEC-3", ("ESF-S-PIN-DEPS", "ESF-S-VERIFY-DEPS")),
@@ -451,6 +452,7 @@ CASES: list[CheckCase] = [
     CheckCase("ADO-033", "CICD-SEC-4", ("ESF-D-INJECTION",)),
     CheckCase("ADO-034", "CICD-SEC-4", ("ESF-D-INJECTION",)),
     CheckCase("ADO-035", "CICD-SEC-4", ("ESF-D-INJECTION",)),
+    CheckCase("ADO-036", "CICD-SEC-4", ("ESF-D-INJECTION",)),
     # ── Jenkins backfill (JF-030..035) ───────────────────────────────
     CheckCase("JF-030", "CICD-SEC-4", ("ESF-D-INJECTION",)),
     CheckCase("JF-031", "CICD-SEC-3", ("ESF-S-PIN-DEPS", "ESF-S-VERIFY-DEPS")),

@@ -15,7 +15,7 @@ pipeline_check --pipeline bitbucket --bitbucket-path ci/
 
 ## What it covers
 
-36 checks · 11 have an autofix patch (``--fix``).
+37 checks · 11 have an autofix patch (``--fix``).
 
 | Check | Title | Severity | Fix |
 |-------|-------|----------|-----|
@@ -55,6 +55,7 @@ pipeline_check --pipeline bitbucket --bitbucket-path ci/
 | [BB-034](#bb-034) | Production deployment on a pull-request pipeline | <span class="pg-sev pg-sev--critical">CRITICAL</span> |  |
 | [BB-035](#bb-035) | ML model loaded with trust_remote_code (code execution) | <span class="pg-sev pg-sev--high">HIGH</span> |  |
 | [BB-036](#bb-036) | Untrusted PR/branch context reaches an agentic AI CLI (prompt injection) | <span class="pg-sev pg-sev--high">HIGH</span> |  |
+| [BB-037](#bb-037) | Unsafe deserialization of a fetched artifact (pickle RCE) | <span class="pg-sev pg-sev--high">HIGH</span> |  |
 
 ---
 
@@ -837,6 +838,26 @@ The AI analog of BB-002 (script injection). Fires when a ``script:`` line invoke
 **Recommended action**
 
 Do not place attacker-controllable context (a PR's branch / tag name or `$BITBUCKET_PR_*` metadata) in an agentic CLI's prompt. Quoting does NOT sanitize a prompt the way it does a shell command, the model still reads the value. If the agent must see PR content, run it on a step with no deployment / repository secrets in scope and no tool / shell access, and treat its output as untrusted.
+
+</div>
+
+</div>
+
+<div class="pg-rule pg-rule--high" markdown>
+
+## BB-037: Unsafe deserialization of a fetched artifact (pickle RCE) { #bb-037 }
+
+<div class="pg-rule__tags">
+<span class="pg-sev pg-sev--high">HIGH</span> <span class="pg-tag pg-tag--owasp">CICD-SEC-4</span> <span class="pg-tag pg-tag--esf">ESF-D-INJECTION</span> <span class="pg-tag pg-tag--cwe">CWE-502</span> <span class="pg-tag pg-tag--cwe">CWE-494</span> <span class="pg-tag pg-tag--cwe">CWE-829</span>
+</div>
+
+Fires per ``script:`` step in two shapes (shared with GHA-122 / GL-047 via ``_primitives/unsafe_deser``): an explicit unsafe opt-in (``weights_only=False`` / ``allow_pickle=True``) always; or a remote fetch (curl / wget / ``hf_hub_download`` / ``snapshot_download`` / ``huggingface-cli download`` / ``requests``) alongside a pickle-backed loader (``torch.load`` / ``pickle.load(s)`` / ``joblib.load``) with no safe path (``weights_only=True`` or safetensors) in the same step. A bare local load with no fetch does not fire.
+
+<div class="pg-rule__rec" markdown>
+
+**Recommended action**
+
+Load models / artifacts through a non-executing format: prefer ``safetensors``, or pass ``weights_only=True`` to ``torch.load`` (default in PyTorch 2.6+). Never ``pickle.load`` / ``joblib.load`` / ``numpy.load(allow_pickle=True)`` a file fetched at build time, and pin + checksum any model you must deserialize.
 
 </div>
 

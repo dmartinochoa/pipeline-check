@@ -263,6 +263,7 @@ STANDARD = Standard(
         "BB-002":   ["Dangerous-Workflow"],
         "BB-035":   ["Dangerous-Workflow"],   # trust_remote_code model load = code exec
         "BB-036":   ["Dangerous-Workflow"],   # untrusted PR context into agentic CLI = prompt injection
+        "BB-037":   ["Dangerous-Workflow"],   # unsafe pickle deser of fetched artifact = code exec
         "BB-018":   ["Dangerous-Workflow"],
         "BB-023":   ["Dangerous-Workflow"],
         "BB-025":   ["Dangerous-Workflow"],                            # malicious activity
@@ -270,6 +271,7 @@ STANDARD = Standard(
         "ADO-002":  ["Dangerous-Workflow"],
         "ADO-034":  ["Dangerous-Workflow"],   # trust_remote_code model load = code exec
         "ADO-035":  ["Dangerous-Workflow"],   # untrusted PR context into agentic CLI = prompt injection
+        "ADO-036":  ["Dangerous-Workflow"],   # unsafe pickle deser of fetched artifact = code exec
         "ADO-011":  ["Dangerous-Workflow"],
         "ADO-012":  ["Dangerous-Workflow"],
         "ADO-019":  ["Dangerous-Workflow"],

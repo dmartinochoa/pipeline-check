@@ -1,0 +1,4 @@
+jobs:
+  - job: Load
+    steps:
+      - script: python -c "from safetensors.torch import load_file; load_file('model.safetensors')"

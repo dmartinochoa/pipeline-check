@@ -309,6 +309,7 @@ STANDARD = Standard(
         "BB-002":   ["PW.6.1", "PW.9.1"],
         "BB-035":   ["PW.6.1", "PW.9.1"],   # trust_remote_code model load = code exec
         "BB-036":   ["PW.6.1", "PW.9.1"],   # untrusted PR context into agentic CLI = prompt injection
+        "BB-037":   ["PW.6.1", "PW.9.1"],   # unsafe pickle deser of fetched artifact = code exec
         "BB-003":   ["PS.1.1"],
         "BB-004":   ["PO.5.1"],
         "BB-005":   ["PO.5.2", "PW.9.1"],
@@ -343,6 +344,7 @@ STANDARD = Standard(
         "ADO-002":  ["PW.6.1", "PW.9.1"],
         "ADO-034":  ["PW.6.1", "PW.9.1"],   # trust_remote_code model load = code exec
         "ADO-035":  ["PW.6.1", "PW.9.1"],   # untrusted PR context into agentic CLI = prompt injection
+        "ADO-036":  ["PW.6.1", "PW.9.1"],   # unsafe pickle deser of fetched artifact = code exec
         "ADO-003":  ["PS.1.1"],
         "ADO-004":  ["PO.5.1"],
         "ADO-005":  ["PW.4.1", "PW.4.4"],

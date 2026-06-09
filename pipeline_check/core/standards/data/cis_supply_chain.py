@@ -318,6 +318,7 @@ STANDARD = Standard(
         "BB-002":   ["2.1.3", "2.3.8"],
         "BB-035":   ["2.1.3"],   # trust_remote_code model load = code exec
         "BB-036":   ["2.1.3", "2.3.8"],                  # untrusted PR context into agentic CLI
+        "BB-037":   ["2.1.3"],                           # unsafe pickle deser of fetched artifact
         "BB-003":   ["1.5.1", "2.3.4", "2.4.3"],
         "BB-004":   ["5.1.4", "5.2.1"],
         "BB-005":   ["2.2.2"],
@@ -352,6 +353,7 @@ STANDARD = Standard(
         "ADO-002":  ["2.1.3", "2.3.8"],
         "ADO-034":  ["2.1.3"],   # trust_remote_code model load = code exec
         "ADO-035":  ["2.1.3", "2.3.8"],                  # untrusted PR context into agentic CLI
+        "ADO-036":  ["2.1.3"],                           # unsafe pickle deser of fetched artifact
         "ADO-003":  ["1.5.1", "2.3.4", "2.4.3"],
         "ADO-004":  ["5.1.4", "5.2.1"],
         "ADO-005":  ["1.4.1", "3.1.5"],

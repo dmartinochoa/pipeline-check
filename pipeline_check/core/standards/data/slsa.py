@@ -223,6 +223,7 @@ STANDARD = Standard(
         "BB-002":   ["Build.L3.Isolated"],                         # script injection
         "BB-035":   ["Build.L3.Isolated"],                         # trust_remote_code model load = code exec
         "BB-036":   ["Build.L3.Isolated"],                         # untrusted PR context into agentic CLI
+        "BB-037":   ["Build.L3.Isolated"],                         # unsafe pickle deser of fetched artifact
         "BB-005":   ["Build.L3.Ephemeral"],                        # unbounded runtime
         "BB-006":   ["Build.L2.Signed"],
         "BB-007":   ["Build.L1.Provenance"],
@@ -256,6 +257,7 @@ STANDARD = Standard(
         "ADO-002":  ["Build.L3.Isolated"],                         # script injection
         "ADO-034":  ["Build.L3.Isolated"],                         # trust_remote_code model load = code exec
         "ADO-035":  ["Build.L3.Isolated"],                         # untrusted PR context into agentic CLI
+        "ADO-036":  ["Build.L3.Isolated"],                         # unsafe pickle deser of fetched artifact
         "ADO-005":  ["Build.L3.NonFalsifiable"],                   # unpinned container
         "ADO-006":  ["Build.L2.Signed"],
         "ADO-007":  ["Build.L1.Provenance"],
