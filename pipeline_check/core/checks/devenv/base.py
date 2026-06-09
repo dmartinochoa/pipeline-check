@@ -28,6 +28,7 @@ KIND_VSCODE_TASKS = "vscode_tasks"
 KIND_VSCODE_SETTINGS = "vscode_settings"
 KIND_DEVCONTAINER = "devcontainer"
 KIND_CLAUDE_SETTINGS = "claude_settings"
+KIND_MCP_CONFIG = "mcp_config"
 
 #: devcontainer lifecycle keys that run inside the container on
 #: create / attach. ``initializeCommand`` is deliberately excluded:
@@ -156,6 +157,12 @@ def _kind_for(path: Path) -> str | None:
         return KIND_DEVCONTAINER
     if name in {"settings.json", "settings.local.json"} and parent == ".claude":
         return KIND_CLAUDE_SETTINGS
+    # MCP server configs: Claude Code (``.mcp.json`` at the repo root),
+    # Cursor (``.cursor/mcp.json``), VS Code (``.vscode/mcp.json``).
+    if name == ".mcp.json":
+        return KIND_MCP_CONFIG
+    if name == "mcp.json" and parent in {".cursor", ".vscode"}:
+        return KIND_MCP_CONFIG
     return None
 
 
@@ -169,6 +176,9 @@ def _discover(root: Path) -> list[Path]:
         root / ".devcontainer" / "devcontainer.json",
         root / ".claude" / "settings.json",
         root / ".claude" / "settings.local.json",
+        root / ".mcp.json",
+        root / ".cursor" / "mcp.json",
+        root / ".vscode" / "mcp.json",
     ]
     out.extend(p for p in candidates if p.is_file())
     # devcontainer supports a per-config subfolder layout:
@@ -359,6 +369,37 @@ def claude_command_hooks(data: dict[str, Any]) -> list[tuple[str, str]]:
                 cmd = entry.get("command")
                 if isinstance(cmd, str) and cmd.strip():
                     out.append((str(event), cmd))
+    return out
+
+
+def mcp_command_servers(data: dict[str, Any]) -> list[tuple[str, str]]:
+    """Return ``(server_name, command_line)`` for every stdio MCP server.
+
+    An MCP config maps server names to specs. A ``command``-bearing spec
+    is a *stdio* server: the editor / agent launches that command as a
+    local child process when the project opens. ``url``-only specs
+    (``type: http`` / ``sse``) talk to a remote endpoint and don't spawn
+    a local process, so they are not returned.
+
+    Both the Claude / Cursor (``mcpServers``) and VS Code (``servers``)
+    top-level block names are accepted.
+    """
+    out: list[tuple[str, str]] = []
+    for block_key in ("mcpServers", "servers"):
+        block = data.get(block_key)
+        if not isinstance(block, dict):
+            continue
+        for name, spec in block.items():
+            if not isinstance(spec, dict):
+                continue
+            cmd = spec.get("command")
+            if not isinstance(cmd, str) or not cmd.strip():
+                continue
+            parts = [cmd]
+            args = spec.get("args")
+            if isinstance(args, list):
+                parts.extend(a for a in args if isinstance(a, str))
+            out.append((str(name), " ".join(parts).strip()))
     return out
 
 

@@ -1072,6 +1072,7 @@ STANDARD = Standard(
         # Developer-environment auto-execution
         "DEV-001":   ["ESF-D-INJECTION"],                  # vscode folderOpen task
         "DEV-006":   ["ESF-D-INJECTION"],                  # vscode settings exec-path / env injection
+        "DEV-007":   ["ESF-D-INJECTION"],                  # committed MCP config auto-launches a command server
         "DEV-002":   ["ESF-D-INJECTION"],                  # devcontainer lifecycle
         "DEV-003":   ["ESF-D-INJECTION"],                  # committed claude hook
         "DEV-004":   ["ESF-S-VERIFY-DEPS", "ESF-D-INJECTION"],  # remote fetch+exec
