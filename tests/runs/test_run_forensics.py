@@ -273,3 +273,64 @@ class TestRun003LogScan:
         assert ctx.logs_scanned is True
         assert ctx.log_leaks == {}
         assert any("cannot" in w for w in ctx.warnings)
+
+
+# ── RUN-004: fork run minted a cloud OIDC token (--audit-runs-logs) ──────────
+
+# A log line that exercises GitHub Actions OIDC token minting.
+_OIDC_LOG = (
+    "Run actions/github-script@v7\n"
+    "Requesting token from https://token.actions.githubusercontent.com/...\n"
+    "Assuming role via AssumeRoleWithWebIdentity\n"
+)
+
+
+class TestRun004ForkOidcMint:
+    def _ctx_with_log(self, run: dict, log_text: str) -> RunsContext:
+        payload = {"total_count": 1, "workflow_runs": [run]}
+        blobs = {f"repos/owner/r/actions/runs/{run['id']}/logs": _log_zip(log_text)}
+        return RunsContext.for_repo(
+            "owner", "r", FakeFetcher({_RUNS_PATH: payload}, blobs),
+            scan_logs=True,
+        )
+
+    def test_passes_with_skip_note_when_logs_not_scanned(self):
+        ctx = _ctx(_run(1, "pull_request_target", fork=True))
+        assert ctx.logs_scanned is False
+        run004 = _for(_findings(ctx), "RUN-004")
+        assert run004 and all(f.passed for f in run004)
+        assert "not enabled" in run004[0].description
+
+    def test_fires_on_fork_run_that_minted_oidc(self):
+        run = _run(1, "pull_request_target", fork=True)
+        ctx = self._ctx_with_log(run, _OIDC_LOG)
+        assert ctx.oidc_mint_runs == {1}
+        failing = [f for f in _for(_findings(ctx), "RUN-004") if not f.passed]
+        assert len(failing) == 1
+        f = failing[0]
+        assert f.severity == Severity.HIGH
+        assert "#run/1" in f.resource
+        assert "OIDC" in f.description and "fork" in f.description.lower()
+
+    def test_does_not_fire_on_non_fork_oidc_mint(self):
+        # A trusted-branch privileged run using OIDC normally is not a finding.
+        run = _run(1, "workflow_run", fork=False)
+        ctx = self._ctx_with_log(run, _OIDC_LOG)
+        assert ctx.oidc_mint_runs == {1}  # detected...
+        run004 = _for(_findings(ctx), "RUN-004")
+        assert run004 and all(f.passed for f in run004)  # ...but scoped to forks
+        assert "No fork-originated run" in run004[0].description
+
+    def test_passes_when_fork_run_did_not_mint_oidc(self):
+        run = _run(1, "pull_request_target", fork=True)
+        ctx = self._ctx_with_log(run, "step\nbuilding the project\nall good\n")
+        assert ctx.oidc_mint_runs == set()
+        run004 = _for(_findings(ctx), "RUN-004")
+        assert run004 and all(f.passed for f in run004)
+
+    def test_aws_and_gcp_markers_also_detected(self):
+        for marker in ("AssumeRoleWithWebIdentity", "workloadIdentityPools",
+                       "ACTIONS_ID_TOKEN_REQUEST_URL"):
+            run = _run(1, "pull_request_target", fork=True)
+            ctx = self._ctx_with_log(run, f"step\n{marker}\n")
+            assert ctx.oidc_mint_runs == {1}, marker

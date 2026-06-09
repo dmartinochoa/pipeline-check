@@ -26,13 +26,14 @@ pipeline_check --pipeline runs --scm-repo owner/name \
 
 ## What it covers
 
-3 checks · 0 have an autofix patch (``--fix``).
+4 checks · 0 have an autofix patch (``--fix``).
 
 | Check | Title | Severity | Fix |
 |-------|-------|----------|-----|
 | [RUN-001](#run-001) | Fork PR executed on a privileged trigger | <span class="pg-sev pg-sev--high">HIGH</span> |  |
 | [RUN-002](#run-002) | Privileged trigger exercised in run history | <span class="pg-sev pg-sev--medium">MEDIUM</span> |  |
 | [RUN-003](#run-003) | Secret leaked in workflow run logs | <span class="pg-sev pg-sev--high">HIGH</span> |  |
+| [RUN-004](#run-004) | Fork PR run minted a cloud OIDC token | <span class="pg-sev pg-sev--high">HIGH</span> |  |
 
 ---
 
@@ -91,6 +92,26 @@ Only evaluated with ``--audit-runs-logs``. Downloads each privileged-trigger run
 **Recommended action**
 
 Rotate the leaked credential immediately, then stop it reaching the log: register it as an Actions secret so GitHub masks it, avoid `set -x` / `env` dumps in steps that hold it, and pipe tool output that may echo credentials through a redactor.
+
+</div>
+
+</div>
+
+<div class="pg-rule pg-rule--high" markdown>
+
+## RUN-004: Fork PR run minted a cloud OIDC token { #run-004 }
+
+<div class="pg-rule__tags">
+<span class="pg-sev pg-sev--high">HIGH</span> <span class="pg-tag pg-tag--owasp">CICD-SEC-4</span> <span class="pg-tag pg-tag--cwe">CWE-94</span>
+</div>
+
+Only evaluated with ``--audit-runs-logs``. Reuses the privileged-trigger run logs RUN-003 downloads (the Actions REST API ``.../logs`` endpoint) and flags a run whose logs show OIDC token minting (``token.actions.githubusercontent.com``, the ``ACTIONS_ID_TOKEN_REQUEST_*`` env, AWS ``AssumeRoleWithWebIdentity``, or GCP ``workloadIdentityPools``). Scoped to fork-originated runs, so a trusted-branch deploy that uses OIDC normally does not fire. Detection is high-precision but best-effort on recall (log content varies; registered secrets are masked).
+
+<div class="pg-rule__rec" markdown>
+
+**Recommended action**
+
+Treat this as untrusted code that reached cloud federation: rotate / review the federated role's recent activity and assume the run could act as that role. Restrict the role's trust policy so a fork / PR ref cannot assume it (pin the subject to your protected branches and environments), and move any OIDC-authenticated step out of the privileged ``pull_request_target`` / ``workflow_run`` path that handles PR content (the label-then-deploy pattern).
 
 </div>
 
