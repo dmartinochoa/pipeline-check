@@ -12,6 +12,23 @@ release commit collapses this section into `## [X.Y.Z] - <date>`.
 
 ### Added
 
+- **BB-036 / ADO-035: untrusted PR context reaches an agentic AI CLI
+  (Bitbucket, Azure DevOps).** Brings the flagship AI prompt-injection
+  rule (GHA-119 / GL-048) to the two remaining script-based CI providers,
+  completing its cross-provider coverage. An agentic CLI (`claude` /
+  `gemini` / `cursor-agent` / `aider` / `openhands` / `goose` / `q chat`)
+  reads a prompt and then acts (runs shell, writes files, calls tools), so
+  when a step feeds attacker-controllable context into that prompt anyone
+  who can open a pull request can smuggle instructions the agent executes.
+  BB-036 fires on `$BITBUCKET_BRANCH` / `$BITBUCKET_TAG` / `$BITBUCKET_PR_*`
+  (directly or via an exported shell var); ADO-035 on
+  `$(Build.SourceVersionMessage)` / `$(Build.SourceBranch*)` /
+  `$(System.PullRequest.*)` (directly or via a `variables:` entry). As the
+  AI face of BB-002 / ADO-002, the shell-quoting / `env:` routing that
+  defangs command injection does not help, since the model ingests the
+  value as prompt text regardless. Reuses the shared
+  `_primitives/agentic_cli` catalog and each provider's existing
+  untrusted-context detection. HIGH. bitbucket 35 -> 36, azure 34 -> 35.
 - **RUN-005: a fork PR's run executed on a self-hosted runner (run
   forensics).** GitHub's most-warned-about self-hosted-runner risk,
   confirmed live: a fork PR runs attacker-controlled code, and on a

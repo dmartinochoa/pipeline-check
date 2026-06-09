@@ -30,7 +30,7 @@ The walker handles every layout ADO supports:
 
 ## What it covers
 
-34 checks · 11 have an autofix patch (``--fix``).
+35 checks · 11 have an autofix patch (``--fix``).
 
 | Check | Title | Severity | Fix |
 |-------|-------|----------|-----|
@@ -68,6 +68,7 @@ The walker handles every layout ADO supports:
 | [ADO-032](#ado-032) | checkout persistCredentials leaves the pipeline token in .git/config | <span class="pg-sev pg-sev--high">HIGH</span> |  |
 | [ADO-033](#ado-033) | IaC apply on a PR-validated pipeline | <span class="pg-sev pg-sev--critical">CRITICAL</span> |  |
 | [ADO-034](#ado-034) | ML model loaded with trust_remote_code (code execution) | <span class="pg-sev pg-sev--high">HIGH</span> |  |
+| [ADO-035](#ado-035) | Untrusted PR/commit context reaches an agentic AI CLI (prompt injection) | <span class="pg-sev pg-sev--high">HIGH</span> |  |
 
 ---
 
@@ -791,6 +792,26 @@ Fires on ``trust_remote_code=True`` / ``--trust-remote-code`` in a step's ``scri
 **Recommended action**
 
 Load models with ``trust_remote_code=False`` (the library default). If a model genuinely needs custom code, vet it and pin an exact revision (a commit SHA, not a tag or branch), run the load in a job scoped to no production service connections, and prefer safetensors weights over pickle.
+
+</div>
+
+</div>
+
+<div class="pg-rule pg-rule--high" markdown>
+
+## ADO-035: Untrusted PR/commit context reaches an agentic AI CLI (prompt injection) { #ado-035 }
+
+<div class="pg-rule__tags">
+<span class="pg-sev pg-sev--high">HIGH</span> <span class="pg-tag pg-tag--owasp">CICD-SEC-4</span> <span class="pg-tag pg-tag--esf">ESF-D-INJECTION</span> <span class="pg-tag pg-tag--cwe">CWE-94</span> <span class="pg-tag pg-tag--cwe">CWE-77</span>
+</div>
+
+The AI analog of ADO-002 (script injection). Fires when a step's script body (``script`` / ``bash`` / ``pwsh`` / ``powershell`` or a task-based step's ``inputs.script``) invokes an agentic CLI (claude / gemini / cursor-agent / aider / openhands / goose / ``q chat``) AND attacker-controllable Azure context reaches it, either an untrusted macro (`$(Build.SourceVersionMessage)`) interpolated directly, or a ``variables:`` entry whose value carries one. Unlike a shell, an LLM ingests a quoted / env-routed value as prompt text, so the ADO-002 mitigation does not apply, which is why this is separate.
+
+<div class="pg-rule__rec" markdown>
+
+**Recommended action**
+
+Do not place attacker-controllable context (a PR's commit message, source branch, or `$(System.PullRequest.*)` metadata) in an agentic CLI's prompt. Routing through a quoted `env:` variable does NOT sanitize a prompt the way it does a shell command, the model still reads the value. If the agent must see PR content, run it on a job with no service-connection secrets and no tool / shell access, and treat its output as untrusted.
 
 </div>
 

@@ -1,0 +1,4 @@
+jobs:
+  - job: Triage
+    steps:
+      - script: claude -p "Triage this PR from commit $(Build.SourceVersionMessage)"

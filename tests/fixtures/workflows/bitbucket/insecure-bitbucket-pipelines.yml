@@ -114,6 +114,11 @@ pipelines:
             - ./dist/install.sh
             # BB-033 — IaC apply runs on the PR branch's Terraform.
             - terraform apply -auto-approve
+      # BB-036 — untrusted PR branch name fed into an agentic AI CLI prompt.
+      - step:
+          name: AI triage
+          script:
+            - claude -p "Triage this pull request from branch $BITBUCKET_BRANCH"
 
 # BB-020 — full clone depth.
 clone:
