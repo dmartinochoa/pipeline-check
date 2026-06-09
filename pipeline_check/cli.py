@@ -2485,8 +2485,18 @@ def scan(
 ) -> None:
     """Pipeline-Check. CI/CD Security Posture Scanner.
 
-    Analyzes CI/CD configurations and scores them against the
-    OWASP Top 10 CI/CD Security Risks framework.
+    Scores CI/CD configs against the OWASP Top 10 CI/CD Security Risks
+    and 17 other compliance frameworks, then grades the result A-D.
+
+    \b
+    Getting started:
+      pipeline_check                   scan the current repo (auto-detects providers)
+      pipeline_check init              set up a CI gate + baseline, with next steps
+      pipeline_check --policy pr-gate  block PRs on new HIGH+ findings
+      pipeline_check explain GHA-001   understand one finding and how to fix it
+      pipeline_check --man recipes     copy-paste recipes for common workflows
+
+    Run --man for the full topic list; the flags below are grouped by task.
     """
     # --quiet wins over --verbose.
     verbose = verbose and not quiet
@@ -2769,25 +2779,38 @@ def scan(
     )
 
     scanner: Scanner | MultiScanner
-    if pipelines_list:
-        # Multi-provider mode. Each sub-scanner's chain pass is
-        # suppressed regardless; ``MultiScanner.run`` evaluates
-        # chains once over the union (when ``chains_enabled=True``)
-        # so cross-provider chains (XPC-NNN) fire. Single-provider
-        # chains still match in that union pass, so AC-NNN coverage
-        # carries through. ``--no-chains`` disables the union pass
-        # too.
-        scanner = MultiScanner(
-            pipelines=pipelines_list,
-            chains_enabled=not no_chains,
-            **_scanner_kwargs,
-        )
-    else:
-        scanner = Scanner(
-            pipeline=pipeline_lc,
-            chains_enabled=not no_chains,
-            **_scanner_kwargs,
-        )
+    # A provider's ``build_context()`` runs during Scanner construction
+    # (it loads the target up front). Providers that need a flag the
+    # path-resolver doesn't validate (``scm`` / ``runs``) raise
+    # ``ValueError`` on a missing / malformed value, and the live-cloud
+    # SDK providers (``gcp`` / ``azure_cloud``) raise ``ImportError`` when
+    # their optional extra isn't installed. Catch both and surface the
+    # provider's own (already user-friendly) message as a clean exit-2
+    # error rather than a raw traceback. Narrowly scoped so a genuine bug
+    # still surfaces its stack.
+    try:
+        if pipelines_list:
+            # Multi-provider mode. Each sub-scanner's chain pass is
+            # suppressed regardless; ``MultiScanner.run`` evaluates
+            # chains once over the union (when ``chains_enabled=True``)
+            # so cross-provider chains (XPC-NNN) fire. Single-provider
+            # chains still match in that union pass, so AC-NNN coverage
+            # carries through. ``--no-chains`` disables the union pass
+            # too.
+            scanner = MultiScanner(
+                pipelines=pipelines_list,
+                chains_enabled=not no_chains,
+                **_scanner_kwargs,
+            )
+        else:
+            scanner = Scanner(
+                pipeline=pipeline_lc,
+                chains_enabled=not no_chains,
+                **_scanner_kwargs,
+            )
+    except (ValueError, ImportError) as exc:
+        click.echo(f"Error: {exc}", err=True)
+        raise click.exceptions.Exit(2) from exc
 
     if verbose:
         meta = scanner.metadata
@@ -2843,12 +2866,19 @@ def scan(
                 standards=list(standards) if standards else None,
             )
         except Exception as exc:
-            # Print the traceback to stderr so operators have something to
-            # take to support. Keep the single-line summary above it for
-            # teams that grep logs for "[error] Scan failed".
-            import traceback
+            # Always print the one-line summary (teams grep logs for
+            # "[error] Scan failed"). The full traceback is noise for an
+            # operator unless they're filing a bug, so gate it behind
+            # --verbose and otherwise point them at the flag.
             click.echo(f"[error] Scan failed: {exc}", err=True)
-            click.echo(traceback.format_exc(), err=True, nl=False)
+            if verbose:
+                import traceback
+                click.echo(traceback.format_exc(), err=True, nl=False)
+            else:
+                click.echo(
+                    "[error] Re-run with --verbose for the full traceback.",
+                    err=True,
+                )
             raise click.exceptions.Exit(2) from exc
 
     # Stderr nudge: when secret-shaped findings were found but live

@@ -44,12 +44,15 @@ Pipeline-Check is a security scanner for GitHub Actions, GitLab CI, Jenkins, Cir
 
 ```bash
 pip install pipeline-check          # Python >= 3.11
+                                    # `pipeline-check` and `pipeline_check` both work
 
 pipeline_check                      # auto-detects every provider in cwd
 pipeline_check init                 # scan + baseline + tuned config (smart init)
+pipeline_check --policy pr-gate     # PR gate: block on new HIGH+ findings
 pipeline_check explain GHA-001      # full per-check reference (severity, fix, controls)
 pipeline_check -p github -o json    # short flags work too
 pipeline_check --pipeline aws       # force the live-AWS scan
+pipeline_check --man recipes        # copy-paste recipes for the common workflows
 ```
 
 > 🔐 Want to verify the wheel was built by this repo in CI before
@@ -210,7 +213,7 @@ standards, so a single scan satisfies multiple audit frameworks.
 | **Suppressions** | `.pipelinecheckignore` (flat or YAML with `expires:` dates). |
 | **Custom secrets** | `--secret-pattern '^acme_[a-f0-9]{32}$'` extends the credential scanner. |
 | **Glob selection** | `--checks 'GHA-*'` or `--checks '*-008'` to scope checks. |
-| **Incident-driven filter** | `--only-known-attacked` narrows the run to rules whose detection shape is anchored to a documented real-world incident, CVE, or vendor disclosure (77 rules today). Useful for burning down the incident-driven worklist on a fresh repo without the full pack noise. Composes with `--checks` as intersection. |
+| **Incident-driven filter** | `--only-known-attacked` narrows the run to rules whose detection shape is anchored to a documented real-world incident, CVE, or vendor disclosure (225 rules today). Useful for burning down the incident-driven worklist on a fresh repo without the full pack noise. Composes with `--checks` as intersection. |
 | **Standard audit** | `--standard-report nist_ssdf` prints the control-to-check matrix and coverage gaps. |
 | **Custom rule DSL** | `--custom-rules PATH` loads YAML-defined rules that run alongside the built-in catalog. Supports GHA, GitLab, Bitbucket, Azure, CircleCI, Cloud Build, Kubernetes, and Helm. Rule shape: `for_each:` jsonpath + `assert:` predicate (`eq` / `regex` / `exists` / `len_gt` / `all_of` / `not` / …). Findings flow through the same scoring, gating, and SARIF as built-ins. See [docs/writing_a_custom_rule.md](docs/writing_a_custom_rule.md). |
 | **Component inventory** | `--inventory` emits the list of resources / workflows / templates the scanner discovered, with per-type metadata (encryption, runtime, tags, lifecycle policies). Filter with `--inventory-type 'AWS::IAM::*'`; skip checks entirely with `--inventory-only`. Feeds asset-register dashboards and drift detectors. |
@@ -231,6 +234,8 @@ pipeline_check --output html --output-file report.html       # self-contained HT
 pipeline_check --output sarif --output-file scan.sarif       # SARIF 2.1.0 for GitHub/GitLab
 pipeline_check --output junit --output-file junit.xml        # JUnit XML for test-runner UIs
 pipeline_check --output codequality --output-file cq.json    # GitLab Code Quality (inline MR annotations)
+pipeline_check --output cyclonedx --output-file sbom.cdx.json # CycloneDX 1.6 build-dependency SBOM
+pipeline_check --output spdx --output-file sbom.spdx.json    # SPDX 2.3 build-dependency SBOM
 pipeline_check --output markdown            # PR-comment shape (GFM)
 pipeline_check --output threatmodel --output-file threats.md # STRIDE threat model
 pipeline_check --output both                # terminal on stderr + JSON on stdout
