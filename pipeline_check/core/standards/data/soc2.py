@@ -170,12 +170,14 @@ STANDARD = Standard(
         "GL-026":   ["CC6.8"],
         "BB-002":   ["CC6.8"],
         "BB-035":   ["CC6.8"],   # trust_remote_code model load = code exec
+        "BB-036":   ["CC6.8"],   # untrusted PR context into agentic CLI = prompt injection
         "BB-012":   ["CC6.8"],
         "BB-015":   ["CC6.8"],
         "BB-025":   ["CC6.8"],
         "BB-026":   ["CC6.8"],
         "ADO-002":  ["CC6.8"],
         "ADO-034":  ["CC6.8"],   # trust_remote_code model load = code exec
+        "ADO-035":  ["CC6.8"],   # untrusted PR context into agentic CLI = prompt injection
         "ADO-016":  ["CC6.8"],
         "ADO-020":  ["CC6.8"],
         "ADO-026":  ["CC6.8"],

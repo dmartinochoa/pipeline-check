@@ -15,7 +15,7 @@ pipeline_check --pipeline bitbucket --bitbucket-path ci/
 
 ## What it covers
 
-35 checks · 11 have an autofix patch (``--fix``).
+36 checks · 11 have an autofix patch (``--fix``).
 
 | Check | Title | Severity | Fix |
 |-------|-------|----------|-----|
@@ -54,6 +54,7 @@ pipeline_check --pipeline bitbucket --bitbucket-path ci/
 | [BB-033](#bb-033) | IaC apply on a pull-request pipeline | <span class="pg-sev pg-sev--critical">CRITICAL</span> |  |
 | [BB-034](#bb-034) | Production deployment on a pull-request pipeline | <span class="pg-sev pg-sev--critical">CRITICAL</span> |  |
 | [BB-035](#bb-035) | ML model loaded with trust_remote_code (code execution) | <span class="pg-sev pg-sev--high">HIGH</span> |  |
+| [BB-036](#bb-036) | Untrusted PR/branch context reaches an agentic AI CLI (prompt injection) | <span class="pg-sev pg-sev--high">HIGH</span> |  |
 
 ---
 
@@ -816,6 +817,26 @@ Fires on ``trust_remote_code=True`` / ``--trust-remote-code`` in a step's ``scri
 **Recommended action**
 
 Load models with ``trust_remote_code=False`` (the library default). If a model genuinely needs custom code, vet it and pin an exact revision (a commit SHA, not a tag or branch), run the load in a step scoped to no production deployment credentials, and prefer safetensors weights over pickle.
+
+</div>
+
+</div>
+
+<div class="pg-rule pg-rule--high" markdown>
+
+## BB-036: Untrusted PR/branch context reaches an agentic AI CLI (prompt injection) { #bb-036 }
+
+<div class="pg-rule__tags">
+<span class="pg-sev pg-sev--high">HIGH</span> <span class="pg-tag pg-tag--owasp">CICD-SEC-4</span> <span class="pg-tag pg-tag--esf">ESF-D-INJECTION</span> <span class="pg-tag pg-tag--cwe">CWE-94</span> <span class="pg-tag pg-tag--cwe">CWE-77</span>
+</div>
+
+The AI analog of BB-002 (script injection). Fires when a ``script:`` line invokes an agentic CLI (claude / gemini / cursor-agent / aider / openhands / goose / ``q chat``) AND attacker-controllable Bitbucket context reaches it, either a predefined untrusted variable (`$BITBUCKET_BRANCH` / `$BITBUCKET_TAG` / `$BITBUCKET_PR_*`) interpolated directly, or a local shell variable assigned from one earlier in the step. Unlike a shell, an LLM ingests a quoted value as prompt text, so the BB-002 mitigation (quote the value) does not apply, which is why this is separate.
+
+<div class="pg-rule__rec" markdown>
+
+**Recommended action**
+
+Do not place attacker-controllable context (a PR's branch / tag name or `$BITBUCKET_PR_*` metadata) in an agentic CLI's prompt. Quoting does NOT sanitize a prompt the way it does a shell command, the model still reads the value. If the agent must see PR content, run it on a step with no deployment / repository secrets in scope and no tool / shell access, and treat its output as untrusted.
 
 </div>
 

@@ -274,11 +274,13 @@ STANDARD = Standard(
         "GL-026":   ["PR.PS-05"],
         "BB-002":   ["PR.PS-05"],
         "BB-035":   ["PR.PS-05"],   # trust_remote_code model load = code exec
+        "BB-036":   ["PR.PS-05"],   # untrusted PR context into agentic CLI = prompt injection
         "BB-012":   ["PR.PS-05"],
         "BB-025":   ["PR.PS-05"],
         "BB-026":   ["PR.PS-05"],
         "ADO-002":  ["PR.PS-05"],
         "ADO-034":  ["PR.PS-05"],   # trust_remote_code model load = code exec
+        "ADO-035":  ["PR.PS-05"],   # untrusted PR context into agentic CLI = prompt injection
         "ADO-016":  ["PR.PS-05"],
         "ADO-026":  ["PR.PS-05"],
         "ADO-027":  ["PR.PS-05"],

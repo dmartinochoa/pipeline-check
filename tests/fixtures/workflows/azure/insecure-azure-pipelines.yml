@@ -96,6 +96,8 @@ stages:
           - script: pip install git+https://example.com/internal/helper.git
           # ADO-033: IaC apply on a PR-validated pipeline (pr: set above).
           - script: terraform apply -auto-approve
+          # ADO-035: untrusted PR commit message fed into an agentic AI CLI prompt.
+          - script: claude -p "Triage this PR from commit $(Build.SourceVersionMessage)"
 
   - stage: Deploy
     dependsOn: Build

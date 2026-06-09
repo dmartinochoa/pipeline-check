@@ -299,6 +299,7 @@ STANDARD = Standard(
         "BB-001":   ["CICD-SEC-3", "CICD-SEC-8"],
         "BB-002":   ["CICD-SEC-4"],
         "BB-035":   ["CICD-SEC-4"],   # trust_remote_code model load = code exec
+        "BB-036":   ["CICD-SEC-4"],   # untrusted PR context into agentic CLI = prompt injection
         "BB-003":   ["CICD-SEC-6"],
         "BB-004":   ["CICD-SEC-1"],
         "BB-005":   ["CICD-SEC-7"],
@@ -332,6 +333,7 @@ STANDARD = Standard(
         "ADO-001":  ["CICD-SEC-3", "CICD-SEC-8"],
         "ADO-002":  ["CICD-SEC-4"],
         "ADO-034":  ["CICD-SEC-4"],   # trust_remote_code model load = code exec
+        "ADO-035":  ["CICD-SEC-4"],   # untrusted PR context into agentic CLI = prompt injection
         "ADO-003":  ["CICD-SEC-6"],
         "ADO-004":  ["CICD-SEC-1"],
         "ADO-005":  ["CICD-SEC-3"],

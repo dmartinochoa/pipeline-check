@@ -144,6 +144,7 @@ STANDARD = Standard(
         "BB-001":   ["6.3.3"],
         "BB-002":   ["6.5.1"],
         "BB-035":   ["6.5.1"],   # trust_remote_code model load = code exec
+        "BB-036":   ["6.5.1"],   # untrusted PR context into agentic CLI = prompt injection
         "BB-003":   ["8.2.1", "6.5.1"],
         "BB-004":   ["6.4.3"],
         "BB-034":   ["6.4.3"],
@@ -156,6 +157,7 @@ STANDARD = Standard(
         "ADO-001":  ["6.3.3"],
         "ADO-002":  ["6.5.1"],
         "ADO-034":  ["6.5.1"],   # trust_remote_code model load = code exec
+        "ADO-035":  ["6.5.1"],   # untrusted PR context into agentic CLI = prompt injection
         "ADO-003":  ["8.2.1", "6.5.1"],
         "ADO-004":  ["6.4.3"],
         "ADO-005":  ["6.3.3"],
