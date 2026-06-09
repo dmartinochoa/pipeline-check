@@ -150,6 +150,34 @@ release commit collapses this section into `## [X.Y.Z] - <date>`.
   first-party hub names (`bert-base-uncased`), local paths, and `${{ }}`
   interpolations don't fire. MEDIUM.
 
+### Changed
+
+- **`--help` now leads with a "Getting started" block.** The top of
+  `--help` lists the five commands a new user actually reaches for
+  (auto-detect scan, `init`, `--policy pr-gate`, `explain`, `--man
+  recipes`) before the grouped flag reference, so the 150-flag surface
+  has a map. The README Quick Start surfaces the same PR-gate one-liner
+  and `--man recipes` pointer, and notes that both `pipeline-check` and
+  `pipeline_check` work.
+- **Scan-time errors no longer dump a full traceback by default.** A
+  runtime failure prints the one-line `[error] Scan failed: ...` summary
+  plus a nudge to re-run with `--verbose`; the full stack trace is shown
+  only under `--verbose`.
+
+### Fixed
+
+- **A missing or invalid required flag now exits cleanly instead of
+  printing a Python traceback.** A provider's `build_context()` runs
+  during scanner construction, which sat outside the run-time error
+  guard, so `--pipeline scm` / `--pipeline runs` (missing `--scm-platform`
+  / `--scm-repo`) and the live-cloud SDK providers (`gcp` /
+  `azure_cloud`) without their optional extra installed crashed with a
+  raw traceback at exit 1. The construction is now guarded: the
+  provider's own message is surfaced as a clean `Error: ...` at exit 2.
+- **`--man` accuracy.** The `output` topic now lists the `cyclonedx`,
+  `spdx`, and `codequality` formats it was missing, and the `secrets`
+  topic lists the Drone `DR-004` literal-secret rule.
+
 ## [1.13.0] - 2026-06-08
 
 ### Added

@@ -261,6 +261,7 @@ to force one. Counts reflect the current rule catalog.
 <div class="pg-provider-group" data-stagger>
   <span class="pg-provider-group__label">Containers & deployment</span>
   <a class="pg-provider" href="providers/dockerfile/"><span class="pg-provider__name">Dockerfile</span><span class="pg-provider__count">{{ providers.dockerfile.checks }}</span></a>
+  <a class="pg-provider" href="providers/modelfile/"><span class="pg-provider__name">Modelfile</span><span class="pg-provider__count">{{ providers.modelfile.checks }}</span></a>
   <a class="pg-provider" href="providers/kubernetes/"><span class="pg-provider__name">Kubernetes</span><span class="pg-provider__count">{{ providers.kubernetes.checks }}</span></a>
   <a class="pg-provider" href="providers/helm/"><span class="pg-provider__name">Helm</span><span class="pg-provider__count">{{ providers.helm.checks }}</span></a>
   <a class="pg-provider" href="providers/argocd/"><span class="pg-provider__name">Argo CD</span><span class="pg-provider__count">{{ providers.argocd.checks }}</span></a>
