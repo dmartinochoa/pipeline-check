@@ -146,6 +146,7 @@ STANDARD = Standard(
         "GL-037": ["ESF-S-VERIFY-DEPS"],  # CI env disables Go module verification
         "GL-002":   ["ESF-D-INJECTION"],
         "GL-045":   ["ESF-D-INJECTION"],   # trust_remote_code model load = code exec
+        "GL-046":   ["ESF-S-PIN-DEPS", "ESF-S-VERIFY-DEPS"],   # unpinned model registry ref
         "GL-003":   ["ESF-D-SECRETS"],
         "GL-004":   ["ESF-C-APPROVAL", "ESF-C-ENV-SEP"],
         "GL-044":   ["ESF-C-APPROVAL", "ESF-C-ENV-SEP"],  # auto production deploy on an MR pipeline

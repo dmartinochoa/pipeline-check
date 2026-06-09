@@ -12,6 +12,21 @@ release commit collapses this section into `## [X.Y.Z] - <date>`.
 
 ### Added
 
+- **GL-046: AI model pulled without a pinned revision (GitLab).** The
+  GitLab analog of GHA-121 and the pinning leg GL-045's own
+  recommendation points to. Fires on a job's `script` /
+  `before_script` / `after_script` that fetches a model from a registry
+  by a *mutable* reference (`from_pretrained("org/model")`,
+  `hf_hub_download` / `snapshot_download` with a bare `repo_id`, or
+  `huggingface-cli download org/model`) and supplies no `revision` pin.
+  Without a pinned revision the registry serves whatever the default
+  branch points at, so the owner (or whoever compromises the account or
+  upstream) can swap the weights, the tokenizer, or the custom loader
+  code under a green build. Scoped to org-namespaced ids (`org/model`),
+  so canonical first-party hub names (`bert-base-uncased`), local paths,
+  and `$`-interpolations don't fire. The registry-fetch + unpinned-ref
+  detection now lives in a shared `_primitives/model_ref` helper that
+  GHA-121 and GL-046 both call. MEDIUM.
 - **GL-045: ML model loaded with `trust_remote_code` (GitLab).** The
   GitLab analog of GHA-120, extending the AI/model-supply-chain coverage
   to the #2 CI platform. Fires on `trust_remote_code=True` /

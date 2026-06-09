@@ -67,6 +67,9 @@ unit-tests:
     # GL-045 — model loaded with trust_remote_code (executes the model
     # repo's own Python at load time = code execution in CI).
     - python -c "from transformers import AutoModel; AutoModel.from_pretrained('acme/m', trust_remote_code=True)"
+    # GL-046 — model pulled from a registry by a mutable ref (no pinned
+    # revision), so the registry can serve swapped weights next pipeline.
+    - python -c "from huggingface_hub import snapshot_download; snapshot_download('vendor/llm')"
 
 # GL-010 — multi-project artifact ingestion without verification.
 ingest-upstream:
