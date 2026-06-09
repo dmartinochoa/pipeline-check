@@ -158,6 +158,7 @@ STANDARD = Standard(
         "GL-006":   ["ESF-D-SIGN-ARTIFACTS"],
         "GL-007":   ["ESF-D-SBOM"],
         "GL-008":   ["ESF-D-SECRETS"],
+        "DEV-008":   ["ESF-D-SECRETS"],   # literal secret in a devenv config
         "GL-009":   ["ESF-S-PIN-DEPS", "ESF-S-IMMUTABLE"],
         "GL-010":   ["ESF-D-INJECTION", "ESF-S-VERIFY-DEPS"],
         "GL-011":   ["ESF-D-INJECTION", "ESF-S-PIN-DEPS"],

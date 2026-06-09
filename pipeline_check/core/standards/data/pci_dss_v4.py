@@ -449,6 +449,7 @@ STANDARD = Standard(
         "GL-006":   ["6.5.1", "10.3.2"],                 # unsigned artifacts
         "GL-007":   ["6.5.1"],                           # no SBOM
         "GL-008":   ["8.2.1", "6.5.1"],                  # literal secrets
+        "DEV-008":   ["8.2.1", "6.5.1"],                 # literal secret in a devenv config
         "GL-009":   ["6.3.3", "6.5.1"],                  # image not digest-pinned
         "GL-010":   ["6.4.1", "6.5.1"],                  # multi-project artifact unverified
         "GL-011":   ["6.4.1", "6.5.1"],                  # include: local on MR pipeline

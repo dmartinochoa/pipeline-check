@@ -418,6 +418,7 @@ STANDARD = Standard(
         "GHA-039":  ["Token-Permissions"],          # services / container creds literal
         "GL-003":   ["Token-Permissions"],
         "GL-008":   ["Token-Permissions"],
+        "DEV-008":   ["Token-Permissions"],   # literal secret in a devenv config
         "GL-013":   ["Token-Permissions"],
         "GL-020":   ["Token-Permissions"],
         "BB-003":   ["Token-Permissions"],

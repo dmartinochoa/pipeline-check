@@ -259,6 +259,7 @@ STANDARD = Standard(
         "GL-006":   ["CICD-SEC-9"],
         "GL-007":   ["CICD-SEC-9"],
         "GL-008":   ["CICD-SEC-6"],
+        "DEV-008":   ["CICD-SEC-6"],   # literal secret in a devenv config
         "GL-009":   ["CICD-SEC-3"],
         "GL-010":   ["CICD-SEC-4"],
         "GL-011":   ["CICD-SEC-4"],

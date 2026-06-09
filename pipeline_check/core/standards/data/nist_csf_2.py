@@ -151,6 +151,7 @@ STANDARD = Standard(
         "GHA-019":  ["PR.AA-01"],
         "GL-003":   ["PR.AA-01"],
         "GL-008":   ["PR.AA-01"],
+        "DEV-008":   ["PR.AA-01"],   # literal secret in a devenv config
         "GL-013":   ["PR.AA-01"],
         "GL-020":   ["PR.AA-01"],
         "BB-003":   ["PR.AA-01"],
