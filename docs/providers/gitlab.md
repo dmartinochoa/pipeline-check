@@ -16,7 +16,7 @@ pipeline_check --pipeline gitlab --gitlab-path ci/
 
 ## What it covers
 
-50 checks · 12 have an autofix patch (``--fix``).
+51 checks · 12 have an autofix patch (``--fix``).
 
 | Check | Title | Severity | Fix |
 |-------|-------|----------|-----|
@@ -68,6 +68,7 @@ pipeline_check --pipeline gitlab --gitlab-path ci/
 | [GL-046](#gl-046) | AI model pulled without a pinned revision | <span class="pg-sev pg-sev--medium">MEDIUM</span> |  |
 | [GL-047](#gl-047) | Unsafe deserialization of a fetched artifact (pickle RCE) | <span class="pg-sev pg-sev--high">HIGH</span> |  |
 | [GL-048](#gl-048) | Untrusted MR/commit context reaches an agentic AI CLI (prompt injection) | <span class="pg-sev pg-sev--high">HIGH</span> |  |
+| [GL-049](#gl-049) | Agentic CLI output lands without human review | <span class="pg-sev pg-sev--high">HIGH</span> |  |
 | [TAINT-004](#taint-004) | Untrusted input flows across jobs via dotenv artifact | <span class="pg-sev pg-sev--high">HIGH</span> |  |
 | [TAINT-008](#taint-008) | Untrusted input flows via GitLab ``extends:`` template inheritance | <span class="pg-sev pg-sev--high">HIGH</span> |  |
 
@@ -1126,6 +1127,32 @@ The AI analog of GL-002 (script injection). Fires when a job ``script`` line inv
 **Recommended action**
 
 Do not place attacker-controllable context (MR / commit / branch-name metadata) in an agentic CLI's prompt. A quoted ``variables:`` entry does NOT sanitize a prompt the way it does a shell command, the model still reads the value. If the agent must see MR content, run it with no write-scoped ``CI_JOB_TOKEN`` and no tool / shell access on a job gated to no production secrets, and treat its output as untrusted.
+
+</div>
+
+</div>
+
+<div class="pg-rule pg-rule--high" markdown>
+
+## GL-049: Agentic CLI output lands without human review { #gl-049 }
+
+<div class="pg-rule__tags">
+<span class="pg-sev pg-sev--high">HIGH</span> <span class="pg-tag pg-tag--owasp">CICD-SEC-1</span> <span class="pg-tag pg-tag--esf">ESF-C-APPROVAL</span> <span class="pg-tag pg-tag--cwe">CWE-94</span> <span class="pg-tag pg-tag--cwe">CWE-693</span>
+</div>
+
+Fires when one job both invokes an agentic CLI (``claude`` / ``gemini`` / ``cursor-agent`` / ``aider`` / ``openhands`` / ``goose`` / ``q chat``) and, in the same job, lands the result with no review gate. The landing command is one of: a ``glab mr merge`` with an auto / non-interactive flag (``--auto-merge`` / ``--yes`` / ``-y`` / ``--when-pipeline-succeeds``), a ``git push`` carrying the ``merge_request.merge_when_pipeline_succeeds`` push option, or a plain ``git push`` (the GitLab idiom for committing straight to a branch).
+
+Does NOT fire when the agent only opens a merge request for review (``glab mr create`` with no merge), nor on a push / auto-merge job that does not run an agent (ordinary formatting / generated-file bots). The agent-plus-auto-land coupling is the signal. A ``git push --dry-run`` is ignored.
+
+**Known false-positive modes**
+
+- A job that runs an agent for a read-only task (triage, labeling) but also pushes an unrelated generated file would match by co-location. Split the agent and the push into separate jobs, or suppress on the job with a rationale noting the agent does not write the pushed paths.
+
+<div class="pg-rule__rec" markdown>
+
+**Recommended action**
+
+Don't let an agentic CLI's output reach a branch or a merge without a human review gate. Have the agent open a normal merge request (``glab mr create`` with no auto-merge) so a person reviews the diff before it lands; drop ``glab mr merge --auto-merge`` / ``--yes`` and the ``merge_request.merge_when_pipeline_succeeds`` push option from the agent's job, and don't pair the agent with a ``git push`` straight to a protected branch. If the agent's prompt can be influenced by untrusted input (an MR title / description, a fetched page), treat the committed result as attacker-controlled.
 
 </div>
 

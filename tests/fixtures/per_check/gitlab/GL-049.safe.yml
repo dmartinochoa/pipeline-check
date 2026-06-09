@@ -1,0 +1,4 @@
+ai-fix:
+  script:
+    - claude -p "fix the failing unit test"
+    - glab mr create --fill --title "AI fix"
