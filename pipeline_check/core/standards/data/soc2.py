@@ -331,6 +331,10 @@ STANDARD = Standard(
         # covers data-in-transit (curl-pipe / TLS bypass). CC8.1
         # covers change management (pinning, version drift).
         "DF-001": ["CC8.1"],                # FROM not digest-pinned
+        "MODEL-001": ["CC8.1"],             # unpinned base model
+        "MODEL-002": ["CC8.1"],             # third-party hub base model
+        "MODEL-003": ["CC8.1"],             # local unverified weights blob
+        "MODEL-004": ["CC8.1"],             # remote LoRA adapter
         "DF-031": ["CC8.1"],                # COPY --from external image not digest-pinned
         "DF-002": ["CC6.1", "CC6.8"],       # runs as root
         "DF-003": ["CC6.7", "CC8.1"],       # ADD remote no integrity

@@ -25,7 +25,7 @@
 
 Pipeline-Check is a security scanner for GitHub Actions, GitLab CI, Jenkins, CircleCI, Azure DevOps, Bitbucket Pipelines, Buildkite, Drone, Tekton, Argo Workflows, and Google Cloud Build, plus Terraform, CloudFormation, Kubernetes, Helm, Dockerfile, OCI image manifests, and live AWS, Azure, and GCP accounts. It maps every finding to the [OWASP Top 10 CI/CD Security Risks](https://owasp.org/www-project-top-10-ci-cd-security-risks/), SLSA, NIST SSDF, PCI DSS, SOC 2, the CIS GitHub Benchmark, and twelve other frameworks, and scores each scan A through D so you can gate merges on the result.
 
-**1160+ checks** across **34 providers**, mapped to **18 compliance standards**, with **111 autofixers**, plus **53 attack chains** correlating findings into MITRE ATT&CK-mapped kill chains. A dataflow taint engine catches multi-step and cross-job propagation that single-rule scanners miss.
+**1180+ checks** across **35 providers**, mapped to **18 compliance standards**, with **111 autofixers**, plus **53 attack chains** correlating findings into MITRE ATT&CK-mapped kill chains. A dataflow taint engine catches multi-step and cross-job propagation that single-rule scanners miss.
 
 [Quick start](#-quick-start) |
 [Usage guide](docs/usage.md) |
@@ -140,6 +140,7 @@ for inputs, idempotency, and fork-PR fallback behavior.
 | **Argo Workflows** | `Workflow` / `WorkflowTemplate` YAML | `--argo-path` | 18 checks · `ARGO-001..017` + `TAINT-007` · over-privileged / default service account, untrusted-parameter manifest injection |
 | **Argo CD** | `Application` / `AppProject` YAML + `argocd-*` ConfigMaps | `--argocd-path` | 19 checks · `ARGOCD-001..019` · sourceRepo / destination wildcards, RBAC wildcards, mutable source refs, web terminal, drift-detection bypass. [Reference →](docs/providers/argocd.md) |
 | **Dockerfile** | `Dockerfile` / `Containerfile` | `--dockerfile-path` | 31 checks · `DF-001..031` · image digest pinning, lifecycle scripts, TLS / loader-hijack env, unpinned `COPY --from` |
+| **Modelfile** | `Modelfile` | `--modelfile-path` | 4 checks · `MODEL-001..004` · unpinned base model, third-party-hub (`hf.co`) source, local weights blob, remote LoRA adapter |
 | **Kubernetes** | Manifest YAML (`Deployment`, `Pod`, …) | `--k8s-path` | 44 checks · `K8S-001..044` · image digest pinning, securityContext, hostPath / host-namespace, RBAC blast radius, admission-webhook fail-open |
 | **Helm** | Chart directory (`Chart.yaml`) or `.tgz` | `--helm-path` | Renders via `helm template`, runs the 44 K8S-* rules on the result, plus 17 chart-supply-chain checks (`HELM-001..017`) read off `Chart.yaml` / `Chart.lock` / `values.yaml`: digest gaps, floating dependency versions, non-HTTPS repos, compromised-chart registry, `values.yaml` secrets, chart SSTI. Requires Helm 3 on PATH |
 | **Developer environment** | `.vscode/` · `.devcontainer/` · `.claude/settings.json` | `--devenv-path` | 6 checks · `DEV-001..006` · config that auto-executes on repo open (folder-open tasks, devcontainer lifecycle, committed Claude Code hooks, remote fetch-and-execute, executable-path / env hijack) |
@@ -173,7 +174,7 @@ for the full per-check reference.
 
 ```
                  +-----------+
-  Config files   |  Scanner  |   1160+ checks across 34 providers
+  Config files   |  Scanner  |   1180+ checks across 35 providers
   or live APIs ---->         +---> Findings (check_id, severity, resource)
                  +-----------+
                        |
@@ -396,7 +397,7 @@ See [docs/standards/](docs/standards/).
 
 | Flag | Default | Description |
 |------|---------|-------------|
-| `--pipeline` / `-p` | `auto` | `auto` (detect from cwd), `aws`, `azure_cloud`, `gcp`, `terraform`, `cloudformation`, `pulumi`, `github`, `gitea`, `gitlab`, `bitbucket`, `azure`, `jenkins`, `circleci`, `cloudbuild`, `buildkite`, `drone`, `tekton`, `argo`, `argocd`, `dockerfile`, `kubernetes`, `helm`, `oci`, `scm`, `npm`, `pypi`, `maven`, `nuget`, `composer`, `cargo`, `gomod`, `rubygems`, `devenv`, `runs` |
+| `--pipeline` / `-p` | `auto` | `auto` (detect from cwd), `aws`, `azure_cloud`, `gcp`, `terraform`, `cloudformation`, `pulumi`, `github`, `gitea`, `gitlab`, `bitbucket`, `azure`, `jenkins`, `circleci`, `cloudbuild`, `buildkite`, `drone`, `tekton`, `argo`, `argocd`, `dockerfile`, `modelfile`, `kubernetes`, `helm`, `oci`, `scm`, `npm`, `pypi`, `maven`, `nuget`, `composer`, `cargo`, `gomod`, `rubygems`, `devenv`, `runs` |
 | `--pipelines` | | Comma-separated multi-provider list (e.g. `--pipelines github,oci`). Mutually exclusive with `--pipeline`. Activates cross-provider attack chains (`XPC-NNN`) by evaluating the chain engine over the union of every sub-scan's findings. |
 | `--output` / `-o` | `terminal` | `terminal`, `json`, `html`, `sarif`, `junit`, `markdown`, `threatmodel`, `cyclonedx`, `spdx`, `codequality`, `both` |
 | `--output-file` / `-O` | | Required with `html`; optional with `sarif` / `junit` / `markdown` / `threatmodel` / `cyclonedx` / `spdx` / `codequality` |
@@ -538,6 +539,7 @@ pipeline_check/
         ├── argocd/rules/      # ARGOCD-001 .. ARGOCD-019
         ├── oci/rules/         # OCI-001 .. OCI-009 + ATTEST-001..007
         ├── dockerfile/rules/  # DF-001 .. DF-031
+        ├── modelfile/rules/   # MODEL-001 .. MODEL-004
         ├── kubernetes/rules/  # K8S-001 .. K8S-044
         ├── helm/rules/        # HELM-001 .. HELM-017 + renders charts so the K8S rule pack also applies
         ├── scm/rules/         # SCM-001 .. SCM-055 — repo governance via the platform REST API (GitHub SCM-001..049 full pack: Actions governance + environment protection + deploy-keys + webhook security + outside-collaborator audit + private-repo fork policy + ruleset enforcement / always-bypass / PR-review / status-checks / force-push / deletion / signed-commits / stale-review dismissal / linear-history / required-workflows / code-scanning-gate / deployment-env-gate / merge-queue + auto-merge audit + tag-ruleset signing + admin-bypass-on-signing + default-scanning query-suite / paused / language-coverage; GitLab platform pack SCM-050..053: push-rule prevent_secrets / committer-check, MR discussions-resolved, MR author self-approval; Bitbucket platform pack SCM-054..055: private-repo fork policy, default-branch write-side restriction kinds; GitLab + Bitbucket universal subset SCM-001/002/006/007/008/009/017)

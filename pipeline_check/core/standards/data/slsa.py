@@ -550,6 +550,10 @@ STANDARD = Standard(
         # or by the build's own tenant). Provenance labels tie to
         # L1.Provenance + L2.Signed.
         "DF-001": ["Build.L3.NonFalsifiable"],                     # FROM not digest-pinned
+        "MODEL-001": ["Build.L3.NonFalsifiable"],                  # unpinned base model
+        "MODEL-002": ["Build.L3.NonFalsifiable"],                  # third-party hub base model
+        "MODEL-003": ["Build.L3.NonFalsifiable"],                  # local unverified weights blob
+        "MODEL-004": ["Build.L3.NonFalsifiable"],                  # remote LoRA adapter
         "DF-031": ["Build.L3.NonFalsifiable"],                     # COPY --from external image not digest-pinned
         "DF-003": ["Build.L3.NonFalsifiable"],                     # ADD remote no integrity
         "DF-004": ["Build.L3.Isolated",

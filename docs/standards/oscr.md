@@ -25,7 +25,7 @@ axis.
 
 - **Controls in this standard:** 86
 - **Controls evidenced by at least one check:** 61 / 86
-- **Distinct checks evidencing this standard:** 671
+- **Distinct checks evidencing this standard:** 675
 - **Of those, autofixable with `--fix`:** 105
 
 _Severity levels (`CRITICAL` / `HIGH` / `MEDIUM` / `LOW` / `INFO`) follow the same scale across every provider and standard. See [How to read severity](README.md#how-to-read-severity) on the standards overview for the definitions._
@@ -62,7 +62,7 @@ Click a control ID to jump to the per-control section with the full check list. 
 | [`IA-8`](#ctrl-ia-8) | Exposed webhook | 1 | 1H |
 | [`IA-9`](#ctrl-ia-9) | Compromised token | 20 | 4C · 9H · 7M |
 | [`IA-10`](#ctrl-ia-10) | Vulnerable CI/CD plugins | 11 | 1C · 10H |
-| [`IA-11`](#ctrl-ia-11) | Vulnerable CI/CD template | 64 | 35H · 24M · 5L |
+| [`IA-11`](#ctrl-ia-11) | Vulnerable CI/CD template | 68 | 35H · 27M · 6L |
 | [`IA-12`](#ctrl-ia-12) | Exposed internal API | 0 | — |
 | [`IA-13`](#ctrl-ia-13) | Vulnerability in third-party dependency | 50 | 8C · 8H · 34M |
 | [`IA-14`](#ctrl-ia-14) | Compromised developer workstation | 0 | — |
@@ -404,7 +404,7 @@ _No checks in this scanner currently evidence this control. Open an issue if you
 
 ### IA-11: Vulnerable CI/CD template { #ctrl-ia-11 }
 
-**Evidenced by 64 checks** across 19 providers (AWS, Argo Workflows, Azure DevOps, Bitbucket, Buildkite, CircleCI, Cloud Build, Dockerfile, Drone CI, GitHub Actions, GitLab CI, Helm, Jenkins, Kubernetes, NuGet, PyPI, Tekton, maven, npm).
+**Evidenced by 68 checks** across 20 providers (AWS, Argo Workflows, Azure DevOps, Bitbucket, Buildkite, CircleCI, Cloud Build, Dockerfile, Drone CI, GitHub Actions, GitLab CI, Helm, Jenkins, Kubernetes, Modelfile, NuGet, PyPI, Tekton, maven, npm).
 
 | Check | Title | Severity | Provider | Fix |
 |-------|-------|----------|----------|-----|
@@ -456,6 +456,10 @@ _No checks in this scanner currently evidence this control. Open an issue if you
 | [`JF-009`](../providers/jenkins.md#jf-009) | Agent docker image not pinned to sha256 digest | <span class="pg-sev pg-sev--high">HIGH</span> | [Jenkins](../providers/jenkins.md) |  |
 | [`JF-021`](../providers/jenkins.md#jf-021) | Package install without lockfile enforcement | <span class="pg-sev pg-sev--medium">MEDIUM</span> | [Jenkins](../providers/jenkins.md) | <span class="pg-fix" title="`--fix` will patch this rule">🔧 fix</span> |
 | [`K8S-036`](../providers/kubernetes.md#k8s-036) | ServiceAccount imagePullSecrets references missing Secret | <span class="pg-sev pg-sev--medium">MEDIUM</span> | [Kubernetes](../providers/kubernetes.md) |  |
+| [`MODEL-001`](../providers/modelfile.md#model-001) | Base model pulled without a pinned reference | <span class="pg-sev pg-sev--medium">MEDIUM</span> | [Modelfile](../providers/modelfile.md) |  |
+| [`MODEL-002`](../providers/modelfile.md#model-002) | Base model pulled from a third-party hub | <span class="pg-sev pg-sev--medium">MEDIUM</span> | [Modelfile](../providers/modelfile.md) |  |
+| [`MODEL-003`](../providers/modelfile.md#model-003) | Base model loaded from a local unverified weights blob | <span class="pg-sev pg-sev--low">LOW</span> | [Modelfile](../providers/modelfile.md) |  |
+| [`MODEL-004`](../providers/modelfile.md#model-004) | LoRA adapter applied from a remote source | <span class="pg-sev pg-sev--medium">MEDIUM</span> | [Modelfile](../providers/modelfile.md) |  |
 | [`MVN-001`](../providers/maven.md#mvn-001) | pom.xml dependency uses a floating version range | <span class="pg-sev pg-sev--medium">MEDIUM</span> | [maven](../providers/maven.md) |  |
 | [`MVN-002`](../providers/maven.md#mvn-002) | pom.xml depends on a mutable SNAPSHOT version | <span class="pg-sev pg-sev--medium">MEDIUM</span> | [maven](../providers/maven.md) |  |
 | [`MVN-004`](../providers/maven.md#mvn-004) | pom.xml dependency omits an explicit ``<version>`` | <span class="pg-sev pg-sev--medium">MEDIUM</span> | [maven](../providers/maven.md) |  |

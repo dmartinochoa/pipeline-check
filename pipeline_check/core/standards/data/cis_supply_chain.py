@@ -504,6 +504,10 @@ STANDARD = Standard(
         # to 2.1.3 (build env hardened); credential-shape rules tie
         # to 2.3.4 (scan for secrets).
         "DF-001": ["1.4.1", "3.1.3"],              # FROM not digest-pinned
+        "MODEL-001": ["1.4.1", "3.1.3"],           # unpinned base model
+        "MODEL-002": ["1.4.1", "3.1.3"],           # third-party hub base model
+        "MODEL-003": ["1.4.1", "3.1.3"],           # local unverified weights blob
+        "MODEL-004": ["1.4.1", "3.1.3"],           # remote LoRA adapter
         "DF-031": ["1.4.1", "3.1.3"],              # COPY --from external image not digest-pinned
         "DF-002": ["2.1.3"],                       # runs as root
         "DF-003": ["1.4.1", "3.1.3"],              # ADD remote, no integrity

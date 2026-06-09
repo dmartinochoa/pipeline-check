@@ -301,6 +301,10 @@ STANDARD = Standard(
         # cleartext secrets in images, 4.1.5 untrusted images
         # (unpinned).
         "DF-001": ["4.1.5"],                       # FROM not digest-pinned
+        "MODEL-001": ["4.1.5"],                    # unpinned base model
+        "MODEL-002": ["4.1.5"],                    # third-party hub base model
+        "MODEL-003": ["4.1.5"],                    # local unverified weights blob
+        "MODEL-004": ["4.1.5"],                    # remote LoRA adapter
         "DF-031": ["4.1.5"],                       # COPY --from external image not digest-pinned
         "DF-002": ["4.1.2", "4.4.4"],              # runs as root
         "DF-003": ["4.1.5", "4.2.1"],              # ADD remote, no integrity

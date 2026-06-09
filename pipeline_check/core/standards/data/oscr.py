@@ -293,6 +293,10 @@ STANDARD = Standard(
         "DR-001":   ["IA-11"],
         "DR-005":   ["IA-11"],
         "DF-001":   ["IA-11"],
+        "MODEL-001": ["IA-11"],   # unpinned base model
+        "MODEL-002": ["IA-11"],   # third-party hub base model
+        "MODEL-003": ["IA-11"],   # local unverified weights blob
+        "MODEL-004": ["IA-11"],   # remote LoRA adapter
         "DF-031":   ["IA-11"],
         "GHA-089":  ["IA-11"],
         "GHA-094":  ["IA-11"],

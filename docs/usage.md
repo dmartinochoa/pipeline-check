@@ -119,6 +119,7 @@ pipeline_check --pipeline tekton --tekton-path tekton/
 pipeline_check --pipeline argo --argo-path workflows/
 pipeline_check --pipeline argocd --argocd-path argocd/
 pipeline_check --pipeline dockerfile --dockerfile-path Dockerfile
+pipeline_check --pipeline modelfile --modelfile-path Modelfile
 pipeline_check --pipeline kubernetes --k8s-path manifests/
 pipeline_check --pipeline helm --helm-path charts/myapp/
 

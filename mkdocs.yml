@@ -186,6 +186,7 @@ nav:
               - Pulumi: providers/pulumi.md
           - Containers & deployment:
               - Dockerfile: providers/dockerfile.md
+              - Modelfile: providers/modelfile.md
               - Kubernetes: providers/kubernetes.md
               - Helm: providers/helm.md
               - Argo CD: providers/argocd.md

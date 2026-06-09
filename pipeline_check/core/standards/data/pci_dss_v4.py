@@ -233,6 +233,10 @@ STANDARD = Standard(
         # (strong unique identifiers). Vuln-related rules tie to
         # 6.3.1 / 6.3.3.
         "DF-001": ["6.4.3", "6.5.1"],                    # FROM not digest-pinned
+        "MODEL-001": ["6.4.3", "6.5.1"],                 # unpinned base model
+        "MODEL-002": ["6.4.3", "6.5.1"],                 # third-party hub base model
+        "MODEL-003": ["6.4.3", "6.5.1"],                 # local unverified weights blob
+        "MODEL-004": ["6.4.3", "6.5.1"],                 # remote LoRA adapter
         "DF-031": ["6.4.3", "6.5.1"],                    # COPY --from external image not digest-pinned
         "DF-002": ["6.4.1", "7.2.5"],                    # runs as root
         "DF-003": ["6.5.1", "6.3.3"],                    # ADD remote no integrity

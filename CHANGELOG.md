@@ -12,6 +12,23 @@ release commit collapses this section into `## [X.Y.Z] - <date>`.
 
 ### Added
 
+- **Model-registry provider (`--pipeline modelfile`).** A new provider
+  that parses Ollama `Modelfile` declarations on disk, the "Dockerfile of
+  models", text-only with no model pull and no Ollama daemon. It is the
+  static, declaration-side complement to the CI-script AI rules
+  (GHA-120/121/122, GL-045..049) that catch model pulls in build scripts.
+  Four rules over the `FROM` / `ADAPTER` model references a Modelfile
+  declares: **MODEL-001** (base model pulled by a mutable reference, no
+  tag or `:latest`, the model-registry analogue of GHA-001 / DF-001),
+  **MODEL-002** (base model pulled straight from a third-party hub,
+  `hf.co` / `huggingface.co`, bypassing the curated Ollama library),
+  **MODEL-003** (base model loaded from a local unverified weights blob,
+  with a `.bin` / `.pt` import flagged as pickle-backed), and **MODEL-004**
+  (a LoRA `ADAPTER` applied from a remote source that can re-steer the
+  model's behavior). Auto-detected on a `Modelfile` at the scan root;
+  mapped across OWASP / ESF / NIST SSDF / NIST 800-53 / NIST CSF 2.0 /
+  NIST 800-190 / SOC 2 / PCI DSS / SLSA / S2C2F / OSC&R / CIS supply-chain
+  / OpenSSF Scorecard. Provider count 34 -> 35.
 - **GL-049: agentic CLI output lands without human review (GitLab).** The
   GitLab analog of GHA-123 and the flow-control leg of the GitLab AI/model
   pack (GL-045..049), completing parity with the GitHub agentic-AI rules.
