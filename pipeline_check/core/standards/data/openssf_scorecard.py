@@ -633,6 +633,7 @@ STANDARD = Standard(
         "MODEL-002": ["Pinned-Dependencies"],                           # third-party hub base model
         "MODEL-003": ["Pinned-Dependencies"],                           # local unverified weights blob
         "MODEL-004": ["Pinned-Dependencies"],                           # remote LoRA adapter
+        "MODEL-005": ["Pinned-Dependencies"],                           # config auto_map = custom loader code
         "DF-031": ["Pinned-Dependencies"],                              # COPY --from external image not digest-pinned
         "DF-003": ["Pinned-Dependencies"],                              # ADD remote no integrity
         "DF-004": ["Pinned-Dependencies", "Dangerous-Workflow"],        # curl-pipe

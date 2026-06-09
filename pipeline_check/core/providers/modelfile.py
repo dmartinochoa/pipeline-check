@@ -39,6 +39,17 @@ class ModelfileProvider(BaseProvider):
 
     def inventory(self, context: ModelfileContext) -> list[Component]:
         out: list[Component] = []
+        for mc in context.model_configs:
+            out.append(Component(
+                provider=self.NAME,
+                type="model_config",
+                identifier=mc.path,
+                source=mc.path,
+                metadata={
+                    "model_type": str(mc.data.get("model_type", "")),
+                    "has_auto_map": "auto_map" in mc.data,
+                },
+            ))
         for mf in context.modelfiles:
             from_count = sum(
                 1 for d in mf.directives if d.directive == "FROM"

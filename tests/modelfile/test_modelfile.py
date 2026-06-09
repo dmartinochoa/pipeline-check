@@ -1,10 +1,13 @@
-"""Tests for the Modelfile provider (MODEL-001..004) and its parser."""
+"""Tests for the Modelfile provider (MODEL-001..005) and its parser."""
 from __future__ import annotations
 
 from pipeline_check.core.checks.base import Severity
-from pipeline_check.core.checks.modelfile.base import parse_modelfile
+from pipeline_check.core.checks.modelfile.base import (
+    is_hf_model_config,
+    parse_modelfile,
+)
 
-from .conftest import run_check
+from .conftest import run_check, run_config_check
 
 
 class TestModelfileParser:
@@ -112,4 +115,57 @@ class TestModel004RemoteAdapter:
 
     def test_passes_with_no_adapter(self):
         f = run_check("FROM llama3:8b\n", "MODEL-004")
+        assert f.passed
+
+
+class TestHFConfigDetection:
+    def test_is_hf_model_config_recognizes_markers(self):
+        assert is_hf_model_config({"model_type": "llama"})
+        assert is_hf_model_config({"architectures": ["X"]})
+        assert is_hf_model_config({"auto_map": {}})
+
+    def test_is_hf_model_config_rejects_unrelated(self):
+        assert not is_hf_model_config({"compilerOptions": {}})
+        assert not is_hf_model_config("not a dict")
+
+
+class TestModel005ConfigCustomCode:
+    def test_metadata(self):
+        f = run_config_check({"model_type": "llama"}, "MODEL-005")
+        assert f.check_id == "MODEL-005"
+        assert f.severity is Severity.MEDIUM
+
+    def test_fires_on_auto_map(self):
+        f = run_config_check(
+            {
+                "model_type": "custom",
+                "auto_map": {
+                    "AutoConfig": "configuration_custom.CustomConfig",
+                    "AutoModelForCausalLM": "modeling_custom.CustomModel",
+                },
+            },
+            "MODEL-005",
+        )
+        assert not f.passed
+        assert "modeling_custom.CustomModel" in f.description
+
+    def test_fires_on_list_valued_auto_map(self):
+        f = run_config_check(
+            {"architectures": ["X"], "auto_map": {"AutoModel": ["a.B", "c.D"]}},
+            "MODEL-005",
+        )
+        assert not f.passed
+
+    def test_passes_on_standard_config(self):
+        # A normal model config with no auto_map ships no custom code.
+        f = run_config_check(
+            {"model_type": "llama", "architectures": ["LlamaForCausalLM"]},
+            "MODEL-005",
+        )
+        assert f.passed
+
+    def test_passes_on_empty_auto_map(self):
+        f = run_config_check(
+            {"model_type": "llama", "auto_map": {}}, "MODEL-005"
+        )
         assert f.passed

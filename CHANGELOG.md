@@ -12,6 +12,18 @@ release commit collapses this section into `## [X.Y.Z] - <date>`.
 
 ### Added
 
+- **MODEL-005: a vendored model config declares custom loader code
+  (`auto_map`).** Extends the `modelfile` provider to also parse vendored
+  Hugging Face `config.json` model configs (recognized by their
+  `auto_map` / `architectures` / `model_type` keys, with heavy
+  directories like `node_modules` skipped). Fires when a config's
+  `auto_map` block is non-empty: it points the transformers auto-classes
+  at the model repo's own Python (`modeling_*.py` / `configuration_*.py`),
+  which transformers imports and runs under `trust_remote_code=True`. It
+  is the model-side complement of GHA-120 / GL-045 (which flag the
+  `trust_remote_code` load in CI scripts): those catch the loader, this
+  catches the vendored config that makes such a load execute third-party
+  code. MEDIUM. modelfile 4 -> 5.
 - **DEV-008: a credential-shaped literal committed in a dev-environment
   config.** The developer-environment member of the cross-provider
   literal-secret `*-008` family (GHA-008 / GL-008 / …). Editor / agent /

@@ -27,10 +27,12 @@ Parser notes:
 """
 from __future__ import annotations
 
+import json
 import re
 from collections.abc import Iterator
 from dataclasses import dataclass, field
 from pathlib import Path
+from typing import Any
 
 from ..base import BaseCheck
 
@@ -60,6 +62,61 @@ class Modelfile:
     path: str
     text: str
     directives: tuple[Directive, ...] = field(default_factory=tuple)
+
+
+@dataclass(frozen=True, slots=True)
+class ModelConfig:
+    """A vendored Hugging Face model ``config.json`` document.
+
+    Only configs that look like a transformers model config (they carry
+    one of the HF marker keys) are loaded, so a generic ``config.json``
+    in an unrelated tool's directory isn't treated as a model.
+    """
+
+    path: str
+    data: dict[str, Any]
+
+
+#: HF transformers ``config.json`` marker keys: presence of any one means
+#: the file is a model config rather than some other ``config.json``.
+_HF_CONFIG_MARKERS: frozenset[str] = frozenset({
+    "auto_map", "architectures", "model_type",
+})
+
+#: Directories never worth walking for a vendored model config.
+_SKIP_DIRS: frozenset[str] = frozenset({
+    ".git", "node_modules", ".venv", "venv", "__pycache__",
+    "dist", "build", ".tox", "site-packages", ".mypy_cache",
+})
+
+
+def is_hf_model_config(data: Any) -> bool:
+    """True when *data* looks like a transformers model ``config.json``."""
+    return isinstance(data, dict) and any(
+        k in data for k in _HF_CONFIG_MARKERS
+    )
+
+
+def config_custom_code(data: dict[str, Any]) -> list[str]:
+    """Return the custom-code class references in a config's ``auto_map``.
+
+    ``auto_map`` maps transformers auto-classes to ``module.ClassName``
+    entries that live in the *model repo's own* Python (``modeling_*.py``,
+    ``configuration_*.py``). Loading the model with ``trust_remote_code=
+    True`` imports and runs that code. Returns the referenced targets
+    (the module-qualified names), or ``[]`` when there is no ``auto_map``.
+    """
+    auto_map = data.get("auto_map")
+    if not isinstance(auto_map, dict):
+        return []
+    out: list[str] = []
+    for value in auto_map.values():
+        # A value is either ``"module.Class"`` or a list of such.
+        if isinstance(value, str) and value.strip():
+            out.append(value)
+        elif isinstance(value, list):
+            out.extend(v for v in value if isinstance(v, str) and v.strip())
+    return out
 
 
 def parse_modelfile(text: str) -> tuple[Directive, ...]:
@@ -96,12 +153,31 @@ def parse_modelfile(text: str) -> tuple[Directive, ...]:
     return tuple(out)
 
 
-class ModelfileContext:
-    """Loaded set of Ollama Modelfile documents."""
+def _is_modelfile_name(name: str) -> bool:
+    low = name.lower()
+    return (
+        low == "modelfile"
+        or low.endswith(".modelfile")
+        or low.startswith("modelfile.")
+    )
 
-    def __init__(self, modelfiles: list[Modelfile]) -> None:
+
+def _skipped_dir(p: Path) -> bool:
+    """True when *p* lives under a directory not worth scanning."""
+    return any(part in _SKIP_DIRS for part in p.parts)
+
+
+class ModelfileContext:
+    """Loaded model declarations: Ollama Modelfiles + vendored HF configs."""
+
+    def __init__(
+        self,
+        modelfiles: list[Modelfile],
+        model_configs: list[ModelConfig] | None = None,
+    ) -> None:
         self.modelfiles = modelfiles
-        self.files_scanned: int = len(modelfiles)
+        self.model_configs = model_configs or []
+        self.files_scanned: int = len(modelfiles) + len(self.model_configs)
         self.files_skipped: int = 0
         self.warnings: list[str] = []
 
@@ -110,27 +186,31 @@ class ModelfileContext:
         root = Path(path)
         if not root.exists():
             raise ValueError(
-                f"--modelfile-path {root} does not exist. Pass a Modelfile "
-                "or a directory containing one."
+                f"--modelfile-path {root} does not exist. Pass a Modelfile, "
+                "a model config.json, or a directory containing one."
             )
         if root.is_file():
-            files = [root]
+            modelfile_paths = [root] if _is_modelfile_name(root.name) else []
+            config_paths = [root] if root.name.lower() == "config.json" else []
+            # A single file passed that is neither name is still treated as a
+            # Modelfile (the explicit-path escape hatch).
+            if not modelfile_paths and not config_paths:
+                modelfile_paths = [root]
         else:
-            # Canonical name is ``Modelfile``; ``*.Modelfile`` (e.g.
-            # ``chat.Modelfile``) and ``Modelfile.*`` variants are also
-            # picked up.
-            files = sorted(
+            modelfile_paths = sorted(
                 p for p in root.rglob("*")
-                if p.is_file() and (
-                    p.name.lower() == "modelfile"
-                    or p.name.lower().endswith(".modelfile")
-                    or p.name.lower().startswith("modelfile.")
-                )
+                if p.is_file() and _is_modelfile_name(p.name)
+                and not _skipped_dir(p)
+            )
+            config_paths = sorted(
+                p for p in root.rglob("config.json")
+                if p.is_file() and not _skipped_dir(p)
             )
         modelfiles: list[Modelfile] = []
+        model_configs: list[ModelConfig] = []
         warnings: list[str] = []
         skipped = 0
-        for f in files:
+        for f in modelfile_paths:
             try:
                 text = f.read_text(encoding="utf-8")
             except (OSError, UnicodeDecodeError) as exc:
@@ -147,7 +227,25 @@ class ModelfileContext:
             modelfiles.append(
                 Modelfile(path=str(f), text=text, directives=directives)
             )
-        ctx = cls(modelfiles)
+        for f in config_paths:
+            try:
+                text = f.read_text(encoding="utf-8")
+            except (OSError, UnicodeDecodeError) as exc:
+                warnings.append(f"{f}: read error: {exc}")
+                skipped += 1
+                continue
+            try:
+                data = json.loads(text)
+            except (json.JSONDecodeError, RecursionError, MemoryError):
+                skipped += 1
+                continue
+            # Only keep configs that look like a transformers model config,
+            # so an unrelated ``config.json`` isn't treated as a model.
+            if not is_hf_model_config(data):
+                skipped += 1
+                continue
+            model_configs.append(ModelConfig(path=str(f), data=data))
+        ctx = cls(modelfiles, model_configs)
         ctx.files_skipped = skipped
         ctx.warnings = warnings
         return ctx
@@ -235,7 +333,8 @@ def ref_tag(ref: str) -> str | None:
 
 
 __all__ = [
-    "Directive", "Modelfile", "ModelfileBaseCheck", "ModelfileContext",
-    "adapter_refs", "from_refs", "iter_directives", "parse_modelfile",
+    "Directive", "ModelConfig", "Modelfile", "ModelfileBaseCheck",
+    "ModelfileContext", "adapter_refs", "config_custom_code", "from_refs",
+    "is_hf_model_config", "iter_directives", "parse_modelfile",
     "ref_is_hub", "ref_is_local", "ref_tag",
 ]

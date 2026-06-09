@@ -1,25 +1,26 @@
 # Modelfile provider
 
-Parses Ollama `Modelfile` declarations on disk, text-only static
-analysis, no model pull, no Ollama daemon. A Modelfile is the
-declarative recipe that pins a model into the local registry, so this
-provider is the "Dockerfile of models": the MODEL-* rules reason over
-the `FROM` base model and `ADAPTER` LoRA references a Modelfile
-declares. It is the static, declaration-side complement to the
-CI-script AI rules (GHA-120/121/122, GL-045..049) that catch model
-pulls in build scripts.
+Parses model declarations on disk, text-only static analysis, no model
+pull, no Ollama daemon. Two formats: Ollama `Modelfile` recipes (the
+declarative file that pins a model into the local registry, so this
+provider is the "Dockerfile of models") and vendored Hugging Face
+`config.json` model configs. The MODEL-* rules reason over the `FROM`
+base model / `ADAPTER` references a Modelfile declares and the custom
+code a model config wires in. It is the static, declaration-side
+complement to the CI-script AI rules (GHA-120/121/122, GL-045..049) that
+catch model pulls in build scripts.
 
 ## Producer workflow
 
 ```bash
-# Defaults to scanning the working tree for a Modelfile.
+# Defaults to scanning the working tree for a Modelfile / config.json.
 pipeline_check --pipeline modelfile
 
 # …or pass it explicitly.
 pipeline_check --pipeline modelfile --modelfile-path models/chat.Modelfile
 
 # Recursively scan a directory. The loader matches Modelfile,
-# *.Modelfile, and Modelfile.<suffix> by default.
+# *.Modelfile, Modelfile.<suffix>, and HF model config.json by default.
 pipeline_check --pipeline modelfile --modelfile-path models/
 ```
 
@@ -41,10 +42,14 @@ The MODEL-* pack covers the model supply chain a Modelfile declares:
 - **MODEL-004**, an `ADAPTER` LoRA pulled from a remote source can
   re-steer the model's behavior and deserves the same pin-and-verify
   treatment as the base model.
+- **MODEL-005**, a vendored HF `config.json` whose `auto_map` wires the
+  transformers auto-classes to the model repo's own Python, which runs
+  under `trust_remote_code=True`. The model-side complement of GHA-120 /
+  GL-045 (which flag the `trust_remote_code` load in CI scripts).
 
 ## What it covers
 
-4 checks · 0 have an autofix patch (``--fix``).
+5 checks · 0 have an autofix patch (``--fix``).
 
 | Check | Title | Severity | Fix |
 |-------|-------|----------|-----|
@@ -52,6 +57,7 @@ The MODEL-* pack covers the model supply chain a Modelfile declares:
 | [MODEL-002](#model-002) | Base model pulled from a third-party hub | <span class="pg-sev pg-sev--medium">MEDIUM</span> |  |
 | [MODEL-003](#model-003) | Base model loaded from a local unverified weights blob | <span class="pg-sev pg-sev--low">LOW</span> |  |
 | [MODEL-004](#model-004) | LoRA adapter applied from a remote source | <span class="pg-sev pg-sev--medium">MEDIUM</span> |  |
+| [MODEL-005](#model-005) | Vendored model config declares custom loader code (auto_map) | <span class="pg-sev pg-sev--medium">MEDIUM</span> |  |
 
 ---
 
@@ -130,6 +136,26 @@ Fires on an ``ADAPTER`` whose reference is not a local file (a ``hf.co`` / ``hug
 **Recommended action**
 
 Vet and pin the adapter the same way as the base model: prefer a local, checksum-verified adapter file, or pin a remote one to an ``@sha256:`` digest and review who controls it. An adapter re-steers the model's behavior, so an untrusted or mutable one is a behavior-injection vector.
+
+</div>
+
+</div>
+
+<div class="pg-rule pg-rule--medium" markdown>
+
+## MODEL-005: Vendored model config declares custom loader code (auto_map) { #model-005 }
+
+<div class="pg-rule__tags">
+<span class="pg-sev pg-sev--medium">MEDIUM</span> <span class="pg-tag pg-tag--owasp">CICD-SEC-3</span> <span class="pg-tag pg-tag--esf">ESF-S-VERIFY-DEPS</span> <span class="pg-tag pg-tag--cwe">CWE-494</span> <span class="pg-tag pg-tag--cwe">CWE-829</span> <span class="pg-tag pg-tag--cwe">CWE-94</span>
+</div>
+
+Fires on a vendored Hugging Face ``config.json`` whose ``auto_map`` block is non-empty (the file is recognized as a model config by its ``auto_map`` / ``architectures`` / ``model_type`` keys). ``auto_map`` points the transformers auto-classes at the model repo's own Python, which runs under ``trust_remote_code=True``. The model-side complement of GHA-120 / GL-045 (which flag the ``trust_remote_code`` load in CI scripts).
+
+<div class="pg-rule__rec" markdown>
+
+**Recommended action**
+
+Review the custom Python the ``auto_map`` references (``modeling_*.py`` / ``configuration_*.py`` in the model directory) the same way you would any dependency, and pin the model to an exact revision so the code can't change under you. Load the model with ``trust_remote_code=False`` (the library default) wherever the model works without its custom classes; if the custom code is required, load it in a job scoped to no production secrets. Prefer models that ship standard architectures and safetensors weights over ones that require remote code.
 
 </div>
 

@@ -237,6 +237,7 @@ STANDARD = Standard(
         "MODEL-002": ["6.4.3", "6.5.1"],                 # third-party hub base model
         "MODEL-003": ["6.4.3", "6.5.1"],                 # local unverified weights blob
         "MODEL-004": ["6.4.3", "6.5.1"],                 # remote LoRA adapter
+        "MODEL-005": ["6.4.3", "6.5.1"],                 # config auto_map = custom loader code
         "DF-031": ["6.4.3", "6.5.1"],                    # COPY --from external image not digest-pinned
         "DF-002": ["6.4.1", "7.2.5"],                    # runs as root
         "DF-003": ["6.5.1", "6.3.3"],                    # ADD remote no integrity
