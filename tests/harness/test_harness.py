@@ -269,3 +269,37 @@ class TestHarness005PipeToShell:
     def test_clean_pipeline_passes(self, tmp_path):
         out = _for(_findings(_ctx(tmp_path, _CLEAN)), "HARNESS-005")
         assert out and all(f.passed for f in out)
+
+
+_TLS = """\
+pipeline:
+  identifier: build
+  stages:
+    - stage:
+        identifier: ci
+        type: CI
+        spec:
+          execution:
+            steps:
+              - step:
+                  type: Run
+                  identifier: install
+                  spec:
+                    image: node
+                    command: |
+                      npm config set strict-ssl false
+                      npm install
+"""
+
+
+class TestHarness006TlsBypass:
+    def test_flags_tls_bypass(self, tmp_path):
+        out = [f for f in _for(_findings(_ctx(tmp_path, _TLS)), "HARNESS-006")
+               if not f.passed]
+        assert len(out) == 1
+        assert out[0].severity is Severity.HIGH
+        assert "ci/install" in out[0].description
+
+    def test_clean_pipeline_passes(self, tmp_path):
+        out = _for(_findings(_ctx(tmp_path, _CLEAN)), "HARNESS-006")
+        assert out and all(f.passed for f in out)

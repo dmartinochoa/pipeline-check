@@ -13,7 +13,7 @@ release commit collapses this section into `## [X.Y.Z] - <date>`.
 ### Added
 
 - **``harness`` provider: Harness CI/CD pipeline scanning (HARNESS-001 ..
-  HARNESS-005).** A new ``--pipeline harness`` parses Harness pipeline YAML
+  HARNESS-006).** A new ``--pipeline harness`` parses Harness pipeline YAML
   (the Git Experience / pipeline-as-code form) and audits it like the other
   CI providers, the first coverage of an enterprise CD platform that no
   scanner touches today. Harness has no canonical filename, so the loader
@@ -39,7 +39,11 @@ release commit collapses this section into `## [X.Y.Z] - <date>`.
   finding). **HARNESS-005** (HIGH) flags a step ``command`` that pipes a
   remote download into a shell (``curl ... | sh`` / ``wget ... | bash``),
   the Codecov-bash-uploader / install-script RCE class (the DR-014 /
-  GHA-016 family). Auto-detected on a ``.harness/`` directory; ``--harness-path``
+  GHA-016 family). **HARNESS-006** (HIGH) flags a step ``command`` that
+  disables TLS verification (``curl -k``, ``wget --no-check-certificate``,
+  ``npm config set strict-ssl false``, ``git -c http.sslVerify=false``, ...),
+  reusing the shared ``_primitives.tls_bypass`` detector (the DR-006 /
+  GHA-027 family). Auto-detected on a ``.harness/`` directory; ``--harness-path``
   points at a file or directory explicitly. YAML-only, no Harness API token.
   Every rule maps across the OWASP CI/CD Top 10 and the 12 other frameworks.
   Provider count 36 -> 37.
