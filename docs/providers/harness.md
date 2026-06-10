@@ -38,7 +38,7 @@ All other flags (`--output`, `--severity-threshold`, `--checks`,
 
 ## What it covers
 
-7 checks · 0 have an autofix patch (``--fix``).
+8 checks · 0 have an autofix patch (``--fix``).
 
 | Check | Title | Severity | Fix |
 |-------|-------|----------|-----|
@@ -49,6 +49,7 @@ All other flags (`--output`, `--severity-threshold`, `--checks`,
 | [HARNESS-005](#harness-005) | Step pipes a remote download into a shell interpreter | <span class="pg-sev pg-sev--high">HIGH</span> |  |
 | [HARNESS-006](#harness-006) | TLS verification disabled in step commands | <span class="pg-sev pg-sev--high">HIGH</span> |  |
 | [HARNESS-007](#harness-007) | Stage infrastructure mounts a sensitive host path | <span class="pg-sev pg-sev--high">HIGH</span> |  |
+| [HARNESS-008](#harness-008) | Untrusted context reaches an agentic AI CLI (prompt injection) | <span class="pg-sev pg-sev--high">HIGH</span> |  |
 
 ---
 
@@ -203,6 +204,26 @@ Harness CI Kubernetes infrastructure (``stage.spec.infrastructure.spec.volumes``
 **Recommended action**
 
 Drop the ``HostPath`` volume from the stage infrastructure. Mounting ``/var/run/docker.sock`` from the build node into the build pod hands it root-equivalent control over every other workload on that node (it can launch arbitrary, including privileged, containers). ``/var/lib/docker`` exposes every image and container on the node, ``/proc`` and ``/sys`` expose host kernel state, and ``/`` is full host takeover. If the build genuinely needs container builds, use a rootless builder (``kaniko``, ``buildah --isolation=chroot``, BuildKit rootless) or a remote builder, rather than bind-mounting the node's filesystem.
+
+</div>
+
+</div>
+
+<div class="pg-rule pg-rule--high" markdown>
+
+## HARNESS-008: Untrusted context reaches an agentic AI CLI (prompt injection) { #harness-008 }
+
+<div class="pg-rule__tags">
+<span class="pg-sev pg-sev--high">HIGH</span> <span class="pg-tag pg-tag--owasp">CICD-SEC-4</span> <span class="pg-tag pg-tag--esf">ESF-D-INJECTION</span> <span class="pg-tag pg-tag--cwe">CWE-94</span> <span class="pg-tag pg-tag--cwe">CWE-77</span>
+</div>
+
+The AI analog of HARNESS-002 (shell injection). Fires when a step ``spec.command`` invokes an agentic CLI (claude / gemini / cursor-agent / aider / openhands / goose / ``q chat``) AND an attacker-controllable ``<+...>`` expression reaches it (the ``codebase`` identity / ref / title / message fields or the whole ``trigger.`` / ``eventPayload.`` webhook context; the same taint set as HARNESS-002, ``<+codebase.commitSha>`` / ``<+codebase.repoUrl>`` excluded). Separate from HARNESS-002 because an LLM ingests the value as prompt text regardless of shell quoting / env-var binding, so the shell-injection mitigation does not apply.
+
+<div class="pg-rule__rec" markdown>
+
+**Recommended action**
+
+Do not place attacker-controllable Harness context (``<+codebase.prTitle>``, ``<+codebase.commitMessage>``, a branch / tag name, or any ``<+trigger.*>`` / ``<+eventPayload.*>`` value) in an agentic CLI's prompt. Binding the value to an env var does NOT sanitize a prompt the way it does a shell command, the model still reads it. If the agent must see PR content, run it in a stage with no secrets bound and no tool / shell access, and treat its output as untrusted.
 
 </div>
 

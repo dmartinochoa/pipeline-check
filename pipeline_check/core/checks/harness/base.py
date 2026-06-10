@@ -21,6 +21,7 @@ Rules subclass :class:`HarnessBaseCheck` and iterate
 """
 from __future__ import annotations
 
+import re
 from collections.abc import Iterator
 from dataclasses import dataclass
 from pathlib import Path
@@ -28,6 +29,23 @@ from typing import Any
 
 from .._yaml_files import load_yaml_files
 from ..base import BaseCheck
+
+#: Harness ``<+...>`` expressions whose value an outside contributor
+#: controls through a pull request / webhook: the codebase identity and
+#: ref / title / message fields, and the entire ``trigger`` / raw
+#: ``eventPayload`` webhook context. ``<+codebase.commitSha>`` and
+#: ``<+codebase.repoUrl>`` are intentionally excluded (a 40-hex SHA and
+#: the configured repo URL are not attacker-controllable injection text).
+#: The Harness analog of GHA-002's ``github.event.*`` taint set, shared by
+#: HARNESS-002 (shell injection) and HARNESS-008 (AI prompt injection).
+UNTRUSTED_EXPR_RE = re.compile(
+    r"<\+\s*(?P<field>"
+    r"codebase\.(?:gitUser|gitUserEmail|branch|sourceBranch|targetBranch|"
+    r"prTitle|pullRequestTitle|pullRequestBody|commitMessage|commitRef|tag)"
+    r"|trigger\."
+    r"|eventPayload\."
+    r")",
+)
 
 
 @dataclass(frozen=True, slots=True)

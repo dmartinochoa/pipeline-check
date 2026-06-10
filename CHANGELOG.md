@@ -13,7 +13,7 @@ release commit collapses this section into `## [X.Y.Z] - <date>`.
 ### Added
 
 - **``harness`` provider: Harness CI/CD pipeline scanning (HARNESS-001 ..
-  HARNESS-007).** A new ``--pipeline harness`` parses Harness pipeline YAML
+  HARNESS-008).** A new ``--pipeline harness`` parses Harness pipeline YAML
   (the Git Experience / pipeline-as-code form) and audits it like the other
   CI providers, the first coverage of an enterprise CD platform that no
   scanner touches today. Harness has no canonical filename, so the loader
@@ -48,8 +48,16 @@ release commit collapses this section into `## [X.Y.Z] - <date>`.
   mounting a sensitive node path (``/var/run/docker.sock``, ``/var/lib/
   docker``, ``/etc``, ``/proc``, ``/sys``, ``/``) into the build pod, a
   container-escape / node-takeover primitive (the DR-007 / K8S family;
-  ``EmptyDir`` / PVC volumes pass). Auto-detected on a ``.harness/``
-  directory; ``--harness-path``
+  ``EmptyDir`` / PVC volumes pass). **HARNESS-008** (HIGH) brings the
+  flagship AI prompt-injection rule (GHA-119 / GL-048 / BB-036 / ADO-035 /
+  JF-037) to Harness, making it the 6th provider in that matrix: a step
+  ``command`` that invokes an agentic CLI (``claude`` / ``gemini`` /
+  ``cursor-agent`` / ``aider`` / ``openhands`` / ``goose`` / ``q chat``)
+  AND feeds it an attacker-controllable ``<+...>`` expression
+  (``<+codebase.prTitle>``, ``<+trigger.*>``, ...) lets a pull request
+  smuggle instructions the agent then executes; it is separate from
+  HARNESS-002 because env-var binding does not sanitize an LLM prompt.
+  Auto-detected on a ``.harness/`` directory; ``--harness-path``
   points at a file or directory explicitly. YAML-only, no Harness API token.
   Every rule maps across the OWASP CI/CD Top 10 and the 12 other frameworks.
   Provider count 36 -> 37.
