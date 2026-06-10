@@ -225,6 +225,7 @@ STANDARD = Standard(
         "ARGO-001": ["UPD-1"],
         # Drone pinning surface
         "DR-001":   ["UPD-1"],             # step image not digest-pinned
+        "HARNESS-001":   ["UPD-1"],  # Harness step image not digest-pinned
         "DR-005":   ["UPD-1"],             # plugin floating tag
         "DR-008":   ["UPD-1"],             # pull: never (skips registry verification)
         # NPM / PyPI / Maven pinning

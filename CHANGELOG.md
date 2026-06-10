@@ -12,6 +12,29 @@ release commit collapses this section into `## [X.Y.Z] - <date>`.
 
 ### Added
 
+- **``harness`` provider: Harness CI/CD pipeline scanning (HARNESS-001 ..
+  HARNESS-002).** A new ``--pipeline harness`` parses Harness pipeline YAML
+  (the Git Experience / pipeline-as-code form) and audits it like the other
+  CI providers, the first coverage of an enterprise CD platform that no
+  scanner touches today. Harness has no canonical filename, so the loader
+  globs ``*.yml`` / ``*.yaml`` and keeps the documents whose top-level key
+  is ``pipeline:``; it flattens the deep ``stages -> stage.spec.execution.
+  steps -> step / parallel / stepGroup`` nesting to scan every leaf step
+  across CI and CD stages. **HARNESS-001** (HIGH) flags a step ``spec.image``
+  pinned by a mutable tag instead of an ``@sha256:`` digest (reusing the
+  shared ``image_pinning`` classifier; the DR-001 / GL-001 family). **HARNESS-002**
+  (HIGH) is the Harness script-injection rule: a step ``command`` that
+  interpolates an attacker-controllable ``<+...>`` expression
+  (``<+codebase.prTitle>``, ``<+codebase.commitMessage>``, a branch / tag
+  name, or any ``<+trigger.*>`` / ``<+eventPayload.*>`` value) is a
+  command-injection sink, since Harness substitutes the expression's text
+  into the script before the shell runs it (the GHA-002 / DR-003 model).
+  ``<+codebase.commitSha>`` / ``<+codebase.repoUrl>`` are excluded as
+  non-injectable. Auto-detected on a ``.harness/`` directory; ``--harness-path``
+  points at a file or directory explicitly. YAML-only, no Harness API token.
+  Both rules map across the OWASP CI/CD Top 10 and the 12 other frameworks.
+  Provider count 36 -> 37.
+
 - **RUN-007: third-party action pinned by a mutable tag executed in a
   privileged run.** The preventive twin of RUN-006. Where RUN-006 confirms
   a *known-compromised* action ran (an IOC match), RUN-007 flags the

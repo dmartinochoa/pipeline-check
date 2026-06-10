@@ -85,6 +85,7 @@ _PROVIDER_PATH_KW: dict[str, str | None] = {
     "cloudbuild":     "cloudbuild_path",
     "buildkite":      "buildkite_path",
     "drone":          "drone_path",
+    "harness":        "harness_path",
     "tekton":         "tekton_path",
     "argo":           "argo_path",
     "argocd":         "argocd_path",

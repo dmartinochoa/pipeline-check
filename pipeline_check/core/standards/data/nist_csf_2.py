@@ -619,6 +619,8 @@ STANDARD = Standard(
         "JF-032":  ["PR.PS-05"],                # agent label interpolates untrusted
         # ── Drone CI ─────────────────────────────────────────────
         "DR-001":  ["GV.SC-05"],                # step image not digest-pinned
+        "HARNESS-001":   ["GV.SC-05"],  # Harness step image not digest-pinned
+        "HARNESS-002":   ["PR.PS-05"],  # Harness expression injection in step command
         "DR-002":  ["PR.PS-01"],                # privileged step
         "DR-003":  ["PR.PS-05"],                # Drone variable injection
         "DR-004":  ["PR.AA-01"],                # literal credential

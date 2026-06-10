@@ -86,6 +86,7 @@ _RULE_PACKAGES: tuple[str, ...] = (
     "pipeline_check.core.checks.helm.rules",
     "pipeline_check.core.checks.oci.rules",
     "pipeline_check.core.checks.drone.rules",
+    "pipeline_check.core.checks.harness.rules",
     "pipeline_check.core.checks.gcp.rules",
     "pipeline_check.core.checks.scm.rules",
     "pipeline_check.core.checks.runs.rules",

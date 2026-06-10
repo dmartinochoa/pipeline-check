@@ -44,6 +44,7 @@ _BUILTINS: dict[str, str] = {
     "devenv": "DevEnvProvider",
     "dockerfile": "DockerfileProvider",
     "drone": "DroneProvider",
+    "harness": "HarnessProvider",
     "gcp": "GCPProvider",
     "gitea": "GiteaProvider",
     "github": "GitHubProvider",

@@ -189,7 +189,7 @@ class _GroupedCommand(click.Command):
             "--buildkite-path", "--tekton-path", "--argo-path",
             "--argocd-path",
             "--helm-values", "--helm-set", "--oci-manifest",
-            "--drone-path", "--npm-path", "--pypi-path",
+            "--drone-path", "--harness-path", "--npm-path", "--pypi-path",
             "--maven-path", "--nuget-path", "--gomod-path",
             "--cargo-path", "--pulumi-path", "--composer-path",
             "--rubygems-path", "--devenv-path", "--modelfile-path",
@@ -658,6 +658,7 @@ _INLINE_IGNORE_GLOBS: dict[str, tuple[str, ...]] = {
     "cloudbuild": ("*.yml", "*.yaml"),
     "buildkite": ("*.yml", "*.yaml"),
     "drone": ("*.yml", "*.yaml"),
+    "harness": ("*.yml", "*.yaml"),
     "tekton": ("*.yml", "*.yaml"),
     "argo": ("*.yml", "*.yaml"),
     "argocd": ("*.yml", "*.yaml"),
@@ -685,6 +686,7 @@ _PROVIDER_PATH_KWARG: dict[str, str] = {
     "cloudbuild": "cloudbuild_path",
     "buildkite": "buildkite_path",
     "drone": "drone_path",
+    "harness": "harness_path",
     "tekton": "tekton_path",
     "argo": "argo_path",
     "argocd": "argocd_path",
@@ -1081,7 +1083,8 @@ def _install_completion_callback(
         "--bitbucket-path, --azure-path, --jenkinsfile-path, "
         "--circleci-path, --cloudbuild-path, --dockerfile-path, "
         "--k8s-path, --helm-path, --buildkite-path, --tekton-path, "
-        "--argo-path, --argocd-path, --oci-manifest, --drone-path, --npm-path, "
+        "--argo-path, --argocd-path, --oci-manifest, --drone-path, "
+        "--harness-path, --npm-path, "
         "--pypi-path, --maven-path); "
         "AWS scans the live account via boto3. For multi-provider "
         "scans (so cross-provider attack chains like XPC-001 fire) "
@@ -1628,6 +1631,17 @@ def _install_completion_callback(
         "Path to a Drone CI ``.drone.yml`` / ``.drone.yaml`` file "
         "or a directory containing one (required when --pipeline "
         "drone). Auto-detects ./.drone.yml or ./.drone.yaml."
+    ),
+)
+@click.option(
+    "--harness-path",
+    "harness_path",
+    default=None,
+    metavar="PATH",
+    help=(
+        "Path to a Harness pipeline YAML file or a directory "
+        "containing Harness pipelines (required when --pipeline "
+        "harness). Auto-detects ./.harness/."
     ),
 )
 @click.option(
@@ -2426,6 +2440,7 @@ def scan(
     helm_set: tuple[str, ...],
     oci_manifest: str | None,
     drone_path: str | None,
+    harness_path: str | None,
     scm_platform: str | None,
     scm_repo: str | None,
     scm_fixture_dir: str | None,
@@ -2664,6 +2679,7 @@ def scan(
         helm_path=helm_path,
         oci_manifest=oci_manifest,
         drone_path=drone_path,
+        harness_path=harness_path,
         npm_path=npm_path,
         pypi_path=pypi_path,
         maven_path=maven_path,
@@ -2774,6 +2790,7 @@ def scan(
         helm_set=list(helm_set) or None,
         oci_manifest=_paths.oci_manifest,
         drone_path=_paths.drone_path,
+        harness_path=_paths.harness_path,
         npm_path=_paths.npm_path,
         npm_base_ref=npm_base_ref,
         pypi_path=_paths.pypi_path,
@@ -3037,6 +3054,7 @@ def scan(
             helm_set=helm_set,
             oci_manifest=oci_manifest,
             drone_path=drone_path,
+            harness_path=harness_path,
             npm_path=npm_path,
             pypi_path=pypi_path,
             maven_path=maven_path,
@@ -3225,6 +3243,7 @@ def scan(
             "cloudbuild_path": cloudbuild_path,
             "buildkite_path": buildkite_path,
             "drone_path": drone_path,
+            "harness_path": harness_path,
             "tekton_path": tekton_path,
             "argo_path": argo_path,
             "argocd_path": argocd_path,
@@ -3496,6 +3515,7 @@ class _ScanPaths:
     helm_path: str | None = None
     oci_manifest: str | None = None
     drone_path: str | None = None
+    harness_path: str | None = None
     npm_path: str | None = None
     pypi_path: str | None = None
     maven_path: str | None = None
@@ -3530,6 +3550,7 @@ def _resolve_provider_paths(
     helm_path: str | None,
     oci_manifest: str | None,
     drone_path: str | None,
+    harness_path: str | None,
     npm_path: str | None,
     pypi_path: str | None,
     maven_path: str | None,
@@ -3727,6 +3748,12 @@ def _resolve_provider_paths(
                 candidates=(".drone.yml", ".drone.yaml"),
                 detect_label=".drone.yml/.drone.yaml",
             )
+        elif pipeline_lc == "harness":
+            harness_path = _resolve_provider_path(
+                "harness", flag="harness-path", value=harness_path,
+                candidates=(".harness",),
+                detect_label=".harness/",
+            )
         elif pipeline_lc == "npm":
             npm_path = _resolve_provider_path(
                 "npm", flag="npm-path", value=npm_path,
@@ -3804,6 +3831,7 @@ def _resolve_provider_paths(
         helm_path=helm_path,
         oci_manifest=oci_manifest,
         drone_path=drone_path,
+        harness_path=harness_path,
         npm_path=npm_path,
         pypi_path=pypi_path,
         maven_path=maven_path,
@@ -4271,6 +4299,7 @@ def _build_pr_diff_subprocess_argv(
     helm_set: tuple[str, ...],
     oci_manifest: str | None,
     drone_path: str | None,
+    harness_path: str | None,
     npm_path: str | None,
     pypi_path: str | None,
     maven_path: str | None,
@@ -4344,6 +4373,7 @@ def _build_pr_diff_subprocess_argv(
         ("--helm-path", helm_path),
         ("--oci-manifest", oci_manifest),
         ("--drone-path", drone_path),
+        ("--harness-path", harness_path),
         ("--npm-path", npm_path),
         ("--pypi-path", pypi_path),
         ("--maven-path", maven_path),
@@ -4726,6 +4756,7 @@ _INIT_SCANNER_KWARGS: dict[str, tuple[str, tuple[str, ...]]] = {
         (".buildkite/pipeline.yml", ".buildkite/pipeline.yaml"),
     ),
     "drone": ("drone_path", (".drone.yml", ".drone.yaml")),
+    "harness": ("harness_path", (".harness",)),
     "dockerfile": ("dockerfile_path", ("Dockerfile", "Containerfile")),
     "modelfile": ("modelfile_path", ("Modelfile",)),
     "kubernetes": ("k8s_path", ("kubernetes", "k8s", "manifests")),

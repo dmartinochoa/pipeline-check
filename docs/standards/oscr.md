@@ -25,7 +25,7 @@ axis.
 
 - **Controls in this standard:** 86
 - **Controls evidenced by at least one check:** 61 / 86
-- **Distinct checks evidencing this standard:** 687
+- **Distinct checks evidencing this standard:** 689
 - **Of those, autofixable with `--fix`:** 105
 
 _Severity levels (`CRITICAL` / `HIGH` / `MEDIUM` / `LOW` / `INFO`) follow the same scale across every provider and standard. See [How to read severity](README.md#how-to-read-severity) on the standards overview for the definitions._
@@ -62,7 +62,7 @@ Click a control ID to jump to the per-control section with the full check list. 
 | [`IA-8`](#ctrl-ia-8) | Exposed webhook | 1 | 1H |
 | [`IA-9`](#ctrl-ia-9) | Compromised token | 20 | 4C · 9H · 7M |
 | [`IA-10`](#ctrl-ia-10) | Vulnerable CI/CD plugins | 11 | 1C · 10H |
-| [`IA-11`](#ctrl-ia-11) | Vulnerable CI/CD template | 69 | 35H · 28M · 6L |
+| [`IA-11`](#ctrl-ia-11) | Vulnerable CI/CD template | 70 | 36H · 28M · 6L |
 | [`IA-12`](#ctrl-ia-12) | Exposed internal API | 0 | — |
 | [`IA-13`](#ctrl-ia-13) | Vulnerability in third-party dependency | 50 | 8C · 8H · 34M |
 | [`IA-14`](#ctrl-ia-14) | Compromised developer workstation | 0 | — |
@@ -81,7 +81,7 @@ Click a control ID to jump to the per-control section with the full check list. 
 | [`EX-3`](#ctrl-ex-3) | IDE | 0 | — |
 | [`EX-4`](#ctrl-ex-4) | Runtime backdoor | 0 | — |
 | [`EX-5`](#ctrl-ex-5) | Package manager | 0 | — |
-| [`EX-6`](#ctrl-ex-6) | Command injection | 70 | 8C · 55H · 6M · 1L |
+| [`EX-6`](#ctrl-ex-6) | Command injection | 71 | 8C · 56H · 6M · 1L |
 | [`EX-7`](#ctrl-ex-7) | SQL injection | 0 | — |
 | [`EX-8`](#ctrl-ex-8) | Cross-site scripting | 0 | — |
 | [`EX-9`](#ctrl-ex-9) | Malicious artifact execution | 5 | 5C |
@@ -405,7 +405,7 @@ _No checks in this scanner currently evidence this control. Open an issue if you
 
 ### IA-11: Vulnerable CI/CD template { #ctrl-ia-11 }
 
-**Evidenced by 69 checks** across 20 providers (AWS, Argo Workflows, Azure DevOps, Bitbucket, Buildkite, CircleCI, Cloud Build, Dockerfile, Drone CI, GitHub Actions, GitLab CI, Helm, Jenkins, Kubernetes, Modelfile, NuGet, PyPI, Tekton, maven, npm).
+**Evidenced by 70 checks** across 21 providers (AWS, Argo Workflows, Azure DevOps, Bitbucket, Buildkite, CircleCI, Cloud Build, Dockerfile, Drone CI, GitHub Actions, GitLab CI, Harness CI/CD, Helm, Jenkins, Kubernetes, Modelfile, NuGet, PyPI, Tekton, maven, npm).
 
 | Check | Title | Severity | Provider | Fix |
 |-------|-------|----------|----------|-----|
@@ -450,6 +450,7 @@ _No checks in this scanner currently evidence this control. Open an issue if you
 | [`GL-021`](../providers/gitlab.md#gl-021) | Package install without lockfile enforcement | <span class="pg-sev pg-sev--medium">MEDIUM</span> | [GitLab CI](../providers/gitlab.md) | <span class="pg-fix" title="`--fix` will patch this rule">🔧 fix</span> |
 | [`GL-028`](../providers/gitlab.md#gl-028) | services: image not pinned | <span class="pg-sev pg-sev--high">HIGH</span> | [GitLab CI](../providers/gitlab.md) |  |
 | [`GL-042`](../providers/gitlab.md#gl-042) | include: component pulls a CI/CD component without a pinned version | <span class="pg-sev pg-sev--high">HIGH</span> | [GitLab CI](../providers/gitlab.md) |  |
+| [`HARNESS-001`](../providers/harness.md#harness-001) | Step image not pinned to a digest | <span class="pg-sev pg-sev--high">HIGH</span> | [Harness CI/CD](../providers/harness.md) |  |
 | [`HELM-001`](../providers/helm.md#helm-001) | Chart.yaml declares legacy apiVersion: v1 | <span class="pg-sev pg-sev--medium">MEDIUM</span> | [Helm](../providers/helm.md) | <span class="pg-fix" title="`--fix` will patch this rule">🔧 fix</span> |
 | [`HELM-004`](../providers/helm.md#helm-004) | Chart dependency version is a range, not an exact pin | <span class="pg-sev pg-sev--medium">MEDIUM</span> | [Helm](../providers/helm.md) |  |
 | [`HELM-008`](../providers/helm.md#helm-008) | Chart.lock generated more than 90 days ago | <span class="pg-sev pg-sev--medium">MEDIUM</span> | [Helm](../providers/helm.md) |  |
@@ -701,7 +702,7 @@ _No checks in this scanner currently evidence this control. Open an issue if you
 
 ### EX-6: Command injection { #ctrl-ex-6 }
 
-**Evidenced by 70 checks** across 13 providers (Argo CD, Argo Workflows, Azure DevOps, Bitbucket, Buildkite, CircleCI, Cloud Build, Dockerfile, Drone CI, GitHub Actions, GitLab CI, Jenkins, Tekton).
+**Evidenced by 71 checks** across 14 providers (Argo CD, Argo Workflows, Azure DevOps, Bitbucket, Buildkite, CircleCI, Cloud Build, Dockerfile, Drone CI, GitHub Actions, GitLab CI, Harness CI/CD, Jenkins, Tekton).
 
 | Check | Title | Severity | Provider | Fix |
 |-------|-------|----------|----------|-----|
@@ -761,6 +762,7 @@ _No checks in this scanner currently evidence this control. Open an issue if you
 | [`GL-045`](../providers/gitlab.md#gl-045) | ML model loaded with trust_remote_code (code execution) | <span class="pg-sev pg-sev--high">HIGH</span> | [GitLab CI](../providers/gitlab.md) |  |
 | [`GL-047`](../providers/gitlab.md#gl-047) | Unsafe deserialization of a fetched artifact (pickle RCE) | <span class="pg-sev pg-sev--high">HIGH</span> | [GitLab CI](../providers/gitlab.md) |  |
 | [`GL-048`](../providers/gitlab.md#gl-048) | Untrusted MR/commit context reaches an agentic AI CLI (prompt injection) | <span class="pg-sev pg-sev--high">HIGH</span> | [GitLab CI](../providers/gitlab.md) |  |
+| [`HARNESS-002`](../providers/harness.md#harness-002) | Untrusted Harness expression interpolated into a step command | <span class="pg-sev pg-sev--high">HIGH</span> | [Harness CI/CD](../providers/harness.md) |  |
 | [`JF-002`](../providers/jenkins.md#jf-002) | Script step interpolates attacker-controllable env var | <span class="pg-sev pg-sev--high">HIGH</span> | [Jenkins](../providers/jenkins.md) |  |
 | [`JF-030`](../providers/jenkins.md#jf-030) | Dangerous shell idiom (eval, sh -c variable, backtick exec) | <span class="pg-sev pg-sev--high">HIGH</span> | [Jenkins](../providers/jenkins.md) |  |
 | [`JF-032`](../providers/jenkins.md#jf-032) | Agent label interpolates attacker-controllable value | <span class="pg-sev pg-sev--high">HIGH</span> | [Jenkins](../providers/jenkins.md) | <span class="pg-fix" title="`--fix` will patch this rule">🔧 fix</span> |

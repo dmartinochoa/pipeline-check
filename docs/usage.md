@@ -76,7 +76,8 @@ pipeline_check
 Auto-detect looks for: `.github/workflows/`, `.gitlab-ci.yml`,
 `bitbucket-pipelines.yml`, `azure-pipelines.yml`, `Jenkinsfile`,
 `.circleci/config.yml`, `cloudbuild.yaml`, `.buildkite/pipeline.yml`,
-`.drone.yml` / `.drone.yaml`, `Dockerfile`/`Containerfile`,
+`.drone.yml` / `.drone.yaml`, a `.harness/` directory of Harness
+pipelines, `Dockerfile`/`Containerfile`,
 CloudFormation templates (`*.yml`, `*.yaml`, `*.json` at repo root),
 a `kubernetes/` / `k8s/` / `manifests/` directory of K8s manifests,
 and Helm `Chart.yaml`. When nothing matches, the CLI exits with a
@@ -124,6 +125,7 @@ pipeline_check --pipeline kubernetes --k8s-path manifests/
 pipeline_check --pipeline helm --helm-path charts/myapp/
 
 pipeline_check --pipeline drone --drone-path .drone.yml
+pipeline_check --pipeline harness --harness-path .harness/
 pipeline_check --pipeline oci --oci-manifest index.json
 
 # Developer-environment configs that auto-execute on repo open
