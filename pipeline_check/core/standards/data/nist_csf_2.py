@@ -626,6 +626,7 @@ STANDARD = Standard(
         "HARNESS-005":   ["GV.SC-05"],  # Harness pipe-to-shell
         "HARNESS-006":   ["PR.DS-02"],  # Harness TLS bypass in commands
         "HARNESS-007":   ["PR.PS-01"],  # Harness sensitive host-path mount
+        "HARNESS-008":   ["PR.PS-05"],  # Harness agentic-CLI prompt injection
         "DR-002":  ["PR.PS-01"],                # privileged step
         "DR-003":  ["PR.PS-05"],                # Drone variable injection
         "DR-004":  ["PR.AA-01"],                # literal credential

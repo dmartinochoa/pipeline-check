@@ -356,3 +356,47 @@ class TestHarness007HostPathMount:
         out = [f for f in _for(_findings(_ctx(tmp_path, text)), "HARNESS-007")
                if not f.passed]
         assert out == []
+
+
+_AI = """\
+pipeline:
+  identifier: build
+  stages:
+    - stage:
+        identifier: ci
+        type: CI
+        spec:
+          execution:
+            steps:
+              - step:
+                  type: Run
+                  identifier: review
+                  spec:
+                    image: node
+                    command: claude -p "Review PR titled <+codebase.prTitle>"
+"""
+
+
+class TestHarness008AiPromptInjection:
+    def test_flags_untrusted_context_into_agentic_cli(self, tmp_path):
+        out = [f for f in _for(_findings(_ctx(tmp_path, _AI)), "HARNESS-008")
+               if not f.passed]
+        assert len(out) == 1
+        f = out[0]
+        assert f.severity is Severity.HIGH
+        assert "ci/review" in f.description
+        assert "claude" in f.description
+
+    def test_agentic_cli_without_untrusted_context_is_safe(self, tmp_path):
+        text = _AI.replace("<+codebase.prTitle>", "the staged diff")
+        out = [f for f in _for(_findings(_ctx(tmp_path, text)), "HARNESS-008")
+               if not f.passed]
+        assert out == []
+
+    def test_untrusted_context_without_agentic_cli_not_flagged(self, tmp_path):
+        # HARNESS-002 catches this shell-injection case; HARNESS-008 only
+        # fires when an agentic CLI is the sink.
+        text = _AI.replace("claude -p ", "echo ")
+        out = [f for f in _for(_findings(_ctx(tmp_path, text)), "HARNESS-008")
+               if not f.passed]
+        assert out == []

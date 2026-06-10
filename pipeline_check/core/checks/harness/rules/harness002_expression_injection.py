@@ -1,26 +1,14 @@
 """HARNESS-002. Untrusted Harness expression interpolated into a step shell."""
 from __future__ import annotations
 
-import re
-
 from ...base import Finding, Severity
 from ...rule import Rule
-from ..base import HarnessPipeline, iter_steps, step_command_text, step_label
-
-#: Harness ``<+...>`` expressions whose value an outside contributor
-#: controls through a pull request / webhook: the codebase identity and
-#: ref / title / message fields, and the entire ``trigger`` / raw
-#: ``eventPayload`` webhook context. ``<+codebase.commitSha>`` and
-#: ``<+codebase.repoUrl>`` are intentionally excluded (a 40-hex SHA and
-#: the configured repo URL are not attacker-controllable injection text).
-#: This is the Harness analog of GHA-002's ``github.event.*`` taint set.
-_UNTRUSTED_EXPR_RE = re.compile(
-    r"<\+\s*(?P<field>"
-    r"codebase\.(?:gitUser|gitUserEmail|branch|sourceBranch|targetBranch|"
-    r"prTitle|pullRequestTitle|pullRequestBody|commitMessage|commitRef|tag)"
-    r"|trigger\."
-    r"|eventPayload\."
-    r")",
+from ..base import (
+    UNTRUSTED_EXPR_RE,
+    HarnessPipeline,
+    iter_steps,
+    step_command_text,
+    step_label,
 )
 
 RULE = Rule(
@@ -83,7 +71,7 @@ def check(pipeline: HarnessPipeline) -> Finding:
         text = step_command_text(step)
         if not text:
             continue
-        fields = {m.group("field") for m in _UNTRUSTED_EXPR_RE.finditer(text)}
+        fields = {m.group("field") for m in UNTRUSTED_EXPR_RE.finditer(text)}
         if fields:
             shown = ", ".join(sorted(fields)[:3])
             offenders.append(f"{step_label(stage_id, step)} (<+{shown}…>)")
