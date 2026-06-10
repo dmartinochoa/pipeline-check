@@ -192,3 +192,30 @@ def step_spec(step: dict[str, Any]) -> dict[str, Any]:
     """Return a step's ``spec:`` dict (empty when absent / malformed)."""
     spec = step.get("spec")
     return spec if isinstance(spec, dict) else {}
+
+
+def iter_variables(
+    pipeline: HarnessPipeline,
+) -> Iterator[tuple[str, dict[str, Any]]]:
+    """Yield ``(scope_label, variable_dict)`` for every declared pipeline /
+    stage variable.
+
+    Harness ``variables:`` entries are ``{name, type, value}`` dicts and
+    appear at the pipeline level (``pipeline.variables``) and per stage
+    (``stage.variables``). The scope label (``pipeline`` or a stage
+    identifier) prefixes the finding offender.
+    """
+    pvars = pipeline.data.get("variables")
+    if isinstance(pvars, list):
+        for var in pvars:
+            if isinstance(var, dict):
+                yield "pipeline", var
+    for stage in _iter_stage_dicts(pipeline):
+        svars = stage.get("variables")
+        if not isinstance(svars, list):
+            continue
+        ident = stage.get("identifier")
+        scope = ident.strip() if isinstance(ident, str) and ident.strip() else "stage"
+        for var in svars:
+            if isinstance(var, dict):
+                yield scope, var

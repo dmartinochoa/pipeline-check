@@ -70,6 +70,37 @@ pipeline:
                     command: echo "$PR_TITLE"
 """
 
+# A realistically-shaped (fake) leaked GitHub PAT: ghp_ + 36 chars.
+_LEAKED_TOKEN = "ghp_016d8d1f2a3b4c5d6e7f8a9b0c1d2e3f4a5b"
+
+# A pipeline with a privileged step and a literal-secret String variable
+# alongside a properly-referenced Secret variable.
+_RISKY = f"""\
+pipeline:
+  identifier: risky
+  variables:
+    - name: GH_TOKEN
+      type: String
+      value: {_LEAKED_TOKEN}
+    - name: SAFE_TOKEN
+      type: Secret
+      value: <+secrets.getValue("gh_token")>
+  stages:
+    - stage:
+        identifier: ci
+        type: CI
+        spec:
+          execution:
+            steps:
+              - step:
+                  type: Run
+                  identifier: dind
+                  spec:
+                    image: docker@sha256:{_DA}
+                    privileged: true
+                    command: docker build .
+"""
+
 # Not a Harness pipeline (no top-level ``pipeline:`` key): must be skipped.
 _NOT_HARNESS = """\
 template:
@@ -150,5 +181,49 @@ class TestHarness002ExpressionInjection:
             'command: echo "<+codebase.commitSha>"',
         )
         out = [f for f in _for(_findings(_ctx(tmp_path, text)), "HARNESS-002")
+               if not f.passed]
+        assert out == []
+
+
+class TestHarness003PrivilegedStep:
+    def test_flags_privileged_step(self, tmp_path):
+        out = [f for f in _for(_findings(_ctx(tmp_path, _RISKY)), "HARNESS-003")
+               if not f.passed]
+        assert len(out) == 1
+        f = out[0]
+        assert f.severity is Severity.HIGH
+        assert "ci/dind" in f.description
+
+    def test_passes_without_privileged(self, tmp_path):
+        out = _for(_findings(_ctx(tmp_path, _CLEAN)), "HARNESS-003")
+        assert out and all(f.passed for f in out)
+
+    def test_privileged_false_not_flagged(self, tmp_path):
+        text = _RISKY.replace("privileged: true", "privileged: false")
+        out = [f for f in _for(_findings(_ctx(tmp_path, text)), "HARNESS-003")
+               if not f.passed]
+        assert out == []
+
+
+class TestHarness004LiteralSecret:
+    def test_flags_literal_secret_string_variable(self, tmp_path):
+        out = [f for f in _for(_findings(_ctx(tmp_path, _RISKY)), "HARNESS-004")
+               if not f.passed]
+        assert len(out) == 1
+        f = out[0]
+        assert f.severity is Severity.CRITICAL
+        assert "pipeline.GH_TOKEN" in f.description
+        # The Secret-typed reference variable is not flagged, and the raw
+        # token value is redacted out of the finding.
+        assert "SAFE_TOKEN" not in f.description
+        assert _LEAKED_TOKEN not in f.description
+
+    def test_secret_reference_is_safe(self, tmp_path):
+        out = _for(_findings(_ctx(tmp_path, _CLEAN)), "HARNESS-004")
+        assert out and all(f.passed for f in out)
+
+    def test_non_secret_string_not_flagged(self, tmp_path):
+        text = _RISKY.replace(_LEAKED_TOKEN, "production")
+        out = [f for f in _for(_findings(_ctx(tmp_path, text)), "HARNESS-004")
                if not f.passed]
         assert out == []

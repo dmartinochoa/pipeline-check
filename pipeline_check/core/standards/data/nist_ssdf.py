@@ -159,7 +159,7 @@ STANDARD = Standard(
         "RUN-004":  ["PO.5.1", "PW.9.1"],              # forensics: fork run minted a cloud OIDC token
         "RUN-005":  ["PO.5.1", "PW.9.1"],              # forensics: fork run on a self-hosted runner
         "RUN-006":  ["PW.4.1", "PW.4.4", "RV.1.1"],              # forensics: known-compromised action executed
-        "RUN-007":  ["PW.4.1", "PW.4.4"],                        # forensics: unpinned third-party action ran with secrets
+        "RUN-007":  ["PW.4.1", "PW.4.4"],                        # forensics: unpinned third-party action ran
         "GHA-003":  ["PW.6.1", "PW.9.1"],              # script injection
         "GHA-119":  ["PW.6.1", "PW.9.1"],              # untrusted context into an agentic AI CLI
         "GHA-120":  ["PW.6.1", "PW.9.1"],              # trust_remote_code model load = code exec
@@ -479,6 +479,8 @@ STANDARD = Standard(
         "DR-001":   ["PW.4.1", "PW.4.4"],              # step image not digest-pinned
         "HARNESS-001":   ["PW.4.1", "PW.4.4"],  # Harness step image not digest-pinned
         "HARNESS-002":   ["PW.6.1", "PW.9.1"],  # Harness expression injection in step command
+        "HARNESS-003":   ["PO.5.1", "PW.9.1"],  # Harness privileged step
+        "HARNESS-004":   ["PS.1.1"],  # Harness literal credential in variable
         "DR-002":   ["PO.5.1", "PW.9.1"],              # privileged step
         "DR-003":   ["PW.6.1", "PW.9.1"],              # Drone variable injection
         "DR-004":   ["PS.1.1"],                        # literal credential

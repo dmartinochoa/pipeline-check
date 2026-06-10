@@ -294,6 +294,8 @@ STANDARD = Standard(
         "DR-001":   ["IA-11"],
         "HARNESS-001":   ["IA-11"],  # Harness step image not digest-pinned
         "HARNESS-002":   ["EX-6"],  # Harness expression injection in step command
+        "HARNESS-003":   ["PE-2"],  # Harness privileged step
+        "HARNESS-004":   ["REC-2", "CA-6"],  # Harness literal credential in variable
         "DR-005":   ["IA-11"],
         "DF-001":   ["IA-11"],
         "MODEL-001": ["IA-11"],   # unpinned base model
