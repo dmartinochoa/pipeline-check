@@ -12,6 +12,27 @@ release commit collapses this section into `## [X.Y.Z] - <date>`.
 
 ### Added
 
+- **RUN-007: third-party action pinned by a mutable tag executed in a
+  privileged run.** The preventive twin of RUN-006. Where RUN-006 confirms
+  a *known-compromised* action ran (an IOC match), RUN-007 flags the
+  exposure before it becomes an incident: a third-party action that a
+  privileged-trigger run (``pull_request_target`` / ``workflow_run``)
+  resolved from a mutable ref (a tag like ``@v4`` or a branch, not a 40-hex
+  commit SHA) actually executed with the run's secrets and ``GITHUB_TOKEN``
+  in scope. If the upstream force-moves that tag, the next privileged run
+  silently pulls the attacker's code (the tj-actions/changed-files
+  CVE-2025-30066 vector). Reuses the privileged-run logs RUN-003 / RUN-004
+  already download and inspects GitHub's ``Download action repository
+  'owner/repo@ref' (SHA:...)`` lines, carrying the resolved SHA as the pin
+  to adopt. First-party (``actions`` / ``github``) and the repo's own
+  actions are excluded; only the secret-bearing privileged runs are scanned
+  (not the bounded non-privileged RUN-006 pass), so the signal stays high.
+  This is the run-forensics pin-hygiene check: the ``runs`` provider audits
+  a repo purely from run history (it never reads the workflow), so it also
+  catches transitively / dynamically resolved actions a static ``uses:``
+  scan cannot see. MEDIUM, only evaluated with ``--audit-runs-logs``.
+  ``runs`` provider 6 -> 7 checks.
+
 - **AC-042: fork pipeline executed and exfiltrated credentials in the
   same pipeline (GitLab).** The GitLab analog of AC-041, built from the
   ``gitlab_runs`` run-forensics legs. Fires when one fork merge-request

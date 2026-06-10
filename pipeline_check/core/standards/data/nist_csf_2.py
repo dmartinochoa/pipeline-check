@@ -345,6 +345,7 @@ STANDARD = Standard(
         "RUN-004":  ["PR.IR-01"],
         "RUN-005":  ["PR.IR-01"],
         "RUN-006":  ["GV.SC-05", "GV.SC-07"],
+        "RUN-007":  ["GV.SC-05", "GV.SC-07"],
         "GHA-009":  ["PR.IR-01"],
         "GHA-010":  ["PR.IR-01"],
         "GHA-011":  ["PR.IR-01"],
