@@ -588,6 +588,8 @@ STANDARD = Standard(
         "DR-001":  ["4.1.5"],                      # step image not digest-pinned
         "HARNESS-001":   ["4.1.5"],  # Harness step image not digest-pinned
         "HARNESS-002":   ["4.4.5"],  # Harness expression injection in step command
+        "HARNESS-003":   ["4.1.2", "4.4.4"],  # Harness privileged step
+        "HARNESS-004":   ["4.1.4"],  # Harness literal credential in variable
         "DR-002":  ["4.1.2", "4.4.4"],             # privileged step
         "DR-003":  ["4.4.5"],                      # Drone variable injection
         "DR-004":  ["4.1.4"],                      # literal credential

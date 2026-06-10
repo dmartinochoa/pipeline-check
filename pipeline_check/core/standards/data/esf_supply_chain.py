@@ -669,6 +669,8 @@ STANDARD = Standard(
         "DR-001":   ["ESF-S-PIN-DEPS", "ESF-S-IMMUTABLE"],     # step image not digest-pinned
         "HARNESS-001":   ["ESF-S-PIN-DEPS", "ESF-S-IMMUTABLE"],  # Harness step image not digest-pinned
         "HARNESS-002":   ["ESF-D-INJECTION"],  # Harness expression injection in step command
+        "HARNESS-003":   ["ESF-D-PRIV-BUILD"],  # Harness privileged step
+        "HARNESS-004":   ["ESF-D-SECRETS"],  # Harness literal credential in variable
         "DR-002":   ["ESF-D-PRIV-BUILD"],           # privileged step
         "DR-003":   ["ESF-D-INJECTION"],            # Drone variable injection
         "DR-004":   ["ESF-D-SECRETS"],              # literal credential
