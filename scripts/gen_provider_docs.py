@@ -880,6 +880,50 @@ All other flags (`--output`, `--severity-threshold`, `--checks`,
   a maintainer can ratchet plugin pinning up first.
 """,
     ),
+    "harness": (
+        "Harness CI/CD",
+        "pipeline_check.core.checks.harness.rules",
+        _REPO_ROOT / "docs" / "providers" / "harness.md",
+        """\
+# Harness CI/CD provider
+
+Parses Harness pipeline YAML (the Git Experience / pipeline-as-code
+form) on disk. Harness has no canonical filename, so the loader globs
+``*.yml`` / ``*.yaml`` and keeps the documents whose top-level key is
+``pipeline:`` (its discriminator); a ``template:`` document or
+unrelated YAML in the same directory is skipped. A pipeline nests
+steps several levels deep (``stages`` -> ``stage.spec.execution.steps``
+-> ``step`` / ``parallel`` / ``stepGroup``); the rule pack flattens
+all of that and scans every leaf step across CI and CD stages.
+
+## Producer workflow
+
+```bash
+# --harness-path is auto-detected when a .harness/ directory exists at cwd.
+pipeline_check --pipeline harness
+
+# ...or pass it explicitly (a file or a directory of pipelines).
+pipeline_check --pipeline harness --harness-path .harness/
+
+pipeline_check --pipeline harness --harness-path pipelines/build.yaml
+```
+
+All other flags (`--output`, `--severity-threshold`, `--checks`,
+`--standard`, ...) behave the same as with the other providers.
+
+### Harness-specific checks
+
+- **HARNESS-002**, Harness substitutes a ``<+...>`` expression's text
+  into a step ``command`` *before* the shell runs it, so an
+  attacker-controllable expression (``<+codebase.prTitle>``,
+  ``<+codebase.commitMessage>``, a branch / tag name, or any
+  ``<+trigger.*>`` / ``<+eventPayload.*>`` value) is a command-injection
+  primitive. ``<+codebase.commitSha>`` / ``<+codebase.repoUrl>`` are
+  excluded (not injectable text). Bind the value to an ``envVariables``
+  entry and quote it (``"$PR_TITLE"``) to clear the finding. Same model
+  as GHA-002 / GL-002 / DR-003 in this catalog.
+""",
+    ),
     "oci": (
         "OCI image manifest",
         "pipeline_check.core.checks.oci.rules",

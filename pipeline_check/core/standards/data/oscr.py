@@ -292,6 +292,8 @@ STANDARD = Standard(
         "TKN-016": ["IA-11"],  # remote resolver / bundle task body not pinned
         "ARGO-001": ["IA-11"],
         "DR-001":   ["IA-11"],
+        "HARNESS-001":   ["IA-11"],  # Harness step image not digest-pinned
+        "HARNESS-002":   ["EX-6"],  # Harness expression injection in step command
         "DR-005":   ["IA-11"],
         "DF-001":   ["IA-11"],
         "MODEL-001": ["IA-11"],   # unpinned base model

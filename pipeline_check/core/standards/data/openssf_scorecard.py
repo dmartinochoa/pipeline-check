@@ -613,6 +613,8 @@ STANDARD = Standard(
         "ARGO-012": ["Vulnerabilities", "SAST"],                       # vuln scanning
         # ── Drone CI ─────────────────────────────────────────────────
         "DR-001":   ["Pinned-Dependencies"],                           # step image not digest-pinned
+        "HARNESS-001":   ["Pinned-Dependencies"],  # Harness step image not digest-pinned
+        "HARNESS-002":   ["Dangerous-Workflow"],  # Harness expression injection in step command
         "DR-002":   ["Dangerous-Workflow"],                            # privileged step
         "DR-003":   ["Dangerous-Workflow"],                            # ${DRONE_*} parameter injection
         "DR-005":   ["Pinned-Dependencies"],                           # plugin floating tag

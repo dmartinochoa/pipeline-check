@@ -477,6 +477,8 @@ STANDARD = Standard(
         "JF-036":   ["PW.6.1", "PW.9.1"],              # sh body interpolates params.*
         # ── Drone CI ────────────────────────────────────────────
         "DR-001":   ["PW.4.1", "PW.4.4"],              # step image not digest-pinned
+        "HARNESS-001":   ["PW.4.1", "PW.4.4"],  # Harness step image not digest-pinned
+        "HARNESS-002":   ["PW.6.1", "PW.9.1"],  # Harness expression injection in step command
         "DR-002":   ["PO.5.1", "PW.9.1"],              # privileged step
         "DR-003":   ["PW.6.1", "PW.9.1"],              # Drone variable injection
         "DR-004":   ["PS.1.1"],                        # literal credential

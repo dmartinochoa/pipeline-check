@@ -818,6 +818,8 @@ STANDARD = Standard(
         "TAINT-009": ["CICD-SEC-5", "CICD-SEC-2"],  # env-protected secret flows to unprotected job
         # Drone CI
         "DR-001":   ["CICD-SEC-3"],                 # step image not digest-pinned
+        "HARNESS-001":   ["CICD-SEC-3"],  # Harness step image not digest-pinned
+        "HARNESS-002":   ["CICD-SEC-4"],  # Harness expression injection in step command
         "DR-002":   ["CICD-SEC-5"],                 # step privileged
         "DR-003":   ["CICD-SEC-4", "CICD-SEC-1"],   # Drone variable injection
         "DR-004":   ["CICD-SEC-6", "CICD-SEC-7"],   # literal secret

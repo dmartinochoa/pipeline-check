@@ -667,6 +667,8 @@ STANDARD = Standard(
         "ARGOCD-013": ["ESF-C-AUDIT"],
         # ── Drone CI ─────────────────────────────────────────────
         "DR-001":   ["ESF-S-PIN-DEPS", "ESF-S-IMMUTABLE"],     # step image not digest-pinned
+        "HARNESS-001":   ["ESF-S-PIN-DEPS", "ESF-S-IMMUTABLE"],  # Harness step image not digest-pinned
+        "HARNESS-002":   ["ESF-D-INJECTION"],  # Harness expression injection in step command
         "DR-002":   ["ESF-D-PRIV-BUILD"],           # privileged step
         "DR-003":   ["ESF-D-INJECTION"],            # Drone variable injection
         "DR-004":   ["ESF-D-SECRETS"],              # literal credential

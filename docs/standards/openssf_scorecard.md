@@ -14,7 +14,7 @@ side that Scorecard also covers.
 
 - **Controls in this standard:** 10
 - **Controls evidenced by at least one check:** 10 / 10
-- **Distinct checks evidencing this standard:** 688
+- **Distinct checks evidencing this standard:** 690
 - **Of those, autofixable with `--fix`:** 86
 
 _Severity levels (`CRITICAL` / `HIGH` / `MEDIUM` / `LOW` / `INFO`) follow the same scale across every provider and standard. See [How to read severity](README.md#how-to-read-severity) on the standards overview for the definitions._
@@ -27,9 +27,9 @@ Click a control ID to jump to the per-control section with the full check list. 
 |---------|-------|-------:|--------------|
 | [`Branch-Protection`](#ctrl-branch-protection) | Default branch is protected against force-push, deletion, and direct push without review | 44 | 11H · 26M · 7L |
 | [`Code-Review`](#ctrl-code-review) | Changes merged to the default branch require review | 37 | 18H · 18M · 1L |
-| [`Dangerous-Workflow`](#ctrl-dangerous-workflow) | No dangerous patterns in CI workflows (untrusted checkout, script injection) | 194 | 35C · 122H · 32M · 5L |
+| [`Dangerous-Workflow`](#ctrl-dangerous-workflow) | No dangerous patterns in CI workflows (untrusted checkout, script injection) | 195 | 35C · 123H · 32M · 5L |
 | [`Dependency-Update-Tool`](#ctrl-dependency-update-tool) | Project uses an automated dependency-update tool (Dependabot / Renovate) | 7 | 7M |
-| [`Pinned-Dependencies`](#ctrl-pinned-dependencies) | Dependencies (actions, images, includes, packages) are pinned to immutable references from trusted sources | 197 | 11C · 113H · 65M · 8L |
+| [`Pinned-Dependencies`](#ctrl-pinned-dependencies) | Dependencies (actions, images, includes, packages) are pinned to immutable references from trusted sources | 198 | 11C · 114H · 65M · 8L |
 | [`SAST`](#ctrl-sast) | Project uses static analysis / vulnerability scanning | 19 | 3H · 14M · 2L |
 | [`SBOM`](#ctrl-sbom) | Releases publish a software bill of materials | 24 | 1H · 18M · 5L |
 | [`Signed-Releases`](#ctrl-signed-releases) | Release artifacts are cryptographically signed | 37 | 6H · 29M · 1L · 1I |
@@ -150,7 +150,7 @@ pipeline_check --pipeline aws --standard openssf_scorecard --standard owasp_cicd
 
 ### Dangerous-Workflow: No dangerous patterns in CI workflows (untrusted checkout, script injection) { #ctrl-dangerous-workflow }
 
-**Evidenced by 194 checks** across 19 providers (AWS, Actions run history, Argo Workflows, Azure Cloud, Azure DevOps, Bitbucket, Buildkite, CircleCI, Cloud Build, Dockerfile, Drone CI, GCP, GitHub Actions, GitLab CI, GitLab pipeline run history, Jenkins, NuGet, Tekton, npm).
+**Evidenced by 195 checks** across 20 providers (AWS, Actions run history, Argo Workflows, Azure Cloud, Azure DevOps, Bitbucket, Buildkite, CircleCI, Cloud Build, Dockerfile, Drone CI, GCP, GitHub Actions, GitLab CI, GitLab pipeline run history, Harness CI/CD, Jenkins, NuGet, Tekton, npm).
 
 | Check | Title | Severity | Provider | Fix |
 |-------|-------|----------|----------|-----|
@@ -313,6 +313,7 @@ pipeline_check --pipeline aws --standard openssf_scorecard --standard owasp_cicd
 | [`GLRUN-002`](../providers/gitlab_runs.md#glrun-002) | Fork merge-request pipeline executed in run history | <span class="pg-sev pg-sev--high">HIGH</span> | [GitLab pipeline run history](../providers/gitlab_runs.md) |  |
 | [`GLRUN-003`](../providers/gitlab_runs.md#glrun-003) | Secret leaked in a fork pipeline's job trace | <span class="pg-sev pg-sev--high">HIGH</span> | [GitLab pipeline run history](../providers/gitlab_runs.md) |  |
 | [`GLRUN-004`](../providers/gitlab_runs.md#glrun-004) | Fork pipeline minted a cloud OIDC token | <span class="pg-sev pg-sev--high">HIGH</span> | [GitLab pipeline run history](../providers/gitlab_runs.md) |  |
+| [`HARNESS-002`](../providers/harness.md#harness-002) | Untrusted Harness expression interpolated into a step command | <span class="pg-sev pg-sev--high">HIGH</span> | [Harness CI/CD](../providers/harness.md) |  |
 | [`JF-002`](../providers/jenkins.md#jf-002) | Script step interpolates attacker-controllable env var | <span class="pg-sev pg-sev--high">HIGH</span> | [Jenkins](../providers/jenkins.md) |  |
 | [`JF-012`](../providers/jenkins.md#jf-012) | `load` step pulls Groovy from disk without integrity pin | <span class="pg-sev pg-sev--medium">MEDIUM</span> | [Jenkins](../providers/jenkins.md) |  |
 | [`JF-013`](../providers/jenkins.md#jf-013) | copyArtifacts ingests another job's output unverified | <span class="pg-sev pg-sev--critical">CRITICAL</span> | [Jenkins](../providers/jenkins.md) |  |
@@ -365,7 +366,7 @@ pipeline_check --pipeline aws --standard openssf_scorecard --standard owasp_cicd
 
 ### Pinned-Dependencies: Dependencies (actions, images, includes, packages) are pinned to immutable references from trusted sources { #ctrl-pinned-dependencies }
 
-**Evidenced by 197 checks** across 27 providers (AWS, Actions run history, Argo CD, Argo Workflows, Azure Cloud, Azure DevOps, Bitbucket, Buildkite, CircleCI, Cloud Build, Composer, Dockerfile, Drone CI, GCP, GitHub Actions, GitLab CI, Helm, Jenkins, Modelfile, NuGet, OCI manifest, PyPI, RubyGems, SCM, Tekton, maven, npm).
+**Evidenced by 198 checks** across 28 providers (AWS, Actions run history, Argo CD, Argo Workflows, Azure Cloud, Azure DevOps, Bitbucket, Buildkite, CircleCI, Cloud Build, Composer, Dockerfile, Drone CI, GCP, GitHub Actions, GitLab CI, Harness CI/CD, Helm, Jenkins, Modelfile, NuGet, OCI manifest, PyPI, RubyGems, SCM, Tekton, maven, npm).
 
 | Check | Title | Severity | Provider | Fix |
 |-------|-------|----------|----------|-----|
@@ -488,6 +489,7 @@ pipeline_check --pipeline aws --standard openssf_scorecard --standard owasp_cicd
 | [`GL-035`](../providers/gitlab.md#gl-035) | pip install without `--require-hashes` verification | <span class="pg-sev pg-sev--medium">MEDIUM</span> | [GitLab CI](../providers/gitlab.md) |  |
 | [`GL-037`](../providers/gitlab.md#gl-037) | Pipeline disables Go module checksum / sum-db verification | <span class="pg-sev pg-sev--high">HIGH</span> | [GitLab CI](../providers/gitlab.md) |  |
 | [`GL-042`](../providers/gitlab.md#gl-042) | include: component pulls a CI/CD component without a pinned version | <span class="pg-sev pg-sev--high">HIGH</span> | [GitLab CI](../providers/gitlab.md) |  |
+| [`HARNESS-001`](../providers/harness.md#harness-001) | Step image not pinned to a digest | <span class="pg-sev pg-sev--high">HIGH</span> | [Harness CI/CD](../providers/harness.md) |  |
 | [`HELM-001`](../providers/helm.md#helm-001) | Chart.yaml declares legacy apiVersion: v1 | <span class="pg-sev pg-sev--medium">MEDIUM</span> | [Helm](../providers/helm.md) | <span class="pg-fix" title="`--fix` will patch this rule">🔧 fix</span> |
 | [`HELM-002`](../providers/helm.md#helm-002) | Chart.lock missing per-dependency digests | <span class="pg-sev pg-sev--high">HIGH</span> | [Helm](../providers/helm.md) | <span class="pg-fix" title="`--fix` will patch this rule">🔧 fix</span> |
 | [`HELM-003`](../providers/helm.md#helm-003) | Chart dependency declared on a non-HTTPS repository | <span class="pg-sev pg-sev--high">HIGH</span> | [Helm](../providers/helm.md) | <span class="pg-fix" title="`--fix` will patch this rule">🔧 fix</span> |

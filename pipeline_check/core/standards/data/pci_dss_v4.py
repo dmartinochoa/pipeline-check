@@ -602,6 +602,8 @@ STANDARD = Standard(
         "JF-035":   ["6.5.1"],                           # httpRequest SSL off
         # ── Drone CI ─────────────────────────────────────────────
         "DR-001":   ["6.3.3", "6.5.1"],                  # step image not digest-pinned
+        "HARNESS-001":   ["6.3.3", "6.5.1"],  # Harness step image not digest-pinned
+        "HARNESS-002":   ["6.5.1"],  # Harness expression injection in step command
         "DR-002":   ["6.4.1", "6.5.1"],                  # privileged step
         "DR-003":   ["6.5.1"],                           # Drone variable injection
         "DR-004":   ["8.2.1", "6.5.1"],                  # literal credential
