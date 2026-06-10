@@ -594,6 +594,8 @@ STANDARD = Standard(
         "HARNESS-006":   ["4.2.1"],  # Harness TLS bypass in commands
         "HARNESS-007":   ["4.4.4"],  # Harness sensitive host-path mount
         "HARNESS-008":   ["4.1.3"],  # Harness agentic-CLI prompt injection
+        "HARNESS-010":   ["4.1.3"],  # Harness model trust_remote_code (code exec)
+        "HARNESS-011":   ["4.1.3"],  # Harness unsafe model deser (pickle RCE)
         "DR-002":  ["4.1.2", "4.4.4"],             # privileged step
         "DR-003":  ["4.4.5"],                      # Drone variable injection
         "DR-004":  ["4.1.4"],                      # literal credential

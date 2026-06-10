@@ -299,6 +299,8 @@ STANDARD = Standard(
         "HARNESS-006":   ["COL-1"],  # Harness TLS bypass in commands
         "HARNESS-007":   ["PE-2"],  # Harness sensitive host-path mount
         "HARNESS-008":   ["EX-6"],  # Harness agentic-CLI prompt injection
+        "HARNESS-010":   ["EX-6"],  # Harness model trust_remote_code (code exec)
+        "HARNESS-011":   ["EX-6"],  # Harness unsafe model deser (pickle RCE)
         "HARNESS-009":   ["DE-1"],  # Harness agentic-CLI output autolands without review
         "DR-005":   ["IA-11"],
         "DF-001":   ["IA-11"],

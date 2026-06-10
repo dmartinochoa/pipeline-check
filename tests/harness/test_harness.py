@@ -447,3 +447,59 @@ class TestHarness009AiAutoland:
         out = [f for f in _for(_findings(_ctx(tmp_path, text)), "HARNESS-009")
                if not f.passed]
         assert out == []
+
+
+def _model_pipeline(cmd: str) -> str:
+    return f"""\
+pipeline:
+  identifier: build
+  stages:
+    - stage:
+        identifier: ci
+        type: CI
+        spec:
+          execution:
+            steps:
+              - step:
+                  type: Run
+                  identifier: load
+                  spec:
+                    image: python
+                    command: |
+                      {cmd}
+"""
+
+
+class TestHarness010TrustRemoteCode:
+    def test_flags_trust_remote_code(self, tmp_path):
+        text = _model_pipeline(
+            "python -c 'AutoModel.from_pretrained(\"x\", trust_remote_code=True)'"
+        )
+        out = [f for f in _for(_findings(_ctx(tmp_path, text)), "HARNESS-010")
+               if not f.passed]
+        assert len(out) == 1
+        assert out[0].severity is Severity.HIGH
+        assert "ci/load" in out[0].description
+
+    def test_passes_without_trust_remote_code(self, tmp_path):
+        out = _for(_findings(_ctx(tmp_path, _CLEAN)), "HARNESS-010")
+        assert out and all(f.passed for f in out)
+
+
+class TestHarness011UnsafeDeser:
+    def test_flags_fetch_plus_unpickle(self, tmp_path):
+        text = _model_pipeline(
+            "curl -fsSL -o m.pt https://x/m.pt && "
+            "python -c 'import torch; torch.load(\"m.pt\")'"
+        )
+        out = [f for f in _for(_findings(_ctx(tmp_path, text)), "HARNESS-011")
+               if not f.passed]
+        assert len(out) == 1
+        assert out[0].severity is Severity.HIGH
+        assert "ci/load" in out[0].description
+
+    def test_local_unpickle_without_fetch_is_safe(self, tmp_path):
+        text = _model_pipeline("python -c 'import torch; torch.load(\"local.pt\")'")
+        out = [f for f in _for(_findings(_ctx(tmp_path, text)), "HARNESS-011")
+               if not f.passed]
+        assert out == []

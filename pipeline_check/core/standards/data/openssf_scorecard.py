@@ -621,6 +621,8 @@ STANDARD = Standard(
         "HARNESS-006":   ["Dangerous-Workflow", "Pinned-Dependencies"],  # Harness TLS bypass in commands
         "HARNESS-007":   ["Dangerous-Workflow"],  # Harness sensitive host-path mount
         "HARNESS-008":   ["Dangerous-Workflow"],  # Harness agentic-CLI prompt injection
+        "HARNESS-010":   ["Dangerous-Workflow"],  # Harness model trust_remote_code (code exec)
+        "HARNESS-011":   ["Dangerous-Workflow"],  # Harness unsafe model deser (pickle RCE)
         "HARNESS-009":   ["Code-Review"],  # Harness agentic-CLI output autolands without review
         "DR-002":   ["Dangerous-Workflow"],                            # privileged step
         "DR-003":   ["Dangerous-Workflow"],                            # ${DRONE_*} parameter injection
