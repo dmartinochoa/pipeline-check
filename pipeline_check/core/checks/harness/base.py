@@ -194,6 +194,21 @@ def step_spec(step: dict[str, Any]) -> dict[str, Any]:
     return spec if isinstance(spec, dict) else {}
 
 
+def step_command_text(step: dict[str, Any]) -> str:
+    """Return a step's ``spec.command`` as text (joining a list form).
+
+    Harness ``Run`` steps carry the script in ``spec.command``, usually a
+    multi-line string but occasionally a list; both normalize to one text
+    blob for command scanning.
+    """
+    cmd = step_spec(step).get("command")
+    if isinstance(cmd, str):
+        return cmd
+    if isinstance(cmd, list):
+        return "\n".join(c for c in cmd if isinstance(c, str))
+    return ""
+
+
 def iter_variables(
     pipeline: HarnessPipeline,
 ) -> Iterator[tuple[str, dict[str, Any]]]:

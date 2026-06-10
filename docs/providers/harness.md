@@ -38,7 +38,7 @@ All other flags (`--output`, `--severity-threshold`, `--checks`,
 
 ## What it covers
 
-4 checks · 0 have an autofix patch (``--fix``).
+5 checks · 0 have an autofix patch (``--fix``).
 
 | Check | Title | Severity | Fix |
 |-------|-------|----------|-----|
@@ -46,6 +46,7 @@ All other flags (`--output`, `--severity-threshold`, `--checks`,
 | [HARNESS-002](#harness-002) | Untrusted Harness expression interpolated into a step command | <span class="pg-sev pg-sev--high">HIGH</span> |  |
 | [HARNESS-003](#harness-003) | Step runs with privileged: true | <span class="pg-sev pg-sev--high">HIGH</span> |  |
 | [HARNESS-004](#harness-004) | Literal credential in a pipeline / stage variable | <span class="pg-sev pg-sev--critical">CRITICAL</span> |  |
+| [HARNESS-005](#harness-005) | Step pipes a remote download into a shell interpreter | <span class="pg-sev pg-sev--high">HIGH</span> |  |
 
 ---
 
@@ -128,6 +129,34 @@ Fires on a pipeline-level or stage-level ``variables:`` entry whose ``value`` is
 **Recommended action**
 
 Move the credential into a Harness secret and reference it as an expression instead of a literal: declare the variable with ``type: Secret`` and a value of ``<+secrets.getValue("my_secret")>`` (or store it in the built-in / a connected secret manager). Harness masks secret-expression values in logs but does not mask a literal pasted into a ``type: String`` variable, so the token ends up in the pipeline definition and the run logs indefinitely. Rotate any credential already committed this way.
+
+</div>
+
+</div>
+
+<div class="pg-rule pg-rule--high" markdown>
+
+## HARNESS-005: Step pipes a remote download into a shell interpreter { #harness-005 }
+
+<div class="pg-rule__tags">
+<span class="pg-sev pg-sev--high">HIGH</span> <span class="pg-tag pg-tag--owasp">CICD-SEC-3</span> <span class="pg-tag pg-tag--owasp">CICD-SEC-5</span> <span class="pg-tag pg-tag--esf">ESF-S-VERIFY-DEPS</span> <span class="pg-tag pg-tag--cwe">CWE-494</span> <span class="pg-tag pg-tag--cwe">CWE-78</span>
+</div>
+
+Walks every step's ``spec.command`` text and fires on the canonical pipe-to-shell shapes (``curl ... | sh`` / ``| bash``, ``wget ... -O - | sh``, ``fetch ... | sh``), allowing arbitrary intermediate flags so ``curl -fsSL <url> | sh -s -- --foo`` still matches. The download-then-execute form (``curl <url> -o f && sh f``) is NOT caught: the file lands on disk first, leaving room for a checksum-verify step. Same model as DR-014 / GHA-016 / BK-017 / TKN-008 across providers.
+
+**Known false-positive modes**
+
+- Some vendor install scripts (rustup, nvm) ship pipe-to-shell as the canonical path. The rule fires anyway, since upstream reputation doesn't remove the MITM / compromised-domain risk. Suppress per step with a rationale naming the upstream.
+
+**Seen in the wild**
+
+- Codecov bash uploader (April 2021): downstream builds using ``curl -fsSL https://codecov.io/bash | bash`` shipped a tampered uploader for two months. https://about.codecov.io/security-update/
+
+<div class="pg-rule__rec" markdown>
+
+**Recommended action**
+
+Replace every ``curl ... | sh`` / ``wget ... | bash`` pattern in a Run step ``command`` with a download-verify-execute flow: download the artifact to disk (``curl -fsSL -o installer.sh <url>``), verify a known-good checksum against the file (``echo "<sha256>  installer.sh" | sha256sum -c -``), and only then run it (``sh installer.sh``). The pipe-to-shell pattern executes whatever bytes the URL serves at run time with the step container's privileges and secrets, so a network MITM, a compromised mirror, or a brief upstream takeover injects arbitrary code into the build with no verification step.
 
 </div>
 

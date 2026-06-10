@@ -617,6 +617,7 @@ STANDARD = Standard(
         "HARNESS-002":   ["Dangerous-Workflow"],  # Harness expression injection in step command
         "HARNESS-003":   ["Dangerous-Workflow"],  # Harness privileged step
         "HARNESS-004":   ["Token-Permissions"],  # Harness literal credential in variable
+        "HARNESS-005":   ["Pinned-Dependencies"],  # Harness pipe-to-shell
         "DR-002":   ["Dangerous-Workflow"],                            # privileged step
         "DR-003":   ["Dangerous-Workflow"],                            # ${DRONE_*} parameter injection
         "DR-005":   ["Pinned-Dependencies"],                           # plugin floating tag
