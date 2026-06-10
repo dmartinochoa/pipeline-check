@@ -13,7 +13,7 @@ release commit collapses this section into `## [X.Y.Z] - <date>`.
 ### Added
 
 - **``harness`` provider: Harness CI/CD pipeline scanning (HARNESS-001 ..
-  HARNESS-009).** A new ``--pipeline harness`` parses Harness pipeline YAML
+  HARNESS-011).** A new ``--pipeline harness`` parses Harness pipeline YAML
   (the Git Experience / pipeline-as-code form) and audits it like the other
   CI providers, the first coverage of an enterprise CD platform that no
   scanner touches today. Harness has no canonical filename, so the loader
@@ -62,7 +62,15 @@ release commit collapses this section into `## [X.Y.Z] - <date>`.
   (no review gate), the analog of GHA-123 / GL-049 / BB-039 / ADO-038 /
   JF-038. With HARNESS-008 it composes the **AC-040** injection -> autoland
   chain, which now extends to Harness as its 6th provider (no new chain ID).
-  Auto-detected on a ``.harness/`` directory; ``--harness-path``
+  **HARNESS-010 / HARNESS-011** (HIGH) bring the model-supply-chain RCE
+  rules to Harness: HARNESS-010 flags a step ``command`` that loads an ML
+  model with ``trust_remote_code=True`` (the loader runs the model repo's
+  own Python, the GHA-120 / GL-045 family), and HARNESS-011 flags unsafe
+  pickle deserialization of a fetched artifact (``weights_only=False`` /
+  ``allow_pickle=True``, or a remote fetch plus ``torch.load`` /
+  ``pickle.load`` / ``joblib.load`` in one step, the GHA-122 / GL-047
+  family), both reusing the shared ``model_trust`` / ``unsafe_deser``
+  detectors. Auto-detected on a ``.harness/`` directory; ``--harness-path``
   points at a file or directory explicitly. YAML-only, no Harness API token.
   Every rule maps across the OWASP CI/CD Top 10 and the 12 other frameworks.
   Provider count 36 -> 37.

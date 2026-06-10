@@ -599,6 +599,8 @@ STANDARD = Standard(
         "HARNESS-006":   ["CC6.7"],  # Harness TLS bypass in commands
         "HARNESS-007":   ["CC6.6", "CC6.8"],  # Harness sensitive host-path mount
         "HARNESS-008":   ["CC6.8"],  # Harness agentic-CLI prompt injection
+        "HARNESS-010":   ["CC6.8"],  # Harness model trust_remote_code (code exec)
+        "HARNESS-011":   ["CC6.8"],  # Harness unsafe model deser (pickle RCE)
         "HARNESS-009":   ["CC8.1"],  # Harness agentic-CLI output autolands without review
         "DR-002":   ["CC6.1", "CC6.8"],     # privileged step
         "DR-003":   ["CC6.8"],              # Drone variable injection
