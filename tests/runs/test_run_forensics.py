@@ -507,3 +507,75 @@ class TestRun006CompromisedActionExecuted:
             scan_logs=True,
         )
         assert any("non-privileged" in w for w in ctx.warnings)
+
+
+# ── RUN-007: unpinned third-party action in a privileged run ─────────────────
+
+# A privileged run that pulls actions/checkout pinned by SHA (clean), a
+# third-party action pinned by a mutable tag (flagged), and the repo's own
+# action pinned by tag (excluded as first-party).
+_MIXED_PIN_LOG = (
+    "Download action repository 'actions/checkout@v4' "
+    "(SHA:b4ffde65f46336ab88eb53be808477a3936bae11)\n"
+    "Download action repository 'docker/build-push-action@v5' "
+    "(SHA:2cdde995de11925a030ce8070c3d77a52ffcf1c0)\n"
+    "Download action repository 'owner/internal-action@v1'\n"
+)
+
+
+class TestRun007UnpinnedThirdPartyAction:
+    def _ctx_with_log(self, run: dict, log_text: str) -> RunsContext:
+        payload = {"total_count": 1, "workflow_runs": [run]}
+        blobs = {f"repos/owner/r/actions/runs/{run['id']}/logs": _log_zip(log_text)}
+        return RunsContext.for_repo(
+            "owner", "r", FakeFetcher({_RUNS_PATH: payload}, blobs),
+            scan_logs=True,
+        )
+
+    def test_passes_with_skip_note_when_logs_not_scanned(self):
+        ctx = _ctx(_run(1, "pull_request_target"))
+        assert ctx.logs_scanned is False
+        run007 = _for(_findings(ctx), "RUN-007")
+        assert run007 and all(f.passed for f in run007)
+        assert "not enabled" in run007[0].description
+
+    def test_fires_on_mutable_tag_third_party_action(self):
+        run = _run(1, "pull_request_target")
+        ctx = self._ctx_with_log(run, _MIXED_PIN_LOG)
+        assert ctx.unpinned_action_runs.get(1) == [
+            "docker/build-push-action@v5 (resolved SHA 2cdde995de11)"
+        ]
+        failing = [f for f in _for(_findings(ctx), "RUN-007") if not f.passed]
+        assert len(failing) == 1
+        f = failing[0]
+        assert f.severity == Severity.MEDIUM
+        assert "#run/1" in f.resource
+        assert "docker/build-push-action@v5" in f.description
+        # First-party (actions/*) and the repo's own action are excluded.
+        assert "actions/checkout" not in f.description
+        assert "internal-action" not in f.description
+
+    def test_passes_when_every_action_pinned_by_sha(self):
+        run = _run(1, "workflow_run")
+        log = (
+            "Download action repository 'actions/checkout@v4' "
+            "(SHA:b4ffde65f46336ab88eb53be808477a3936bae11)\n"
+            "Download action repository 'docker/build-push-action"
+            "@2cdde995de11925a030ce8070c3d77a52ffcf1c0' "
+            "(SHA:2cdde995de11925a030ce8070c3d77a52ffcf1c0)\n"
+        )
+        ctx = self._ctx_with_log(run, log)
+        assert ctx.unpinned_action_runs == {}
+        run007 = _for(_findings(ctx), "RUN-007")
+        assert run007 and all(f.passed for f in run007)
+        assert "No third-party action" in run007[0].description
+
+    def test_stays_privileged_only_not_push_runs(self):
+        # A mutable-tag third-party action on an ordinary push run is scanned
+        # for compromised actions (RUN-006) but NOT for pin hygiene: RUN-007
+        # is scoped to the secret-bearing privileged triggers.
+        run = _run(1, "push")
+        ctx = self._ctx_with_log(run, _MIXED_PIN_LOG)
+        assert ctx.unpinned_action_runs == {}
+        run007 = _for(_findings(ctx), "RUN-007")
+        assert run007 and all(f.passed for f in run007)

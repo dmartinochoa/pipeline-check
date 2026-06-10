@@ -16,6 +16,7 @@ from __future__ import annotations
 import io
 import re
 import zipfile
+from collections.abc import Callable
 from dataclasses import dataclass, field
 from typing import Any
 
@@ -109,6 +110,49 @@ def _scan_compromised_actions(text: str) -> dict[str, str]:
     return out
 
 
+#: Action owners treated as first-party and never flagged by RUN-007:
+#: GitHub's own namespaces. The scanned repo's own owner is excluded
+#: separately (an org pinning its own actions by tag is an internal-trust
+#: decision, not a third-party supply-chain exposure).
+_FIRST_PARTY_ACTION_OWNERS = frozenset({"actions", "github"})
+
+#: A 40-character hex string is an immutable Git commit SHA. Anything else
+#: in the ``@ref`` slot (a tag like ``v4`` / ``v1.2.3``, or a branch) is
+#: mutable and can be force-moved, the tj-actions/changed-files repoint
+#: vector.
+_FULL_SHA_RE = re.compile(r"\A[0-9a-fA-F]{40}\Z")
+
+
+def _scan_unpinned_actions(text: str, repo_owner: str) -> list[str]:
+    """Return sorted ``owner/repo@ref`` labels for third-party actions a run
+    resolved from a *mutable* ref (a tag or branch, not a 40-hex commit
+    SHA), or an empty list.
+
+    Mirrors :func:`_scan_compromised_actions` over the same
+    ``Download action repository`` lines, but instead of an IOC match it
+    flags pin hygiene: a third-party action pinned by a ref the upstream can
+    force-move (the tj-actions/changed-files repoint vector) that actually
+    executed. First-party (``actions`` / ``github``) and the repo's own
+    actions are excluded, since they are not a third-party supply-chain
+    exposure. Each label carries the resolved commit SHA (when the log
+    records one) so the evidence shows what the tag pointed at.
+    """
+    owner_lc = repo_owner.lower()
+    out: set[str] = set()
+    for m in _ACTION_DOWNLOAD_RE.finditer(text):
+        owner, repo, ref, sha = m.group(1), m.group(2), m.group(3), m.group(4)
+        lc = owner.lower()
+        if lc in _FIRST_PARTY_ACTION_OWNERS or lc == owner_lc:
+            continue
+        if _FULL_SHA_RE.match(ref):
+            continue  # already pinned by an immutable commit SHA
+        label = f"{owner}/{repo}@{ref}"
+        if sha:
+            label += f" (resolved SHA {sha[:12]})"
+        out.add(label)
+    return sorted(out)
+
+
 def _str(value: Any) -> str:
     return value if isinstance(value, str) else ""
 
@@ -170,6 +214,11 @@ class RunsContext:
     #: a known-compromised action (the GHA-040 IOC registry) actually
     #: executed (only populated when ``scan_logs=True``); RUN-006 reports it.
     compromised_action_runs: dict[int, dict[str, str]] = field(default_factory=dict)
+    #: run_id -> sorted ``owner/repo@ref`` labels for third-party actions a
+    #: privileged run resolved from a mutable tag/branch (not a commit SHA);
+    #: the preventive twin of ``compromised_action_runs`` (only populated when
+    #: ``scan_logs=True``, privileged-trigger runs only); RUN-007 reports it.
+    unpinned_action_runs: dict[int, list[str]] = field(default_factory=dict)
     #: True once deep auditing (logs + job metadata) was requested + attempted,
     #: so RUN-003 / RUN-004 / RUN-005 can tell "nothing found" from "never run".
     logs_scanned: bool = False
@@ -263,13 +312,17 @@ class RunsContext:
             scanned_ids.add(run.run_id)
             if not raw:
                 continue
-            leaks, oidc_minted, compromised = _scan_log_zip(raw)
+            leaks, oidc_minted, compromised, unpinned = _scan_log_zip(
+                raw, repo_owner=self.owner,
+            )
             if leaks:
                 self.log_leaks[run.run_id] = leaks
             if oidc_minted:
                 self.oidc_mint_runs.add(run.run_id)
             if compromised:
                 self.compromised_action_runs[run.run_id] = compromised
+            if unpinned:
+                self.unpinned_action_runs[run.run_id] = unpinned
         self._scan_action_logs(fetch_bytes, scanned_ids, action_fetch_limit)
 
     def _scan_action_logs(
@@ -295,7 +348,7 @@ class RunsContext:
             )
             if not raw:
                 continue
-            _, _, compromised = _scan_log_zip(raw, compromised_only=True)
+            _, _, compromised, _ = _scan_log_zip(raw, compromised_only=True)
             if compromised:
                 self.compromised_action_runs[run.run_id] = compromised
         if len(targets) > fetch_limit:
@@ -395,10 +448,10 @@ def _self_hosted_labels(raw: Any) -> str:
 
 
 def _scan_log_zip(
-    raw: bytes, *, compromised_only: bool = False,
-) -> tuple[list[str], bool, dict[str, str]]:
+    raw: bytes, *, compromised_only: bool = False, repo_owner: str = "",
+) -> tuple[list[str], bool, dict[str, str], list[str]]:
     """Scan a run-logs ZIP for secret-shaped strings, OIDC-mint markers,
-    and known-compromised action executions.
+    known-compromised action executions, and unpinned third-party actions.
 
     GitHub masks registered secrets in logs, so a secret hit is one that
     leaked *past* masking (a credential a tool printed, a value never
@@ -412,25 +465,28 @@ def _scan_log_zip(
     imported lazily so a metadata-only scan never pays for the detector
     catalog.
 
-    With ``compromised_only=True`` the secret and OIDC passes are skipped
-    (the leak / OIDC findings are scoped to privileged-trigger runs), so a
-    non-privileged run downloaded purely for RUN-006 pays only for the
-    cheap IOC-line scan.
+    With ``compromised_only=True`` the secret, OIDC, and unpinned-action
+    passes are skipped (those findings are scoped to privileged-trigger
+    runs), so a non-privileged run downloaded purely for RUN-006 pays only
+    for the cheap IOC-line scan. The unpinned-action pass needs
+    *repo_owner* to exclude the repo's own actions.
 
-    Returns ``(sorted_secret_labels, oidc_minted, compromised_actions)``,
-    where ``compromised_actions`` maps each offending ``owner/repo@ref``
-    label to its advisory.
+    Returns ``(sorted_secret_labels, oidc_minted, compromised_actions,
+    unpinned_actions)``, where ``compromised_actions`` maps each offending
+    ``owner/repo@ref`` label to its advisory and ``unpinned_actions`` is the
+    sorted list of third-party actions resolved from a mutable ref.
     """
     try:
         archive = zipfile.ZipFile(io.BytesIO(raw))
     except (zipfile.BadZipFile, OSError, EOFError):
-        return [], False, {}
-    find_secret_values = None
+        return [], False, {}, []
+    find_secret_values: Callable[[Any], list[str]] | None = None
     if not compromised_only:
         from .._secrets import find_secret_values
     leaks: set[str] = set()
     oidc_minted = False
     compromised: dict[str, str] = {}
+    unpinned: set[str] = set()
     consumed = 0
     with archive:
         for info in archive.infolist():
@@ -447,8 +503,9 @@ def _scan_log_zip(
                 leaks.update(find_secret_values([text]))
                 if not oidc_minted and _OIDC_MARKERS_RE.search(text):
                     oidc_minted = True
+                unpinned.update(_scan_unpinned_actions(text, repo_owner))
             compromised.update(_scan_compromised_actions(text))
-    return sorted(leaks), oidc_minted, compromised
+    return sorted(leaks), oidc_minted, compromised, sorted(unpinned)
 
 
 def run_resource(ctx: RunsContext, run: RunRecord) -> str:

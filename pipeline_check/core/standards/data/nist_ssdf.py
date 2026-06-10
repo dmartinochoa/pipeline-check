@@ -159,6 +159,7 @@ STANDARD = Standard(
         "RUN-004":  ["PO.5.1", "PW.9.1"],              # forensics: fork run minted a cloud OIDC token
         "RUN-005":  ["PO.5.1", "PW.9.1"],              # forensics: fork run on a self-hosted runner
         "RUN-006":  ["PW.4.1", "PW.4.4", "RV.1.1"],              # forensics: known-compromised action executed
+        "RUN-007":  ["PW.4.1", "PW.4.4"],                        # forensics: unpinned third-party action ran with secrets
         "GHA-003":  ["PW.6.1", "PW.9.1"],              # script injection
         "GHA-119":  ["PW.6.1", "PW.9.1"],              # untrusted context into an agentic AI CLI
         "GHA-120":  ["PW.6.1", "PW.9.1"],              # trust_remote_code model load = code exec

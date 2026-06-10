@@ -149,6 +149,7 @@ STANDARD = Standard(
         "RUN-004":  ["CICD-SEC-4"],
         "RUN-005":  ["CICD-SEC-4"],
         "RUN-006":  ["CICD-SEC-3", "CICD-SEC-4"],  # forensics: known-compromised action executed
+        "RUN-007":  ["CICD-SEC-3", "CICD-SEC-4"],  # forensics: unpinned third-party action ran with secrets
         "GHA-003":  ["CICD-SEC-4"],
         "GHA-119":  ["CICD-SEC-4"],# untrusted context into an agentic AI CLI
         "GHA-120":  ["CICD-SEC-4"],# trust_remote_code model load = code exec

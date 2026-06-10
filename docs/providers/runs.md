@@ -26,7 +26,7 @@ pipeline_check --pipeline runs --scm-repo owner/name \
 
 ## What it covers
 
-6 checks · 0 have an autofix patch (``--fix``).
+7 checks · 0 have an autofix patch (``--fix``).
 
 | Check | Title | Severity | Fix |
 |-------|-------|----------|-----|
@@ -36,6 +36,7 @@ pipeline_check --pipeline runs --scm-repo owner/name \
 | [RUN-004](#run-004) | Fork PR run minted a cloud OIDC token | <span class="pg-sev pg-sev--high">HIGH</span> |  |
 | [RUN-005](#run-005) | Fork PR run executed on a self-hosted runner | <span class="pg-sev pg-sev--high">HIGH</span> |  |
 | [RUN-006](#run-006) | Known-compromised action executed in run history | <span class="pg-sev pg-sev--critical">CRITICAL</span> |  |
+| [RUN-007](#run-007) | Third-party action pinned by a mutable tag executed in a privileged run | <span class="pg-sev pg-sev--medium">MEDIUM</span> |  |
 
 ---
 
@@ -154,6 +155,26 @@ Only evaluated with ``--audit-runs-logs``. Scans the privileged-trigger run logs
 **Recommended action**
 
 Treat this as a confirmed supply-chain compromise that ran in your CI: rotate every secret and token that was in scope for the affected run(s), review what the run accessed or pushed, and pin the action to a known-good commit SHA (never a tag, which the attacker can force-move). Cross-check the cited advisory for the clean post-incident version. If the workflow still references the compromised action, fix it now (GHA-040).
+
+</div>
+
+</div>
+
+<div class="pg-rule pg-rule--medium" markdown>
+
+## RUN-007: Third-party action pinned by a mutable tag executed in a privileged run { #run-007 }
+
+<div class="pg-rule__tags">
+<span class="pg-sev pg-sev--medium">MEDIUM</span> <span class="pg-tag pg-tag--owasp">CICD-SEC-3</span> <span class="pg-tag pg-tag--owasp">CICD-SEC-4</span> <span class="pg-tag pg-tag--cwe">CWE-829</span> <span class="pg-tag pg-tag--cwe">CWE-1357</span>
+</div>
+
+Only evaluated with ``--audit-runs-logs``. Reuses the privileged-trigger run logs RUN-003 / RUN-004 download and inspects GitHub's ``Download action repository 'owner/repo@ref' (SHA:...)`` lines: a third-party action (not ``actions`` / ``github`` and not the repo's own owner) whose ``@ref`` is a mutable tag or branch rather than a 40-hex commit SHA is flagged, with the resolved SHA carried as evidence. The preventive twin of RUN-006: RUN-006 confirms a known-compromised action ran, RUN-007 flags the repoint-able third-party actions that could be the next one. Scoped to the secret-bearing privileged runs (not the bounded non-privileged RUN-006 pass), so the signal stays high; recall is bounded to the fetched runs.
+
+<div class="pg-rule__rec" markdown>
+
+**Recommended action**
+
+Pin every third-party action to a full commit SHA rather than a tag or branch, which the upstream (or an attacker who compromises it) can force-move (the tj-actions/changed-files lesson). Use the resolved SHA the run log records as the pin, after confirming it is a known-good release, and consider Dependabot to bump the pinned SHAs. Restricting which actions can run at all (an allow-list) shrinks the third-party surface further.
 
 </div>
 
