@@ -181,6 +181,20 @@ def iter_steps(
             yield stage_id, step
 
 
+def iter_stages(
+    pipeline: HarnessPipeline,
+) -> Iterator[tuple[str, dict[str, Any]]]:
+    """Yield ``(stage_identifier, stage_dict)`` for every stage.
+
+    Flattens stage-level ``parallel`` groups. The stage dict is the raw
+    ``stage:`` mapping (carrying ``type``, ``spec``, ``variables``, ...).
+    """
+    for stage in _iter_stage_dicts(pipeline):
+        ident = stage.get("identifier")
+        stage_id = ident.strip() if isinstance(ident, str) and ident.strip() else "stage"
+        yield stage_id, stage
+
+
 def step_label(stage_id: str, step: dict[str, Any]) -> str:
     """Stable ``stage/step`` name for a finding offender."""
     ident = step.get("identifier") or step.get("name")

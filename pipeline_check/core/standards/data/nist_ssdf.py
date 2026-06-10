@@ -483,6 +483,7 @@ STANDARD = Standard(
         "HARNESS-004":   ["PS.1.1"],  # Harness literal credential in variable
         "HARNESS-005":   ["PW.4.4"],  # Harness pipe-to-shell
         "HARNESS-006":   ["PW.4.4"],  # Harness TLS bypass in commands
+        "HARNESS-007":   ["PO.5.1", "PW.9.1"],  # Harness sensitive host-path mount
         "DR-002":   ["PO.5.1", "PW.9.1"],              # privileged step
         "DR-003":   ["PW.6.1", "PW.9.1"],              # Drone variable injection
         "DR-004":   ["PS.1.1"],                        # literal credential

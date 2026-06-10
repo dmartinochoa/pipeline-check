@@ -303,3 +303,56 @@ class TestHarness006TlsBypass:
     def test_clean_pipeline_passes(self, tmp_path):
         out = _for(_findings(_ctx(tmp_path, _CLEAN)), "HARNESS-006")
         assert out and all(f.passed for f in out)
+
+
+_HOSTPATH = """\
+pipeline:
+  identifier: build
+  stages:
+    - stage:
+        identifier: ci
+        type: CI
+        spec:
+          infrastructure:
+            type: KubernetesDirect
+            spec:
+              connectorRef: k8s
+              namespace: harness
+              volumes:
+                - mountPath: /var/run
+                  type: HostPath
+                  spec:
+                    path: /var/run/docker.sock
+                - mountPath: /cache
+                  type: EmptyDir
+          execution:
+            steps:
+              - step:
+                  type: Run
+                  identifier: t
+                  spec:
+                    image: docker
+                    command: docker build .
+"""
+
+
+class TestHarness007HostPathMount:
+    def test_flags_sensitive_hostpath(self, tmp_path):
+        out = [f for f in _for(_findings(_ctx(tmp_path, _HOSTPATH)), "HARNESS-007")
+               if not f.passed]
+        assert len(out) == 1
+        f = out[0]
+        assert f.severity is Severity.HIGH
+        assert "/var/run/docker.sock" in f.description
+
+    def test_emptydir_only_is_safe(self, tmp_path):
+        text = _HOSTPATH.replace("type: HostPath", "type: EmptyDir")
+        out = [f for f in _for(_findings(_ctx(tmp_path, text)), "HARNESS-007")
+               if not f.passed]
+        assert out == []
+
+    def test_non_sensitive_hostpath_not_flagged(self, tmp_path):
+        text = _HOSTPATH.replace("/var/run/docker.sock", "/opt/build-cache")
+        out = [f for f in _for(_findings(_ctx(tmp_path, text)), "HARNESS-007")
+               if not f.passed]
+        assert out == []

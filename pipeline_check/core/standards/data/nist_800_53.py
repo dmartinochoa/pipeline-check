@@ -452,6 +452,7 @@ STANDARD = Standard(
         "HARNESS-004":   ["IA-5"],  # Harness literal credential in variable
         "HARNESS-005":   ["SI-7", "CM-7"],  # Harness pipe-to-shell
         "HARNESS-006":   ["SC-8", "SC-13"],  # Harness TLS bypass in commands
+        "HARNESS-007":   ["SC-7", "AC-6", "SI-7"],  # Harness sensitive host-path mount
         "DR-002":   ["AC-6", "CM-7"],                    # privileged step
         "DR-003":   ["CM-6", "SA-11"],                   # Drone variable injection
         "DR-004":   ["IA-5"],                            # literal credential
