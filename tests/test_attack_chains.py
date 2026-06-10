@@ -3982,6 +3982,12 @@ class TestChainAC040:
         assert len(out) == 1
         assert out[0].triggering_check_ids == ["JF-037", "JF-038"]
 
+    def test_harness_pair_fires(self):
+        f = ".harness/build.yaml"
+        out = self._ac040([_f("HARNESS-008", f), _f("HARNESS-009", f)])
+        assert len(out) == 1
+        assert out[0].triggering_check_ids == ["HARNESS-008", "HARNESS-009"]
+
     def test_no_chain_without_autoland_leg(self):
         wf = ".github/workflows/ai.yml"
         assert self._ac040([_f("GHA-119", wf)]) == []

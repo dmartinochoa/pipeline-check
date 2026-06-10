@@ -485,6 +485,7 @@ STANDARD = Standard(
         "HARNESS-006":   ["PW.4.4"],  # Harness TLS bypass in commands
         "HARNESS-007":   ["PO.5.1", "PW.9.1"],  # Harness sensitive host-path mount
         "HARNESS-008":   ["PW.6.1", "PW.9.1"],  # Harness agentic-CLI prompt injection
+        "HARNESS-009":   ["PO.5.1"],  # Harness agentic-CLI output autolands without review
         "DR-002":   ["PO.5.1", "PW.9.1"],              # privileged step
         "DR-003":   ["PW.6.1", "PW.9.1"],              # Drone variable injection
         "DR-004":   ["PS.1.1"],                        # literal credential
