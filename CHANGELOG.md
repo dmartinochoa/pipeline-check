@@ -13,7 +13,7 @@ release commit collapses this section into `## [X.Y.Z] - <date>`.
 ### Added
 
 - **``harness`` provider: Harness CI/CD pipeline scanning (HARNESS-001 ..
-  HARNESS-008).** A new ``--pipeline harness`` parses Harness pipeline YAML
+  HARNESS-009).** A new ``--pipeline harness`` parses Harness pipeline YAML
   (the Git Experience / pipeline-as-code form) and audits it like the other
   CI providers, the first coverage of an enterprise CD platform that no
   scanner touches today. Harness has no canonical filename, so the loader
@@ -57,6 +57,11 @@ release commit collapses this section into `## [X.Y.Z] - <date>`.
   (``<+codebase.prTitle>``, ``<+trigger.*>``, ...) lets a pull request
   smuggle instructions the agent then executes; it is separate from
   HARNESS-002 because env-var binding does not sanitize an LLM prompt.
+  **HARNESS-009** (HIGH) is the autoland leg: one pipeline both invokes an
+  agentic CLI and lands the result with a ``git push`` straight to a branch
+  (no review gate), the analog of GHA-123 / GL-049 / BB-039 / ADO-038 /
+  JF-038. With HARNESS-008 it composes the **AC-040** injection -> autoland
+  chain, which now extends to Harness as its 6th provider (no new chain ID).
   Auto-detected on a ``.harness/`` directory; ``--harness-path``
   points at a file or directory explicitly. YAML-only, no Harness API token.
   Every rule maps across the OWASP CI/CD Top 10 and the 12 other frameworks.

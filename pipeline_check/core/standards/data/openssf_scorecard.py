@@ -621,6 +621,7 @@ STANDARD = Standard(
         "HARNESS-006":   ["Dangerous-Workflow", "Pinned-Dependencies"],  # Harness TLS bypass in commands
         "HARNESS-007":   ["Dangerous-Workflow"],  # Harness sensitive host-path mount
         "HARNESS-008":   ["Dangerous-Workflow"],  # Harness agentic-CLI prompt injection
+        "HARNESS-009":   ["Code-Review"],  # Harness agentic-CLI output autolands without review
         "DR-002":   ["Dangerous-Workflow"],                            # privileged step
         "DR-003":   ["Dangerous-Workflow"],                            # ${DRONE_*} parameter injection
         "DR-005":   ["Pinned-Dependencies"],                           # plugin floating tag

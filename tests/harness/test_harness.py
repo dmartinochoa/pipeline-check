@@ -400,3 +400,50 @@ class TestHarness008AiPromptInjection:
         out = [f for f in _for(_findings(_ctx(tmp_path, text)), "HARNESS-008")
                if not f.passed]
         assert out == []
+
+
+_AUTOLAND = """\
+pipeline:
+  identifier: build
+  stages:
+    - stage:
+        identifier: ci
+        type: CI
+        spec:
+          execution:
+            steps:
+              - step:
+                  type: Run
+                  identifier: edit
+                  spec:
+                    image: node
+                    command: |
+                      aider --yes --message apply
+                      git add -A && git commit -m auto && git push origin HEAD
+"""
+
+
+class TestHarness009AiAutoland:
+    def test_flags_agent_plus_push(self, tmp_path):
+        out = [f for f in _for(_findings(_ctx(tmp_path, _AUTOLAND)), "HARNESS-009")
+               if not f.passed]
+        assert len(out) == 1
+        f = out[0]
+        assert f.severity is Severity.HIGH
+        assert "aider" in f.description
+
+    def test_dry_run_push_is_ignored(self, tmp_path):
+        text = _AUTOLAND.replace("git push origin HEAD", "git push --dry-run origin HEAD")
+        out = [f for f in _for(_findings(_ctx(tmp_path, text)), "HARNESS-009")
+               if not f.passed]
+        assert out == []
+
+    def test_agent_without_push_is_safe(self, tmp_path):
+        out = _for(_findings(_ctx(tmp_path, _AI)), "HARNESS-009")
+        assert out and all(f.passed for f in out)
+
+    def test_push_without_agent_is_safe(self, tmp_path):
+        text = _AUTOLAND.replace("aider --yes --message apply", "echo building")
+        out = [f for f in _for(_findings(_ctx(tmp_path, text)), "HARNESS-009")
+               if not f.passed]
+        assert out == []

@@ -38,7 +38,7 @@ All other flags (`--output`, `--severity-threshold`, `--checks`,
 
 ## What it covers
 
-8 checks · 0 have an autofix patch (``--fix``).
+9 checks · 0 have an autofix patch (``--fix``).
 
 | Check | Title | Severity | Fix |
 |-------|-------|----------|-----|
@@ -50,6 +50,7 @@ All other flags (`--output`, `--severity-threshold`, `--checks`,
 | [HARNESS-006](#harness-006) | TLS verification disabled in step commands | <span class="pg-sev pg-sev--high">HIGH</span> |  |
 | [HARNESS-007](#harness-007) | Stage infrastructure mounts a sensitive host path | <span class="pg-sev pg-sev--high">HIGH</span> |  |
 | [HARNESS-008](#harness-008) | Untrusted context reaches an agentic AI CLI (prompt injection) | <span class="pg-sev pg-sev--high">HIGH</span> |  |
+| [HARNESS-009](#harness-009) | Agentic CLI output lands without human review | <span class="pg-sev pg-sev--high">HIGH</span> |  |
 
 ---
 
@@ -224,6 +225,26 @@ The AI analog of HARNESS-002 (shell injection). Fires when a step ``spec.command
 **Recommended action**
 
 Do not place attacker-controllable Harness context (``<+codebase.prTitle>``, ``<+codebase.commitMessage>``, a branch / tag name, or any ``<+trigger.*>`` / ``<+eventPayload.*>`` value) in an agentic CLI's prompt. Binding the value to an env var does NOT sanitize a prompt the way it does a shell command, the model still reads it. If the agent must see PR content, run it in a stage with no secrets bound and no tool / shell access, and treat its output as untrusted.
+
+</div>
+
+</div>
+
+<div class="pg-rule pg-rule--high" markdown>
+
+## HARNESS-009: Agentic CLI output lands without human review { #harness-009 }
+
+<div class="pg-rule__tags">
+<span class="pg-sev pg-sev--high">HIGH</span> <span class="pg-tag pg-tag--owasp">CICD-SEC-1</span> <span class="pg-tag pg-tag--esf">ESF-C-APPROVAL</span> <span class="pg-tag pg-tag--cwe">CWE-94</span> <span class="pg-tag pg-tag--cwe">CWE-693</span>
+</div>
+
+Fires when one pipeline both invokes an agentic CLI (``claude`` / ``gemini`` / ``cursor-agent`` / ``aider`` / ``openhands`` / ``goose`` / ``q chat``) in a step ``command`` and, in the same pipeline, lands the result with a ``git push`` (the Harness idiom for committing straight to a branch). Coupling is pipeline-level because the stages of one Harness pipeline share the cloned codebase. Does NOT fire when the agent only opens a pull request for review, nor on a push step that runs no agent. A ``git push --dry-run`` is ignored. The Harness analog of GHA-123 / GL-049 / BB-039 / ADO-038 / JF-038; with HARNESS-008 it composes the AC-040 injection -> autoland chain.
+
+<div class="pg-rule__rec" markdown>
+
+**Recommended action**
+
+Don't let an agentic CLI's output reach a branch without a human review gate. Have the agent open a normal pull request (no auto-merge) so a person reviews the diff before it lands, and don't pair the agent with a ``git push`` straight to a branch in the same pipeline. If the agent's prompt can be influenced by untrusted input (a PR title / branch, a ``<+trigger.*>`` value), treat the committed result as attacker-controlled (HARNESS-008).
 
 </div>
 

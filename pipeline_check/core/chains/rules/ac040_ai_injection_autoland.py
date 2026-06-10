@@ -81,13 +81,14 @@ RULE = ChainRule(
         "Best: never let one pipeline both feed an agent untrusted input "
         "and land that agent's output without a human reviewing the diff."
     ),
-    providers=("github", "gitlab", "bitbucket", "azure", "jenkins"),
+    providers=("github", "gitlab", "bitbucket", "azure", "jenkins", "harness"),
     triggering_check_ids=(
         "GHA-119", "GHA-123",
         "GL-048", "GL-049",
         "BB-036", "BB-039",
         "ADO-035", "ADO-038",
         "JF-037", "JF-038",
+        "HARNESS-008", "HARNESS-009",
     ),
 )
 
@@ -99,6 +100,7 @@ _PAIRS = (
     ("BB-036", "BB-039"),
     ("ADO-035", "ADO-038"),
     ("JF-037", "JF-038"),
+    ("HARNESS-008", "HARNESS-009"),
 )
 
 
