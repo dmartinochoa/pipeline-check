@@ -78,6 +78,7 @@ references, recommendation).
 | [`AC-039`](#ac-039) | Untrusted trigger reaches a bulk-secrets serialization | <span class="pg-sev pg-sev--critical">CRITICAL</span> | github | ([`GHA-002`](providers/github.md#gha-002) or [`GHA-009`](providers/github.md#gha-009) or [`GHA-013`](providers/github.md#gha-013)) + [`GHA-116`](providers/github.md#gha-116) |
 | [`AC-040`](#ac-040) | Prompt-injected agent commits its output with no human review | <span class="pg-sev pg-sev--critical">CRITICAL</span> | github, gitlab, bitbucket, azure, jenkins | ([`GHA-119`](providers/github.md#gha-119) + [`GHA-123`](providers/github.md#gha-123)) or ([`GL-048`](providers/gitlab.md#gl-048) + [`GL-049`](providers/gitlab.md#gl-049)) or ([`BB-036`](providers/bitbucket.md#bb-036) + [`BB-039`](providers/bitbucket.md#bb-039)) or ([`ADO-035`](providers/azure.md#ado-035) + [`ADO-038`](providers/azure.md#ado-038)) or ([`JF-037`](providers/jenkins.md#jf-037) + [`JF-038`](providers/jenkins.md#jf-038)) |
 | [`AC-041`](#ac-041) | Compromised action executed and exfiltrated credentials in the same run | <span class="pg-sev pg-sev--critical">CRITICAL</span> | runs | [`RUN-006`](providers/runs.md#run-006) + ([`RUN-003`](providers/runs.md#run-003) or [`RUN-004`](providers/runs.md#run-004)) |
+| [`AC-042`](#ac-042) | Fork pipeline executed and exfiltrated credentials in the same pipeline | <span class="pg-sev pg-sev--critical">CRITICAL</span> | gitlab_runs | [`GLRUN-002`](providers/gitlab_runs.md#glrun-002) + ([`GLRUN-003`](providers/gitlab_runs.md#glrun-003) or [`GLRUN-004`](providers/gitlab_runs.md#glrun-004)) |
 
 ### Cross-provider chains (`XPC-NNN`)
 
@@ -1370,6 +1371,31 @@ A known-compromised action actually executed in a workflow run (RUN-006) AND the
 **Recommended action**
 
 Respond as to a confirmed breach: rotate every credential and token the affected run could reach (the leaked secret, the federated cloud role for an OIDC mint, the GITHUB_TOKEN), review the run's outbound network and any pushes / deployments it made, and audit downstream systems the credential can reach. Then close the entry point: pin the action to a known-good commit SHA (GHA-040 / RUN-006) and stop the credential reaching the log (RUN-003) or scope the OIDC role's trust policy (RUN-004).
+
+</div>
+
+</div>
+
+<div class="pg-rule pg-rule--critical" markdown>
+
+### AC-042: Fork pipeline executed and exfiltrated credentials in the same pipeline { #ac-042 }
+
+<div class="pg-rule__tags">
+<span class="pg-sev pg-sev--critical">CRITICAL</span> <span class="pg-tag" title="MITRE ATT&CK technique">MITRE T1199</span> <span class="pg-tag" title="MITRE ATT&CK technique">MITRE T1552</span> <span class="pg-tag" title="MITRE ATT&CK technique">MITRE T1078.004</span> <span class="pg-tag" title="MITRE ATT&CK technique">MITRE T1567</span> <span class="pg-tag" title="kill-chain phase">initial-access (a fork merge request opens, untrusted contributor code) -> execution (its pipeline runs in the project's CI) -> credential-access (a secret leaks in the job trace, or the pipeline mints a cloud OIDC token) -> exfiltration (the untrusted code ships the credential out, the leak / mint is the evidence)</span> <span class="pg-tag pg-tag--owasp">gitlab_runs</span>
+</div>
+
+A fork merge-request pipeline actually executed in the project's CI (GLRUN-002) AND the same pipeline exposed a credential: a secret-shaped string leaked in its job trace past GitLab's masking (GLRUN-003) or it minted a cloud OIDC token (GLRUN-004). Both legs on one pipeline is the run-history confirmation that untrusted fork code reached a credential in a single execution, the GitLab face of the poisoned-pipeline-execution class confirmed to have succeeded.
+
+**References**
+
+- <https://owasp.org/www-project-top-10-ci-cd-security-risks/CICD-SEC-04-Poisoned-Pipeline-Execution-PPE>
+- <https://docs.gitlab.com/ee/ci/pipelines/merge_request_pipelines.html#run-pipelines-in-the-parent-project-for-merge-requests-from-a-forked-project>
+
+<div class="pg-rule__rec" markdown>
+
+**Recommended action**
+
+Respond as to a confirmed breach: rotate every credential and token the affected pipeline could reach (the leaked secret, the federated cloud role for an OIDC mint, the CI job token), review the pipeline's outbound network and any pushes / deployments it made, and audit downstream systems the credential can reach. Then close the entry point: keep protected CI/CD variables and runners away from fork merge-request pipelines and require approval before they run (GLRUN-002), stop the credential reaching the trace (GLRUN-003) or scope the cloud trust policy so a fork ref cannot assume the role (GLRUN-004).
 
 </div>
 

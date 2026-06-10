@@ -59,7 +59,7 @@ missing major surfaces or requires extra config. No = not in scope.
 | Package registries (npm / PyPI / Maven / NuGet / Go / Cargo / Composer / RubyGems) | Yes (130 rules across 8 providers) | No | No | No | No | Partial |
 | **Analysis depth** | | | | | | |
 | Dataflow taint, multi-step / cross-job | Yes (TAINT-001..009 across 5 providers) | No | No | Rules-only | No | No |
-| Cross-provider attack chains (MITRE ATT&CK) | Yes (55 chains: 41 AC + 10 XPC + 4 CXPC cross-repo) | No | No | No | No | No |
+| Cross-provider attack chains (MITRE ATT&CK) | Yes (56 chains: 42 AC + 10 XPC + 4 CXPC cross-repo) | No | No | No | No | No |
 | Multi-scanner SARIF ingest + correlation | Yes (`--ingest`, `INGEST-<tool>-<rule>`, chain engine re-evaluates over the union) | No | No | No | No | No |
 | Vulnerable-by-design benchmark | Yes (synthetic `bench/cases` at 6/6 recall, plus pinned real-world goats; both CI-gated) | No | No | No | No | No |
 | Autofix patches (unified diff) | Yes (111 fixers) | Partial | No | Partial | No | No |

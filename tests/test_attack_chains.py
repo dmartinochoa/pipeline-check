@@ -193,7 +193,7 @@ class TestEngine:
             "AC-025", "AC-026", "AC-027", "AC-028", "AC-029",
             "AC-030", "AC-031", "AC-032", "AC-033", "AC-034",
             "AC-035", "AC-036", "AC-037", "AC-038", "AC-039",
-            "AC-040", "AC-041",
+            "AC-040", "AC-041", "AC-042",
             "XPC-001", "XPC-002", "XPC-003", "XPC-004", "XPC-005",
             "XPC-006", "XPC-007", "XPC-008", "XPC-009", "XPC-010",
             "CXPC-001", "CXPC-002", "CXPC-003", "CXPC-004",
@@ -4066,5 +4066,58 @@ class TestChainAC041:
     def test_passed_finding_does_not_chain(self):
         out = self._ac041([
             _f("RUN-006", self.RUN), _f("RUN-003", self.RUN, passed=True),
+        ])
+        assert out == []
+
+
+class TestChainAC042:
+    """AC-042: a fork pipeline executed AND a credential left it, both legs
+    on the same pipeline (GLRUN-002 + GLRUN-003 / GLRUN-004). The GitLab
+    analog of AC-041."""
+
+    PIPE = "gitlab:group/project#pipeline/42"
+
+    def _ac042(self, findings):
+        return [c for c in chains_pkg.evaluate(findings) if c.chain_id == "AC-042"]
+
+    def test_fork_plus_secret_leak_fires_critical(self):
+        out = self._ac042([_f("GLRUN-002", self.PIPE), _f("GLRUN-003", self.PIPE)])
+        assert len(out) == 1
+        assert out[0].severity is Severity.CRITICAL
+        assert out[0].triggering_check_ids == ["GLRUN-002", "GLRUN-003"]
+        assert out[0].confirmed_reachable is True
+        assert out[0].via_structural is True
+        assert "#pipeline/42" in out[0].reachability_note
+
+    def test_fork_plus_oidc_mint_fires(self):
+        out = self._ac042([_f("GLRUN-002", self.PIPE), _f("GLRUN-004", self.PIPE)])
+        assert len(out) == 1
+        assert out[0].triggering_check_ids == ["GLRUN-002", "GLRUN-004"]
+
+    def test_both_exfil_legs_dedup_to_one(self):
+        out = self._ac042([
+            _f("GLRUN-002", self.PIPE), _f("GLRUN-003", self.PIPE),
+            _f("GLRUN-004", self.PIPE),
+        ])
+        assert len(out) == 1
+        # Dedup keeps the GLRUN-003 leg per pipeline.
+        assert out[0].triggering_check_ids == ["GLRUN-002", "GLRUN-003"]
+
+    def test_no_chain_without_fork_pipeline_leg(self):
+        assert self._ac042([_f("GLRUN-003", self.PIPE)]) == []
+
+    def test_no_chain_without_exfil_leg(self):
+        assert self._ac042([_f("GLRUN-002", self.PIPE)]) == []
+
+    def test_no_chain_across_different_pipelines(self):
+        out = self._ac042([
+            _f("GLRUN-002", "gitlab:group/project#pipeline/1"),
+            _f("GLRUN-003", "gitlab:group/project#pipeline/2"),
+        ])
+        assert out == []
+
+    def test_passed_finding_does_not_chain(self):
+        out = self._ac042([
+            _f("GLRUN-002", self.PIPE), _f("GLRUN-003", self.PIPE, passed=True),
         ])
         assert out == []

@@ -12,6 +12,22 @@ release commit collapses this section into `## [X.Y.Z] - <date>`.
 
 ### Added
 
+- **AC-042: fork pipeline executed and exfiltrated credentials in the
+  same pipeline (GitLab).** The GitLab analog of AC-041, built from the
+  ``gitlab_runs`` run-forensics legs. Fires when one fork merge-request
+  pipeline both executed in the project's CI (GLRUN-002, untrusted
+  contributor code ran) AND, in that same pipeline, a credential left it:
+  a secret-shaped string leaked in its job trace past GitLab's masking
+  (GLRUN-003) or it minted a cloud OIDC token (GLRUN-004). GitLab has no
+  "compromised action" IOC analog (so no RUN-006-style leg); the
+  untrusted-code leg is the fork pipeline itself. Both legs carry the same
+  ``gitlab:group/project#pipeline/<id>`` resource, so the pairing is
+  structural, not co-occurrence: it provably happened in one execution.
+  Emitted CRITICAL and ``confirmed_reachable`` (the GitLab twin of
+  AC-041's same-run pairing), so it survives
+  ``--chains-require-reachability``: poisoned pipeline execution confirmed
+  to have *succeeded*, not merely been possible. Chain count 55 -> 56.
+
 - **``gitlab_runs`` provider: GitLab pipeline run-history forensics
   (GLRUN-001 .. GLRUN-004).** The GitLab analog of the ``runs`` provider,
   and the first step of run-forensics beyond GitHub. ``--pipeline
