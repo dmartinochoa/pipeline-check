@@ -227,3 +227,45 @@ class TestHarness004LiteralSecret:
         out = [f for f in _for(_findings(_ctx(tmp_path, text)), "HARNESS-004")
                if not f.passed]
         assert out == []
+
+
+_PIPE = """\
+pipeline:
+  identifier: build
+  stages:
+    - stage:
+        identifier: ci
+        type: CI
+        spec:
+          execution:
+            steps:
+              - step:
+                  type: Run
+                  identifier: install
+                  spec:
+                    image: alpine
+                    command: |
+                      curl -fsSL https://example.com/install.sh | sh
+"""
+
+
+class TestHarness005PipeToShell:
+    def test_flags_pipe_to_shell(self, tmp_path):
+        out = [f for f in _for(_findings(_ctx(tmp_path, _PIPE)), "HARNESS-005")
+               if not f.passed]
+        assert len(out) == 1
+        assert out[0].severity is Severity.HIGH
+        assert "ci/install" in out[0].description
+
+    def test_download_then_execute_is_safe(self, tmp_path):
+        text = _PIPE.replace(
+            "curl -fsSL https://example.com/install.sh | sh",
+            "curl -fsSL -o i.sh https://example.com/install.sh && sh i.sh",
+        )
+        out = [f for f in _for(_findings(_ctx(tmp_path, text)), "HARNESS-005")
+               if not f.passed]
+        assert out == []
+
+    def test_clean_pipeline_passes(self, tmp_path):
+        out = _for(_findings(_ctx(tmp_path, _CLEAN)), "HARNESS-005")
+        assert out and all(f.passed for f in out)

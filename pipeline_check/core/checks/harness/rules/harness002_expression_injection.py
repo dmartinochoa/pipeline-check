@@ -5,7 +5,7 @@ import re
 
 from ...base import Finding, Severity
 from ...rule import Rule
-from ..base import HarnessPipeline, iter_steps, step_label, step_spec
+from ..base import HarnessPipeline, iter_steps, step_command_text, step_label
 
 #: Harness ``<+...>`` expressions whose value an outside contributor
 #: controls through a pull request / webhook: the codebase identity and
@@ -77,20 +77,10 @@ RULE = Rule(
 )
 
 
-def _command_text(step: dict[str, object]) -> str:
-    """Return a step's ``spec.command`` as text (joining a list form)."""
-    cmd = step_spec(step).get("command")
-    if isinstance(cmd, str):
-        return cmd
-    if isinstance(cmd, list):
-        return "\n".join(c for c in cmd if isinstance(c, str))
-    return ""
-
-
 def check(pipeline: HarnessPipeline) -> Finding:
     offenders: list[str] = []
     for stage_id, step in iter_steps(pipeline):
-        text = _command_text(step)
+        text = step_command_text(step)
         if not text:
             continue
         fields = {m.group("field") for m in _UNTRUSTED_EXPR_RE.finditer(text)}

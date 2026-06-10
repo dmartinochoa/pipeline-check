@@ -623,6 +623,7 @@ STANDARD = Standard(
         "HARNESS-002":   ["PR.PS-05"],  # Harness expression injection in step command
         "HARNESS-003":   ["PR.PS-01"],  # Harness privileged step
         "HARNESS-004":   ["PR.AA-01"],  # Harness literal credential in variable
+        "HARNESS-005":   ["GV.SC-05"],  # Harness pipe-to-shell
         "DR-002":  ["PR.PS-01"],                # privileged step
         "DR-003":  ["PR.PS-05"],                # Drone variable injection
         "DR-004":  ["PR.AA-01"],                # literal credential
