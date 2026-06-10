@@ -297,6 +297,7 @@ STANDARD = Standard(
         "HARNESS-003":   ["PE-2"],  # Harness privileged step
         "HARNESS-004":   ["REC-2", "CA-6"],  # Harness literal credential in variable
         "HARNESS-006":   ["COL-1"],  # Harness TLS bypass in commands
+        "HARNESS-007":   ["PE-2"],  # Harness sensitive host-path mount
         "DR-005":   ["IA-11"],
         "DF-001":   ["IA-11"],
         "MODEL-001": ["IA-11"],   # unpinned base model

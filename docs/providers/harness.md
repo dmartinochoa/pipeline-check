@@ -38,7 +38,7 @@ All other flags (`--output`, `--severity-threshold`, `--checks`,
 
 ## What it covers
 
-6 checks · 0 have an autofix patch (``--fix``).
+7 checks · 0 have an autofix patch (``--fix``).
 
 | Check | Title | Severity | Fix |
 |-------|-------|----------|-----|
@@ -48,6 +48,7 @@ All other flags (`--output`, `--severity-threshold`, `--checks`,
 | [HARNESS-004](#harness-004) | Literal credential in a pipeline / stage variable | <span class="pg-sev pg-sev--critical">CRITICAL</span> |  |
 | [HARNESS-005](#harness-005) | Step pipes a remote download into a shell interpreter | <span class="pg-sev pg-sev--high">HIGH</span> |  |
 | [HARNESS-006](#harness-006) | TLS verification disabled in step commands | <span class="pg-sev pg-sev--high">HIGH</span> |  |
+| [HARNESS-007](#harness-007) | Stage infrastructure mounts a sensitive host path | <span class="pg-sev pg-sev--high">HIGH</span> |  |
 
 ---
 
@@ -178,6 +179,30 @@ Reuses the cross-provider ``_primitives.tls_bypass`` detector shared with DR-006
 **Recommended action**
 
 Remove TLS-bypass flags from the step command. The common offenders are ``curl --insecure`` / ``-k``, ``wget --no-check-certificate``, ``pip config set global.trusted-host``, ``npm config set strict-ssl false``, and ``git -c http.sslVerify=false``. Each exposes the build to a TLS-MITM injection of a registry-served payload, a textbook supply-chain vector. If a registry's certificate is genuinely broken, install the missing CA into the build image and fix the registry rather than disabling verification, which tends to outlive the broken cert and become a permanent weakness.
+
+</div>
+
+</div>
+
+<div class="pg-rule pg-rule--high" markdown>
+
+## HARNESS-007: Stage infrastructure mounts a sensitive host path { #harness-007 }
+
+<div class="pg-rule__tags">
+<span class="pg-sev pg-sev--high">HIGH</span> <span class="pg-tag pg-tag--owasp">CICD-SEC-5</span> <span class="pg-tag pg-tag--esf">ESF-D-RUNTIME-HARDENING</span> <span class="pg-tag pg-tag--esf">ESF-D-LEAST-PRIV</span> <span class="pg-tag pg-tag--cwe">CWE-250</span> <span class="pg-tag pg-tag--cwe">CWE-732</span>
+</div>
+
+Harness CI Kubernetes infrastructure (``stage.spec.infrastructure.spec.volumes``) accepts ``EmptyDir`` / ``PersistentVolumeClaim`` (safe) or ``HostPath`` (a bind mount of the build node's filesystem, the dangerous shape). The rule fires when a ``HostPath`` volume's ``spec.path`` matches a sensitive prefix: ``/var/run/docker.sock`` (the canonical container-escape socket), ``/var/lib/docker``, ``/var/run``, ``/etc``, ``/proc``, ``/sys``, or ``/`` (full host root). ``EmptyDir`` / PVC volumes pass. Same model as DR-007 / K8S-019 across providers.
+
+**Known false-positive modes**
+
+- Trusted-only pipelines on a dedicated, isolated build cluster sometimes deliberately mount the Docker socket for image build / push. Suppress via ignore-file when the cluster's isolation is documented; the rule can't see the cluster's trust boundary from the pipeline YAML alone.
+
+<div class="pg-rule__rec" markdown>
+
+**Recommended action**
+
+Drop the ``HostPath`` volume from the stage infrastructure. Mounting ``/var/run/docker.sock`` from the build node into the build pod hands it root-equivalent control over every other workload on that node (it can launch arbitrary, including privileged, containers). ``/var/lib/docker`` exposes every image and container on the node, ``/proc`` and ``/sys`` expose host kernel state, and ``/`` is full host takeover. If the build genuinely needs container builds, use a rootless builder (``kaniko``, ``buildah --isolation=chroot``, BuildKit rootless) or a remote builder, rather than bind-mounting the node's filesystem.
 
 </div>
 

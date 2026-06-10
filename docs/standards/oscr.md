@@ -25,7 +25,7 @@ axis.
 
 - **Controls in this standard:** 86
 - **Controls evidenced by at least one check:** 61 / 86
-- **Distinct checks evidencing this standard:** 692
+- **Distinct checks evidencing this standard:** 693
 - **Of those, autofixable with `--fix`:** 105
 
 _Severity levels (`CRITICAL` / `HIGH` / `MEDIUM` / `LOW` / `INFO`) follow the same scale across every provider and standard. See [How to read severity](README.md#how-to-read-severity) on the standards overview for the definitions._
@@ -97,7 +97,7 @@ Click a control ID to jump to the per-control section with the full check list. 
 | [`PER-7`](#ctrl-per-7) | Implant in zombie instance | 0 | — |
 | [`PER-8`](#ctrl-per-8) | Create access token | 5 | 4H · 1M |
 | [`PE-1`](#ctrl-pe-1) | Inject malicious dependency to privileged user repository | 7 | 2C · 5H |
-| [`PE-2`](#ctrl-pe-2) | Runners / agents running with high user privileges | 46 | 11C · 23H · 10M · 2L |
+| [`PE-2`](#ctrl-pe-2) | Runners / agents running with high user privileges | 47 | 11C · 24H · 10M · 2L |
 | [`DE-1`](#ctrl-de-1) | Bypass review using admin permission | 39 | 14H · 23M · 2L |
 | [`DE-2`](#ctrl-de-2) | SaaS sprawl | 1 | 1M |
 | [`DE-3`](#ctrl-de-3) | Misconfigured audit log settings | 33 | 3H · 7M · 7L · 16I |
@@ -929,7 +929,7 @@ _No checks in this scanner currently evidence this control. Open an issue if you
 
 ### PE-2: Runners / agents running with high user privileges { #ctrl-pe-2 }
 
-**Evidenced by 46 checks** across 15 providers (AWS, Argo Workflows, Azure DevOps, Bitbucket, Buildkite, CircleCI, Cloud Build, Dockerfile, Drone CI, GitHub Actions, GitLab CI, Harness CI/CD, Jenkins, Kubernetes, Tekton).
+**Evidenced by 47 checks** across 15 providers (AWS, Argo Workflows, Azure DevOps, Bitbucket, Buildkite, CircleCI, Cloud Build, Dockerfile, Drone CI, GitHub Actions, GitLab CI, Harness CI/CD, Jenkins, Kubernetes, Tekton).
 
 | Check | Title | Severity | Provider | Fix |
 |-------|-------|----------|----------|-----|
@@ -960,6 +960,7 @@ _No checks in this scanner currently evidence this control. Open an issue if you
 | [`GL-017`](../providers/gitlab.md#gl-017) | Docker run with insecure flags (privileged/host mount) | <span class="pg-sev pg-sev--critical">CRITICAL</span> | [GitLab CI](../providers/gitlab.md) | <span class="pg-fix" title="`--fix` will patch this rule">🔧 fix</span> |
 | [`GL-039`](../providers/gitlab.md#gl-039) | Docker-in-Docker service exposes an unauthenticated daemon | <span class="pg-sev pg-sev--high">HIGH</span> | [GitLab CI](../providers/gitlab.md) |  |
 | [`HARNESS-003`](../providers/harness.md#harness-003) | Step runs with privileged: true | <span class="pg-sev pg-sev--high">HIGH</span> | [Harness CI/CD](../providers/harness.md) |  |
+| [`HARNESS-007`](../providers/harness.md#harness-007) | Stage infrastructure mounts a sensitive host path | <span class="pg-sev pg-sev--high">HIGH</span> | [Harness CI/CD](../providers/harness.md) |  |
 | [`JF-003`](../providers/jenkins.md#jf-003) | Pipeline uses `agent any` (no executor isolation) | <span class="pg-sev pg-sev--medium">MEDIUM</span> | [Jenkins](../providers/jenkins.md) |  |
 | [`JF-017`](../providers/jenkins.md#jf-017) | Docker run with insecure flags (privileged/host mount) | <span class="pg-sev pg-sev--critical">CRITICAL</span> | [Jenkins](../providers/jenkins.md) | <span class="pg-fix" title="`--fix` will patch this rule">🔧 fix</span> |
 | [`JF-025`](../providers/jenkins.md#jf-025) | Kubernetes agent pod template runs privileged or mounts hostPath | <span class="pg-sev pg-sev--high">HIGH</span> | [Jenkins](../providers/jenkins.md) |  |

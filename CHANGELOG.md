@@ -13,7 +13,7 @@ release commit collapses this section into `## [X.Y.Z] - <date>`.
 ### Added
 
 - **``harness`` provider: Harness CI/CD pipeline scanning (HARNESS-001 ..
-  HARNESS-006).** A new ``--pipeline harness`` parses Harness pipeline YAML
+  HARNESS-007).** A new ``--pipeline harness`` parses Harness pipeline YAML
   (the Git Experience / pipeline-as-code form) and audits it like the other
   CI providers, the first coverage of an enterprise CD platform that no
   scanner touches today. Harness has no canonical filename, so the loader
@@ -43,7 +43,13 @@ release commit collapses this section into `## [X.Y.Z] - <date>`.
   disables TLS verification (``curl -k``, ``wget --no-check-certificate``,
   ``npm config set strict-ssl false``, ``git -c http.sslVerify=false``, ...),
   reusing the shared ``_primitives.tls_bypass`` detector (the DR-006 /
-  GHA-027 family). Auto-detected on a ``.harness/`` directory; ``--harness-path``
+  GHA-027 family). **HARNESS-007** (HIGH) flags a Kubernetes-infrastructure
+  ``HostPath`` volume (``stage.spec.infrastructure.spec.volumes``) bind-
+  mounting a sensitive node path (``/var/run/docker.sock``, ``/var/lib/
+  docker``, ``/etc``, ``/proc``, ``/sys``, ``/``) into the build pod, a
+  container-escape / node-takeover primitive (the DR-007 / K8S family;
+  ``EmptyDir`` / PVC volumes pass). Auto-detected on a ``.harness/``
+  directory; ``--harness-path``
   points at a file or directory explicitly. YAML-only, no Harness API token.
   Every rule maps across the OWASP CI/CD Top 10 and the 12 other frameworks.
   Provider count 36 -> 37.
