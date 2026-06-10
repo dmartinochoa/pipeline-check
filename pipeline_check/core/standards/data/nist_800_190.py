@@ -591,6 +591,7 @@ STANDARD = Standard(
         "HARNESS-003":   ["4.1.2", "4.4.4"],  # Harness privileged step
         "HARNESS-004":   ["4.1.4"],  # Harness literal credential in variable
         "HARNESS-005":   ["4.1.5", "4.4.5"],  # Harness pipe-to-shell
+        "HARNESS-006":   ["4.2.1"],  # Harness TLS bypass in commands
         "DR-002":  ["4.1.2", "4.4.4"],             # privileged step
         "DR-003":  ["4.4.5"],                      # Drone variable injection
         "DR-004":  ["4.1.4"],                      # literal credential

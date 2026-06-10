@@ -417,6 +417,7 @@ STANDARD = Standard(
         "HARNESS-003":   ["Build.L3.Isolated"],  # Harness privileged step
         "HARNESS-004":   ["Build.L3.NonFalsifiable"],  # Harness literal credential in variable
         "HARNESS-005":   ["Build.L3.NonFalsifiable"],  # Harness pipe-to-shell
+        "HARNESS-006":   ["Build.L3.Isolated", "Build.L3.NonFalsifiable"],  # Harness TLS bypass in commands
         "DR-002":   ["Build.L3.Isolated"],                         # privileged step
         "DR-003":   ["Build.L3.Isolated"],                         # Drone variable injection
         "DR-004":   ["Build.L3.NonFalsifiable"],                   # literal credential

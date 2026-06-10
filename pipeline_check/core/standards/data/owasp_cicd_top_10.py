@@ -823,6 +823,7 @@ STANDARD = Standard(
         "HARNESS-003":   ["CICD-SEC-5"],  # Harness privileged step
         "HARNESS-004":   ["CICD-SEC-6", "CICD-SEC-7"],  # Harness literal credential in variable
         "HARNESS-005":   ["CICD-SEC-3", "CICD-SEC-5"],  # Harness pipe-to-shell
+        "HARNESS-006":   ["CICD-SEC-3", "CICD-SEC-1"],  # Harness TLS bypass in commands
         "DR-002":   ["CICD-SEC-5"],                 # step privileged
         "DR-003":   ["CICD-SEC-4", "CICD-SEC-1"],   # Drone variable injection
         "DR-004":   ["CICD-SEC-6", "CICD-SEC-7"],   # literal secret

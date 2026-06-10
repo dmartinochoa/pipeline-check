@@ -38,7 +38,7 @@ All other flags (`--output`, `--severity-threshold`, `--checks`,
 
 ## What it covers
 
-5 checks · 0 have an autofix patch (``--fix``).
+6 checks · 0 have an autofix patch (``--fix``).
 
 | Check | Title | Severity | Fix |
 |-------|-------|----------|-----|
@@ -47,6 +47,7 @@ All other flags (`--output`, `--severity-threshold`, `--checks`,
 | [HARNESS-003](#harness-003) | Step runs with privileged: true | <span class="pg-sev pg-sev--high">HIGH</span> |  |
 | [HARNESS-004](#harness-004) | Literal credential in a pipeline / stage variable | <span class="pg-sev pg-sev--critical">CRITICAL</span> |  |
 | [HARNESS-005](#harness-005) | Step pipes a remote download into a shell interpreter | <span class="pg-sev pg-sev--high">HIGH</span> |  |
+| [HARNESS-006](#harness-006) | TLS verification disabled in step commands | <span class="pg-sev pg-sev--high">HIGH</span> |  |
 
 ---
 
@@ -157,6 +158,26 @@ Walks every step's ``spec.command`` text and fires on the canonical pipe-to-shel
 **Recommended action**
 
 Replace every ``curl ... | sh`` / ``wget ... | bash`` pattern in a Run step ``command`` with a download-verify-execute flow: download the artifact to disk (``curl -fsSL -o installer.sh <url>``), verify a known-good checksum against the file (``echo "<sha256>  installer.sh" | sha256sum -c -``), and only then run it (``sh installer.sh``). The pipe-to-shell pattern executes whatever bytes the URL serves at run time with the step container's privileges and secrets, so a network MITM, a compromised mirror, or a brief upstream takeover injects arbitrary code into the build with no verification step.
+
+</div>
+
+</div>
+
+<div class="pg-rule pg-rule--high" markdown>
+
+## HARNESS-006: TLS verification disabled in step commands { #harness-006 }
+
+<div class="pg-rule__tags">
+<span class="pg-sev pg-sev--high">HIGH</span> <span class="pg-tag pg-tag--owasp">CICD-SEC-3</span> <span class="pg-tag pg-tag--owasp">CICD-SEC-1</span> <span class="pg-tag pg-tag--esf">ESF-D-RUNTIME-HARDENING</span> <span class="pg-tag pg-tag--cwe">CWE-295</span> <span class="pg-tag pg-tag--cwe">CWE-494</span>
+</div>
+
+Reuses the cross-provider ``_primitives.tls_bypass`` detector shared with DR-006 / GHA-027 / BK-008 / JF-022 / ADO-026 / CC-024 / GCB-011 and the IaC packs (covers curl / wget / git / npm / yarn / pip / helm / kubectl / ssh / docker / maven / gradle / aws bypasses). The rule scans every step's ``spec.command`` text across CI and CD stages, through ``parallel`` / ``stepGroup`` nesting.
+
+<div class="pg-rule__rec" markdown>
+
+**Recommended action**
+
+Remove TLS-bypass flags from the step command. The common offenders are ``curl --insecure`` / ``-k``, ``wget --no-check-certificate``, ``pip config set global.trusted-host``, ``npm config set strict-ssl false``, and ``git -c http.sslVerify=false``. Each exposes the build to a TLS-MITM injection of a registry-served payload, a textbook supply-chain vector. If a registry's certificate is genuinely broken, install the missing CA into the build image and fix the registry rather than disabling verification, which tends to outlive the broken cert and become a permanent weakness.
 
 </div>
 
