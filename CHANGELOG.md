@@ -367,6 +367,14 @@ release commit collapses this section into `## [X.Y.Z] - <date>`.
   and policy (`--policy`) loaders. The scan loaders now degrade the file
   like a parse failure (skip + warning); the user-config loaders fail fast
   with a clear `CustomRuleError` / `PolicyError` instead of a traceback.
+- **The failing-gate "what next" trailer no longer suggests a no-op fix
+  command for unsafe-only findings.** When every autofixer for the failing
+  set was unsafe-tier, the stderr gate trailer told the user to run
+  `pipeline_check --fix --apply`, which is safe-only and writes nothing.
+  It now suggests `--fix unsafe --apply` for an unsafe-only set, counts
+  only the safe fixers when bare `--fix` would apply some, and notes the
+  unsafe remainder. This matches the terminal report footer, which already
+  pointed at the tier that actually changes the tree.
 
 ## [1.13.0] - 2026-06-09
 
