@@ -117,16 +117,21 @@ class TestOrg002:
 
 _PERMS_PATH = f"orgs/{_ORG}/actions/permissions"
 _WORKFLOW_PATH = f"orgs/{_ORG}/actions/permissions/workflow"
+_SECRETS_PATH = f"orgs/{_ORG}/actions/secrets"
 
 
 def _ctx_actions(
-    permissions: dict | None = None, workflow: dict | None = None,
+    permissions: dict | None = None,
+    workflow: dict | None = None,
+    secrets: dict | None = None,
 ) -> SCMOrgContext:
     mapping: dict[str, Any] = {_ORG_PATH: {"login": _ORG}}
     if permissions is not None:
         mapping[_PERMS_PATH] = permissions
     if workflow is not None:
         mapping[_WORKFLOW_PATH] = workflow
+    if secrets is not None:
+        mapping[_SECRETS_PATH] = secrets
     return SCMOrgContext.for_org(_ORG, FakeFetcher(mapping))
 
 
@@ -184,6 +189,58 @@ class TestOrg004:
         assert "not available" in out[0].description
 
 
+# ── ORG-005: Actions can approve PRs ──────────────────────────────────────
+
+class TestOrg005:
+    def test_fires_when_actions_can_approve(self):
+        ctx = _ctx_actions(
+            workflow={"can_approve_pull_request_reviews": True},
+        )
+        out = [f for f in _for(_findings(ctx), "ORG-005") if not f.passed]
+        assert len(out) == 1
+        assert out[0].severity == Severity.HIGH
+
+    def test_passes_when_actions_cannot_approve(self):
+        ctx = _ctx_actions(
+            workflow={"can_approve_pull_request_reviews": False},
+        )
+        out = _for(_findings(ctx), "ORG-005")
+        assert out and all(f.passed for f in out)
+
+    def test_passes_with_note_when_field_absent(self):
+        ctx = _ctx_actions(workflow={"default_workflow_permissions": "read"})
+        out = _for(_findings(ctx), "ORG-005")
+        assert out and all(f.passed for f in out)
+        assert "cannot read" in out[0].description
+
+
+# ── ORG-006: org Actions secret scoped to all repos ───────────────────────
+
+class TestOrg006:
+    def test_fires_on_all_repo_secret(self):
+        ctx = _ctx_actions(secrets={"total_count": 2, "secrets": [
+            {"name": "NPM_TOKEN", "visibility": "all"},
+            {"name": "SCOPED", "visibility": "selected"},
+        ]})
+        out = [f for f in _for(_findings(ctx), "ORG-006") if not f.passed]
+        assert len(out) == 1
+        assert out[0].severity == Severity.HIGH
+        assert "NPM_TOKEN" in out[0].description
+        assert "SCOPED" not in out[0].description  # only all-repo ones named
+
+    @pytest.mark.parametrize("vis", ["selected", "private"])
+    def test_passes_when_secrets_scoped(self, vis):
+        ctx = _ctx_actions(secrets={"secrets": [{"name": "X", "visibility": vis}]})
+        out = _for(_findings(ctx), "ORG-006")
+        assert out and all(f.passed for f in out)
+
+    def test_passes_with_note_when_unavailable(self):
+        ctx = _ctx_actions(secrets=None)
+        out = _for(_findings(ctx), "ORG-006")
+        assert out and all(f.passed for f in out)
+        assert "not available" in out[0].description
+
+
 # ── Provider wiring ───────────────────────────────────────────────────────
 
 class TestProvider:
@@ -207,6 +264,7 @@ class TestProvider:
         expected = {
             "ORG-001": "CICD-SEC-2", "ORG-002": "CICD-SEC-2",
             "ORG-003": "CICD-SEC-3", "ORG-004": "CICD-SEC-2",
+            "ORG-005": "CICD-SEC-1", "ORG-006": "CICD-SEC-2",
         }
         for cid, ctrl in expected.items():
             controls = {c.control_id for c in resolve_for_check(cid)}

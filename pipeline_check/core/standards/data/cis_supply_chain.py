@@ -987,6 +987,8 @@ STANDARD = Standard(
         "ORG-002":  ["1.3.4"],                           # org governance: default member permission too broad
         "ORG-003":  ["1.4.1", "3.1.5"],                  # org governance: no Actions allow-list (any action runs)
         "ORG-004":  ["1.3.4"],                           # org governance: default workflow token is write
+        "ORG-005":  ["1.1.5"],                           # org governance: Actions can approve PRs (review bypass)
+        "ORG-006":  ["2.4.3"],                           # org governance: Actions secret scoped to all repos
         # GitLab-specific platform posture (SCM-050..053)
         "SCM-050":  ["1.5.1"],                           # GitLab push rules: prevent_secrets
         "SCM-051":  ["1.1.6"],                           # GitLab push rules: committer-email check

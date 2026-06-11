@@ -918,6 +918,8 @@ STANDARD = Standard(
         "ORG-002":  ["CICD-SEC-2"],                # org governance: default member permission too broad
         "ORG-003":  ["CICD-SEC-3"],                # org governance: no Actions allow-list (any action runs)
         "ORG-004":  ["CICD-SEC-2"],                # org governance: default workflow token is write
+        "ORG-005":  ["CICD-SEC-1"],                # org governance: Actions can approve PRs (review bypass)
+        "ORG-006":  ["CICD-SEC-2"],                # org governance: Actions secret scoped to all repos
         # GitLab-specific platform posture (SCM-050..053)
         "SCM-050":  ["CICD-SEC-6"],                # GitLab push rules: prevent_secrets
         "SCM-051":  ["CICD-SEC-1", "CICD-SEC-6"],  # GitLab push rules: committer-email check
