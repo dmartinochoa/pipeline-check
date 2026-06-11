@@ -773,22 +773,16 @@ product. Grouped by horizon; effort (S/M/L) and impact noted.
   first. Builds on the SCM REST fetchers + the `runs` provider's bounded
   log-download path.
 
-  **Scoped next increment (2026-06-11): GLRUN-005, fork pipeline ran on a
-  self-managed runner** (the RUN-005 analog; HIGH, behind `--audit-runs-logs`).
-  GitLab's jobs API returns each job's `runner` object, and
-  `GitLabRunsContext._scan_fork_traces` already fetches
-  `/pipelines/:pid/jobs` per fork pipeline, so detecting a fork pipeline
+  **GLRUN-005 SHIPPED (2026-06-11): fork pipeline ran on a self-managed
+  runner** (the RUN-005 analog; HIGH, behind `--audit-runs-logs`). Reads
+  the `runner` embedded in each fork-pipeline job (the same `/jobs` page
+  GLRUN-003/004 list, so no extra API calls) and flags a fork pipeline
   whose jobs ran on a non-shared runner (`runner.is_shared == false`, i.e.
-  a `project_type` / `group_type` self-managed runner) needs **no new HTTP
-  calls**, just an inspection of the job dicts already in hand. That's
-  untrusted fork code executing on infrastructure the project owner
-  controls, the GitLab equivalent of RUN-005's self-hosted-runner risk.
-  New context field `self_managed_runner_pipelines: dict[pid, list[str]]`,
-  a `glrun005_fork_runner_exposure.py` rule emitting per-pipeline findings
-  via `pipeline_resource`, and the standard GLRUN wiring (rule + test in
-  `tests/gitlab_runs/` + `EXPECTED_RULE_COUNTS["gitlab_runs"] 4->5` +
-  owasp/standards mirror of RUN-005's mappings + provider-doc regen + the
-  total-check + provider-table count surfaces). Effort: S.
+  a `project_type` / `group_type` runner the owner operates): untrusted
+  fork code executing on infrastructure the project owner controls, the
+  GitLab equivalent of RUN-005's self-hosted-runner risk. Detection is
+  metadata not trace content, so it runs even when the fetcher can't
+  download traces. `gitlab_runs` 4->5.
   **Deferred (bigger / lower value):** a RUN-006/007 analog (unpinned remote
   `include:` / CI-component ran in a pipeline). GitLab has no compromised-code
   IOC registry (no RUN-006 analog), and the RUN-007 analog needs a new fetch
