@@ -937,6 +937,8 @@ STANDARD = Standard(
         "CC-032":   ["CC6.1"],              # secret echoed to CircleCI log
         "SCM-048":  ["CC6.1"],                   # org codespace secrets scoped to all repos
         "SCM-049":  ["CC6.1", "CC6.3"],          # classic PAT used where fine-grained suffices
+        "ORG-001":  ["CC6.1", "CC6.3"],          # org governance: 2FA not required org-wide
+        "ORG-002":  ["CC6.1", "CC6.3"],          # org governance: default member permission too broad
         "NPM-012":  ["CC6.1", "CC8.1"],          # publish token missing restrictions
         # ── SCM posture (governance via the platform REST API) ──────
         # Branch protection / review controls map to CC8.1 (Change

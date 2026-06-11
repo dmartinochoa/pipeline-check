@@ -108,6 +108,7 @@ _PROVIDER_PATH_KW: dict[str, str | None] = {
     "azure_cloud":    None,
     "gcp":            None,
     "scm":            None,
+    "scm_org":        None,
     "runs":           None,
     "gitlab_runs":    None,
 }
@@ -209,6 +210,33 @@ def _provider_kwarg(
                     "'group/project' form."
                 )
             return {"scm_repo": scm_repo}
+        if provider == "scm_org":
+            # ``scm_org`` is path-less: it audits a GitHub organization's
+            # settings over the REST API. The org login is passed through
+            # the ``scm_repo`` slot (a bare login, no '/'); a fixture dir
+            # is honored for offline replay.
+            if not scm_repo or "/" in scm_repo:
+                raise ValueError(
+                    "provider 'scm_org' requires scm_repo set to a bare "
+                    "GitHub org login (no '/')."
+                )
+            org_out: dict[str, Any] = {"scm_org": scm_repo}
+            if scm_fixture_dir:
+                resolved_fx = Path(scm_fixture_dir).expanduser().resolve()
+                roots = _allowed_scan_roots()
+                if not any(_is_within(resolved_fx, root) for root in roots):
+                    raise ValueError(
+                        f"scm_fixture_dir {resolved_fx} is outside the MCP "
+                        f"server's allowed scan roots ("
+                        + ", ".join(str(r) for r in roots)
+                        + f"). Set {_SCAN_ROOTS_ENV} to widen."
+                    )
+                if not resolved_fx.exists():
+                    raise ValueError(
+                        f"scm_fixture_dir does not exist: {resolved_fx}"
+                    )
+                org_out["scm_fixture_dir"] = str(resolved_fx)
+            return org_out
         # AWS: no path, but accept ``path`` silently when supplied
         # so an agent guessing the call shape doesn't trip over it.
         return {}
@@ -811,7 +839,7 @@ def scan_pr_diff(
       ``summary.introduced_by_severity`` and decide itself whether
       to block the PR.
     """
-    if provider in ("aws", "scm", "runs", "gitlab_runs"):
+    if provider in ("aws", "scm", "scm_org", "runs", "gitlab_runs"):
         raise ValueError(
             f"provider {provider!r} has no local BASE ref to diff against; "
             f"scan_pr_diff is only meaningful for file-based providers."
@@ -1216,7 +1244,7 @@ TOOL_SPECS: list[dict[str, Any]] = [
                     "type": "string",
                     "enum": [
                         p for p in _PROVIDER_ENUM
-                        if p not in ("aws", "scm", "runs", "gitlab_runs")
+                        if p not in ("aws", "scm", "scm_org", "runs", "gitlab_runs")
                     ],
                 },
                 "base_ref": {

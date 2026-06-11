@@ -165,6 +165,12 @@ pipeline_check --pipeline scm --scm-platform github \
     --scm-repo octocat/hello-world \
     --scm-fixture-dir ./scm-fixtures/
 
+# Organization-wide governance (GitHub). Audits org-admin settings that
+# govern every repo at once (2FA requirement, default member permission).
+# Token from --gh-token or $GITHUB_TOKEN; needs admin:org / read:org.
+pipeline_check --pipeline scm_org --scm-org my-org \
+    --gh-token "$GITHUB_TOKEN"
+
 # Actions run-history forensics (GitHub only). Audits recent
 # Actions runs via the REST API for privileged-trigger and
 # fork-originated executions. Token comes from --gh-token or

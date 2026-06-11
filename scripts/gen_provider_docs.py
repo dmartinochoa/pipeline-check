@@ -1050,6 +1050,34 @@ pipeline_check --pipeline gitlab_runs --scm-repo group/project \\
 ```
 """,
     ),
+    "scm_org": (
+        "SCM org governance (GitHub)",
+        "pipeline_check.core.checks.scm_org.rules",
+        _REPO_ROOT / "docs" / "providers" / "scm_org.md",
+        """\
+# SCM org governance: GitHub
+
+Where the [`scm`](scm_github.md) provider audits one repository's
+settings, the `scm_org` provider audits the organization-wide controls
+that govern every repository at once: whether two-factor authentication
+is required of all members, the default permission members get on org
+repos, and the rest of the org-admin settings layer. It pulls
+`GET /orgs/{org}` (and sibling endpoints as the rule pack grows) via the
+same GitHub REST fetcher the `scm` provider uses.
+
+The org-admin settings are only returned to a token with `admin:org` /
+`read:org` scope; without one, or on any 404 / network error, each rule
+passes with an "unavailable" note rather than firing on absence, so a
+low-scope token never produces a false finding.
+
+## Producer workflow
+
+```bash
+# Token comes from --gh-token or $GITHUB_TOKEN (needs admin:org / read:org).
+pipeline_check --pipeline scm_org --scm-org my-org --gh-token "$GITHUB_TOKEN"
+```
+""",
+    ),
     "scm": (
         "SCM posture (GitHub)",
         "pipeline_check.core.checks.scm.rules",

@@ -194,7 +194,7 @@ class _GroupedCommand(click.Command):
             "--cargo-path", "--pulumi-path", "--composer-path",
             "--rubygems-path", "--devenv-path", "--modelfile-path",
             "--gitea-path", "--pipelines",
-            "--scm-platform", "--scm-repo", "--scm-fixture-dir",
+            "--scm-platform", "--scm-repo", "--scm-org", "--scm-fixture-dir",
             "--gh-token", "--gitlab-token", "--gitlab-url",
             "--resolve-remote", "--gha-search-path", "--gha-resolve-depth",
             "--npm-base-ref", "--audit-runs-logs", "--no-cache",
@@ -1669,6 +1669,20 @@ def _install_completion_callback(
     ),
 )
 @click.option(
+    "--scm-org",
+    "scm_org",
+    default=None,
+    metavar="ORG",
+    help=(
+        "GitHub organization to audit org-wide settings for (required "
+        "when --pipeline scm_org), e.g. ``--scm-org my-org``. Complements "
+        "--pipeline scm (one repo) with org-level governance (2FA "
+        "requirement, default member permission). The org-admin settings "
+        "need a token (``--gh-token`` / ``$GITHUB_TOKEN``) with "
+        "``admin:org`` / ``read:org``."
+    ),
+)
+@click.option(
     "--scm-fixture-dir",
     "scm_fixture_dir",
     default=None,
@@ -2443,6 +2457,7 @@ def scan(
     harness_path: str | None,
     scm_platform: str | None,
     scm_repo: str | None,
+    scm_org: str | None,
     scm_fixture_dir: str | None,
     audit_runs_logs: bool,
     ingest_paths: tuple[str, ...],
@@ -2805,6 +2820,7 @@ def scan(
         modelfile_path=modelfile_path,
         scm_platform=scm_platform,
         scm_repo=scm_repo,
+        scm_org=scm_org,
         scm_fixture_dir=scm_fixture_dir,
         audit_runs_logs=audit_runs_logs,
     )
