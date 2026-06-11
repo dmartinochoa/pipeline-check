@@ -792,12 +792,14 @@ product. Grouped by horizon; effort (S/M/L) and impact noted.
   2026-06-11: the new `scm_org` provider (`--pipeline scm_org --scm-org ORG`,
   GitHub-first, prefix ORG-) ships **ORG-001** (org-wide 2FA not required),
   **ORG-002** (default member permission write/admin), **ORG-003** (no
-  Actions allow-list, `allowed_actions: all`), and **ORG-004** (default
-  workflow `GITHUB_TOKEN` is read-write). Reads `GET /orgs/{org}` +
-  `/actions/permissions` + `/actions/permissions/workflow` over the existing
-  SCM REST fetcher. Provider count 37 -> 38. **Remaining:** more org-level
-  rules (member SSO / outside-collaborator policy, org-wide branch-protection
-  defaults, org-secret scoping, GITHUB_TOKEN can-approve-PRs) and the
+  Actions allow-list, `allowed_actions: all`), **ORG-004** (default workflow
+  `GITHUB_TOKEN` is read-write), **ORG-005** (Actions can approve PRs, a
+  required-review bypass), and **ORG-006** (org Actions secret scoped to all
+  repositories, the SCM-048 analog). Reads `GET /orgs/{org}` +
+  `/actions/permissions` + `/actions/permissions/workflow` +
+  `/actions/secrets` over the existing SCM REST fetcher. Provider count
+  37 -> 38. **Remaining:** more org-level rules (member SSO /
+  outside-collaborator policy, org-wide branch-protection defaults) and the
   per-repo fan-out (run the 55-rule per-repo pack across every repo the org
   enumerates, the half that needs repo enumeration + the fleet config-clone
   path). The Legitify / Allstar buyer.
