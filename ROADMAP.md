@@ -724,12 +724,12 @@ product. Grouped by horizon; effort (S/M/L) and impact noted.
   the Scanner (`scanner.py:420`) unless a rule sets `confidence_locked`.
   So `--min-confidence MEDIUM` yields the high-signal view while the
   hygiene family stays visible at the default LOW threshold. The one
-  named noise source NOT tiered is GHA-037 persist-credentials: it was
-  deliberately kept HIGH as an active misconfiguration (real ArtiPACKED /
-  ultralytics CVEs), so it still floods the high-signal view on repos
-  that use `actions/checkout` without `persist-credentials: false`. That
-  trade-off is an open precision call (see "Hygiene-rule confidence
-  tiering").
+  named noise source NOT tiered is GHA-037 persist-credentials, kept HIGH
+  by maintainer decision (2026-06-11) as an active misconfiguration (real
+  ArtiPACKED / ultralytics CVEs): demoting a confirmed-exploitable default
+  in a security tool would hide a real vulnerability from the high-signal
+  view. It still fires on repos that use `actions/checkout` without
+  `persist-credentials: false` (see "Hygiene-rule confidence tiering").
 - ~~**RecursionError on deeply-nested YAML (S, med).**~~ Shipped. The
   shared provider parse boundaries were hardened first (`ca924d1b`:
   `_yaml_files` + the kubernetes / cloudformation / helm inline loaders
@@ -1561,19 +1561,21 @@ hygiene nit from a `pull_request_target` RCE. The findings stay valid
 and visible at the default LOW threshold; they just drop out of the
 high-signal view.
 
-**Open precision call:** GHA-037 persist-credentials (73% of cicd-goat
-firings) was deliberately left at HIGH and out of `BEST_PRACTICE_IDS`,
-on the grounds that the unsafe `actions/checkout` default is an active,
-CVE-backed misconfiguration (ArtiPACKED, ultralytics) rather than a
-missing control. Because the rule has no context guard (it fires on
-every checkout that omits `persist-credentials: false`, regardless of
-whether a later step can read the token), it still dominates the
-high-signal view. Three ways to resolve, in rising order of effort:
-(1) keep it HIGH (status quo); (2) demote GHA-037 + the ADO-032 analog
-to LOW, same "certain but ubiquitous" rationale as the best-practice
-family; (3) make it context-aware (HIGH only when a later `run:` step
-or untrusted trigger can actually exfiltrate the persisted token, else
-lower). Originally framed as part of the 84% noise above.
+**GHA-037 trade-off, resolved (2026-06-11): keep HIGH.** GHA-037
+persist-credentials (73% of cicd-goat firings) was left at HIGH and out
+of `BEST_PRACTICE_IDS` on the grounds that the unsafe `actions/checkout`
+default is an active, CVE-backed misconfiguration (ArtiPACKED,
+ultralytics) rather than a missing control. The maintainer decision is
+to keep it HIGH: demoting a confirmed-exploitable default in a security
+tool would hide a real vulnerability from the `--min-confidence MEDIUM`
+view, which is the wrong failure mode for this tool. The rule has no
+context guard (it fires on every checkout that omits
+`persist-credentials: false`, regardless of whether a later step can
+read the token), so it still dominates the high-signal view; that's the
+accepted cost of not under-reporting. If the noise becomes a problem,
+the principled next step is context-awareness (HIGH only when a later
+`run:` step or untrusted trigger can actually exfiltrate the persisted
+token, else lower) rather than a blanket demotion.
 
 ### ~~Live Azure + GCP cloud-posture parity~~ shipped
 
