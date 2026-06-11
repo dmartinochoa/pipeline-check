@@ -19,7 +19,7 @@ Kubernetes, …) when an audit asks for that framework's vocabulary.
 
 - **Controls in this standard:** 10
 - **Controls evidenced by at least one check:** 10 / 10
-- **Distinct checks evidencing this standard:** 968
+- **Distinct checks evidencing this standard:** 970
 - **Of those, autofixable with `--fix`:** 111
 
 _Severity levels (`CRITICAL` / `HIGH` / `MEDIUM` / `LOW` / `INFO`) follow the same scale across every provider and standard. See [How to read severity](README.md#how-to-read-severity) on the standards overview for the definitions._
@@ -31,8 +31,8 @@ Click a control ID to jump to the per-control section with the full check list. 
 | Control | Title | Checks | Severity mix |
 |---------|-------|-------:|--------------|
 | [`CICD-SEC-1`](#ctrl-cicd-sec-1) | Insufficient Flow Control Mechanisms | 104 | 7C · 54H · 35M · 8L |
-| [`CICD-SEC-2`](#ctrl-cicd-sec-2) | Inadequate Identity and Access Management | 81 | 11C · 47H · 22M · 1L |
-| [`CICD-SEC-3`](#ctrl-cicd-sec-3) | Dependency Chain Abuse | 316 | 12C · 168H · 113M · 23L |
+| [`CICD-SEC-2`](#ctrl-cicd-sec-2) | Inadequate Identity and Access Management | 82 | 11C · 48H · 22M · 1L |
+| [`CICD-SEC-3`](#ctrl-cicd-sec-3) | Dependency Chain Abuse | 317 | 12C · 169H · 113M · 23L |
 | [`CICD-SEC-4`](#ctrl-cicd-sec-4) | Poisoned Pipeline Execution | 161 | 33C · 91H · 25M · 12L |
 | [`CICD-SEC-5`](#ctrl-cicd-sec-5) | Insufficient PBAC | 78 | 4C · 56H · 18M |
 | [`CICD-SEC-6`](#ctrl-cicd-sec-6) | Insufficient Credential Hygiene | 117 | 33C · 60H · 24M |
@@ -175,7 +175,7 @@ Reviews, approvals, branch protection, and deployment gates are the brakes on th
 
 Long-lived static credentials, shared service accounts, and human identities reused for automation collapse the blast radius of a single compromise to the whole pipeline.
 
-**Evidenced by 81 checks** across 19 providers (AWS, Argo CD, Argo Workflows, Azure Cloud, Azure DevOps, Bitbucket, Buildkite, CircleCI, Cloud Build, GCP, GitHub Actions, GitLab CI, Kubernetes, OCI manifest, Pulumi, SCM, SCM org governance, Tekton, Terraform).
+**Evidenced by 82 checks** across 19 providers (AWS, Argo CD, Argo Workflows, Azure Cloud, Azure DevOps, Bitbucket, Buildkite, CircleCI, Cloud Build, GCP, GitHub Actions, GitLab CI, Kubernetes, OCI manifest, Pulumi, SCM, SCM org governance, Tekton, Terraform).
 
 | Check | Title | Severity | Provider | Fix |
 |-------|-------|----------|----------|-----|
@@ -249,6 +249,7 @@ Long-lived static credentials, shared service accounts, and human identities reu
 | [`KMS-002`](../providers/aws.md#kms-002) | KMS key policy grants wildcard KMS actions | <span class="pg-sev pg-sev--high">HIGH</span> | [AWS](../providers/aws.md) |  |
 | [`ORG-001`](../providers/scm_org.md#org-001) | Organization does not require two-factor authentication | <span class="pg-sev pg-sev--high">HIGH</span> | [SCM org governance](../providers/scm_org.md) |  |
 | [`ORG-002`](../providers/scm_org.md#org-002) | Organization default member permission grants write to every repo | <span class="pg-sev pg-sev--high">HIGH</span> | [SCM org governance](../providers/scm_org.md) |  |
+| [`ORG-004`](../providers/scm_org.md#org-004) | Organization default workflow token grants write permissions | <span class="pg-sev pg-sev--high">HIGH</span> | [SCM org governance](../providers/scm_org.md) |  |
 | [`PULUMI-004`](../providers/pulumi.md) | Pulumi project uses an insecure state backend | <span class="pg-sev pg-sev--medium">MEDIUM</span> | [Pulumi](../providers/pulumi.md) |  |
 | [`PULUMI-005`](../providers/pulumi.md) | Pulumi source declares an IAM policy with wildcard action + resource | <span class="pg-sev pg-sev--high">HIGH</span> | [Pulumi](../providers/pulumi.md) |  |
 | [`PULUMI-007`](../providers/pulumi.md) | Pulumi source declares a publicly accessible cloud resource | <span class="pg-sev pg-sev--high">HIGH</span> | [Pulumi](../providers/pulumi.md) |  |
@@ -265,7 +266,7 @@ Long-lived static credentials, shared service accounts, and human identities reu
 
 Floating tags, range constraints, and unverified registries let an upstream maintainer compromise (or a typosquat) execute in your build the next time the dependency resolves.
 
-**Evidenced by 316 checks** across 31 providers (AWS, Actions run history, Argo CD, Argo Workflows, Azure DevOps, Bitbucket, Buildkite, Cargo, CircleCI, Cloud Build, Composer, Developer environment, Dockerfile, Drone CI, GitHub Actions, GitLab CI, Go modules, Harness CI/CD, Helm, Jenkins, Kubernetes, Modelfile, NuGet, OCI manifest, Pulumi, PyPI, RubyGems, SCM, Tekton, maven, npm).
+**Evidenced by 317 checks** across 32 providers (AWS, Actions run history, Argo CD, Argo Workflows, Azure DevOps, Bitbucket, Buildkite, Cargo, CircleCI, Cloud Build, Composer, Developer environment, Dockerfile, Drone CI, GitHub Actions, GitLab CI, Go modules, Harness CI/CD, Helm, Jenkins, Kubernetes, Modelfile, NuGet, OCI manifest, Pulumi, PyPI, RubyGems, SCM, SCM org governance, Tekton, maven, npm).
 
 | Check | Title | Severity | Provider | Fix |
 |-------|-------|----------|----------|-----|
@@ -552,6 +553,7 @@ Floating tags, range constraints, and unverified registries let an upstream main
 | [`OCI-007`](../providers/oci.md#oci-007) | Image manifest uses legacy schemaVersion 1 (no content addressing) | <span class="pg-sev pg-sev--high">HIGH</span> | [OCI manifest](../providers/oci.md) |  |
 | [`OCI-008`](../providers/oci.md#oci-008) | Manifest references digest using unsupported hash algorithm | <span class="pg-sev pg-sev--high">HIGH</span> | [OCI manifest](../providers/oci.md) |  |
 | [`OCI-009`](../providers/oci.md#oci-009) | Image manifest is missing OCI base-image annotations | <span class="pg-sev pg-sev--medium">MEDIUM</span> | [OCI manifest](../providers/oci.md) |  |
+| [`ORG-003`](../providers/scm_org.md#org-003) | Organization allows any GitHub Action to run (no allow-list) | <span class="pg-sev pg-sev--high">HIGH</span> | [SCM org governance](../providers/scm_org.md) |  |
 | [`PULUMI-008`](../providers/pulumi.md) | Pulumi source spawns a shell with non-constant input | <span class="pg-sev pg-sev--high">HIGH</span> | [Pulumi](../providers/pulumi.md) |  |
 | [`PULUMI-009`](../providers/pulumi.md) | Pulumi.yaml runtime does not match any source file | <span class="pg-sev pg-sev--medium">MEDIUM</span> | [Pulumi](../providers/pulumi.md) |  |
 | [`PULUMI-011`](../providers/pulumi.md) | Pulumi plugin pulled from a custom download server | <span class="pg-sev pg-sev--high">HIGH</span> | [Pulumi](../providers/pulumi.md) |  |

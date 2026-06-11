@@ -13,7 +13,7 @@ scanner can witness.
 
 - **Controls in this standard:** 13
 - **Controls evidenced by at least one check:** 13 / 13
-- **Distinct checks evidencing this standard:** 948
+- **Distinct checks evidencing this standard:** 950
 - **Of those, autofixable with `--fix`:** 111
 
 _Severity levels (`CRITICAL` / `HIGH` / `MEDIUM` / `LOW` / `INFO`) follow the same scale across every provider and standard. See [How to read severity](README.md#how-to-read-severity) on the standards overview for the definitions._
@@ -25,13 +25,13 @@ Click a control ID to jump to the per-control section with the full check list. 
 | Control | Title | Checks | Severity mix |
 |---------|-------|-------:|--------------|
 | [`6.3.1`](#ctrl-6-3-1) | Security vulnerabilities are identified and managed | 140 | 19C · 66H · 43M · 12L |
-| [`6.3.3`](#ctrl-6-3-3) | All system components protected from known vulnerabilities by installing applicable patches | 183 | 14C · 86H · 71M · 12L |
+| [`6.3.3`](#ctrl-6-3-3) | All system components protected from known vulnerabilities by installing applicable patches | 184 | 14C · 87H · 71M · 12L |
 | [`6.4.1`](#ctrl-6-4-1) | Public-facing web apps are protected against attacks (secure build/config) | 147 | 23C · 67H · 46M · 11L |
 | [`6.4.3`](#ctrl-6-4-3) | Changes to systems are managed via documented change control | 78 | 4C · 30H · 36M · 8L |
 | [`6.5.1`](#ctrl-6-5-1) | Changes to system components follow secure development procedures | 388 | 53C · 182H · 123M · 29L · 1I |
-| [`7.2.1`](#ctrl-7-2-1) | Access control is defined per job role with least privilege | 41 | 5C · 25H · 10M · 1L |
+| [`7.2.1`](#ctrl-7-2-1) | Access control is defined per job role with least privilege | 42 | 5C · 26H · 10M · 1L |
 | [`7.2.2`](#ctrl-7-2-2) | Access is assigned based on job classification and function | 8 | 1C · 2H · 5M |
-| [`7.2.5`](#ctrl-7-2-5) | System and application accounts have least-privilege access | 75 | 10C · 39H · 26M |
+| [`7.2.5`](#ctrl-7-2-5) | System and application accounts have least-privilege access | 76 | 10C · 40H · 26M |
 | [`8.2.1`](#ctrl-8-2-1) | Strong unique identifiers are assigned to each user and service account | 138 | 29C · 81H · 26M · 2L |
 | [`8.2.2`](#ctrl-8-2-2) | Group, shared, or generic accounts are managed and justified | 11 | 2C · 5H · 4M |
 | [`10.2.1`](#ctrl-10-2-1) | Audit logs are enabled and active for all system components | 53 | 6H · 23M · 8L · 16I |
@@ -204,7 +204,7 @@ pipeline_check --pipeline aws --standard pci_dss_v4 --standard owasp_cicd_top_10
 
 ### 6.3.3: All system components protected from known vulnerabilities by installing applicable patches { #ctrl-6-3-3 }
 
-**Evidenced by 183 checks** across 30 providers (AWS, Actions run history, Argo Workflows, Azure Cloud, Azure DevOps, Bitbucket, Buildkite, Cargo, CircleCI, Cloud Build, Composer, Developer environment, Dockerfile, Drone CI, GCP, GitHub Actions, GitLab CI, Go modules, Harness CI/CD, Helm, Jenkins, Kubernetes, NuGet, OCI manifest, PyPI, RubyGems, SCM, Tekton, maven, npm).
+**Evidenced by 184 checks** across 31 providers (AWS, Actions run history, Argo Workflows, Azure Cloud, Azure DevOps, Bitbucket, Buildkite, Cargo, CircleCI, Cloud Build, Composer, Developer environment, Dockerfile, Drone CI, GCP, GitHub Actions, GitLab CI, Go modules, Harness CI/CD, Helm, Jenkins, Kubernetes, NuGet, OCI manifest, PyPI, RubyGems, SCM, SCM org governance, Tekton, maven, npm).
 
 | Check | Title | Severity | Provider | Fix |
 |-------|-------|----------|----------|-----|
@@ -367,6 +367,7 @@ pipeline_check --pipeline aws --standard pci_dss_v4 --standard owasp_cicd_top_10
 | [`OCI-004`](../providers/oci.md#oci-004) | Image layer references an arbitrary URL (foreign layer) | <span class="pg-sev pg-sev--high">HIGH</span> | [OCI manifest](../providers/oci.md) |  |
 | [`OCI-007`](../providers/oci.md#oci-007) | Image manifest uses legacy schemaVersion 1 (no content addressing) | <span class="pg-sev pg-sev--high">HIGH</span> | [OCI manifest](../providers/oci.md) |  |
 | [`OCI-008`](../providers/oci.md#oci-008) | Manifest references digest using unsupported hash algorithm | <span class="pg-sev pg-sev--high">HIGH</span> | [OCI manifest](../providers/oci.md) |  |
+| [`ORG-003`](../providers/scm_org.md#org-003) | Organization allows any GitHub Action to run (no allow-list) | <span class="pg-sev pg-sev--high">HIGH</span> | [SCM org governance](../providers/scm_org.md) |  |
 | [`PYPI-001`](../providers/pypi.md#pypi-001) | requirements.txt entry missing an exact version pin | <span class="pg-sev pg-sev--medium">MEDIUM</span> | [PyPI](../providers/pypi.md) |  |
 | [`PYPI-002`](../providers/pypi.md#pypi-002) | requirements.txt missing hash pinning (--require-hashes / --hash=) | <span class="pg-sev pg-sev--high">HIGH</span> | [PyPI](../providers/pypi.md) |  |
 | [`PYPI-003`](../providers/pypi.md#pypi-003) | requirements.txt uses an HTTP index or disables TLS verification | <span class="pg-sev pg-sev--high">HIGH</span> | [PyPI](../providers/pypi.md) |  |
@@ -1028,7 +1029,7 @@ pipeline_check --pipeline aws --standard pci_dss_v4 --standard owasp_cicd_top_10
 
 ### 7.2.1: Access control is defined per job role with least privilege { #ctrl-7-2-1 }
 
-**Evidenced by 41 checks** across 14 providers (AWS, Argo CD, Azure Cloud, Bitbucket, CircleCI, Cloud Build, GCP, GitHub Actions, GitLab CI, Kubernetes, Pulumi, SCM, SCM org governance, Terraform).
+**Evidenced by 42 checks** across 14 providers (AWS, Argo CD, Azure Cloud, Bitbucket, CircleCI, Cloud Build, GCP, GitHub Actions, GitLab CI, Kubernetes, Pulumi, SCM, SCM org governance, Terraform).
 
 | Check | Title | Severity | Provider | Fix |
 |-------|-------|----------|----------|-----|
@@ -1065,6 +1066,7 @@ pipeline_check --pipeline aws --standard pci_dss_v4 --standard owasp_cicd_top_10
 | [`K8S-021`](../providers/kubernetes.md#k8s-021) | Role or ClusterRole grants wildcard verbs+resources | <span class="pg-sev pg-sev--high">HIGH</span> | [Kubernetes](../providers/kubernetes.md) |  |
 | [`K8S-042`](../providers/kubernetes.md#k8s-042) | RoleBinding grants access to system:anonymous / system:unauthenticated | <span class="pg-sev pg-sev--critical">CRITICAL</span> | [Kubernetes](../providers/kubernetes.md) |  |
 | [`ORG-002`](../providers/scm_org.md#org-002) | Organization default member permission grants write to every repo | <span class="pg-sev pg-sev--high">HIGH</span> | [SCM org governance](../providers/scm_org.md) |  |
+| [`ORG-004`](../providers/scm_org.md#org-004) | Organization default workflow token grants write permissions | <span class="pg-sev pg-sev--high">HIGH</span> | [SCM org governance](../providers/scm_org.md) |  |
 | [`PULUMI-005`](../providers/pulumi.md) | Pulumi source declares an IAM policy with wildcard action + resource | <span class="pg-sev pg-sev--high">HIGH</span> | [Pulumi](../providers/pulumi.md) |  |
 | [`PULUMI-006`](../providers/pulumi.md) | Pulumi source uses StackReference without project/org guard | <span class="pg-sev pg-sev--medium">MEDIUM</span> | [Pulumi](../providers/pulumi.md) |  |
 | [`SCM-010`](../providers/scm_github.md#scm-010) | Branch protection allows administrators to bypass | <span class="pg-sev pg-sev--high">HIGH</span> | [SCM](../providers/scm_github.md) |  |
@@ -1091,7 +1093,7 @@ pipeline_check --pipeline aws --standard pci_dss_v4 --standard owasp_cicd_top_10
 
 ### 7.2.5: System and application accounts have least-privilege access { #ctrl-7-2-5 }
 
-**Evidenced by 75 checks** across 13 providers (AWS, Argo Workflows, Azure Cloud, CircleCI, Cloud Build, Dockerfile, GCP, GitHub Actions, Jenkins, Kubernetes, SCM, SCM org governance, Tekton).
+**Evidenced by 76 checks** across 13 providers (AWS, Argo Workflows, Azure Cloud, CircleCI, Cloud Build, Dockerfile, GCP, GitHub Actions, Jenkins, Kubernetes, SCM, SCM org governance, Tekton).
 
 | Check | Title | Severity | Provider | Fix |
 |-------|-------|----------|----------|-----|
@@ -1160,6 +1162,7 @@ pipeline_check --pipeline aws --standard pci_dss_v4 --standard owasp_cicd_top_10
 | [`LMB-004`](../providers/aws.md#lmb-004) | Lambda resource policy allows wildcard principal | <span class="pg-sev pg-sev--critical">CRITICAL</span> | [AWS](../providers/aws.md) |  |
 | [`ORG-001`](../providers/scm_org.md#org-001) | Organization does not require two-factor authentication | <span class="pg-sev pg-sev--high">HIGH</span> | [SCM org governance](../providers/scm_org.md) |  |
 | [`ORG-002`](../providers/scm_org.md#org-002) | Organization default member permission grants write to every repo | <span class="pg-sev pg-sev--high">HIGH</span> | [SCM org governance](../providers/scm_org.md) |  |
+| [`ORG-004`](../providers/scm_org.md#org-004) | Organization default workflow token grants write permissions | <span class="pg-sev pg-sev--high">HIGH</span> | [SCM org governance](../providers/scm_org.md) |  |
 | [`PBAC-002`](../providers/aws.md#pbac-002) | CodeBuild service role shared across multiple projects | <span class="pg-sev pg-sev--medium">MEDIUM</span> | [AWS](../providers/aws.md) |  |
 | [`PBAC-005`](../providers/aws.md#pbac-005) | CodePipeline stage action roles mirror the pipeline role | <span class="pg-sev pg-sev--high">HIGH</span> | [AWS](../providers/aws.md) |  |
 | [`SCM-020`](../providers/scm_github.md#scm-020) | Default workflow GITHUB_TOKEN has write permission | <span class="pg-sev pg-sev--high">HIGH</span> | [SCM](../providers/scm_github.md) |  |

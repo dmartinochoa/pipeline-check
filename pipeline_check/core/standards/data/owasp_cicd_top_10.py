@@ -916,6 +916,8 @@ STANDARD = Standard(
         "SCM-049":  ["CICD-SEC-2"],                # classic PAT used where fine-grained suffices
         "ORG-001":  ["CICD-SEC-2"],                # org governance: 2FA not required org-wide
         "ORG-002":  ["CICD-SEC-2"],                # org governance: default member permission too broad
+        "ORG-003":  ["CICD-SEC-3"],                # org governance: no Actions allow-list (any action runs)
+        "ORG-004":  ["CICD-SEC-2"],                # org governance: default workflow token is write
         # GitLab-specific platform posture (SCM-050..053)
         "SCM-050":  ["CICD-SEC-6"],                # GitLab push rules: prevent_secrets
         "SCM-051":  ["CICD-SEC-1", "CICD-SEC-6"],  # GitLab push rules: committer-email check
