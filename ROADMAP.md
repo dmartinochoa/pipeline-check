@@ -717,14 +717,19 @@ product. Grouped by horizon; effort (S/M/L) and impact noted.
 
 **Quick wins (S, ship first):**
 
-- **Confidence-tier the hygiene-rule family (S, high).** On cicd-goat,
-  ~84% of firings are non-canonical "missing-control" noise (GHA-015
-  no-timeout, GHA-037 persist-credentials) because `Finding.confidence`
-  defaults to HIGH and only ~4 of ~1005 rules override it. Give the
-  hygiene / best-practice family a lower default confidence so
-  `--min-confidence MEDIUM` yields a high-signal view. Signal-to-noise
-  is the top reason scanners get ignored; cheapest precision win
-  available. (Also tracked under "Hygiene-rule confidence tiering".)
+- ~~**Confidence-tier the hygiene-rule family (S, high).**~~ Shipped in
+  v1.13.0 (`6516f365`). The `BEST_PRACTICE_IDS` family (no-timeout,
+  no-signing, no-SBOM, no-SLSA, no-scan-gate across every provider) now
+  demotes to LOW via `checks/_confidence.py::confidence_for`, applied by
+  the Scanner (`scanner.py:420`) unless a rule sets `confidence_locked`.
+  So `--min-confidence MEDIUM` yields the high-signal view while the
+  hygiene family stays visible at the default LOW threshold. The one
+  named noise source NOT tiered is GHA-037 persist-credentials: it was
+  deliberately kept HIGH as an active misconfiguration (real ArtiPACKED /
+  ultralytics CVEs), so it still floods the high-signal view on repos
+  that use `actions/checkout` without `persist-credentials: false`. That
+  trade-off is an open precision call (see "Hygiene-rule confidence
+  tiering").
 - ~~**RecursionError on deeply-nested YAML (S, med).**~~ Shipped. The
   shared provider parse boundaries were hardened first (`ca924d1b`:
   `_yaml_files` + the kubernetes / cloudformation / helm inline loaders
@@ -1548,18 +1553,27 @@ top-level-image fix releases). That lifts the published GHA total from
 
 ### Hygiene-rule confidence tiering (precision)
 
-On the cicd-goat GitHub corpus, 84% of all (scenario, rule) firings are
-non-canonical: the one intended bug is buried under ~6 findings per
-file, dominated by the "missing-control" family (GHA-015 no-timeout on
-90% of files, GHA-037 persist-credentials 73%, plus SBOM / SLSA /
-scan-gate rules). The root cause is that ``Finding.confidence`` defaults
-to ``HIGH`` and only 4 of ~1005 rule modules override it, so a
-best-practice nit and a ``pull_request_target`` RCE land at the same
-confidence and ``--min-confidence`` can't separate them. Give the
-hygiene / missing-control family a lower default confidence (or a
-distinct "best-practice" class) so ``--min-confidence MEDIUM`` yields a
-high-signal view. These findings stay valid on real repos; the point is
-to tier them, not drop them.
+**Mostly shipped (v1.13.0, `6516f365`).** The missing-control family
+(`BEST_PRACTICE_IDS`: no-timeout, no-signing, no-SBOM, no-SLSA,
+no-scan-gate across every provider) now demotes to LOW through
+`checks/_confidence.py`, so `--min-confidence MEDIUM` separates a
+hygiene nit from a `pull_request_target` RCE. The findings stay valid
+and visible at the default LOW threshold; they just drop out of the
+high-signal view.
+
+**Open precision call:** GHA-037 persist-credentials (73% of cicd-goat
+firings) was deliberately left at HIGH and out of `BEST_PRACTICE_IDS`,
+on the grounds that the unsafe `actions/checkout` default is an active,
+CVE-backed misconfiguration (ArtiPACKED, ultralytics) rather than a
+missing control. Because the rule has no context guard (it fires on
+every checkout that omits `persist-credentials: false`, regardless of
+whether a later step can read the token), it still dominates the
+high-signal view. Three ways to resolve, in rising order of effort:
+(1) keep it HIGH (status quo); (2) demote GHA-037 + the ADO-032 analog
+to LOW, same "certain but ubiquitous" rationale as the best-practice
+family; (3) make it context-aware (HIGH only when a later `run:` step
+or untrusted trigger can actually exfiltrate the persisted token, else
+lower). Originally framed as part of the 84% noise above.
 
 ### ~~Live Azure + GCP cloud-posture parity~~ shipped
 
