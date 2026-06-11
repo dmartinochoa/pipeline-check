@@ -32,8 +32,15 @@ class SCMOrgContext:
     #: read this slot; ``None`` means "couldn't ask" (pass with a note),
     #: distinct from a setting that is present but insecure.
     org_meta: dict[str, Any] | None = None
+    #: ``GET /orgs/{org}/actions/permissions`` body (``allowed_actions`` /
+    #: ``enabled_repositories``), or ``None`` when unavailable. ORG-003.
+    actions_permissions: dict[str, Any] | None = None
+    #: ``GET /orgs/{org}/actions/permissions/workflow`` body
+    #: (``default_workflow_permissions`` / ``can_approve_pull_request_reviews``),
+    #: or ``None`` when unavailable. ORG-004.
+    actions_workflow_permissions: dict[str, Any] | None = None
     warnings: list[str] = field(default_factory=list)
-    files_scanned: int = 0   # repurposed: 1 when the org was fetched
+    files_scanned: int = 0   # repurposed: 1 when any org endpoint was fetched
     files_skipped: int = 0
 
     @property
@@ -44,22 +51,37 @@ class SCMOrgContext:
     def for_org(cls, org: str, fetcher: SCMFetcher) -> SCMOrgContext:
         """Hydrate the org snapshot from the GitHub API.
 
-        A failed fetch lands a warning and leaves ``org_meta`` at
-        ``None``; the rule pack then passes each rule with an
-        "org settings unavailable" note instead of firing on absence.
+        Each endpoint is fetched independently and degrades to ``None`` on
+        failure (different settings need different token scopes), so a rule
+        whose slot is ``None`` passes with an "unavailable" note instead of
+        firing on absence. When the base ``GET /orgs/{org}`` fails a single
+        warning is recorded.
         """
         ctx = cls(org=org)
         raw = fetcher.fetch(f"orgs/{org}")
-        if not isinstance(raw, dict):
+        if isinstance(raw, dict):
+            ctx.org_meta = raw
+        else:
             ctx.warnings.append(
                 f"[scm-org] could not fetch orgs/{org} (missing token, "
                 "404, or insufficient scope; the org-admin settings need a "
-                "token with ``admin:org`` / ``read:org``). No org findings."
+                "token with ``admin:org`` / ``read:org``)."
             )
-            ctx.files_skipped = 1
-            return ctx
-        ctx.org_meta = raw
-        ctx.files_scanned = 1
+        # Actions-governance endpoints. Independent scope (``actions``), so
+        # they're attempted even when the base org fetch failed.
+        ap = fetcher.fetch(f"orgs/{org}/actions/permissions")
+        if isinstance(ap, dict):
+            ctx.actions_permissions = ap
+        awp = fetcher.fetch(f"orgs/{org}/actions/permissions/workflow")
+        if isinstance(awp, dict):
+            ctx.actions_workflow_permissions = awp
+        fetched_any = any((
+            ctx.org_meta is not None,
+            ctx.actions_permissions is not None,
+            ctx.actions_workflow_permissions is not None,
+        ))
+        ctx.files_scanned = 1 if fetched_any else 0
+        ctx.files_skipped = 0 if fetched_any else 1
         return ctx
 
 

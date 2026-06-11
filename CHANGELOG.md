@@ -12,18 +12,23 @@ release commit collapses this section into `## [X.Y.Z] - <date>`.
 
 ### Added
 
-- **``scm_org`` provider: GitHub organization-wide governance (ORG-001,
-  ORG-002).** A new ``--pipeline scm_org --scm-org ORG`` audits the
+- **``scm_org`` provider: GitHub organization-wide governance (ORG-001 ..
+  ORG-004).** A new ``--pipeline scm_org --scm-org ORG`` audits the
   org-admin settings that govern every repository at once, complementing
-  the per-repo ``scm`` provider. It reads ``GET /orgs/{org}`` over the same
-  GitHub REST fetcher (token from ``--gh-token`` / ``$GITHUB_TOKEN``, needs
-  ``admin:org`` / ``read:org``). **ORG-001** (HIGH) flags an org that does
-  not require two-factor authentication of all members, the highest-leverage
-  account-takeover control. **ORG-002** (HIGH) flags an org whose default
-  member permission is ``write`` or ``admin``, so every member can push to
-  (or reconfigure) every repository. Both pass with an "unavailable" note
-  when the token lacks org-owner scope, so a low-scope token never produces
-  a false finding. The provider count is now 38.
+  the per-repo ``scm`` provider, over the same GitHub REST fetcher (token
+  from ``--gh-token`` / ``$GITHUB_TOKEN``). **ORG-001** (HIGH) flags an org
+  that does not require two-factor authentication of all members, the
+  highest-leverage account-takeover control. **ORG-002** (HIGH) flags an org
+  whose default member permission is ``write`` or ``admin``, so every member
+  can push to (or reconfigure) every repository. **ORG-003** (HIGH) flags an
+  org whose Actions policy has no allow-list (``allowed_actions: all``), so
+  every workflow can pull in any third-party action by a mutable tag (the
+  tj-actions / reviewdog class) org-wide. **ORG-004** (HIGH) flags an org
+  whose default ``GITHUB_TOKEN`` is read-write, so every workflow gets a
+  write token unless it narrows the scope itself. Each rule passes with an
+  "unavailable" note when the token lacks the scope to read the setting, so
+  a low-scope token never produces a false finding. The provider count is
+  now 38.
 - **GLRUN-005: a fork pipeline ran on a self-managed runner (GitLab run
   forensics).** The GitLab analog of the `runs` provider's RUN-005, behind
   `--audit-runs-logs`. A fork merge-request pipeline executes untrusted

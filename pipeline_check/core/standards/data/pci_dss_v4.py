@@ -968,6 +968,8 @@ STANDARD = Standard(
         "SCM-049":  ["7.2.5", "8.2.1"],                   # classic PAT used where fine-grained suffices
         "ORG-001":  ["8.2.1", "7.2.5"],                   # org governance: 2FA not required org-wide
         "ORG-002":  ["7.2.1", "7.2.5"],                   # org governance: default member permission too broad
+        "ORG-003":  ["6.3.3"],                            # org governance: no Actions allow-list (any action runs)
+        "ORG-004":  ["7.2.1", "7.2.5"],                   # org governance: default workflow token is write
         "NPM-012":  ["8.2.1", "6.5.1"],                   # publish token missing restrictions
         # ── Azure Cloud (Entra ID / Storage / Key Vault / ACR / Monitor) ──
         "ENTRA-001": ["7.2.1", "7.2.5"],                  # SP assigned Global Administrator

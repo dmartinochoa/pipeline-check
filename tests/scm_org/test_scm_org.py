@@ -115,6 +115,75 @@ class TestOrg002:
         assert "cannot read" in out[0].description
 
 
+_PERMS_PATH = f"orgs/{_ORG}/actions/permissions"
+_WORKFLOW_PATH = f"orgs/{_ORG}/actions/permissions/workflow"
+
+
+def _ctx_actions(
+    permissions: dict | None = None, workflow: dict | None = None,
+) -> SCMOrgContext:
+    mapping: dict[str, Any] = {_ORG_PATH: {"login": _ORG}}
+    if permissions is not None:
+        mapping[_PERMS_PATH] = permissions
+    if workflow is not None:
+        mapping[_WORKFLOW_PATH] = workflow
+    return SCMOrgContext.for_org(_ORG, FakeFetcher(mapping))
+
+
+# ── ORG-003: Actions allow-list ───────────────────────────────────────────
+
+class TestOrg003:
+    def test_fires_when_any_action_allowed(self):
+        ctx = _ctx_actions(
+            {"enabled_repositories": "all", "allowed_actions": "all"},
+        )
+        out = [f for f in _for(_findings(ctx), "ORG-003") if not f.passed]
+        assert len(out) == 1
+        assert out[0].severity == Severity.HIGH
+
+    @pytest.mark.parametrize("allowed", ["selected", "local_only"])
+    def test_passes_when_restricted(self, allowed):
+        ctx = _ctx_actions(
+            {"enabled_repositories": "all", "allowed_actions": allowed},
+        )
+        out = _for(_findings(ctx), "ORG-003")
+        assert out and all(f.passed for f in out)
+
+    def test_passes_when_actions_disabled(self):
+        ctx = _ctx_actions(
+            {"enabled_repositories": "none", "allowed_actions": "all"},
+        )
+        out = _for(_findings(ctx), "ORG-003")
+        assert out and all(f.passed for f in out)
+
+    def test_passes_with_note_when_unavailable(self):
+        ctx = _ctx_actions(permissions=None)
+        out = _for(_findings(ctx), "ORG-003")
+        assert out and all(f.passed for f in out)
+        assert "not available" in out[0].description
+
+
+# ── ORG-004: default workflow token permissions ───────────────────────────
+
+class TestOrg004:
+    def test_fires_when_default_is_write(self):
+        ctx = _ctx_actions(workflow={"default_workflow_permissions": "write"})
+        out = [f for f in _for(_findings(ctx), "ORG-004") if not f.passed]
+        assert len(out) == 1
+        assert out[0].severity == Severity.HIGH
+
+    def test_passes_when_default_is_read(self):
+        ctx = _ctx_actions(workflow={"default_workflow_permissions": "read"})
+        out = _for(_findings(ctx), "ORG-004")
+        assert out and all(f.passed for f in out)
+
+    def test_passes_with_note_when_unavailable(self):
+        ctx = _ctx_actions(workflow=None)
+        out = _for(_findings(ctx), "ORG-004")
+        assert out and all(f.passed for f in out)
+        assert "not available" in out[0].description
+
+
 # ── Provider wiring ───────────────────────────────────────────────────────
 
 class TestProvider:
@@ -135,6 +204,10 @@ class TestProvider:
 
     def test_owasp_mappings(self):
         from pipeline_check.core.standards.registry import resolve_for_check
-        for cid in ("ORG-001", "ORG-002"):
+        expected = {
+            "ORG-001": "CICD-SEC-2", "ORG-002": "CICD-SEC-2",
+            "ORG-003": "CICD-SEC-3", "ORG-004": "CICD-SEC-2",
+        }
+        for cid, ctrl in expected.items():
             controls = {c.control_id for c in resolve_for_check(cid)}
-            assert "CICD-SEC-2" in controls
+            assert ctrl in controls

@@ -436,6 +436,10 @@ STANDARD = Standard(
         # rules, the Supplier guide for actions-as-dependencies, and
         # the Customer guide for environment / deployment governance.
         "SCM-001":  ["ESF-D-CODE-REVIEW"],          # default branch unprotected
+        "ORG-001":  ["ESF-C-LEAST-PRIV"],           # org governance: 2FA not required org-wide
+        "ORG-002":  ["ESF-C-LEAST-PRIV"],           # org governance: default member permission too broad
+        "ORG-003":  ["ESF-S-VERIFY-DEPS"],          # org governance: no Actions allow-list (any action runs)
+        "ORG-004":  ["ESF-C-LEAST-PRIV", "ESF-D-TOKEN-HYGIENE"],  # org governance: default workflow token is write
         "SCM-002":  ["ESF-D-CODE-REVIEW"],          # required reviews missing
         "SCM-004":  ["ESF-D-SECRETS"],              # secret scanning disabled
         "SCM-005":  ["ESF-S-VULN-MGMT"],            # Dependabot security updates off

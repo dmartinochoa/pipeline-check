@@ -939,6 +939,8 @@ STANDARD = Standard(
         "SCM-049":  ["CC6.1", "CC6.3"],          # classic PAT used where fine-grained suffices
         "ORG-001":  ["CC6.1", "CC6.3"],          # org governance: 2FA not required org-wide
         "ORG-002":  ["CC6.1", "CC6.3"],          # org governance: default member permission too broad
+        "ORG-003":  ["CC8.1"],                   # org governance: no Actions allow-list (any action runs)
+        "ORG-004":  ["CC6.1", "CC6.3"],          # org governance: default workflow token is write
         "NPM-012":  ["CC6.1", "CC8.1"],          # publish token missing restrictions
         # ── SCM posture (governance via the platform REST API) ──────
         # Branch protection / review controls map to CC8.1 (Change
