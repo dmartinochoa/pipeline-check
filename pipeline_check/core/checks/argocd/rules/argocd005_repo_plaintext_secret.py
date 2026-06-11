@@ -68,7 +68,11 @@ _LITERAL_FIELDS = (
 def _scan_repo_blob(blob: str) -> list[str]:
     try:
         parsed: Any = safe_load_yaml(blob)
-    except yaml.YAMLError:
+    except (yaml.YAMLError, RecursionError, MemoryError):
+        # A deeply-nested inline blob raises RecursionError / MemoryError
+        # (builtins) rather than yaml.YAMLError on the pure-Python loader.
+        # The blob comes from the scanned manifest, so treat an unparsable
+        # one as "no secrets found here" instead of crashing the scan.
         return []
     if not isinstance(parsed, list):
         return []
