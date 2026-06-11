@@ -380,6 +380,11 @@ def _load_policy_url(url: str) -> Policy:
         raw = _safe_load_strict(text)
     except yaml.YAMLError as exc:
         raise PolicyError(f"could not parse remote policy {url}: {exc}") from exc
+    except (RecursionError, MemoryError) as exc:
+        raise PolicyError(
+            f"could not parse remote policy {url}: document too deeply "
+            "nested or large to parse safely"
+        ) from exc
     if not isinstance(raw, dict):
         raise PolicyError(
             f"remote policy {url}: top-level value must be a mapping"
@@ -396,6 +401,11 @@ def _load_policy_file(path: Path) -> Policy:
         raw = _safe_load_strict(path.read_text(encoding="utf-8"))
     except (OSError, yaml.YAMLError) as exc:
         raise PolicyError(f"could not parse {path}: {exc}") from exc
+    except (RecursionError, MemoryError) as exc:
+        raise PolicyError(
+            f"could not parse {path}: document too deeply nested or "
+            "large to parse safely"
+        ) from exc
     if raw is None:
         raise PolicyError(f"{path}: file is empty")
     if not isinstance(raw, dict):

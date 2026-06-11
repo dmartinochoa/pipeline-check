@@ -659,6 +659,17 @@ class Resolver:
                 f"YAML parse error in {pending.ref.raw}: {first_line}"
             )
             return None
+        except (RecursionError, MemoryError):
+            # A deeply-nested callee body raises a builtin, not a
+            # ``yaml.YAMLError``, on the pure-Python loader (the no-libyaml
+            # fallback). Degrade the resolved action like a parse failure
+            # so a crafted reusable workflow / composite action can't abort
+            # the resolver.
+            self.stats.failures.append(
+                f"unparsable callee body (too deeply nested or large): "
+                f"{pending.ref.raw}"
+            )
+            return None
         if not isinstance(doc, dict):
             return None
         if pending.kind == "action":

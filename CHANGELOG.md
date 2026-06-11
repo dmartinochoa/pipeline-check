@@ -355,6 +355,18 @@ release commit collapses this section into `## [X.Y.Z] - <date>`.
   good cache and mask the bad response. A decode failure on a successful
   fetch now raises a clear error; the cache fallback fires only on an
   actual network / IO failure.
+- **A deeply-nested YAML file no longer crashes the scan through the
+  auxiliary loaders the earlier hardening pass missed.** The previous
+  fix caught `RecursionError` / `MemoryError` (PyYAML's recursive parser
+  raises these builtins, not `yaml.YAMLError`, on a pathologically deep
+  document) at the shared provider parse boundaries, but the secondary
+  loaders that parse their own files still aborted the whole scan with a
+  raw traceback: the GitHub local-action and resolved-callee parsers
+  (PR-reachable through a planted `action.yml` or composite-action ref),
+  the ArgoCD inline repo-blob parser, and the custom-rule (`--custom-rules`)
+  and policy (`--policy`) loaders. The scan loaders now degrade the file
+  like a parse failure (skip + warning); the user-config loaders fail fast
+  with a clear `CustomRuleError` / `PolicyError` instead of a traceback.
 
 ## [1.13.0] - 2026-06-09
 

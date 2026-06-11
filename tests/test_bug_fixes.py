@@ -717,3 +717,89 @@ def test_bug_j_deeply_nested_yaml_scan_does_not_crash(tmp_path):
     (wf / "deep.yml").write_text(deep, encoding="utf-8")
     ctx = GitHubContext.from_path(wf)  # must not raise
     WorkflowChecks(ctx).run()  # must not raise
+
+
+# ────────────────────────────────────────────────────────────────────────
+# Bug K — the auxiliary YAML loaders Bug J missed must also degrade.
+#   The Bug J sweep hardened the shared provider parse boundaries
+#   (_yaml_files + a few inline ones) but left the secondary loaders that
+#   parse their own files: the GitHub local-action / resolved-callee
+#   parsers (PR-reachable via a planted ``action.yml`` / composite ref),
+#   the ArgoCD inline repo-blob parser, and the custom-rule / policy
+#   loaders. Each caught yaml.YAMLError but not the RecursionError /
+#   MemoryError builtins. They now degrade (scan loaders) or fail fast
+#   with a clean domain error (the user-config loaders).
+# ────────────────────────────────────────────────────────────────────────
+
+def test_bug_k_local_action_deeply_nested_degrades(tmp_path):
+    from pipeline_check.core.checks.github.local_actions import (
+        _parse_action_yaml,
+    )
+
+    deep = "name: x\na:\n" + "".join("  " * i + "k:\n" for i in range(1, 600))
+    action = tmp_path / "action.yml"
+    action.write_text(deep, encoding="utf-8")
+    warnings: list[str] = []
+    assert _parse_action_yaml(action, warnings) is None  # must not raise
+    assert warnings and "too deeply nested" in warnings[0]
+
+
+def test_bug_k_argocd_repo_blob_deeply_nested_degrades(monkeypatch):
+    from pipeline_check.core.checks.argocd.rules import (
+        argocd005_repo_plaintext_secret as mod,
+    )
+
+    def _boom(_text):
+        raise RecursionError("maximum recursion depth exceeded")
+
+    # The blob loader uses the C-accelerated safe_load_yaml, which is
+    # iterative when libyaml is present; force the builtin to prove the
+    # except clause degrades regardless of the installed YAML backend.
+    monkeypatch.setattr(mod, "safe_load_yaml", _boom)
+    assert mod._scan_repo_blob("- url: https://x") == []  # must not raise
+
+
+def test_bug_k_resolver_callee_deeply_nested_degrades(monkeypatch):
+    from types import SimpleNamespace
+
+    from pipeline_check.core.checks.github import resolver as mod
+
+    def _boom(_text):
+        raise RecursionError("maximum recursion depth exceeded")
+
+    monkeypatch.setattr(mod, "safe_load_yaml", _boom)
+    r = mod.Resolver(fetcher=object())  # _build_workflow never touches it
+    pending = SimpleNamespace(
+        ref=SimpleNamespace(raw="acme/deep@v1"),
+        kind="action",
+        caller_path="wf.yml",
+    )
+    assert r._build_workflow(pending, b"runs:\n  using: composite") is None
+    assert any("too deeply nested" in f for f in r.stats.failures)
+
+
+def test_bug_k_custom_rules_deeply_nested_fails_clean(tmp_path):
+    import pytest
+
+    from pipeline_check.core.checks.custom.loader import (
+        CustomRuleError,
+        load_custom_rules,
+    )
+
+    deep = "a:\n" + "".join("  " * i + "k:\n" for i in range(1, 600))
+    rule_file = tmp_path / "rules.yml"
+    rule_file.write_text(deep, encoding="utf-8")
+    with pytest.raises(CustomRuleError, match="too deeply nested"):
+        load_custom_rules([str(rule_file)])
+
+
+def test_bug_k_policy_deeply_nested_fails_clean(tmp_path):
+    import pytest
+
+    from pipeline_check.core.policies import PolicyError, _load_policy_file
+
+    deep = "a:\n" + "".join("  " * i + "k:\n" for i in range(1, 600))
+    policy_file = tmp_path / "policy.yml"
+    policy_file.write_text(deep, encoding="utf-8")
+    with pytest.raises(PolicyError, match="too deeply nested"):
+        _load_policy_file(policy_file)

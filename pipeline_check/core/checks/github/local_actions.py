@@ -253,6 +253,17 @@ def _parse_action_yaml(
             f"{action_file}: {first_line}"
         )
         return None
+    except (RecursionError, MemoryError):
+        # A pathologically deep (or alias-expanding) action body can
+        # exhaust the recursive parser before ``yaml.YAMLError`` is
+        # raised; these builtins slip past the clause above. A scanned
+        # PR can plant such an ``action.yml``, so degrade the action like
+        # a parse failure instead of aborting the whole scan.
+        warnings.append(
+            f"[gha-local-actions] skipped {action_file} (document too "
+            "deeply nested or large to parse safely)"
+        )
+        return None
     if not isinstance(doc, dict):
         return None
     return doc
