@@ -960,6 +960,8 @@ STANDARD = Standard(
         "CC-032":   ["PS.1.1"],                        # secret echoed to CircleCI log
         "SCM-048":  ["PO.5.1"],                        # org codespace secrets scoped to all repos
         "SCM-049":  ["PS.1.1"],                        # classic PAT where fine-grained suffices
+        "ORG-001":  ["PS.1.1"],                        # org governance: 2FA not required org-wide
+        "ORG-002":  ["PS.1.1"],                        # org governance: default member permission too broad
         # GitLab-specific platform posture (SCM-050..053)
         "SCM-050":  ["PS.1.1"],                        # GitLab push rules: prevent_secrets
         "SCM-051":  ["PO.5.1", "PS.1.1"],              # GitLab push rules: committer-email check

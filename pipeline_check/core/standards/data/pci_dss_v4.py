@@ -966,6 +966,8 @@ STANDARD = Standard(
         "CC-032":   ["8.2.1", "10.3.2"],                  # secret echoed to CircleCI log
         "SCM-048":  ["7.2.5", "8.2.1"],                   # org codespace secrets scoped to all repos
         "SCM-049":  ["7.2.5", "8.2.1"],                   # classic PAT used where fine-grained suffices
+        "ORG-001":  ["8.2.1", "7.2.5"],                   # org governance: 2FA not required org-wide
+        "ORG-002":  ["7.2.1", "7.2.5"],                   # org governance: default member permission too broad
         "NPM-012":  ["8.2.1", "6.5.1"],                   # publish token missing restrictions
         # ── Azure Cloud (Entra ID / Storage / Key Vault / ACR / Monitor) ──
         "ENTRA-001": ["7.2.1", "7.2.5"],                  # SP assigned Global Administrator
