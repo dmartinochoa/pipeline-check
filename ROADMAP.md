@@ -794,12 +794,16 @@ product. Grouped by horizon; effort (S/M/L) and impact noted.
   allow-lists, org-wide branch-protection defaults, member 2FA / SSO) in
   one pass. The Legitify / Allstar buyer; rule pack and fetchers exist,
   needs org enumeration + ~10 org-level rules.
-- **Provenance verification as a gate (`verify-artifact <ref>`) (M, high).**
-  The tool detects missing signing (GHA-100) and reads attestation
-  content, but never verifies a real artifact. Run the slsa-verifier /
-  cosign flow against an OCI ref or release and report pass/fail. Closes
-  "you should sign" -> "this artifact is verifiably built by who it
-  claims". Reuses the `opa`/`helm` shell-out pattern.
+- ~~**Provenance verification as a gate (`verify-artifact <ref>`) (M, high).**~~
+  Shipped (`b9c33a00`). `pipeline_check verify-artifact REF` shells out to
+  `cosign` / `slsa-verifier` / `gh attestation` on PATH (`core/provenance.py`),
+  builds an injection-safe argv per tool, folds the outcomes into one verdict
+  (PASS / FAIL / INCONCLUSIVE) on the canonical exit-code contract (0/1/3),
+  and supports OCI + file artifacts, keyless + keyed cosign, `--json`, and a
+  per-tool timeout. A missing binary degrades to INCONCLUSIVE, never a crash,
+  mirroring the `opa`/`helm` pattern. Closed "you should sign" (GHA-100) into
+  "this artifact is verifiably built by who it claims". Covered by
+  `tests/test_provenance.py` + `tests/test_provenance_ref.py` (43 tests).
 - **Robustness / quality hardening sweep (M, med-high).** Audit every
   loader for the exception-class gap the RecursionError exposed
   (`RecursionError` / `MemoryError` / encoding cases slipping past
@@ -838,11 +842,13 @@ product. Grouped by horizon; effort (S/M/L) and impact noted.
   permissions (IAM simulator) and report "a fork PR on repo X can assume
   role Y that can delete prod". Turns a misconfig list into an
   executive-legible risk story no CI scanner tells.
-- **Shareable policy packs (`--policy-pack URL`) (M, med-high).** Ship
-  curated packs ("PCI-baseline", "SLSA-L3-gate", "fintech-strict") plus
-  a community registry. Turns the 18-framework compliance mapping into
-  distributable, sticky gates. Builds on `--policy` profiles + the Rego
-  / YAML loaders.
+- **Shareable policy packs (`--policy-pack URL`) (M, med-high).** Mostly
+  shipped: `policies.BUILTIN_PACKS` ships curated packs by name
+  (`--policy pr-gate` / `release-gate` / `slsa-l3` / `pci-dss` /
+  `supply-chain-strict`), and `--policy <https-url>` fetches a remote pack
+  through the same validated loader. Remaining: a discoverable community
+  registry (an index of third-party packs) rather than a single URL.
+  Turns the 18-framework compliance mapping into distributable, sticky gates.
 - **New providers (M each, med).** A HuggingFace / model-registry
   provider (ties to the AI pack), the enterprise CD systems with no
   scanner coverage (Harness / Spinnaker / Octopus), and a Backstage /
