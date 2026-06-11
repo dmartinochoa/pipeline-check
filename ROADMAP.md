@@ -725,15 +725,17 @@ product. Grouped by horizon; effort (S/M/L) and impact noted.
   `--min-confidence MEDIUM` yields a high-signal view. Signal-to-noise
   is the top reason scanners get ignored; cheapest precision win
   available. (Also tracked under "Hygiene-rule confidence tiering".)
-- **RecursionError on deeply-nested YAML (S, med).** A YAML file with
-  >= 327 levels of nesting crashes the scan with an unhandled
-  `RecursionError` (PyYAML's recursive parser, during `Scanner.__init__`)
-  across every YAML-based provider; the loaders catch `yaml.YAMLError`
-  but not the builtin. A malicious PR can weaponize it. Catch
-  `RecursionError` / `MemoryError` at the YAML-load boundary and degrade
-  the file to `parsed_ok=False`, mirroring the malformed-input hardening
-  already shipped (the crashing-rule / non-UTF-8 batch). (JSON-based and
-  Dockerfile providers are immune.)
+- ~~**RecursionError on deeply-nested YAML (S, med).**~~ Shipped. The
+  shared provider parse boundaries were hardened first (`ca924d1b`:
+  `_yaml_files` + the kubernetes / cloudformation / helm inline loaders
+  catch `RecursionError` / `MemoryError` and degrade the file like a
+  parse failure). A follow-up then closed the auxiliary loaders that
+  parse their own files and were still crashing the whole scan: the
+  GitHub local-action / resolved-callee parsers (PR-reachable through a
+  planted `action.yml` / composite ref), the ArgoCD inline repo-blob
+  parser, and the `--custom-rules` / `--policy` loaders (the last two
+  fail fast with a clean `CustomRuleError` / `PolicyError`). JSON-based
+  and Dockerfile providers are immune.
 - **Autofix hint for unsafe-only findings (S, low).** The terminal
   footer suggests `pipeline_check --fix --apply` even when the only
   available fixer is `unsafe` (bare `--fix` runs safe-only, so it
