@@ -1194,9 +1194,12 @@ queued here.**
   secret-exfil direction, and TAINT/GHA-003 only model
   ``${{ }}`` + ``$GITHUB_OUTPUT``.
 
-**Tier 2 (queued, strong + clean):**
+**Tier 2 (ALL SHIPPED on ``dev``, 2026-06-04):** the OIDC-trust-in-IaC
+batch (IAM-008 widened + IAM-009 Azure WIF + IAM-010 GCP WIF), K8S-044,
+ARGOCD-019, DF-031, GL-042, DEV-006 all landed. Descriptions kept below
+for provenance; struck through.
 
-- **OIDC-trust-in-IaC batch** (HIGH). The CI-to-cloud OIDC trust surface is
+- ~~**OIDC-trust-in-IaC batch** (HIGH).~~ The CI-to-cloud OIDC trust surface is
   uncovered when an infra repo is scanned directly (GHA-062 lives in the
   github provider, needs a sibling workflow, and covers only the AWS
   org-segment ``repo:org/*`` + GCP org-prefix ``startsWith``). Three new
@@ -1208,28 +1211,28 @@ queued here.**
   OIDC trust whose ``sub`` ref-segment is ``:*`` / ``:pull_request`` (today
   ``oidc_subject_pinned`` treats any non-bare-``*`` sub as pinned, so a fork
   PR mints the prod-role token). Sharpen the shared ``_iam_policy`` helper.
-- **K8S-044: admission webhook fail-open / unscoped mutating webhook**
-  (HIGH). ``failurePolicy: Ignore`` lets an attacker DoS a security webhook
+- ~~**K8S-044: admission webhook fail-open / unscoped mutating webhook**
+  (HIGH).~~ ``failurePolicy: Ignore`` lets an attacker DoS a security webhook
   cluster-wide; a ``MutatingWebhookConfiguration`` with no
   ``namespaceSelector`` matching pods is a tenant-escape primitive. Novel:
   no rule reads ``admissionregistration.k8s.io`` objects.
-- **ARGOCD-019: ``ignoreDifferences`` / ``syncOptions: Validate=false``**
-  (HIGH). Tells Argo CD to stop reconciling a field; an attacker mutates the
+- ~~**ARGOCD-019: ``ignoreDifferences`` / ``syncOptions: Validate=false``**
+  (HIGH).~~ Tells Argo CD to stop reconciling a field; an attacker mutates the
   live image / RBAC out-of-band while the dashboard stays "Synced/Healthy"
   (stealth persistence). Novel: ARGOCD-003 only covers prune/selfHeal; the
   per-Application ``spec.ignoreDifferences`` is unread (ARGOCD-018's comment
   only refers to the ``argocd-cm`` key).
-- **DF-031: ``COPY --from=<external image>`` not digest-pinned** (HIGH).
+- ~~**DF-031: ``COPY --from=<external image>`` not digest-pinned** (HIGH).~~
   Pulls an external image at build time, fully sidestepping DF-001's
   ``FROM``-only digest check (DF-008's safe example even uses the named-stage
   form). Resolve ``--from`` against earlier ``FROM ... AS <stage>`` names;
   flag the image-ref case via the existing ``image_pinning`` classifier.
-- **GL-042: ``include: component:`` without a pinned version** (HIGH). A
+- ~~**GL-042: ``include: component:`` without a pinned version** (HIGH).~~ A
   mutable ``@~latest`` / ``@main`` component re-points to attacker pipeline
   code run with ``CI_JOB_TOKEN``. Novel: GL-005 walks only ``project:`` /
   ``remote:`` (GL-041 is the apply-RCE rule already on a branch).
-- **DEV-006: ``.vscode/settings.json`` exec-path key points at a repo-local
-  binary** (HIGH). ``git.path`` / ``python.defaultInterpreterPath`` /
+- ~~**DEV-006: ``.vscode/settings.json`` exec-path key points at a repo-local
+  binary** (HIGH).~~ ``git.path`` / ``python.defaultInterpreterPath`` /
   ``*.path`` set to an in-repo binary is RCE the moment a dev opens the
   clone. Novel: the devenv loader reads ``tasks.json`` but never
   ``settings.json``.
