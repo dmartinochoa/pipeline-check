@@ -4624,15 +4624,31 @@ def _build_gate_trailer(
     effective = list(gate.effective)
     if not effective:
         return None
-    from .core.autofix import available_fixers
+    from .core.autofix import SAFE, available_fixers, fixer_safety
     fixers = set(available_fixers())
     fixable = [f for f in effective if f.check_id.upper() in fixers]
     n_total = len(effective)
     if fixable:
-        message = (
-            f"{len(fixable)} of {n_total} failing findings "
-            f"are autofixable; run `pipeline_check --fix --apply` to apply them"
-        )
+        n_safe = sum(1 for f in fixable if fixer_safety(f.check_id.upper()) == SAFE)
+        if n_safe:
+            # Bare ``--fix`` is safe-only; advertise what it will actually
+            # write, and point the unsafe remainder at the unsafe tier.
+            message = (
+                f"{n_safe} of {n_total} failing findings "
+                f"are autofixable; run `pipeline_check --fix --apply` to apply them"
+            )
+            n_unsafe = len(fixable) - n_safe
+            if n_unsafe:
+                message += f" (+{n_unsafe} more via `--fix unsafe --apply`)"
+        else:
+            # Every available fixer is unsafe-tier, so bare ``--fix`` would
+            # write nothing; point at the unsafe tier explicitly so the
+            # suggested command actually changes the tree.
+            message = (
+                f"{len(fixable)} of {n_total} failing findings are autofixable "
+                f"(unsafe tier); run `pipeline_check --fix unsafe --apply` to "
+                f"apply them"
+            )
     elif not baseline_path and not baseline_from_git:
         message = (
             "no baseline configured; run `pipeline_check "

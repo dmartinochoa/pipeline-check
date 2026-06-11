@@ -736,11 +736,12 @@ product. Grouped by horizon; effort (S/M/L) and impact noted.
   parser, and the `--custom-rules` / `--policy` loaders (the last two
   fail fast with a clean `CustomRuleError` / `PolicyError`). JSON-based
   and Dockerfile providers are immune.
-- **Autofix hint for unsafe-only findings (S, low).** The terminal
-  footer suggests `pipeline_check --fix --apply` even when the only
-  available fixer is `unsafe` (bare `--fix` runs safe-only, so it
-  modifies nothing). Suggest `--fix unsafe --apply` when the finding's
-  only fixer is unsafe.
+- ~~**Autofix hint for unsafe-only findings (S, low).**~~ Shipped. The
+  terminal report footer (`_build_fix_tip`) was already unsafe-aware; the
+  follow-up brought the failing-gate trailer (`_build_gate_trailer`) to
+  match, so neither surface suggests a no-op `--fix --apply` when the only
+  available fixer is unsafe-tier. Both now point at `--fix unsafe --apply`
+  for an unsafe-only set and count only the safe fixers otherwise.
 - ~~**Grade-vs-gate clarity (S, low).**~~ Shipped in v1.13.0 (`48ee63e3`).
   When the gate fails with a strong grade (A or B), the stderr gate
   summary now adds a one-line note that the grade is overall posture
