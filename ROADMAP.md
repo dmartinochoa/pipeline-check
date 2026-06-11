@@ -790,15 +790,17 @@ product. Grouped by horizon; effort (S/M/L) and impact noted.
   provider's include-pinning checks; defer unless demand appears.
 - **Live org-wide SCM governance (`--scm-org ORG`) (M, high).** Started
   2026-06-11: the new `scm_org` provider (`--pipeline scm_org --scm-org ORG`,
-  GitHub-first, prefix ORG-) ships the org-level rules **ORG-001** (org-wide
-  2FA not required) and **ORG-002** (default member permission write/admin),
-  reading `GET /orgs/{org}` over the existing SCM REST fetcher. Provider
-  count 37 -> 38. **Remaining:** more org-level rules (ORG-003 Actions
-  allow-list, member SSO / outside-collaborator policy, org-wide
-  branch-protection defaults, org-secret scoping) and the per-repo fan-out
-  (run the 55-rule per-repo pack across every repo the org enumerates, the
-  half that needs repo enumeration + the fleet config-clone path). The
-  Legitify / Allstar buyer.
+  GitHub-first, prefix ORG-) ships **ORG-001** (org-wide 2FA not required),
+  **ORG-002** (default member permission write/admin), **ORG-003** (no
+  Actions allow-list, `allowed_actions: all`), and **ORG-004** (default
+  workflow `GITHUB_TOKEN` is read-write). Reads `GET /orgs/{org}` +
+  `/actions/permissions` + `/actions/permissions/workflow` over the existing
+  SCM REST fetcher. Provider count 37 -> 38. **Remaining:** more org-level
+  rules (member SSO / outside-collaborator policy, org-wide branch-protection
+  defaults, org-secret scoping, GITHUB_TOKEN can-approve-PRs) and the
+  per-repo fan-out (run the 55-rule per-repo pack across every repo the org
+  enumerates, the half that needs repo enumeration + the fleet config-clone
+  path). The Legitify / Allstar buyer.
 - ~~**Provenance verification as a gate (`verify-artifact <ref>`) (M, high).**~~
   Shipped (`b9c33a00`). `pipeline_check verify-artifact REF` shells out to
   `cosign` / `slsa-verifier` / `gh attestation` on PATH (`core/provenance.py`),
