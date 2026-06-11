@@ -741,9 +741,13 @@ product. Grouped by horizon; effort (S/M/L) and impact noted.
   available fixer is `unsafe` (bare `--fix` runs safe-only, so it
   modifies nothing). Suggest `--fix unsafe --apply` when the finding's
   only fixer is unsafe.
-- **Grade-vs-gate clarity (S, low).** A scan can print "Grade A" while
-  the gate fails (grade is overall posture %, the gate is the blocking
-  policy on CRITICAL). Add a one-line clarifier when the two disagree.
+- ~~**Grade-vs-gate clarity (S, low).**~~ Shipped in v1.13.0 (`48ee63e3`).
+  When the gate fails with a strong grade (A or B), the stderr gate
+  summary now adds a one-line note that the grade is overall posture
+  (checks weighted by severity) while the gate is a separate blocking
+  policy. A low grade failing the gate is unsurprising, so the note is
+  suppressed there. (`_emit_gate_summary`, covered by
+  `test_cli_branches.py::TestGateSummary`.)
 
 **Sharpen the existing edge (M-L):**
 
