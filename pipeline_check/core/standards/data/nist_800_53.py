@@ -144,6 +144,7 @@ STANDARD = Standard(
         "GLRUN-002": ["CM-6", "SI-7", "SA-11"],  # gitlab forensics: fork merge-request pipeline executed
         "GLRUN-003": ["CM-6", "SI-7", "SA-11"],  # gitlab forensics: secret leaked in fork pipeline trace
         "GLRUN-004": ["CM-6", "SI-7", "SA-11", "AC-6"],  # gitlab forensics: fork pipeline minted a cloud OIDC token
+        "GLRUN-005": ["CM-6", "SI-7", "SA-11", "SC-7"],  # gitlab forensics: fork pipeline ran on a self-managed runner
         "RUN-003":  ["CM-6", "SI-7", "SA-11"],           # forensics: secret leaked in run logs
         "RUN-004":  ["CM-6", "SI-7", "SA-11", "AC-6"],   # forensics: fork run minted a cloud OIDC token
         "RUN-005":  ["CM-6", "SI-7", "SA-11", "SC-7"],   # forensics: fork run on a self-hosted runner

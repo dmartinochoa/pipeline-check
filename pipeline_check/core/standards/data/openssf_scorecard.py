@@ -230,6 +230,7 @@ STANDARD = Standard(
         "GLRUN-002": ["Dangerous-Workflow"],  # gitlab forensics: fork merge-request pipeline executed
         "GLRUN-003": ["Dangerous-Workflow"],  # gitlab forensics: secret leaked in fork pipeline trace
         "GLRUN-004": ["Dangerous-Workflow"],  # gitlab forensics: fork pipeline minted a cloud OIDC token
+        "GLRUN-005": ["Dangerous-Workflow"],  # gitlab forensics: fork pipeline ran on a self-managed runner
         "RUN-003":  ["Dangerous-Workflow"],
         "RUN-004":  ["Dangerous-Workflow"],
         "RUN-005":  ["Dangerous-Workflow"],

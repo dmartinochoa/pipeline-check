@@ -155,6 +155,7 @@ STANDARD = Standard(
         "GLRUN-002": ["PO.5.1", "PW.9.1"],  # gitlab forensics: fork merge-request pipeline executed
         "GLRUN-003": ["PO.5.1", "PW.9.1"],  # gitlab forensics: secret leaked in fork pipeline trace
         "GLRUN-004": ["PO.5.1", "PW.9.1"],  # gitlab forensics: fork pipeline minted a cloud OIDC token
+        "GLRUN-005": ["PO.5.1", "PW.9.1"],  # gitlab forensics: fork pipeline ran on a self-managed runner
         "RUN-003":  ["PO.5.1", "PW.9.1"],              # forensics: secret leaked in run logs
         "RUN-004":  ["PO.5.1", "PW.9.1"],              # forensics: fork run minted a cloud OIDC token
         "RUN-005":  ["PO.5.1", "PW.9.1"],              # forensics: fork run on a self-hosted runner

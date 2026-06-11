@@ -24,7 +24,7 @@ pipeline_check --pipeline gitlab_runs --scm-repo group/project \
 
 ## What it covers
 
-4 checks · 0 have an autofix patch (``--fix``).
+5 checks · 0 have an autofix patch (``--fix``).
 
 | Check | Title | Severity | Fix |
 |-------|-------|----------|-----|
@@ -32,6 +32,7 @@ pipeline_check --pipeline gitlab_runs --scm-repo group/project \
 | [GLRUN-002](#glrun-002) | Fork merge-request pipeline executed in run history | <span class="pg-sev pg-sev--high">HIGH</span> |  |
 | [GLRUN-003](#glrun-003) | Secret leaked in a fork pipeline's job trace | <span class="pg-sev pg-sev--high">HIGH</span> |  |
 | [GLRUN-004](#glrun-004) | Fork pipeline minted a cloud OIDC token | <span class="pg-sev pg-sev--high">HIGH</span> |  |
+| [GLRUN-005](#glrun-005) | Fork pipeline ran on a self-managed runner | <span class="pg-sev pg-sev--high">HIGH</span> |  |
 
 ---
 
@@ -110,6 +111,26 @@ Only evaluated with ``--audit-runs-logs``. Reuses the fork-pipeline job traces G
 **Recommended action**
 
 Treat this as untrusted code that reached cloud federation: rotate / review the federated role's recent activity and assume the pipeline could act as that role. Restrict the cloud trust policy so a fork / merge-request ref cannot assume it (bind the subject to your protected branches and the project's own ID-token audience), and keep ``id_tokens:`` jobs out of fork merge-request pipelines.
+
+</div>
+
+</div>
+
+<div class="pg-rule pg-rule--high" markdown>
+
+## GLRUN-005: Fork pipeline ran on a self-managed runner { #glrun-005 }
+
+<div class="pg-rule__tags">
+<span class="pg-sev pg-sev--high">HIGH</span> <span class="pg-tag pg-tag--owasp">CICD-SEC-4</span>
+</div>
+
+Only evaluated with ``--audit-runs-logs``. Reads the ``runner`` embedded in each fork-pipeline job (the same ``/jobs`` page GLRUN-003 / GLRUN-004 list) and flags a fork pipeline whose jobs ran on a self-managed runner (``is_shared: false``, i.e. a ``project_type`` / ``group_type`` runner the owner operates). GitLab.com ``instance_type`` shared runners are ephemeral and not flagged. Independent of secrets / OIDC, so it catches a plain fork MR pipeline that merely executed on your own infrastructure. The fork-pipeline fetch is bounded to the most recent pipelines.
+
+<div class="pg-rule__rec" markdown>
+
+**Recommended action**
+
+Do not run fork merge-request code on self-managed runners. In the project / group CI settings, disable shared-and-specific runners for fork MR pipelines, or require maintainer approval before a pipeline runs for a fork merge request, and run fork-triggered pipelines on ephemeral shared runners instead. If self-managed runners are required, isolate them (single-use VMs, a locked-down network, no standing cloud credentials) and tag them so only trusted pipelines target them.
 
 </div>
 

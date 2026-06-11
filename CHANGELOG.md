@@ -12,6 +12,19 @@ release commit collapses this section into `## [X.Y.Z] - <date>`.
 
 ### Added
 
+- **GLRUN-005: a fork pipeline ran on a self-managed runner (GitLab run
+  forensics).** The GitLab analog of the `runs` provider's RUN-005, behind
+  `--audit-runs-logs`. A fork merge-request pipeline executes untrusted
+  contributor code; when its jobs run on a self-managed (non-shared) runner
+  (`runner.is_shared == false`, i.e. a `project_type` / `group_type` runner
+  the owner operates), that code runs on infrastructure you control:
+  command execution on the runner host, a network-pivot foothold, and
+  (runners aren't ephemeral by default) persistence into later jobs.
+  Detection reads the `runner` embedded in each fork-pipeline job (the same
+  `/jobs` page GLRUN-003/004 already list, so no extra API calls) and works
+  even when the fetcher can't download traces, since it's metadata not log
+  content. GitLab.com `instance_type` shared runners are ephemeral and not
+  flagged. The `gitlab_runs` provider now ships 5 checks (GLRUN-001..005).
 - **``harness`` provider: Harness CI/CD pipeline scanning (HARNESS-001 ..
   HARNESS-011).** A new ``--pipeline harness`` parses Harness pipeline YAML
   (the Git Experience / pipeline-as-code form) and audits it like the other

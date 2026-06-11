@@ -330,3 +330,80 @@ class TestGLRun003And004:
         )
         assert ctx.trace_leaks == {}
         assert any("job-trace scanning needs" in w for w in ctx.warnings)
+
+
+# ── GLRUN-005: fork pipeline ran on a self-managed runner ─────────────────
+
+class TestGLRun005:
+    def test_skip_note_when_not_resolved(self):
+        ctx = _ctx(_pipeline(1, "merge_request_event"))
+        f = _for(_findings(ctx), "GLRUN-005")
+        assert f and all(x.passed for x in f)
+        assert "not enabled" in f[0].description
+
+    def test_self_managed_runner_fires(self):
+        ctx = _ctx_traces(
+            80,
+            [{"id": 800, "runner": {"id": 5, "description": "prod-vm",
+                                    "is_shared": False,
+                                    "runner_type": "project_type"}}],
+            {},
+        )
+        assert 80 in ctx.self_managed_runner_pipelines
+        failing = [f for f in _for(_findings(ctx), "GLRUN-005") if not f.passed]
+        assert len(failing) == 1
+        assert failing[0].severity == Severity.HIGH
+        assert "#pipeline/80" in failing[0].resource
+        assert "prod-vm" in failing[0].description
+
+    def test_group_runner_type_fires_without_is_shared(self):
+        # ``is_shared`` may be absent; runner_type alone classifies it.
+        ctx = _ctx_traces(
+            81, [{"id": 801, "runner": {"id": 6, "runner_type": "group_type"}}],
+            {},
+        )
+        assert 81 in ctx.self_managed_runner_pipelines
+        failing = [f for f in _for(_findings(ctx), "GLRUN-005") if not f.passed]
+        assert len(failing) == 1
+        assert "runner #6" in failing[0].description
+
+    def test_shared_instance_runner_passes(self):
+        ctx = _ctx_traces(
+            82,
+            [{"id": 802, "runner": {"id": 7, "is_shared": True,
+                                    "runner_type": "instance_type"}}],
+            {},
+        )
+        assert ctx.self_managed_runner_pipelines == {}
+        f = _for(_findings(ctx), "GLRUN-005")
+        assert f and all(x.passed for x in f)
+
+    def test_missing_runner_block_passes(self):
+        ctx = _ctx_traces(83, [{"id": 803}], {})
+        assert ctx.self_managed_runner_pipelines == {}
+        f = _for(_findings(ctx), "GLRUN-005")
+        assert f and all(x.passed for x in f)
+
+    def test_fires_without_fetch_text(self):
+        # Runner exposure is job metadata, so it's detected even when the
+        # fetcher can't download traces (GLRUN-003/004 would be skipped).
+        iid = 7
+        fpid = 84
+        mapping = {
+            _PIPELINES_PATH: [],
+            _mrs_path(): [_mr(iid, fork=True)],
+            _mr_pipelines_path(iid): [_pipeline(fpid, "merge_request_event")],
+            _jobs_path(fpid): [{"id": 840, "runner": {"id": 8,
+                                                      "is_shared": False}}],
+        }
+        ctx = GitLabRunsContext.for_project(
+            _PROJECT, NoTextFetcher(mapping), resolve_forks=True,
+        )
+        assert fpid in ctx.self_managed_runner_pipelines
+        failing = [f for f in _for(_findings(ctx), "GLRUN-005") if not f.passed]
+        assert len(failing) == 1
+
+    def test_owasp_mapping(self):
+        from pipeline_check.core.standards.registry import resolve_for_check
+        controls = {c.control_id for c in resolve_for_check("GLRUN-005")}
+        assert "CICD-SEC-4" in controls

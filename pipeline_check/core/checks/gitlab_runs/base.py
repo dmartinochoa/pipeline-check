@@ -19,6 +19,7 @@ import json
 import re
 import urllib.parse
 import urllib.request
+from collections.abc import Callable
 from dataclasses import dataclass, field
 from typing import Any, Protocol
 
@@ -171,6 +172,14 @@ class GitLabRunsContext:
     #: fork pipeline_ids whose job traces show a cloud OIDC token was minted
     #: (only populated under the deep pass); GLRUN-004 reports it.
     oidc_mint_pipelines: set[int] = field(default_factory=set)
+    #: fork pipeline_id -> sorted labels of the self-managed (non-shared)
+    #: runners its jobs executed on. Read from job metadata (the jobs API
+    #: embeds the runner), so it's populated under the deep pass even when
+    #: the fetcher can't download traces; GLRUN-005 reports it. Untrusted
+    #: fork code ran on infrastructure the project / group owner operates.
+    self_managed_runner_pipelines: dict[int, list[str]] = field(
+        default_factory=dict
+    )
 
     @property
     def slug(self) -> str:
@@ -263,58 +272,90 @@ class GitLabRunsContext:
     def _scan_fork_traces(
         self, fetcher: GitLabFetcher, encoded: str, fetch_limit: int,
     ) -> None:
-        """Download + scan fork pipelines' job traces for leaked secrets and
-        cloud OIDC token minting (GLRUN-003 / GLRUN-004).
+        """Inspect fork pipelines' jobs for run-forensic signals.
 
         Scoped to the fork pipelines resolved above (the untrusted-code
-        surface) and bounded to *fetch_limit* of them. For each, lists its
-        jobs and reads each job's ``/trace`` (plain text), scanning for
-        secret-shaped strings that leaked past GitLab's variable masking and
-        for cloud-federation OIDC markers. Needs a fetcher exposing
-        ``fetch_text`` (the live one does; an offline fixture fetcher may
-        not). ``find_secret_values`` is imported lazily so a metadata-only
-        scan never pays for the detector catalog.
+        surface) and bounded to *fetch_limit* of them. Each fork pipeline's
+        jobs are listed once (one ``/jobs`` page); from that single fetch:
+
+        - **GLRUN-005** reads each job's embedded ``runner`` and records
+          any self-managed (non-shared) runner the fork code ran on. This
+          is job metadata, so it works with any fetcher.
+        - **GLRUN-003 / GLRUN-004** download each job's ``/trace`` (plain
+          text) and scan for secret-shaped strings that leaked past
+          GitLab's variable masking and for cloud-federation OIDC markers.
+          That needs a fetcher exposing ``fetch_text`` (the live one does;
+          an offline fixture fetcher may not), so it's skipped (with a
+          warning) when the fetcher can't read traces.
         """
         fetch_text = getattr(fetcher, "fetch_text", None)
-        if not callable(fetch_text):
-            if self.fork_pipelines:
-                self.warnings.append(
-                    "[gitlab-runs] job-trace scanning needs a fetcher that "
-                    "can download traces; the configured fetcher cannot, so "
-                    "GLRUN-003 / GLRUN-004 were skipped."
-                )
-            return
-        from .._secrets import find_secret_values
+        can_trace = callable(fetch_text)
+        if not can_trace and self.fork_pipelines:
+            self.warnings.append(
+                "[gitlab-runs] job-trace scanning needs a fetcher that can "
+                "download traces; the configured fetcher cannot, so "
+                "GLRUN-003 / GLRUN-004 were skipped (runner exposure, "
+                "GLRUN-005, still evaluated from job metadata)."
+            )
         for rec in self.fork_pipelines[:fetch_limit]:
             jobs = fetcher.fetch(
                 f"projects/{encoded}/pipelines/{rec.pipeline_id}/jobs?per_page=100"
             )
             if not isinstance(jobs, list):
                 continue
-            leaks: set[str] = set()
-            oidc = False
+            runners: set[str] = set()
             for job in jobs:
                 if not isinstance(job, dict):
                     continue
-                jid = job.get("id")
-                if not isinstance(jid, int):
-                    continue
-                text = fetch_text(f"projects/{encoded}/jobs/{jid}/trace")
-                if not text:
-                    continue
-                leaks.update(find_secret_values([text]))
-                if not oidc and _GITLAB_OIDC_MARKERS_RE.search(text):
-                    oidc = True
-            if leaks:
-                self.trace_leaks[rec.pipeline_id] = sorted(leaks)
-            if oidc:
-                self.oidc_mint_pipelines.add(rec.pipeline_id)
+                label = _self_managed_runner_label(job.get("runner"))
+                if label:
+                    runners.add(label)
+            if runners:
+                self.self_managed_runner_pipelines[rec.pipeline_id] = sorted(runners)
+            # ``callable(...)`` here (vs the ``can_trace`` bool) lets the type
+            # checker narrow ``fetch_text`` away from ``None`` at the call.
+            if callable(fetch_text):
+                self._scan_pipeline_traces(fetch_text, encoded, rec, jobs)
         if len(self.fork_pipelines) > fetch_limit:
             self.warnings.append(
                 f"[gitlab-runs] {self.project}: scanned the {fetch_limit} "
                 f"most recent fork pipeline(s) of {len(self.fork_pipelines)} "
-                "for trace leaks; older fork pipelines were not fetched."
+                "for runner exposure and trace leaks; older fork pipelines "
+                "were not fetched."
             )
+
+    def _scan_pipeline_traces(
+        self,
+        fetch_text: Callable[[str], str | None],
+        encoded: str,
+        rec: GitLabPipelineRecord,
+        jobs: list[Any],
+    ) -> None:
+        """Download + scan one fork pipeline's job traces (GLRUN-003/004).
+
+        Reuses the *jobs* list already fetched by :meth:`_scan_fork_traces`
+        (no extra ``/jobs`` call). ``find_secret_values`` is imported lazily
+        so a metadata-only scan never pays for the detector catalog.
+        """
+        from .._secrets import find_secret_values
+        leaks: set[str] = set()
+        oidc = False
+        for job in jobs:
+            if not isinstance(job, dict):
+                continue
+            jid = job.get("id")
+            if not isinstance(jid, int):
+                continue
+            text = fetch_text(f"projects/{encoded}/jobs/{jid}/trace")
+            if not text:
+                continue
+            leaks.update(find_secret_values([text]))
+            if not oidc and _GITLAB_OIDC_MARKERS_RE.search(text):
+                oidc = True
+        if leaks:
+            self.trace_leaks[rec.pipeline_id] = sorted(leaks)
+        if oidc:
+            self.oidc_mint_pipelines.add(rec.pipeline_id)
 
 
 def _to_record(entry: Any) -> GitLabPipelineRecord | None:
@@ -335,6 +376,40 @@ def _to_record(entry: Any) -> GitLabPipelineRecord | None:
         created_at=_str(entry.get("created_at")),
         username=_str(user.get("username")),
     )
+
+
+def _self_managed_runner_label(runner: Any) -> str | None:
+    """Return a short label if *runner* is a self-managed runner, else None.
+
+    The GitLab jobs API embeds the runner that executed each job. A runner
+    with ``is_shared: false`` (equivalently a ``runner_type`` of
+    ``project_type`` / ``group_type``) is one the project / group owner
+    operates: the GitLab analog of a GitHub self-hosted runner. Fork code
+    that ran on it executed on infrastructure the owner controls. GitLab.com
+    ``instance_type`` shared runners are ephemeral and not flagged. A
+    missing / non-dict runner block (older GitLab, or a job not yet picked
+    up by a runner) yields ``None`` so unknown runners aren't over-flagged.
+    """
+    if not isinstance(runner, dict):
+        return None
+    runner_type = runner.get("runner_type")
+    self_managed = (
+        runner.get("is_shared") is False
+        or runner_type in ("project_type", "group_type")
+    )
+    if not self_managed:
+        return None
+    desc = runner.get("description")
+    rid = runner.get("id")
+    if isinstance(desc, str) and desc.strip():
+        label = desc.strip()
+    elif isinstance(rid, int):
+        label = f"runner #{rid}"
+    else:
+        label = "self-managed runner"
+    if isinstance(runner_type, str) and runner_type:
+        label = f"{label} ({runner_type})"
+    return label
 
 
 def project_resource(ctx: GitLabRunsContext) -> str:
