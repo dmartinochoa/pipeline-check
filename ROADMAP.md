@@ -757,19 +757,43 @@ product. Grouped by horizon; effort (S/M/L) and impact noted.
 
 **Sharpen the existing edge (M-L):**
 
-- **Runtime / run-log forensics (`--audit-runs`) (L, very high).** Pull
+- **Runtime / run-log forensics (`--audit-runs`) (mostly shipped).** Pull
   recent Actions / GitLab pipeline run logs + metadata via API and check
-  what actually executed, not just what the config could: workflows that
-  ran on `pull_request_target` (shipped, RUN-001/002), jobs that minted
-  OIDC tokens (shipped, RUN-004: fork run minted a cloud OIDC token),
-  secret-shaped strings echoed in logs (shipped, RUN-003), fork code on a
-  self-hosted runner (shipped, RUN-005). Still open: GitLab pipeline run
-  logs, and runtime-resolved third-party actions (tag-repoint detection). The
-  2025 tj-actions/changed-files (CVE-2025-30066) and GhostAction
-  incidents were visible in run history first. Every competitor is purely
-  static; this is the biggest true capability gap and the most defensible
-  differentiation. Builds on the SCM REST fetchers + the `runs` provider's
-  bounded log-download path.
+  what actually executed, not just what the config could. GitHub `runs`
+  provider: workflows that ran on `pull_request_target` (RUN-001/002), jobs
+  that minted OIDC tokens (RUN-004), secret-shaped strings echoed in logs
+  (RUN-003), fork code on a self-hosted runner (RUN-005), a compromised
+  action executed via tag-repoint (RUN-006), an unpinned third-party action
+  that ran with secrets (RUN-007). **GitLab pipeline run logs SHIPPED**
+  (v1.13.0): the `gitlab_runs` provider mirrors RUN-001..004 as
+  GLRUN-001..004 (MR pipeline / fork-MR pipeline / secret-in-trace /
+  OIDC-mint-in-trace, the deep passes behind `--audit-runs-logs`) plus the
+  AC-042 fork-pipeline-exfil chain. The 2025 tj-actions/changed-files
+  (CVE-2025-30066) and GhostAction incidents were visible in run history
+  first. Builds on the SCM REST fetchers + the `runs` provider's bounded
+  log-download path.
+
+  **Scoped next increment (2026-06-11): GLRUN-005, fork pipeline ran on a
+  self-managed runner** (the RUN-005 analog; HIGH, behind `--audit-runs-logs`).
+  GitLab's jobs API returns each job's `runner` object, and
+  `GitLabRunsContext._scan_fork_traces` already fetches
+  `/pipelines/:pid/jobs` per fork pipeline, so detecting a fork pipeline
+  whose jobs ran on a non-shared runner (`runner.is_shared == false`, i.e.
+  a `project_type` / `group_type` self-managed runner) needs **no new HTTP
+  calls**, just an inspection of the job dicts already in hand. That's
+  untrusted fork code executing on infrastructure the project owner
+  controls, the GitLab equivalent of RUN-005's self-hosted-runner risk.
+  New context field `self_managed_runner_pipelines: dict[pid, list[str]]`,
+  a `glrun005_fork_runner_exposure.py` rule emitting per-pipeline findings
+  via `pipeline_resource`, and the standard GLRUN wiring (rule + test in
+  `tests/gitlab_runs/` + `EXPECTED_RULE_COUNTS["gitlab_runs"] 4->5` +
+  owasp/standards mirror of RUN-005's mappings + provider-doc regen + the
+  total-check + provider-table count surfaces). Effort: S.
+  **Deferred (bigger / lower value):** a RUN-006/007 analog (unpinned remote
+  `include:` / CI-component ran in a pipeline). GitLab has no compromised-code
+  IOC registry (no RUN-006 analog), and the RUN-007 analog needs a new fetch
+  of the pipeline's resolved config + parse, overlapping the static GitLab
+  provider's include-pinning checks; defer unless demand appears.
 - **Live org-wide SCM governance (`--scm-org ORG`) (M, high).** The
   55-rule SCM pack runs one repo at a time today; fleet clones configs.
   Enumerate every repo + org-level settings (org-secret scoping, Actions
