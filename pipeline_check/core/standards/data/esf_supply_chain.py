@@ -440,6 +440,8 @@ STANDARD = Standard(
         "ORG-002":  ["ESF-C-LEAST-PRIV"],           # org governance: default member permission too broad
         "ORG-003":  ["ESF-S-VERIFY-DEPS"],          # org governance: no Actions allow-list (any action runs)
         "ORG-004":  ["ESF-C-LEAST-PRIV", "ESF-D-TOKEN-HYGIENE"],  # org governance: default workflow token is write
+        "ORG-005":  ["ESF-D-CODE-REVIEW"],          # org governance: Actions can approve PRs (review bypass)
+        "ORG-006":  ["ESF-D-SECRETS"],              # org governance: Actions secret scoped to all repos
         "SCM-002":  ["ESF-D-CODE-REVIEW"],          # required reviews missing
         "SCM-004":  ["ESF-D-SECRETS"],              # secret scanning disabled
         "SCM-005":  ["ESF-S-VULN-MGMT"],            # Dependabot security updates off

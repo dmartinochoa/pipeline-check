@@ -13,7 +13,7 @@ release commit collapses this section into `## [X.Y.Z] - <date>`.
 ### Added
 
 - **``scm_org`` provider: GitHub organization-wide governance (ORG-001 ..
-  ORG-004).** A new ``--pipeline scm_org --scm-org ORG`` audits the
+  ORG-006).** A new ``--pipeline scm_org --scm-org ORG`` audits the
   org-admin settings that govern every repository at once, complementing
   the per-repo ``scm`` provider, over the same GitHub REST fetcher (token
   from ``--gh-token`` / ``$GITHUB_TOKEN``). **ORG-001** (HIGH) flags an org
@@ -25,10 +25,14 @@ release commit collapses this section into `## [X.Y.Z] - <date>`.
   every workflow can pull in any third-party action by a mutable tag (the
   tj-actions / reviewdog class) org-wide. **ORG-004** (HIGH) flags an org
   whose default ``GITHUB_TOKEN`` is read-write, so every workflow gets a
-  write token unless it narrows the scope itself. Each rule passes with an
-  "unavailable" note when the token lacks the scope to read the setting, so
-  a low-scope token never produces a false finding. The provider count is
-  now 38.
+  write token unless it narrows the scope itself. **ORG-005** (HIGH) flags an
+  org that lets GitHub Actions approve pull requests, so a workflow can
+  self-approve a PR and satisfy a required-review gate with no human. **ORG-006**
+  (HIGH) flags an org Actions secret scoped to ``All repositories``, readable
+  by every workflow in every repo (the SCM-048 analog at org level). Each
+  rule passes with an "unavailable" note when the token lacks the scope to
+  read the setting, so a low-scope token never produces a false finding. The
+  provider count is now 38.
 - **GLRUN-005: a fork pipeline ran on a self-managed runner (GitLab run
   forensics).** The GitLab analog of the `runs` provider's RUN-005, behind
   `--audit-runs-logs`. A fork merge-request pipeline executes untrusted

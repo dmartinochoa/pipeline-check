@@ -37,8 +37,11 @@ class SCMOrgContext:
     actions_permissions: dict[str, Any] | None = None
     #: ``GET /orgs/{org}/actions/permissions/workflow`` body
     #: (``default_workflow_permissions`` / ``can_approve_pull_request_reviews``),
-    #: or ``None`` when unavailable. ORG-004.
+    #: or ``None`` when unavailable. ORG-004 / ORG-005.
     actions_workflow_permissions: dict[str, Any] | None = None
+    #: ``GET /orgs/{org}/actions/secrets`` body (``{total_count, secrets:
+    #: [{name, visibility, ...}]}``), or ``None`` when unavailable. ORG-006.
+    actions_secrets: dict[str, Any] | None = None
     warnings: list[str] = field(default_factory=list)
     files_scanned: int = 0   # repurposed: 1 when any org endpoint was fetched
     files_skipped: int = 0
@@ -75,10 +78,14 @@ class SCMOrgContext:
         awp = fetcher.fetch(f"orgs/{org}/actions/permissions/workflow")
         if isinstance(awp, dict):
             ctx.actions_workflow_permissions = awp
+        sec = fetcher.fetch(f"orgs/{org}/actions/secrets")
+        if isinstance(sec, dict):
+            ctx.actions_secrets = sec
         fetched_any = any((
             ctx.org_meta is not None,
             ctx.actions_permissions is not None,
             ctx.actions_workflow_permissions is not None,
+            ctx.actions_secrets is not None,
         ))
         ctx.files_scanned = 1 if fetched_any else 0
         ctx.files_skipped = 0 if fetched_any else 1

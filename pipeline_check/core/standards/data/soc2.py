@@ -941,6 +941,8 @@ STANDARD = Standard(
         "ORG-002":  ["CC6.1", "CC6.3"],          # org governance: default member permission too broad
         "ORG-003":  ["CC8.1"],                   # org governance: no Actions allow-list (any action runs)
         "ORG-004":  ["CC6.1", "CC6.3"],          # org governance: default workflow token is write
+        "ORG-005":  ["CC8.1"],                   # org governance: Actions can approve PRs (review bypass)
+        "ORG-006":  ["CC6.1"],                   # org governance: Actions secret scoped to all repos
         "NPM-012":  ["CC6.1", "CC8.1"],          # publish token missing restrictions
         # ── SCM posture (governance via the platform REST API) ──────
         # Branch protection / review controls map to CC8.1 (Change

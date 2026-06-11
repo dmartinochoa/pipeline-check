@@ -22,7 +22,7 @@ pipeline_check --pipeline scm_org --scm-org my-org --gh-token "$GITHUB_TOKEN"
 
 ## What it covers
 
-4 checks · 0 have an autofix patch (``--fix``).
+6 checks · 0 have an autofix patch (``--fix``).
 
 | Check | Title | Severity | Fix |
 |-------|-------|----------|-----|
@@ -30,6 +30,8 @@ pipeline_check --pipeline scm_org --scm-org my-org --gh-token "$GITHUB_TOKEN"
 | [ORG-002](#org-002) | Organization default member permission grants write to every repo | <span class="pg-sev pg-sev--high">HIGH</span> |  |
 | [ORG-003](#org-003) | Organization allows any GitHub Action to run (no allow-list) | <span class="pg-sev pg-sev--high">HIGH</span> |  |
 | [ORG-004](#org-004) | Organization default workflow token grants write permissions | <span class="pg-sev pg-sev--high">HIGH</span> |  |
+| [ORG-005](#org-005) | Organization lets GitHub Actions approve pull requests | <span class="pg-sev pg-sev--high">HIGH</span> |  |
+| [ORG-006](#org-006) | Organization Actions secret is exposed to every repository | <span class="pg-sev pg-sev--high">HIGH</span> |  |
 
 ---
 
@@ -108,6 +110,46 @@ Reads ``default_workflow_permissions`` from ``GET /orgs/{org}/actions/permission
 **Recommended action**
 
 Set the organization's default ``GITHUB_TOKEN`` permissions to read-only (Org Settings -> Actions -> Workflow permissions -> ``Read repository contents and packages permissions``). A ``write`` default hands every workflow in every repo a token that can push code, publish packages, and edit releases unless a workflow narrows it with a ``permissions:`` block, so a script injection or a compromised action escalates straight to repo write. Grant write back per-workflow / per-job where it's needed.
+
+</div>
+
+</div>
+
+<div class="pg-rule pg-rule--high" markdown>
+
+## ORG-005: Organization lets GitHub Actions approve pull requests { #org-005 }
+
+<div class="pg-rule__tags">
+<span class="pg-sev pg-sev--high">HIGH</span> <span class="pg-tag pg-tag--owasp">CICD-SEC-1</span> <span class="pg-tag pg-tag--cwe">CWE-863</span>
+</div>
+
+Reads ``can_approve_pull_request_reviews`` from ``GET /orgs/{org}/actions/permissions/workflow`` (the same fetch ORG-004 uses) and fires when it is ``true``. The endpoint needs a token with the ``actions`` / org-admin scope; when unavailable the rule passes with a note. Individual repos can still override this org default.
+
+<div class="pg-rule__rec" markdown>
+
+**Recommended action**
+
+Turn off ``Allow GitHub Actions to create and approve pull requests`` (Org Settings -> Actions -> General -> Workflow permissions). When it is on, a workflow running with the ``GITHUB_TOKEN`` can submit an approving review, which can satisfy a required-review branch-protection rule without a human ever looking at the change. A merge-bot or an attacker who can trigger a workflow then self-approves a malicious PR. Require approvals from human reviewers (or a separate identity) instead.
+
+</div>
+
+</div>
+
+<div class="pg-rule pg-rule--high" markdown>
+
+## ORG-006: Organization Actions secret is exposed to every repository { #org-006 }
+
+<div class="pg-rule__tags">
+<span class="pg-sev pg-sev--high">HIGH</span> <span class="pg-tag pg-tag--owasp">CICD-SEC-2</span> <span class="pg-tag pg-tag--cwe">CWE-522</span>
+</div>
+
+Reads ``GET /orgs/{org}/actions/secrets`` and fires when any secret has ``visibility: all``. ``selected`` and ``private`` pass. The endpoint returns secret names and visibility only, never values; names are listed so the operator can find them. Needs a token with the ``admin:org`` (or secrets) scope; when unavailable the rule passes with a note. The repo-level analog is SCM-048 (org codespace secret scoped to all repos).
+
+<div class="pg-rule__rec" markdown>
+
+**Recommended action**
+
+Scope each org-level Actions secret to selected repositories (Org Settings -> Secrets and variables -> Actions -> edit the secret -> ``Repository access: Selected repositories``) instead of ``All repositories``. An all-repos secret is readable by every workflow in every current and future repo, including low-trust ones, so one script injection or compromised action in any repo exfiltrates it. Grant the secret only to the repos that build the system that needs it.
 
 </div>
 

@@ -1028,6 +1028,8 @@ STANDARD = Standard(
         "ORG-002":  ["PR.AA-01", "PR.AA-05"],    # org governance: default member permission too broad
         "ORG-003":  ["GV.SC-05", "GV.SC-07"],    # org governance: no Actions allow-list (any action runs)
         "ORG-004":  ["PR.AA-01", "PR.AA-05"],    # org governance: default workflow token is write
+        "ORG-005":  ["PR.PS-06"],                # org governance: Actions can approve PRs (review bypass)
+        "ORG-006":  ["PR.AA-05"],                # org governance: Actions secret scoped to all repos
         "NPM-012":  ["PR.AA-01", "GV.SC-05"],   # publish token missing restrictions
         # ── Azure Cloud (Entra ID / Storage / Key Vault / ACR / Monitor) ──
         "ENTRA-001": ["PR.AA-05"],               # SP assigned Global Administrator
