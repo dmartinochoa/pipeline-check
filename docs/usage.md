@@ -354,6 +354,34 @@ per-format detail.
 
 Format schemas: [output.md](output.md).
 
+## LLM-assisted triage (`--triage`)
+
+```bash
+# Needs a local model server running (e.g. `ollama serve` with a pulled model).
+pipeline_check --triage                                   # uses localhost Ollama + llama3.2
+pipeline_check --triage --triage-model qwen2.5-coder      # pick a model
+pipeline_check --triage --triage-endpoint http://localhost:1234/api/generate  # LM Studio, etc.
+```
+
+After the report, `--triage` sends each *failing* finding plus a snippet
+of the surrounding pipeline to a **local** LLM and asks whether it's
+actually exploitable in this repo's context, labeling it `confirmed` /
+`needs_review` / `likely_fp` in a separate advisory section.
+
+It is deliberately constrained:
+
+- **Local by default.** `--triage-endpoint` defaults to loopback; a
+  non-local URL prints a one-line warning before any finding is sent, so
+  the no-telemetry promise holds unless you opt out explicitly.
+- **Advisory only.** The label never touches a finding's severity or
+  confidence, the grade, or the gate, so a hallucinating model can't
+  flip a HIGH to a LOW. An unreachable endpoint degrades to `unavailable`
+  rather than failing the scan.
+- The section prints to stdout for `terminal` / `both` output (or any
+  format written to `--output-file`); when a machine-readable format is
+  already on stdout it's suppressed with a one-line stderr note so the
+  stream stays clean.
+
 ## Filter what gets scanned
 
 ```bash

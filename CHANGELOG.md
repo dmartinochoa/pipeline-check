@@ -12,16 +12,22 @@ release commit collapses this section into `## [X.Y.Z] - <date>`.
 
 ### Added
 
-- **Local-LLM triage core (foundation for ``--triage``, #167).** New
-  ``core/triage.py`` (HTTP transport to an Ollama-style ``/api/generate``
-  endpoint, tolerant model-reply parsing into a ``confirmed`` /
-  ``needs_review`` / ``likely_fp`` verdict, and source-snippet extraction)
-  plus ``core/triage_prompts.py`` (the reviewable prompt template). The
-  endpoint defaults to loopback and the transport never raises (an
-  unreachable endpoint yields an ``UNAVAILABLE`` verdict), so a model can
-  only advise: a verdict never feeds back into the rule engine's severity
-  or confidence. The opt-in ``--triage`` CLI flag that renders these
-  verdicts lands in a follow-up.
+- **Opt-in local-LLM finding triage (``--triage``, #167).** After the
+  report, ``--triage`` asks a LOCAL LLM (Ollama / llama.cpp / LM Studio,
+  via the Ollama-style ``/api/generate`` endpoint) whether each failing
+  finding is exploitable in this repo's context, given the finding plus a
+  source snippet, and labels it ``confirmed`` / ``needs_review`` /
+  ``likely_fp``. ``--triage-endpoint`` (loopback by default; a non-local
+  URL prints a one-line warning first) and ``--triage-model`` configure
+  it. The verdicts render in their own advisory section through a dedicated
+  reporter, never folded into severity / confidence, so a hallucinating
+  model can't change a HIGH into a LOW, change the grade, or move the gate.
+  An unreachable endpoint degrades to ``unavailable`` rather than failing
+  the scan, and the section is suppressed (with an stderr note) when a
+  machine-readable ``--output`` is already on stdout. New ``core/triage.py``
+  (transport + tolerant reply parsing + snippet extraction),
+  ``core/triage_prompts.py`` (the reviewable prompt), and
+  ``core/triage_reporter.py``.
 - **Groq + xAI + Postman + Doppler live secret verifiers
   (``--verify-secrets``).** Four more detectors that had no verifier gain
   one, each a single-token identity probe: Groq and xAI via the
