@@ -12,6 +12,13 @@ release commit collapses this section into `## [X.Y.Z] - <date>`.
 
 ### Added
 
+- **``--list-verifiers`` (secret-verifier discoverability).** Prints every
+  secret detector that ``--verify-secrets`` can probe against its issuing
+  API to confirm a credential is live (one per line: ``detector  shape``)
+  and exits, mirroring ``--list-fixers``. Pipes into ``grep`` and performs
+  no scan. Surfaces the growing verifier registry so users know which
+  detected secret types can actually be confirmed active. New
+  ``verifier_names()`` registry accessor + ``manual.detector_description``.
 - **Opt-in local-LLM finding triage (``--triage``, #167).** After the
   report, ``--triage`` asks a LOCAL LLM (Ollama / llama.cpp / LM Studio,
   via the Ollama-style ``/api/generate`` endpoint) whether each failing

@@ -194,6 +194,16 @@ def has_verifier(detector_name: str) -> bool:
     return detector_name in _REGISTRY
 
 
+def verifier_names() -> list[str]:
+    """Return the sorted detector names that have a live verifier.
+
+    Backs ``--list-verifiers`` so users can see which detected secret
+    types ``--verify-secrets`` can actually confirm as active.
+    """
+    _register_builtins()
+    return sorted(_REGISTRY)
+
+
 # ── Cache helpers ───────────────────────────────────────────────────
 
 

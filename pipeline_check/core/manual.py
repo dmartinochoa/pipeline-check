@@ -388,6 +388,11 @@ _DETECTOR_DESCRIPTIONS: dict[str, str] = {
 }
 
 
+def detector_description(name: str) -> str:
+    """Return the human shape description for a secret detector *name*."""
+    return _DETECTOR_DESCRIPTIONS.get(name, "(see _patterns.py)")
+
+
 def _build_secrets() -> str:
     """Render the secrets topic with the live detector registry."""
     from .checks._patterns import _BUILTIN_PATTERNS

@@ -635,6 +635,14 @@ recommended. The tradeoff is scan speed (network calls add latency) and
 the need for API tokens (`--gh-token`, `--gitlab-token`) for higher rate
 limits.
 
+`--verify-secrets` only confirms detectors that have a live verifier.
+To see which ones (no scan performed):
+
+```bash
+pipeline_check --list-verifiers              # detector + shape, one per line
+pipeline_check --list-verifiers | grep token # filter
+```
+
 ## Dataflow secret detection
 
 `--detect-entropy` adds a Shannon-entropy pass to the secret detector.
