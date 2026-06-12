@@ -368,7 +368,7 @@ pipeline_check --pipeline github --fix | git apply
 ```
 
 The tool never modifies files directly by default, review the patch,
-apply or discard. **114 fixers** are registered across every provider
+apply or discard. **115 fixers** are registered across every provider
 covering pinning, credential redaction, timeouts, TLS-bypass commenting,
 script-injection env-binding, Docker insecure flags, Kubernetes
 `securityContext`, and curl-pipe commenting. The full per-check matrix

@@ -76,16 +76,18 @@ def _fix_gha004(content: str, finding: Finding) -> str | None:
 
 @register("GHA-002", safety="safe")
 @register("GHA-037", safety="safe")
+@register("GHA-054", safety="safe")
 def _fix_gha002(content: str, finding: Finding) -> str | None:
     """Add ``persist-credentials: false`` under every actions/checkout step.
 
     For GHA-037 (``actions/checkout`` persists the GITHUB_TOKEN into
-    ``.git/config``) this is the canonical fix and resolves the finding
-    outright. For GHA-002 (pull_request_target + PR head) it doesn't
-    resolve the underlying issue on its own — that requires a workflow
-    redesign — but the checkout option is a defense-in-depth measure that
-    reduces the blast radius and is always safe to apply. Idempotent:
-    skips checkout steps that already set the flag.
+    ``.git/config``) and GHA-054 (a checkout ``ssh-key`` persisted into the
+    repo's ``.git/config``) this is the canonical fix and resolves the
+    finding outright. For GHA-002 (pull_request_target + PR head) it
+    doesn't resolve the underlying issue on its own — that requires a
+    workflow redesign — but the checkout option is a defense-in-depth
+    measure that reduces the blast radius and is always safe to apply.
+    Idempotent: skips checkout steps that already set the flag.
     """
     edits: list[tuple[int, int, str]] = []
     for m in _CHECKOUT_USES_RE.finditer(content):

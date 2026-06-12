@@ -72,7 +72,7 @@ Resolution rules:
 
 ## What it covers
 
-114 checks · 18 have an autofix patch (``--fix``).
+114 checks · 19 have an autofix patch (``--fix``).
 
 | Check | Title | Severity | Fix |
 |-------|-------|----------|-----|
@@ -129,7 +129,7 @@ Resolution rules:
 | [GHA-051](#gha-051) | services / container image is not pinned by digest | <span class="pg-sev pg-sev--high">HIGH</span> |  |
 | [GHA-052](#gha-052) | actions/cache key includes untrusted PR-controllable input | <span class="pg-sev pg-sev--high">HIGH</span> |  |
 | [GHA-053](#gha-053) | if: predicate evaluates attacker-controllable context as expression | <span class="pg-sev pg-sev--high">HIGH</span> |  |
-| [GHA-054](#gha-054) | actions/checkout with ssh-key persists SSH credential in repo | <span class="pg-sev pg-sev--high">HIGH</span> |  |
+| [GHA-054](#gha-054) | actions/checkout with ssh-key persists SSH credential in repo | <span class="pg-sev pg-sev--high">HIGH</span> | <span class="pg-fix" title="`--fix` will patch this rule">🔧 fix</span> |
 | [GHA-055](#gha-055) | Reusable workflow outputs derive a secret or caller-input value | <span class="pg-sev pg-sev--high">HIGH</span> |  |
 | [GHA-056](#gha-056) | Workflow body contains a known supply-chain worm indicator | <span class="pg-sev pg-sev--critical">CRITICAL</span> |  |
 | [GHA-057](#gha-057) | Secret-scanner output sent to network egress | <span class="pg-sev pg-sev--critical">CRITICAL</span> |  |
@@ -1530,7 +1530,7 @@ Documented attack: a PR title of ``${{ secrets.X }}`` inside an ``if: contains(g
 ## GHA-054: actions/checkout with ssh-key persists SSH credential in repo { #gha-054 }
 
 <div class="pg-rule__tags">
-<span class="pg-sev pg-sev--high">HIGH</span> <span class="pg-tag pg-tag--owasp">CICD-SEC-6</span> <span class="pg-tag pg-tag--esf">ESF-D-SECRETS</span> <span class="pg-tag pg-tag--cwe">CWE-522</span> <span class="pg-tag pg-tag--cwe">CWE-538</span>
+<span class="pg-sev pg-sev--high">HIGH</span> <span class="pg-fix pg-fix--rule" title="`--fix` will patch this rule">🔧 autofix</span> <span class="pg-tag pg-tag--owasp">CICD-SEC-6</span> <span class="pg-tag pg-tag--esf">ESF-D-SECRETS</span> <span class="pg-tag pg-tag--cwe">CWE-522</span> <span class="pg-tag pg-tag--cwe">CWE-538</span>
 </div>
 
 Walks every step with ``uses: actions/checkout@*`` and checks the ``with:`` block. Fires when both:

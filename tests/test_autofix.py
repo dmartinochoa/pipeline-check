@@ -100,6 +100,25 @@ class TestGHA037PersistCredentials:
         )
         assert autofix.generate_fix(_finding("GHA-037"), wf) is None
 
+    def test_gha054_ssh_key_shares_the_same_fix(self):
+        # GHA-054 (checkout ssh-key persisted into .git/config) is resolved
+        # by the same persist-credentials: false edit.
+        wf = (
+            "on: push\n"
+            "jobs:\n"
+            "  b:\n"
+            "    runs-on: ubuntu-latest\n"
+            "    steps:\n"
+            "      - uses: actions/checkout@v4\n"
+            "        with:\n"
+            "          ssh-key: ${{ secrets.DEPLOY_KEY }}\n"
+        )
+        assert "GHA-054" in autofix.available_fixers()
+        assert autofix.fixer_safety("GHA-054") == autofix.SAFE
+        after = autofix.generate_fix(_finding("GHA-054"), wf)
+        assert after is not None
+        assert "persist-credentials: false" in after
+
 
 # ── Timeout fixers ─────────────────────────────────────────────────────
 
