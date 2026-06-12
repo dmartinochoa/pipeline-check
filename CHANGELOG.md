@@ -12,6 +12,16 @@ release commit collapses this section into `## [X.Y.Z] - <date>`.
 
 ### Added
 
+- **CSV output (``--output csv``).** A flat, one-row-per-location export of
+  the failing findings for spreadsheet triage: open in a sheet, filter by
+  severity, assign owners, track remediation. Columns: ``check_id``,
+  ``severity``, ``confidence``, ``resource``, ``file``, ``line``, ``title``,
+  ``description``, ``recommendation``, ``cwe``. Only failing findings are
+  emitted (mirroring the SARIF / Code Quality reporters); the stdlib ``csv``
+  writer handles quoting so a comma / quote / newline in a description can't
+  break the columns. ``--inline-explain`` appends the exploit example to the
+  description cell. New ``core/csv_reporter.py``; wired into the ``--output``
+  choice + the single-artifact reporter table.
 - **LLM-provider secret detectors (Groq / xAI / Perplexity).** Three new
   high-confidence detectors in the shared secret catalog
   (``_patterns.py``): Groq (``gsk_`` + body), xAI / Grok (``xai-`` + body),

@@ -236,6 +236,7 @@ pipeline_check --output html --output-file report.html       # self-contained HT
 pipeline_check --output sarif --output-file scan.sarif       # SARIF 2.1.0 for GitHub/GitLab
 pipeline_check --output junit --output-file junit.xml        # JUnit XML for test-runner UIs
 pipeline_check --output codequality --output-file cq.json    # GitLab Code Quality (inline MR annotations)
+pipeline_check --output csv --output-file findings.csv       # flat findings export for spreadsheet triage
 pipeline_check --output cyclonedx --output-file sbom.cdx.json # CycloneDX 1.6 build-dependency SBOM
 pipeline_check --output spdx --output-file sbom.spdx.json    # SPDX 2.3 build-dependency SBOM
 pipeline_check --output markdown            # PR-comment shape (GFM)
