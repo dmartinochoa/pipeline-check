@@ -156,6 +156,11 @@ _BUILTIN_PATTERNS: dict[str, str] = {
     "xai_api_key":            r"xai-[A-Za-z0-9]{64,}",
     # Perplexity API keys (``pplx-`` prefix + 48-char body).
     "perplexity_api_key":     r"pplx-[A-Za-z0-9]{40,}",
+    # ── Incoming-webhook URLs (full credential: anyone with the URL can post) ──
+    # Slack incoming webhook: hooks.slack.com/services/T<id>/B<id>/<24 secret>.
+    "slack_webhook":          r"https://hooks\.slack\.com/services/T[A-Z0-9]{6,}/B[A-Z0-9]{6,}/[A-Za-z0-9]{20,}",
+    # Discord webhook: discord(app).com/api/webhooks/<17-20 digit id>/<token>.
+    "discord_webhook":        r"https://discord(?:app)?\.com/api/webhooks/[0-9]{17,20}/[A-Za-z0-9_\-]{60,}",
 }
 
 

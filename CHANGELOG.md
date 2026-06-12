@@ -12,6 +12,14 @@ release commit collapses this section into `## [X.Y.Z] - <date>`.
 
 ### Added
 
+- **Incoming-webhook URL secret detectors (Slack + Discord).** A leaked
+  Slack (``hooks.slack.com/services/T…/B…/…``) or Discord
+  (``discord.com/api/webhooks/<id>/<token>``) incoming-webhook URL is a full
+  credential — anyone holding it can post into the channel — so the secret
+  catalog now flags hard-coded webhook URLs alongside API tokens. Both are
+  high-confidence shapes (distinctive host + path), so the cross-provider
+  literal-secret rules (``*-008`` family) pick them up wherever a value is
+  collected. Detector catalog 52 -> 54.
 - **GHA-031 autofixer: migrate retired ``::set-output`` / ``::save-state``
   (``--fix``).** GitHub disabled the ``::set-output::`` / ``::save-state::``
   stdout commands, so workflows using them are broken. The new safe-tier

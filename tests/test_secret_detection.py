@@ -105,6 +105,11 @@ DETECTORS: list[tuple[str, str]] = [
     ("groq_api_key",          "gsk_" + _FILLER[:52]),
     ("xai_api_key",           "xai-" + _FILLER[:80]),
     ("perplexity_api_key",    "pplx-" + _FILLER[:48]),
+    # ── New detectors (round 6): incoming-webhook URLs ──
+    ("slack_webhook",
+     "https://hooks.slack.com/services/T00000000/B00000000/" + _FILLER[:24]),
+    ("discord_webhook",
+     "https://discord.com/api/webhooks/123456789012345678/" + _FILLER[:68]),
 ]
 
 
@@ -179,6 +184,11 @@ def test_detector_fires_on_real_shape_token(name, token):
     ("gsk_short",                          "Groq key needs 48+ chars after gsk_"),
     ("xai-short",                          "xAI key needs 64+ chars after xai-"),
     ("pplx-short",                         "Perplexity key needs 40+ chars after pplx-"),
+    # ── New detectors (round 6): incoming-webhook URLs ──
+    ("https://hooks.slack.com/services/T0/B0/short",
+     "Slack webhook needs T../B../24+ secret"),
+    ("https://discord.com/api/webhooks/123/short",
+     "Discord webhook needs 17-20 digit id + 60+ token"),
 ])
 def test_detectors_reject_undersized_tokens(token, reason):
     """Loose detector regexes are a constant source of false positives.

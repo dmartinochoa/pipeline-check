@@ -381,6 +381,8 @@ _DETECTOR_DESCRIPTIONS: dict[str, str] = {
     "groq_api_key":           "gsk_ + 52-char body (Groq)",
     "xai_api_key":            "xai- + 80-char body (xAI / Grok)",
     "perplexity_api_key":     "pplx- + 48-char body (Perplexity)",
+    "slack_webhook":          "hooks.slack.com/services/ incoming-webhook URL (Slack)",
+    "discord_webhook":        "discord.com/api/webhooks/ URL (Discord)",
 }
 
 
