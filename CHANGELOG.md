@@ -12,6 +12,15 @@ release commit collapses this section into `## [X.Y.Z] - <date>`.
 
 ### Added
 
+- **LLM-provider secret detectors (Groq / xAI / Perplexity).** Three new
+  high-confidence detectors in the shared secret catalog
+  (``_patterns.py``): Groq (``gsk_`` + body), xAI / Grok (``xai-`` + body),
+  and Perplexity (``pplx-`` + body). Each is prefix-anchored with a length
+  floor, so the unique provider prefix carries the precision and an
+  undersized near-miss never fires. They flow automatically through
+  ``find_secret_values`` to every consumer (GHA-008 and the cross-provider
+  literal-secret ``*-008`` rules), covering the unscoped-LLM-key-in-CI
+  surface as agentic pipelines proliferate. Detector count 49 -> 52.
 - **``scm_org`` provider: GitHub organization-wide governance (ORG-001 ..
   ORG-008).** A new ``--pipeline scm_org --scm-org ORG`` audits the
   org-admin settings that govern every repository at once, complementing
@@ -62,6 +71,28 @@ release commit collapses this section into `## [X.Y.Z] - <date>`.
   SCM-029, via ``GET /orgs/{org}/rulesets``). Each rule passes with an
   "unavailable" note when the token lacks the scope to read the setting, so a
   low-scope token never produces a false finding. The provider count is now 38.
+- **``scm`` provider: GitHub org-wide per-repo fan-out (``--scm-org``).** The
+  ``scm`` provider now accepts ``--scm-org ORG`` in place of ``--scm-repo`` to
+  enumerate every non-archived repository in a GitHub organization (paginated
+  ``GET /orgs/{org}/repos``) and run the full per-repo posture pack across all
+  of them, one finding per repo per rule. This is the per-repo complement to the
+  ``scm_org`` provider's org-level governance audit (the "run the per-repo pack
+  across every repo the org enumerates" half of the org-governance story). New
+  ``SCMContext.for_org`` classmethod builds the multi-repo context the existing
+  ``repos`` list shape was designed for; archived repos are skipped, and a
+  failed / empty enumeration degrades to an empty context with a warning rather
+  than crashing. ``--scm-include`` / ``--scm-exclude`` (repeatable ``fnmatch``
+  globs over the repo name) scope the fan-out, and ``--scm-max-repos N`` caps it
+  for very large orgs (0 = unlimited; truncation is reported as a scan warning,
+  never silent). Per-repo snapshots build concurrently over a small bounded
+  thread pool (each repo needs ~10 sequential API calls, so a large org would
+  crawl serially); ``executor.map`` preserves enumeration order, so the result
+  is deterministic. Works on all three SCM platforms: GitHub (``ORG`` is the
+  org login) runs the full pack, while GitLab (``ORG`` is a group path,
+  subgroups included) and Bitbucket (``ORG`` is a workspace) enumerate their
+  projects / repos and run the 7-rule universal subset. The shared
+  filter / cap / concurrency machinery lives in one ``_build_fan_out_context``
+  helper; only the per-platform enumeration and single-repo build differ.
 - **GLRUN-005: a fork pipeline ran on a self-managed runner (GitLab run
   forensics).** The GitLab analog of the `runs` provider's RUN-005, behind
   `--audit-runs-logs`. A fork merge-request pipeline executes untrusted
@@ -402,6 +433,30 @@ release commit collapses this section into `## [X.Y.Z] - <date>`.
 
 ### Fixed
 
+- **maven: `pom.xml` parse caught only `ET.ParseError`, not
+  `RecursionError` / `MemoryError`.** `_parse_pom` now degrades on the
+  latter two as well, closing the same narrow-`except` gap class the
+  RecursionError hardening swept elsewhere (a pathological XML tree
+  returned `parsed_ok=False` instead of escaping as an uncaught crash).
+  `ET.fromstring` is iterative so deep nesting doesn't trigger it via
+  input today, but the defensive contract now matches the YAML / JSON
+  loaders. The standing loader-robustness gate
+  (`tests/test_loader_robustness.py`) was extended to lock this in: the
+  per-provider deeply-nested battery now covers the XML packs (maven /
+  nuget), a new per-provider non-UTF-8 battery covers the seven
+  distinct-parser providers (maven / nuget / gomod / rubygems / pypi /
+  dockerfile / modelfile) whose bespoke parsers each need their own
+  `UnicodeDecodeError` guard, and a unit test pins the maven
+  RecursionError degrade. All seven were already robust; the gate now
+  prevents regression. The differential battery was broadened past
+  GHA-002's `on:` shapes: GHA-003 (script injection) is asserted across
+  every `run:` scalar style (inline / literal / folded / single- and
+  double-quoted) and GHA-008 (hardcoded credential) across every value
+  scalar style, so a YAML representation quirk can't silently drop either
+  rule (both confirmed robust). A seeded, dependency-free generative fuzz
+  pass (400 random inputs: structured YAML documents + arbitrary byte
+  blobs through the shared loader, asserting graceful degradation) now
+  backs the curated battery; it surfaced no new crash class.
 - **modelfile: a hub model pulled by a file path (`FROM
   hf.co/org/model.gguf`) was misclassified as a local weights file.** The
   weights-extension check (`.gguf` / `.safetensors` / `.bin` / …) won over

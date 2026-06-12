@@ -56,6 +56,22 @@ from typing import Any
 import click
 
 from . import __version__
+from .cli_hints import (
+    _maybe_emit_degraded_scan_warning,
+    _maybe_emit_npm_alongside_github_hint,
+    _maybe_emit_wrong_provider_hint,
+)
+
+# Re-export for the test suite (it imports this from ``cli``); ``cli``
+# itself only reaches it through ``_emit_gate_summary``, so the redundant
+# alias marks an intentional re-export and keeps it past ruff's F401 sweep.
+from .cli_scan_output import _build_gate_trailer as _build_gate_trailer
+from .cli_scan_output import (
+    _emit_gate_summary,
+    _emit_scan_summary,
+    _scan_incomplete_reason,
+    _scan_status,
+)
 from .core import autofix as _autofix
 from .core import providers as _providers
 from .core import standards as _standards
@@ -194,7 +210,9 @@ class _GroupedCommand(click.Command):
             "--cargo-path", "--pulumi-path", "--composer-path",
             "--rubygems-path", "--devenv-path", "--modelfile-path",
             "--gitea-path", "--pipelines",
-            "--scm-platform", "--scm-repo", "--scm-org", "--scm-fixture-dir",
+            "--scm-platform", "--scm-repo", "--scm-org",
+            "--scm-include", "--scm-exclude", "--scm-max-repos",
+            "--scm-fixture-dir",
             "--gh-token", "--gitlab-token", "--gitlab-url",
             "--resolve-remote", "--gha-search-path", "--gha-resolve-depth",
             "--npm-base-ref", "--audit-runs-logs", "--no-cache",
@@ -1674,12 +1692,45 @@ def _install_completion_callback(
     default=None,
     metavar="ORG",
     help=(
-        "GitHub organization to audit org-wide settings for (required "
-        "when --pipeline scm_org), e.g. ``--scm-org my-org``. Complements "
-        "--pipeline scm (one repo) with org-level governance (2FA "
-        "requirement, default member permission). The org-admin settings "
-        "need a token (``--gh-token`` / ``$GITHUB_TOKEN``) with "
-        "``admin:org`` / ``read:org``."
+        "GitHub organization to audit. With --pipeline scm_org, audits the "
+        "org-wide governance settings (2FA requirement, default member "
+        "permission). With --pipeline scm (and no --scm-repo), fans the "
+        "per-repo posture pack out across every non-archived repo in the "
+        "org. E.g. ``--scm-org my-org``. Needs a token (``--gh-token`` / "
+        "``$GITHUB_TOKEN``) with ``admin:org`` / ``read:org``."
+    ),
+)
+@click.option(
+    "--scm-include",
+    "scm_include",
+    multiple=True,
+    metavar="GLOB",
+    help=(
+        "For the --scm-org fan-out: include only repos whose name matches "
+        "this glob (repeatable, fnmatch syntax). Applied after enumeration."
+    ),
+)
+@click.option(
+    "--scm-exclude",
+    "scm_exclude",
+    multiple=True,
+    metavar="GLOB",
+    help=(
+        "For the --scm-org fan-out: exclude repos whose name matches this "
+        "glob (repeatable, fnmatch syntax). Applied after --scm-include."
+    ),
+)
+@click.option(
+    "--scm-max-repos",
+    "scm_max_repos",
+    type=int,
+    default=0,
+    show_default=True,
+    metavar="N",
+    help=(
+        "For the --scm-org fan-out: cap the number of repos audited "
+        "(0 = unlimited). A safety net for very large orgs; truncation is "
+        "reported as a scan warning."
     ),
 )
 @click.option(
@@ -2458,6 +2509,9 @@ def scan(
     scm_platform: str | None,
     scm_repo: str | None,
     scm_org: str | None,
+    scm_include: tuple[str, ...],
+    scm_exclude: tuple[str, ...],
+    scm_max_repos: int,
     scm_fixture_dir: str | None,
     audit_runs_logs: bool,
     ingest_paths: tuple[str, ...],
@@ -2821,6 +2875,9 @@ def scan(
         scm_platform=scm_platform,
         scm_repo=scm_repo,
         scm_org=scm_org,
+        scm_include=scm_include,
+        scm_exclude=scm_exclude,
+        scm_max_repos=scm_max_repos,
         scm_fixture_dir=scm_fixture_dir,
         audit_runs_logs=audit_runs_logs,
     )
@@ -4416,350 +4473,6 @@ def _build_pr_diff_subprocess_argv(
     # captured separately and discarded by the orchestrator.
     argv.append("--no-chains")
     return argv
-
-
-def _find_sibling_package_jsons(root: str, max_depth: int = 3) -> list[str]:
-    """Return up to a handful of ``package.json`` paths under *root*.
-
-    Bounded by ``max_depth`` and skipping the usual heavy directories
-    (``node_modules`` chief among them — a single transitive install
-    can land tens of thousands of nested ``package.json`` files, and
-    none of them belong to the consuming repo). Used by the
-    npm-alongside-github hint so the scanner can nudge users who
-    invoke ``--pipeline github`` alone in a repo that also ships
-    JavaScript code.
-    """
-    skip_dirs: frozenset[str] = frozenset({
-        "node_modules", ".git", "vendor", "dist", "build",
-        ".venv", "venv", "__pycache__", ".tox", ".mypy_cache",
-        ".pytest_cache", "target",
-    })
-    hits: list[str] = []
-    root_abs = os.path.abspath(root)
-    root_depth = root_abs.rstrip(os.sep).count(os.sep)
-    for dirpath, dirnames, filenames in os.walk(root_abs):
-        dirnames[:] = [d for d in dirnames if d not in skip_dirs]
-        if dirpath.count(os.sep) - root_depth > max_depth:
-            dirnames[:] = []
-            continue
-        if "package.json" in filenames:
-            hits.append(os.path.join(dirpath, "package.json"))
-            if len(hits) >= 5:
-                break
-    return hits
-
-
-def _maybe_emit_npm_alongside_github_hint(
-    pipelines_resolved: list[str],
-    findings: list[Any],
-) -> None:
-    """Nudge the user when ``--pipeline github`` scanned a tree that
-    also ships ``package.json`` files.
-
-    The npm provider catches dependency-confusion / floating-range /
-    lockfile-integrity issues that the github pipeline can't see (it
-    only inspects workflow YAML, not the consumed manifests). Fires
-    only on single-provider ``--pipeline github`` invocations where
-    a quick depth-bounded walk of cwd finds a ``package.json``
-    outside ``node_modules`` / build / vendor directories. Off when
-    the user explicitly multi-provider-ran ``github,npm`` (the npm
-    coverage is already in scope).
-    """
-    if pipelines_resolved != ["github"]:
-        return
-    pjs = _find_sibling_package_jsons(".")
-    if not pjs:
-        return
-    def _safe_relpath(p: str) -> str:
-        try:
-            return os.path.relpath(p)
-        except ValueError:
-            return p
-
-    sample = ", ".join(_safe_relpath(p) for p in pjs[:3])
-    more = "" if len(pjs) <= 3 else f" (+{len(pjs) - 3} more)"
-    # One ``package.json`` at the repo root resolves via the npm
-    # provider's own cwd auto-detection (``pipeline_check --pipeline
-    # npm`` without ``--npm-path``); multiple or nested manifests need
-    # an explicit ``--npm-path <dir>`` per manifest, so the hint
-    # surfaces the directory the user would point at.
-    pj_dirs = sorted({
-        _safe_relpath(os.path.dirname(p)) or "." for p in pjs
-    })
-    if len(pj_dirs) == 1 and pj_dirs[0] in (".", ""):
-        suggestion = (
-            "rerun with ``--pipelines github,npm`` to also scan the "
-            "manifest"
-        )
-    else:
-        dir_sample = ", ".join(pj_dirs[:3])
-        suggestion = (
-            f"rerun with ``--pipeline npm --npm-path <dir>`` for each "
-            f"({dir_sample})"
-        )
-    click.echo(
-        f"[hint] this repo also ships package.json files ({sample}"
-        f"{more}). ``--pipeline github`` only inspects workflow "
-        f"YAML; {suggestion} for dependency-confusion / "
-        f"lockfile-integrity / floating-range coverage.",
-        err=True,
-    )
-
-
-def _maybe_emit_wrong_provider_hint(pipeline_lc: str, findings: list[Any]) -> None:
-    """Nudge the user when AWS was scanned but a CI config file exists.
-
-    Fires only when the caller explicitly picked ``--pipeline aws`` (or
-    configured it) AND every finding is a degraded ``*-000`` API-access
-    probe AND cwd looks like a CI repo. Designed to catch the common
-    'wrong credentials / wrong provider' first-run mistake without
-    spamming legitimate AWS runs.
-    """
-    if pipeline_lc != "aws" or not findings:
-        return
-    if not all(getattr(f, "check_id", "").endswith("-000") for f in findings):
-        return
-    detected = _detect_pipeline_from_cwd()
-    if not detected:
-        return
-    click.echo(
-        f"[hint] no real AWS results. This looks like a '{detected}' "
-        f"repo; try: pipeline_check --pipeline {detected}",
-        err=True,
-    )
-
-
-def _maybe_emit_degraded_scan_warning(findings: list[Any]) -> None:
-    """Surface a ``[warn]`` line when degraded-mode findings dominate.
-
-    Every AWS module emits a single ``<PREFIX>-000`` INFO-severity
-    finding when its boto3 enumeration fails (missing credentials,
-    AccessDenied, throttling). Those findings are NOT security gaps —
-    they're tool-status — but they still render as "FAIL" rows in the
-    table, and they don't count toward the score (INFO is ignored by
-    the weighted formula), so a fully-degraded scan can confusingly
-    display "Score 100 / Grade A" right next to fourteen FAIL rows.
-
-    This helper bridges that gap: when ``>0`` degraded-mode findings
-    exist, emit a stderr ``[warn]`` line listing how many modules
-    failed API access so the operator knows the score reflects only
-    the modules that actually returned data.
-    """
-    degraded = [
-        f for f in findings
-        if getattr(f, "check_id", "").endswith("-000")
-        and not getattr(f, "passed", True)
-    ]
-    if not degraded:
-        return
-    n = len(degraded)
-    click.echo(
-        f"[warn] scan degraded: {n} module(s) failed API access. The "
-        f"score reflects only the modules that returned data; run "
-        f"with --verbose to see which modules were skipped.",
-        err=True,
-    )
-
-
-def _scan_status(meta: Any, findings: list[Any]) -> dict[str, Any]:
-    """Structured completeness summary of a scan.
-
-    A scan is incomplete when a file it tried to read could not be
-    parsed (malformed YAML / JSON, read error) or when a cloud module
-    failed API access (the ``*-000`` degraded probes). The score then
-    reflects only what was actually scanned. This summary is emitted in
-    the JSON and SARIF outputs so CI consumers can detect an incomplete
-    scan, and it backs :func:`_scan_incomplete_reason` (the terminal
-    status line). ``reason`` is present only when the scan is incomplete.
-    """
-    parse_fail = 0
-    for w in getattr(meta, "warnings", None) or []:
-        wl = str(w).lower()
-        if "parse error" in wl or "read error" in wl:
-            parse_fail += 1
-    degraded = sum(
-        1 for f in findings
-        if getattr(f, "check_id", "").endswith("-000")
-        and not getattr(f, "passed", True)
-    )
-    status: dict[str, Any] = {
-        "complete": parse_fail == 0 and degraded == 0,
-        "files_scanned": int(getattr(meta, "files_scanned", 0) or 0),
-        "files_unparsed": parse_fail,
-        "degraded_modules": degraded,
-    }
-    parts: list[str] = []
-    if parse_fail:
-        parts.append(f"{parse_fail} file(s) could not be parsed")
-    if degraded:
-        parts.append(f"{degraded} module(s) failed API access")
-    if parts:
-        status["reason"] = (
-            f"{'; '.join(parts)}. The grade reflects only what was scanned."
-        )
-    return status
-
-
-def _scan_incomplete_reason(meta: Any, findings: list[Any]) -> str | None:
-    """The human-readable reason a scan is incomplete, or ``None`` when
-    it fully ran. Drives the terminal report's status line."""
-    return _scan_status(meta, findings).get("reason")
-
-
-def _emit_scan_summary(meta: Any) -> None:
-    """Render the scan summary line and any parse warnings to stderr."""
-    from .core.scanner import ScanMetadata
-    if not isinstance(meta, ScanMetadata):
-        return
-    for w in meta.warnings:
-        click.echo(f"[warn] {w}", err=True)
-    if meta.files_scanned == 0 and meta.files_skipped == 0:
-        click.echo("[warn] no pipeline files found to scan", err=True)
-        return
-    skip_part = f" ({meta.files_skipped} skipped)" if meta.files_skipped else ""
-    click.echo(
-        f"[scan] {meta.provider}: scanned {meta.files_scanned} file(s){skip_part}"
-        f" in {meta.elapsed_seconds:.1f}s",
-        err=True,
-    )
-
-
-def _build_gate_trailer(
-    gate: Any,
-    *,
-    baseline_path: str | None,
-    baseline_from_git: str | None,
-) -> str | None:
-    """Construct the one-line "what next" hint for a failing gate.
-
-    Picks the most actionable suggestion based on the failing set:
-    autofix when at least one finding has a registered fixer,
-    otherwise a baseline-write when none was provided, otherwise
-    point the user at ``explain`` for the highest-severity failure.
-    """
-    effective = list(gate.effective)
-    if not effective:
-        return None
-    from .core.autofix import SAFE, available_fixers, fixer_safety
-    fixers = set(available_fixers())
-    fixable = [f for f in effective if f.check_id.upper() in fixers]
-    n_total = len(effective)
-    if fixable:
-        n_safe = sum(1 for f in fixable if fixer_safety(f.check_id.upper()) == SAFE)
-        if n_safe:
-            # Bare ``--fix`` is safe-only; advertise what it will actually
-            # write, and point the unsafe remainder at the unsafe tier.
-            message = (
-                f"{n_safe} of {n_total} failing findings "
-                f"are autofixable; run `pipeline_check --fix --apply` to apply them"
-            )
-            n_unsafe = len(fixable) - n_safe
-            if n_unsafe:
-                message += f" (+{n_unsafe} more via `--fix unsafe --apply`)"
-        else:
-            # Every available fixer is unsafe-tier, so bare ``--fix`` would
-            # write nothing; point at the unsafe tier explicitly so the
-            # suggested command actually changes the tree.
-            message = (
-                f"{len(fixable)} of {n_total} failing findings are autofixable "
-                f"(unsafe tier); run `pipeline_check --fix unsafe --apply` to "
-                f"apply them"
-            )
-    elif not baseline_path and not baseline_from_git:
-        message = (
-            "no baseline configured; run `pipeline_check "
-            "--write-baseline baseline.json` then pair with "
-            "`--baseline baseline.json` to gate only on new findings"
-        )
-    else:
-        from .core.checks.base import severity_rank
-        top = sorted(
-            effective,
-            key=lambda f: (-severity_rank(f.severity), f.check_id),
-        )[0]
-        message = (
-            f"start with the highest-severity rule: "
-            f"`pipeline_check explain {top.check_id}`"
-        )
-    return f"[gate] next: {message}"
-
-
-def _emit_gate_summary(
-    gate: Any,
-    *,
-    grade: str | None = None,
-    baseline_path: str | None = None,
-    baseline_from_git: str | None = None,
-) -> None:
-    """Render the gate outcome to stderr so JSON/SARIF on stdout stays clean.
-
-    When the gate fails, also emit a single-line "what next" trailer:
-    how many of the failing findings have autofixers, and the
-    one-command path to close the loop (fix-and-apply, baseline-write,
-    or explain-the-rule). The trailer is intentionally short so a CI
-    log scan picks it up without scrolling.
-
-    A strong *grade* (A or B) sitting on top of a failing gate is the
-    most confusing outcome a first-time user hits, since the grade reads
-    as "all good" while the build still exits non-zero. When that
-    happens, a one-line note clarifies that the grade is a posture score
-    and the gate is a separate blocking policy.
-    """
-    n_effective = len(gate.effective)
-    n_chains_tripped = len(getattr(gate, "tripped_chains", []) or [])
-    if gate.passed:
-        msg_lines = [f"[gate] PASS ({n_effective} effective finding(s) evaluated)"]
-        for cond in getattr(gate, "conditions_evaluated", []):
-            msg_lines.append(f"        - {cond}")
-    else:
-        msg_lines = ["[gate] FAIL"]
-        for reason in gate.reasons:
-            msg_lines.append(f"        - {reason}")
-        if grade in ("A", "B"):
-            msg_lines.append(
-                f"[gate] note: Grade {grade} is overall posture (checks "
-                "weighted by severity), not this gate. A strong grade can "
-                "still fail the gate on a single blocking finding."
-            )
-        trailer = _build_gate_trailer(
-            gate,
-            baseline_path=baseline_path,
-            baseline_from_git=baseline_from_git,
-        )
-        if trailer:
-            msg_lines.append(trailer)
-    if n_chains_tripped:
-        ids = ", ".join(sorted({c.chain_id for c in gate.tripped_chains}))
-        msg_lines.append(f"[gate] {n_chains_tripped} attack chain(s) tripped: {ids}")
-    if gate.baseline_matched:
-        msg_lines.append(
-            f"[gate] {len(gate.baseline_matched)} finding(s) suppressed by baseline"
-        )
-    if gate.suppressed:
-        msg_lines.append(
-            f"[gate] {len(gate.suppressed)} finding(s) suppressed by ignore file"
-        )
-    if gate.expired_rules:
-        for r in gate.expired_rules:
-            scope = f":{r.resource}" if r.resource else ""
-            msg_lines.append(
-                f"[gate] ignore rule expired on {r.expires}: "
-                f"{r.check_id}{scope} (no longer suppressing)"
-            )
-    if gate.expiring_soon:
-        # Forewarn before expiry so the team schedules a revisit
-        # rather than discovering the lapsed suppression in CI.
-        for r in gate.expiring_soon:
-            scope = f":{r.resource}" if r.resource else ""
-            days = r.days_until_expiry()
-            day_word = "day" if days == 1 else "days"
-            when = "today" if days == 0 else f"in {days} {day_word}"
-            msg_lines.append(
-                f"[gate] ignore rule expires {when} on {r.expires}: "
-                f"{r.check_id}{scope} (still suppressing, but plan to revisit)"
-            )
-    for line in msg_lines:
-        click.echo(line, err=True)
 
 
 # ────────────────────────────────────────────────────────────────────────────

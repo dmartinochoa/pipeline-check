@@ -10,7 +10,9 @@ from __future__ import annotations
 from typing import Any
 
 from pipeline_check.core.checks.scm._platforms import (
+    bitbucket_context_for_org,
     bitbucket_context_for_repo,
+    gitlab_context_for_org,
     gitlab_context_for_repo,
 )
 from pipeline_check.core.checks.scm.posture import SCMPostureChecks
@@ -782,3 +784,100 @@ class TestSCMProviderPlatformRouting:
         provider = SCMProvider()
         with pytest.raises(ValueError, match="--scm-repo"):
             provider.build_context(scm_platform="github")
+
+
+# ── GitLab org fan-out ─────────────────────────────────────────────
+
+
+_GL_PROJECTS = (
+    "groups/acme/projects?per_page=100&page=1&include_subgroups=true"
+)
+
+
+def _gl_org_fetcher() -> FakeFetcher:
+    # Two live projects + one archived (skipped). Per-project metadata is
+    # omitted, so each degrades to a named gitlab snapshot.
+    return FakeFetcher({
+        _GL_PROJECTS: [
+            {"path_with_namespace": "acme/alpha", "archived": False},
+            {"path_with_namespace": "acme/beta", "archived": False},
+            {"path_with_namespace": "acme/old", "archived": True},
+        ],
+    })
+
+
+class TestGitLabOrgFanout:
+    def test_enumerates_non_archived_projects(self):
+        ctx = gitlab_context_for_org("acme", _gl_org_fetcher())
+        assert {s.name for s in ctx.repos} == {"alpha", "beta"}
+        assert all(s.platform == "gitlab" for s in ctx.repos)
+
+    def test_include_glob_filters(self):
+        ctx = gitlab_context_for_org(
+            "acme", _gl_org_fetcher(), include=("al*",),
+        )
+        assert {s.name for s in ctx.repos} == {"alpha"}
+
+    def test_max_repos_caps_and_warns(self):
+        ctx = gitlab_context_for_org("acme", _gl_org_fetcher(), max_repos=1)
+        assert len(ctx.repos) == 1
+        assert any("capping the fan-out" in w for w in ctx.warnings)
+
+    def test_empty_group_degrades_with_warning(self):
+        ctx = gitlab_context_for_org("acme", FakeFetcher({_GL_PROJECTS: []}))
+        assert ctx.repos == []
+        assert any("no projects for GitLab group" in w for w in ctx.warnings)
+
+
+# ── Bitbucket org fan-out ──────────────────────────────────────────
+
+
+_BB_REPOS = "repositories/acme?pagelen=100"
+
+
+def _bb_org_fetcher() -> FakeFetcher:
+    return FakeFetcher({
+        _BB_REPOS: {
+            "values": [
+                {"full_name": "acme/widget"},
+                {"full_name": "acme/gadget"},
+            ],
+        },
+    })
+
+
+class TestBitbucketOrgFanout:
+    def test_enumerates_workspace_repos(self):
+        ctx = bitbucket_context_for_org("acme", _bb_org_fetcher())
+        assert {s.name for s in ctx.repos} == {"widget", "gadget"}
+        assert all(s.platform == "bitbucket" for s in ctx.repos)
+
+    def test_exclude_glob_filters(self):
+        ctx = bitbucket_context_for_org(
+            "acme", _bb_org_fetcher(), exclude=("gadget",),
+        )
+        assert {s.name for s in ctx.repos} == {"widget"}
+
+    def test_empty_workspace_degrades_with_warning(self):
+        ctx = bitbucket_context_for_org(
+            "acme", FakeFetcher({_BB_REPOS: {"values": []}}),
+        )
+        assert ctx.repos == []
+        assert any(
+            "no repositories for Bitbucket workspace" in w
+            for w in ctx.warnings
+        )
+
+    def test_paginates_via_next_cursor(self):
+        f = FakeFetcher({
+            _BB_REPOS: {
+                "values": [{"full_name": "acme/r1"}],
+                "next": "https://api.bitbucket.org/2.0/repositories/acme"
+                        "?pagelen=100&page=2",
+            },
+            "repositories/acme?pagelen=100&page=2": {
+                "values": [{"full_name": "acme/r2"}],
+            },
+        })
+        ctx = bitbucket_context_for_org("acme", f)
+        assert {s.name for s in ctx.repos} == {"r1", "r2"}

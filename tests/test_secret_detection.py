@@ -101,6 +101,10 @@ DETECTORS: list[tuple[str, str]] = [
     ("tailscale_key",         "tskey-api-k9Z8Y7X6CNTRL-" + _FILLER[:30]),
     ("sentry_auth_token",     "sntrys_" + _FILLER[:55]),
     ("sentry_auth_token",     "sntryu_" + _FILLER[:55]),
+    # ── New detectors (round 5): LLM provider API keys ──
+    ("groq_api_key",          "gsk_" + _FILLER[:52]),
+    ("xai_api_key",           "xai-" + _FILLER[:80]),
+    ("perplexity_api_key",    "pplx-" + _FILLER[:48]),
 ]
 
 
@@ -171,6 +175,10 @@ def test_detector_fires_on_real_shape_token(name, token):
     ("PMAK-short",                         "Postman key needs 24 hex + - + 34 hex"),
     ("tskey-auth-short",                   "Tailscale key needs <keyID>-<secret 24+>"),
     ("sntrys_short",                       "Sentry token needs 40+ chars after prefix"),
+    # ── New detectors (round 5): LLM provider API keys ──
+    ("gsk_short",                          "Groq key needs 48+ chars after gsk_"),
+    ("xai-short",                          "xAI key needs 64+ chars after xai-"),
+    ("pplx-short",                         "Perplexity key needs 40+ chars after pplx-"),
 ])
 def test_detectors_reject_undersized_tokens(token, reason):
     """Loose detector regexes are a constant source of false positives.

@@ -297,7 +297,11 @@ def _parse_pom(path: str, text: str) -> PomFile:
         return PomFile(path=path, text=text, parsed_ok=False)
     try:
         root = ET.fromstring(text)
-    except ET.ParseError:
+    except (ET.ParseError, RecursionError, MemoryError):
+        # ``ET.ParseError`` is the normal malformed-XML signal;
+        # ``RecursionError`` / ``MemoryError`` guard a pathological tree
+        # (deep nesting / expansion) from escaping as an uncaught crash,
+        # the same degrade-don't-raise contract the YAML / JSON loaders hold.
         return PomFile(path=path, text=text, parsed_ok=False)
 
     root_tag = _strip_ns(root.tag)

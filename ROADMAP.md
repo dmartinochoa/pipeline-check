@@ -833,10 +833,26 @@ product. Grouped by horizon; effort (S/M/L) and impact noted.
   + `/hooks` + `/rulesets` over the existing SCM REST fetcher. Provider count
   37 -> 38. **Remaining:** more org-level rules (member SSO / outside-collaborator
   policy; org-wide branch-protection defaults now partly covered by ORG-013's
-  ruleset-enforcement check) and the
-  per-repo fan-out (run the 55-rule per-repo pack across every repo the org
-  enumerates, the half that needs repo enumeration + the fleet config-clone
-  path). The Legitify / Allstar buyer.
+  ruleset-enforcement check). The **per-repo fan-out first increment SHIPPED**:
+  the `scm` provider now accepts `--scm-org ORG` (GitHub) to enumerate every
+  non-archived org repo (paginated `GET /orgs/{org}/repos`) and run the full
+  per-repo posture pack across all of them, one finding per repo per rule, via a
+  new `SCMContext.for_org` classmethod (reuses the multi-repo `repos` list shape
+  `SCMContext` already had + the existing `for_repo` snapshot builder, so the
+  whole SCM rule pack runs unchanged). Fan-out **ergonomics SHIPPED**:
+  `--scm-include` / `--scm-exclude` (repeatable fnmatch globs over the repo name)
+  scope the fan-out and `--scm-max-repos N` caps it for very large orgs (0 =
+  unlimited, truncation reported as a warning), all applied inside
+  `SCMContext.for_org`. Per-repo snapshots now build **concurrently** over a
+  bounded thread pool (`_FAN_OUT_WORKERS=8`, order-preserving via
+  `executor.map`; the stateless `HttpSCMFetcher` makes it safe). **GitLab +
+  Bitbucket org fan-out SHIPPED**: `--scm-org` now works on all three platforms
+  (GitLab `ORG` is a group path with subgroups, Bitbucket `ORG` is a workspace);
+  both enumerate their projects / repos and run the 7-rule universal subset, via
+  `gitlab_context_for_org` / `bitbucket_context_for_org` reusing the shared
+  `_build_fan_out_context` helper (filter / cap / concurrency factored out of
+  `for_org`). **Remaining:** member SSO / outside-collaborator policy (org-level
+  rules). The Legitify / Allstar buyer.
 - ~~**Provenance verification as a gate (`verify-artifact <ref>`) (M, high).**~~
   Shipped (`b9c33a00`). `pipeline_check verify-artifact REF` shells out to
   `cosign` / `slsa-verifier` / `gh attestation` on PATH (`core/provenance.py`),
@@ -853,13 +869,36 @@ product. Grouped by horizon; effort (S/M/L) and impact noted.
   `except yaml.YAMLError` / `except OSError`). Add a fuzz harness
   (Hypothesis) and differential testing (the same logical pipeline in
   different syntaxes must yield the same findings) as standing quality
-  gates beyond the goat bench.
+  gates beyond the goat bench. **Progress:** the standing
+  `tests/test_loader_robustness.py` gate (deep-nest + alias-bomb +
+  non-UTF-8 + differential, no Hypothesis dep) was extended to the XML
+  packs (maven / nuget) and a per-provider non-UTF-8 battery over the
+  seven distinct-parser providers; an empirical sweep confirmed all
+  degrade gracefully, and the one narrow-`except` gap found (maven
+  `_parse_pom` caught only `ET.ParseError`) was hardened to also catch
+  `RecursionError` / `MemoryError`. Differential coverage broadened past
+  GHA-002's `on:` shapes: GHA-003 (script injection) is now asserted
+  across every `run:` scalar style (inline / literal / folded / quoted)
+  and GHA-008 (hardcoded credential) across every value scalar style —
+  both confirmed representation-robust. A seeded, dependency-free
+  generative fuzz pass (random structured YAML + arbitrary byte blobs ->
+  shared loader -> no-crash, 400 inputs) now backs the curated battery;
+  it found no new crash class. Remaining: swapping the seeded generator
+  for Hypothesis proper (deferred — the dev deps are hash-locked, so
+  adding the library is a separate `requirements-dev.txt` regen step).
 - **Reduce new-rule wiring friction (M, med).** A new rule touches ~16
   files. Derive the standards-mapping and doc-count surfaces from a
   single source rather than hand-maintaining across `owasp_cicd_top_10`
   / `esf_supply_chain` / `nist_ssdf` / `nist_800_53` / `nist_csf_2` /
   `soc2` / `pci_dss_v4` + the per-provider counts + docs. Continue the
-  `cli.py` decomposition (~5,400 lines).
+  `cli.py` decomposition (6068 -> 5740 lines so far): the post-scan UX
+  hint emitters were extracted to `cli_hints.py`, and the scan-status +
+  scan/gate summary renderers (`_scan_status` / `_scan_incomplete_reason`
+  / `_emit_scan_summary` / `_build_gate_trailer` / `_emit_gate_summary`)
+  to `cli_scan_output.py` — both re-imported so call sites and the
+  test-suite imports are unchanged (pure refactor, suite green;
+  test-only re-exports kept past ruff via the redundant-alias form).
+  Next candidate cohesive block: the shell-completion callbacks.
 
 **New frontier / big bets (M-L):**
 

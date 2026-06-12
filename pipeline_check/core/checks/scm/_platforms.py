@@ -33,7 +33,12 @@ import urllib.parse
 import urllib.request
 from typing import Any
 
-from .base import SCMContext, SCMFetcher, SCMRepoSnapshot
+from .base import (
+    SCMContext,
+    SCMFetcher,
+    SCMRepoSnapshot,
+    _build_fan_out_context,
+)
 
 _DEFAULT_TIMEOUT = 10.0
 _MAX_RESPONSE_BYTES = 5 * 1024 * 1024
@@ -178,6 +183,57 @@ def gitlab_context_for_repo(
     ctx.files_scanned = 1
     ctx.warnings = warnings
     return ctx
+
+
+def gitlab_context_for_org(
+    group: str,
+    fetcher: SCMFetcher,
+    include: tuple[str, ...] = (),
+    exclude: tuple[str, ...] = (),
+    max_repos: int = 0,
+) -> SCMContext:
+    """Fan the universal SCM pack out across a whole GitLab group.
+
+    Paginates ``GET /groups/{group}/projects`` (subgroups included) to
+    enumerate the group's projects, then builds a per-project snapshot for
+    each via :func:`gitlab_context_for_repo`. ``include`` / ``exclude``
+    globs match the short project name; ``max_repos`` caps the count. The
+    GitLab analog of :meth:`SCMContext.for_org`; only the 7-rule universal
+    subset runs (the GitHub-only rules pass with a "not applicable" note).
+    """
+    encoded = urllib.parse.quote(group, safe="")
+    pairs: list[tuple[str, str]] = []
+    page = 1
+    while True:
+        result = fetcher.fetch(
+            f"groups/{encoded}/projects"
+            f"?per_page=100&page={page}&include_subgroups=true"
+        )
+        if not isinstance(result, list) or not result:
+            break
+        for r in result:
+            if not isinstance(r, dict) or r.get("archived"):
+                continue
+            path_ns = r.get("path_with_namespace")
+            if not isinstance(path_ns, str) or "/" not in path_ns:
+                continue
+            pairs.append((path_ns.rsplit("/", 1)[1], path_ns))
+        if len(result) < 100:
+            break
+        page += 1
+    return _build_fan_out_context(
+        pairs,
+        lambda path: gitlab_context_for_repo(path, fetcher),
+        org_label=group,
+        enumerate_empty_warning=(
+            f"[scm] enumerated no projects for GitLab group {group} — check "
+            "the token's ``read_api`` scope, or the group has no "
+            "(non-archived) projects."
+        ),
+        include=include,
+        exclude=exclude,
+        max_repos=max_repos,
+    )
 
 
 def _split_owner(project_path: str) -> tuple[str, str]:
@@ -562,3 +618,60 @@ def _bitbucket_codeowners_path(
         if isinstance(raw, dict) and raw.get("path") == path:
             return path
     return None
+
+
+def bitbucket_context_for_org(
+    workspace: str,
+    fetcher: SCMFetcher,
+    include: tuple[str, ...] = (),
+    exclude: tuple[str, ...] = (),
+    max_repos: int = 0,
+) -> SCMContext:
+    """Fan the universal SCM pack out across a whole Bitbucket workspace.
+
+    Paginates ``GET /repositories/{workspace}`` (cursor-based ``next``) to
+    enumerate the workspace's repos, then builds a per-repo snapshot for
+    each via :func:`bitbucket_context_for_repo`. ``include`` / ``exclude``
+    globs match the repo slug; ``max_repos`` caps the count. The Bitbucket
+    analog of :meth:`SCMContext.for_org`; only the 7-rule universal subset
+    runs.
+    """
+    pairs: list[tuple[str, str]] = []
+    path = f"repositories/{workspace}?pagelen=100"
+    while path:
+        result = fetcher.fetch(path)
+        if not isinstance(result, dict):
+            break
+        values = result.get("values")
+        if not isinstance(values, list) or not values:
+            break
+        for r in values:
+            if not isinstance(r, dict):
+                continue
+            full_name = r.get("full_name")
+            if not isinstance(full_name, str) or "/" not in full_name:
+                continue
+            pairs.append((full_name.split("/", 1)[1],
+                          full_name.split("/", 1)[1]))
+        next_url = result.get("next")
+        if isinstance(next_url, str) and next_url:
+            base = "https://api.bitbucket.org/2.0/"
+            path = (
+                next_url[len(base):]
+                if next_url.startswith(base)
+                else next_url
+            )
+        else:
+            path = ""
+    return _build_fan_out_context(
+        pairs,
+        lambda slug: bitbucket_context_for_repo(workspace, slug, fetcher),
+        org_label=workspace,
+        enumerate_empty_warning=(
+            f"[scm] enumerated no repositories for Bitbucket workspace "
+            f"{workspace} — check the token, or the workspace has no repos."
+        ),
+        include=include,
+        exclude=exclude,
+        max_repos=max_repos,
+    )

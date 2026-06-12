@@ -13,11 +13,13 @@ is a posture-reporter, not a remediation tool).
 """
 from __future__ import annotations
 
+import concurrent.futures
 import fnmatch
 import json
 import os
 import urllib.error
 import urllib.request
+from collections.abc import Callable
 from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any, Protocol
@@ -34,6 +36,12 @@ _MAX_RESPONSE_BYTES = 5 * 1024 * 1024
 #: ``fetch_bytes``). Run logs are bigger than JSON metadata but still
 #: bounded so a pathological response can't exhaust memory.
 _MAX_BINARY_RESPONSE_BYTES = 25 * 1024 * 1024
+#: Concurrency for the ``--scm-org`` per-repo fan-out. Each repo needs
+#: ~10 sequential API calls, so a serial scan of a large org is slow;
+#: a small bounded thread pool overlaps the per-repo I/O. Kept modest so
+#: the fan-out stays well under GitHub's authenticated rate ceiling. The
+#: ``HttpSCMFetcher`` is stateless per call, so concurrent fetches are safe.
+_FAN_OUT_WORKERS = 8
 
 
 # ── Fetcher protocol + implementations ────────────────────────────────
@@ -523,6 +531,148 @@ class SCMContext:
         ctx.files_scanned = 1
         ctx.warnings = warnings
         return ctx
+
+    @classmethod
+    def for_org(
+        cls,
+        org: str,
+        fetcher: SCMFetcher,
+        include: tuple[str, ...] = (),
+        exclude: tuple[str, ...] = (),
+        max_repos: int = 0,
+    ) -> SCMContext:
+        """Hydrate a snapshot for every non-archived repo in a GitHub org.
+
+        Paginates ``GET /orgs/{org}/repos`` to enumerate the org's
+        repositories, then builds a per-repo snapshot for each via
+        :meth:`for_repo`. The resulting multi-repo context runs the full
+        per-repo posture pack across the whole organization, one finding
+        per repo per rule (the org-wide fan-out the ``repos`` list shape
+        was designed for). A failed or empty enumeration degrades to an
+        empty context with a warning so the scan reports cleanly rather
+        than crashing. Archived repos are skipped: GitHub auto-relaxes
+        several governance toggles on archive, so they would only produce
+        noise.
+
+        ``include`` / ``exclude`` are repeatable ``fnmatch`` globs over the
+        repo name, applied after enumeration (include first, then exclude),
+        so a real org scopes the fan-out to the repos that matter.
+        ``max_repos`` caps how many repos are audited (0 = unlimited), a
+        safety net so a thousand-repo org doesn't silently fan out to
+        thousands of API calls; truncation is recorded as a warning so the
+        cap is never silent.
+        """
+        names: list[str] = []
+        page = 1
+        while True:
+            result = fetcher.fetch(
+                f"orgs/{org}/repos?per_page=100&page={page}&type=all"
+            )
+            if not isinstance(result, list) or not result:
+                break
+            for r in result:
+                if not isinstance(r, dict) or r.get("archived"):
+                    continue
+                name = r.get("name")
+                if isinstance(name, str) and name:
+                    names.append(name)
+            if len(result) < 100:
+                break
+            page += 1
+        return _build_fan_out_context(
+            [(n, n) for n in names],
+            lambda n: cls.for_repo(org, n, fetcher),
+            org_label=org,
+            enumerate_empty_warning=(
+                f"[scm] enumerated no repositories for org {org} — check "
+                "the token's ``read:org`` / ``repo`` scope, or the org has "
+                "no (non-archived) repositories."
+            ),
+            include=include,
+            exclude=exclude,
+            max_repos=max_repos,
+        )
+
+
+def _build_fan_out_context(
+    repos: list[tuple[str, str]],
+    build_one: Callable[[str], SCMContext],
+    *,
+    org_label: str,
+    enumerate_empty_warning: str,
+    include: tuple[str, ...] = (),
+    exclude: tuple[str, ...] = (),
+    max_repos: int = 0,
+    warnings: list[str] | None = None,
+) -> SCMContext:
+    """Filter, cap, and concurrently build a multi-repo ``SCMContext``.
+
+    ``repos`` is a list of ``(name_for_filtering, build_arg)`` pairs; each
+    ``build_arg`` is passed to ``build_one`` to hydrate that repo's
+    single-repo context. Shared by the GitHub / GitLab / Bitbucket
+    ``--scm-org`` fan-outs: only the per-platform enumeration and the
+    single-repo build differ, so the include / exclude globbing, the
+    ``max_repos`` cap, the bounded-concurrency build, and the warning
+    bookkeeping all live here once.
+
+    ``include`` / ``exclude`` are ``fnmatch`` globs over the filter name
+    (include first, then exclude). ``max_repos`` caps the count (0 =
+    unlimited); truncation and filter-to-empty are recorded as warnings so
+    neither is ever silent. An empty enumeration emits
+    ``enumerate_empty_warning`` (platform-specific, supplied by the caller).
+    """
+    out_warnings = list(warnings or [])
+    enumerated = len(repos)
+    if include:
+        repos = [
+            r for r in repos
+            if any(fnmatch.fnmatch(r[0], p) for p in include)
+        ]
+    if exclude:
+        repos = [
+            r for r in repos
+            if not any(fnmatch.fnmatch(r[0], p) for p in exclude)
+        ]
+    if (include or exclude) and enumerated and not repos:
+        out_warnings.append(
+            f"[scm] org {org_label}: all {enumerated} enumerated repo(s) "
+            "were filtered out by --scm-include / --scm-exclude; nothing to "
+            "scan."
+        )
+    if max_repos and len(repos) > max_repos:
+        out_warnings.append(
+            f"[scm] org {org_label}: capping the fan-out at {max_repos} of "
+            f"{len(repos)} matching repo(s) (--scm-max-repos); the remainder "
+            "are not audited this run."
+        )
+        repos = repos[:max_repos]
+    if not repos:
+        if enumerated == 0:
+            out_warnings.append(enumerate_empty_warning)
+        ctx = SCMContext(repos=[])
+        ctx.files_skipped = 1
+        ctx.warnings = out_warnings
+        return ctx
+    # Build each repo's snapshot concurrently: each single-repo build issues
+    # several sequential API calls, so overlapping the per-repo I/O across a
+    # small bounded pool turns a slow serial walk of a large org into a
+    # parallel one. ``executor.map`` preserves input order, so the resulting
+    # ``repos`` list is deterministic regardless of which fetch finishes
+    # first. The fetchers are stateless per call, so this is safe.
+    build_args = [r[1] for r in repos]
+    workers = min(_FAN_OUT_WORKERS, len(build_args))
+    with concurrent.futures.ThreadPoolExecutor(
+        max_workers=workers,
+    ) as executor:
+        subs = list(executor.map(build_one, build_args))
+    snapshots: list[SCMRepoSnapshot] = []
+    for sub in subs:
+        snapshots.extend(sub.repos)
+        out_warnings.extend(sub.warnings)
+    ctx = SCMContext(repos=snapshots)
+    ctx.files_scanned = len(snapshots)
+    ctx.warnings = out_warnings
+    return ctx
 
 
 class SCMBaseCheck(BaseCheck[SCMContext]):
