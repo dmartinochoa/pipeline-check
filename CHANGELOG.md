@@ -12,6 +12,12 @@ release commit collapses this section into `## [X.Y.Z] - <date>`.
 
 ### Added
 
+- **GHA-054 autofixer (``--fix``).** GHA-054 (a checkout ``ssh-key``
+  persisted into the repo's ``.git/config``) now shares the
+  persist-credentials checkout fixer: ``persist-credentials: false`` is its
+  canonical fix too (verified fires-before / gone-after), so it's another
+  ``@register`` on the existing function — no new logic. Safe-tier,
+  idempotent. Autofixer count 114 -> 115.
 - **Curl-pipe autofixer extended to Drone + Harness (``--fix``).** The
   provider-agnostic comment-out fixer (which neutralizes a ``curl … | sh``
   / ``wget … | bash`` by commenting the line with a TODO marker) now also
