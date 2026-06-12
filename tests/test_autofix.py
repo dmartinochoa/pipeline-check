@@ -62,6 +62,45 @@ def test_available_fixers_includes_gha004():
     assert "GHA-004" in autofix.available_fixers()
 
 
+class TestGHA037PersistCredentials:
+    """GHA-037 reuses the GHA-002 checkout fixer: adding
+    ``persist-credentials: false`` is its canonical fix."""
+
+    _WF = (
+        "on: push\n"
+        "jobs:\n"
+        "  b:\n"
+        "    runs-on: ubuntu-latest\n"
+        "    steps:\n"
+        "      - uses: actions/checkout@v4\n"
+        "      - run: ./build.sh\n"
+    )
+
+    def test_registered_as_a_safe_fixer(self):
+        assert "GHA-037" in autofix.available_fixers()
+        assert autofix.fixer_safety("GHA-037") == autofix.SAFE
+
+    def test_adds_persist_credentials_false_to_checkout(self):
+        after = autofix.generate_fix(_finding("GHA-037"), self._WF)
+        assert after is not None
+        assert "persist-credentials: false" in after
+        # The flag lands under a with: block on the checkout step.
+        assert "with:" in after
+
+    def test_idempotent_when_flag_present(self):
+        wf = (
+            "on: push\n"
+            "jobs:\n"
+            "  b:\n"
+            "    runs-on: ubuntu-latest\n"
+            "    steps:\n"
+            "      - uses: actions/checkout@v4\n"
+            "        with:\n"
+            "          persist-credentials: false\n"
+        )
+        assert autofix.generate_fix(_finding("GHA-037"), wf) is None
+
+
 # ── Timeout fixers ─────────────────────────────────────────────────────
 
 
