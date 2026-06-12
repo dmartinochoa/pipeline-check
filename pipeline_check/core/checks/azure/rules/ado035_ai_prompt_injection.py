@@ -116,9 +116,9 @@ def check(path: str, doc: dict[str, Any]) -> Finding:
                 lines = body.splitlines()
                 # Any reference is unsafe for an LLM prompt, so a plain
                 # reference check rather than the shell-quoting-aware one.
-                if has_direct_taint(lines, UNTRUSTED_VAR_RE) or any(
-                    rx.search(body) for rx in tainted_res
-                ):
+                if has_direct_taint(
+                    lines, UNTRUSTED_VAR_RE, paren_is_macro=True
+                ) or any(rx.search(body) for rx in tainted_res):
                     offenders.append(f"{job_loc}.{step_loc}")
                     step_line = line_of(step)
                     if step_line is not None and step_line not in seen_lines:

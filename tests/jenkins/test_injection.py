@@ -31,6 +31,25 @@ class TestJF002ScriptInjection:
         f = run_check(groovy, "JF-002")
         assert not f.passed
 
+    def test_fails_on_ghprb_plugin_var(self):
+        # The GitHub Pull Request Builder plugin injects ``ghprb*`` vars
+        # (fork PR source branch / title / commit author), the dominant
+        # attacker-controlled source on classic Jenkins PR jobs.
+        groovy = """
+        pipeline {
+            agent { label 'linux-ephemeral' }
+            options { timeout(time: 30, unit: 'MINUTES') }
+            stages {
+                stage('build') {
+                    steps {
+                        sh "echo Building $ghprbSourceBranch"
+                    }
+                }
+            }
+        }
+        """
+        assert not run_check(groovy, "JF-002").passed
+
     def test_passes_when_branch_name_in_single_quoted_sh(self):
         # Groovy single-quoted strings don't interpolate; the env var
         # is expanded by the shell at run time, which is the safe form.

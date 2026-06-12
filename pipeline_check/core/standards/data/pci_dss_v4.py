@@ -966,19 +966,19 @@ STANDARD = Standard(
         "CC-032":   ["8.2.1", "10.3.2"],                  # secret echoed to CircleCI log
         "SCM-048":  ["7.2.5", "8.2.1"],                   # org codespace secrets scoped to all repos
         "SCM-049":  ["7.2.5", "8.2.1"],                   # classic PAT used where fine-grained suffices
-        "ORG-001":  ["8.2.1", "7.2.5"],                   # org governance: 2FA not required org-wide
-        "ORG-002":  ["7.2.1", "7.2.5"],                   # org governance: default member permission too broad
-        "ORG-003":  ["6.3.3"],                            # org governance: no Actions allow-list (any action runs)
-        "ORG-004":  ["7.2.1", "7.2.5"],                   # org governance: default workflow token is write
-        "ORG-005":  ["6.4.3", "6.5.1"],                   # org governance: Actions can approve PRs (review bypass)
-        "ORG-006":  ["7.2.5", "8.2.1"],                   # org governance: Actions secret scoped to all repos
-        "ORG-007":  ["7.2.5"],                            # org governance: private-repo forking allowed (code exfiltration)
-        "ORG-008":  ["7.2.5"],                            # org governance: members can create public repos (code exposure)
-        "ORG-009":  ["6.4.1"],                            # org governance: self-hosted runner group exposed to public repos
-        "ORG-010":  ["6.5.1"],                            # org governance: new-repo secret-scanning push-protection default off
-        "ORG-011":  ["6.4.1"],                            # org governance: org webhook over insecure transport
-        "ORG-012":  ["6.3.1", "6.3.3"],                   # org governance: new-repo Dependabot security-updates default off
-        "ORG-013":  ["6.4.3"],                            # org governance: org ruleset not enforced (evaluate/disabled)
+        "ORG-001":  ["8.2.1", "7.2.5"],                   # org: 2FA not required org-wide
+        "ORG-002":  ["7.2.1", "7.2.5"],                   # org: default member permission too broad
+        "ORG-003":  ["6.3.3"],                            # org: no Actions allow-list (any action runs)
+        "ORG-004":  ["7.2.1", "7.2.5"],                   # org: default workflow token is write
+        "ORG-005":  ["6.4.3", "6.5.1"],                   # org: Actions can approve PRs (review bypass)
+        "ORG-006":  ["7.2.5", "8.2.1"],                   # org: Actions secret scoped to all repos
+        "ORG-007":  ["7.2.5"],                            # org: private-repo forking allowed (code exfiltration)
+        "ORG-008":  ["7.2.5"],                            # org: members can create public repos (code exposure)
+        "ORG-009":  ["6.4.1"],                            # org: self-hosted runner group exposed to public repos
+        "ORG-010":  ["6.5.1"],                            # org: new-repo secret-scanning push-protection default off
+        "ORG-011":  ["6.4.1"],                            # org: org webhook over insecure transport
+        "ORG-012":  ["6.3.1", "6.3.3"],                   # org: new-repo Dependabot security-updates default off
+        "ORG-013":  ["6.4.3"],                            # org: org ruleset not enforced (evaluate/disabled)
         "NPM-012":  ["8.2.1", "6.5.1"],                   # publish token missing restrictions
         # ── Azure Cloud (Entra ID / Storage / Key Vault / ACR / Monitor) ──
         "ENTRA-001": ["7.2.1", "7.2.5"],                  # SP assigned Global Administrator

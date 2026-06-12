@@ -204,6 +204,15 @@ class TestHarness003PrivilegedStep:
                if not f.passed]
         assert out == []
 
+    def test_quoted_true_string_is_flagged(self, tmp_path):
+        # YAML ``privileged: "true"`` parses to the string "true", which is
+        # still privileged; the docs_note promises "truthy", so the quoted
+        # form must fire too (a strict ``is True`` check would miss it).
+        text = _RISKY.replace("privileged: true", 'privileged: "true"')
+        out = [f for f in _for(_findings(_ctx(tmp_path, text)), "HARNESS-003")
+               if not f.passed]
+        assert len(out) == 1
+
 
 class TestHarness004LiteralSecret:
     def test_flags_literal_secret_string_variable(self, tmp_path):

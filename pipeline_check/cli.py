@@ -452,7 +452,8 @@ def _collect_inline_ignores(
                 if not os.path.isfile(filepath):
                     continue
                 try:
-                    text = open(filepath, encoding="utf-8").read()
+                    with open(filepath, encoding="utf-8") as _fh:
+                        text = _fh.read()
                 except (OSError, UnicodeDecodeError):
                     # Skip unreadable or non-UTF-8 files rather than
                     # aborting the whole scan over one stray byte.
@@ -565,8 +566,11 @@ def _install_completion_callback(
         line = 'eval "$(_PIPELINE_CHECK_COMPLETE=bash_source pipeline_check)"'
         rc = os.path.expanduser("~/.bashrc")
         marker = "# pipeline_check completion"
+        existing = ""
         try:
-            existing = open(rc, encoding="utf-8").read() if os.path.exists(rc) else ""
+            if os.path.exists(rc):
+                with open(rc, encoding="utf-8") as _fh:
+                    existing = _fh.read()
         except OSError:
             existing = ""
         if marker in existing:
@@ -580,8 +584,11 @@ def _install_completion_callback(
         line = 'eval "$(_PIPELINE_CHECK_COMPLETE=zsh_source pipeline_check)"'
         rc = os.path.expanduser("~/.zshrc")
         marker = "# pipeline_check completion"
+        existing = ""
         try:
-            existing = open(rc, encoding="utf-8").read() if os.path.exists(rc) else ""
+            if os.path.exists(rc):
+                with open(rc, encoding="utf-8") as _fh:
+                    existing = _fh.read()
         except OSError:
             existing = ""
         if marker in existing:

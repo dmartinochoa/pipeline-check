@@ -182,7 +182,10 @@ def _fix_gha008(content: str, finding: Finding) -> str | None:
         new_line = line
         # Conservative: only redact whole-token matches on the RHS of
         # a ``key: value`` pair, not inside arbitrary scripts.
-        m = re.match(r"^(\s*[^#:\n]+:\s*)(\S+)(\s*)(#.*)?(\n?)$", new_line)
+        # ``[^\S\n]*`` for the trailing whitespace, NOT ``\s*``: ``\s``
+        # includes the newline, so on a comment-less line it would swallow
+        # the ``\n`` and push the TODO marker onto its own mis-indented line.
+        m = re.match(r"^(\s*[^#:\n]+:\s*)(\S+)([^\S\n]*)(#.*)?(\n?)$", new_line)
         if m:
             prefix, value, trailing_ws, comment, newline = m.groups()
             stripped = value.strip("\"'")

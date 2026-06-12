@@ -112,7 +112,11 @@ class TestADO002ScriptInjection:
         )
         assert f.passed
 
-    def test_quoted_assignment_passes(self):
+    def test_quoted_assignment_of_untrusted_macro_is_flagged(self):
+        # Unlike a shell capture, ADO text-substitutes ``$(Name)`` into the
+        # script before the shell parses it, so a double quote in the branch
+        # name closes the assignment string and the rest runs as shell. The
+        # quoting carve-out does NOT make an untrusted ADO macro safe.
         f = _run(
             """
             steps:
@@ -120,7 +124,7 @@ class TestADO002ScriptInjection:
             """,
             "ADO-002",
         )
-        assert f.passed
+        assert not f.passed
 
     def test_safe_variable_passes(self):
         f = _run(

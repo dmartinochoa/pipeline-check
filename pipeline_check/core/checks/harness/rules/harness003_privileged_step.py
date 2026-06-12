@@ -53,10 +53,21 @@ RULE = Rule(
 )
 
 
+def _is_privileged(spec: dict[str, object]) -> bool:
+    """Tolerate both YAML boolean ``true`` and the quoted string
+    ``"true"`` (the docs_note promises "truthy"), mirroring drone DR-002."""
+    value = spec.get("privileged")
+    if isinstance(value, bool):
+        return value
+    if isinstance(value, str):
+        return value.strip().lower() == "true"
+    return False
+
+
 def check(pipeline: HarnessPipeline) -> Finding:
     offenders: list[str] = []
     for stage_id, step in iter_steps(pipeline):
-        if step_spec(step).get("privileged") is True:
+        if _is_privileged(step_spec(step)):
             offenders.append(step_label(stage_id, step))
     passed = not offenders
     desc = (

@@ -490,6 +490,51 @@ release commit collapses this section into `## [X.Y.Z] - <date>`.
 
 ### Fixed
 
+- **In-depth review pass: 13 verified bug fixes plus two red CI gates.**
+  A multi-dimension audit (engine correctness, ReDoS / input safety, rule
+  FP/FN, reporters / autofix, code quality) surfaced and fixed:
+  - **GHA-064 ReDoS (DoS).** A PR-controlled ``if: contains('a,a,a,…``
+    drove the unsound-contains haystack into O(n²) backtracking (~80s at
+    200 KB). The first segment now stops at the first comma; same
+    semantics, linear (4 ms).
+  - **ADO-002 / ADO-035 false negative: ``VAR="$(Build.SourceBranchName)"``
+    was treated as a safe shell capture.** Azure text-substitutes
+    ``$(macro)`` into the script before the shell parses it (like GitHub
+    ``${{ }}``), so a quote in the branch name breaks out. Added an
+    Azure-only ``paren_is_macro`` flag to the quoted-assignment carve-out.
+  - **ADO taint regexes were case-sensitive** but ADO macros aren't, so
+    ``$(build.sourcebranch)`` evaded ADO-002 / ADO-030 / ADO-012.
+  - **IaC-apply detection missed ``terraform -chdir=DIR apply``** (the
+    standard CI form), bypassing GHA-117 / GHA-111 / GL-041 / ADO-033 /
+    BB-033 (all CRITICAL).
+  - **Jenkins JF-002 / JF-032 missed the GitHub Pull Request Builder
+    (``ghprb*``) plugin vars**, the dominant attacker-controlled source on
+    classic Jenkins PR jobs (the rule's own exploit example names one).
+  - **HARNESS-003 used a strict ``is True``** and missed the quoted
+    ``privileged: "true"`` form the docs_note promises to catch.
+  - **Terraform PBAC-003 ignored IPv6 ``::/0`` egress** (the CloudFormation
+    analog already checked it).
+  - **CSV reporter formula injection.** A field beginning with ``= + - @``
+    (or tab / CR) is now prefixed with a quote so spreadsheets treat it as
+    text, not a formula.
+  - **Markdown reporter could split a ``\\`` escape** by truncating after
+    escaping, leaving a dangling backslash that escaped the cell
+    separator; it now truncates the raw text first.
+  - **Threat-model reporter didn't escape backticks**, unbalancing inline
+    code spans across table cells.
+  - **GHA-008 redaction autofixer swallowed the newline** on a
+    comment-less line, pushing its TODO marker onto a mis-indented line.
+  - **SARIF could emit ``message.text: null``** (schema-invalid) for an
+    empty description; falls back to the title like every sibling reporter.
+  - **Drone DR-014 / Harness HARNESS-005 pipe-to-shell detection had
+    drifted weaker** than every other provider (matched only ``sh`` /
+    ``bash``); both now share one ``SIMPLE_PIPE_TO_SHELL_RE`` that also
+    catches ``| python`` / ``| perl`` / ``| ruby`` and a ``sudo`` prefix.
+  - **Red CI gates:** restored ``ruff check`` (24 pre-existing E501
+    over-length lines in the ORG-* standards mappings) and ``mypy
+    --strict`` (a ``list[None]`` item-type error in the annotations
+    reporter), plus removed a dead ``known_categories()`` helper and three
+    unclosed file handles in ``cli.py``.
 - **maven: `pom.xml` parse caught only `ET.ParseError`, not
   `RecursionError` / `MemoryError`.** `_parse_pom` now degrades on the
   latter two as well, closing the same narrow-`except` gap class the

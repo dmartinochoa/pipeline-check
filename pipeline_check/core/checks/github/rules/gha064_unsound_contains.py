@@ -104,11 +104,16 @@ RULE = Rule(
 #: ``contains('<haystack-with-comma>', <expr>)``. Both quote styles.
 #: The haystack must literally contain a comma to fire; comma-free
 #: substring searches are not the bug shape.
+#: The first segment excludes the comma (``[^'",]*``) so it stops at the
+#: first comma instead of backtracking across every comma position. That
+#: keeps the match linear (a split-greedy ``[^'"]*,[^'"]*`` is quadratic on
+#: a long comma-run with no closing quote) while preserving the semantics:
+#: the quoted operand still must contain a comma to fire.
 _UNSOUND_CONTAINS_RE = re.compile(
     r"""\bcontains\s*\(
         \s*
         (?P<quote>['"])
-        (?P<haystack>[^'"]*,[^'"]*)
+        (?P<haystack>[^'",]*,[^'"]*)
         (?P=quote)
         \s*,
     """,
