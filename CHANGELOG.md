@@ -12,6 +12,12 @@ release commit collapses this section into `## [X.Y.Z] - <date>`.
 
 ### Added
 
+- **GHA-037 autofixer (``--fix``).** ``actions/checkout`` persisting the
+  GITHUB_TOKEN into ``.git/config`` (GHA-037) now has a safe-tier fixer: it
+  adds ``persist-credentials: false`` under every checkout step, the rule's
+  canonical fix. It reuses the existing GHA-002 checkout fixer (the edit is
+  identical), so the same idempotent, format-preserving logic applies.
+  Autofixer count 111 -> 112.
 - **CSV output (``--output csv``).** A flat, one-row-per-location export of
   the failing findings for spreadsheet triage: open in a sheet, filter by
   severity, assign owners, track remediation. Columns: ``check_id``,

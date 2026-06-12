@@ -23,7 +23,7 @@ hide:
 
 <p class="pg-hero__lede">
 A read-only scanner for 38 providers, graded against 18 compliance frameworks. 
-111 of the 1220+ checks also emit a one-shot patch you can apply with <code>--fix</code>.
+112 of the 1220+ checks also emit a one-shot patch you can apply with <code>--fix</code>.
 </p>
 
 <div class="pg-hero__cta">
@@ -59,7 +59,7 @@ A read-only scanner for 38 providers, graded against 18 compliance frameworks.
   <div class="pg-stat"><div class="pg-stat__num" data-count-to="1220">1220+</div><div class="pg-stat__label">Checks</div></div>
   <div class="pg-stat"><div class="pg-stat__num" data-count-to="38">38</div><div class="pg-stat__label">Providers</div></div>
   <div class="pg-stat"><div class="pg-stat__num" data-count-to="18">18</div><div class="pg-stat__label">Compliance standards</div></div>
-  <div class="pg-stat"><div class="pg-stat__num" data-count-to="111">111</div><div class="pg-stat__label">Autofixers</div></div>
+  <div class="pg-stat"><div class="pg-stat__num" data-count-to="112">112</div><div class="pg-stat__label">Autofixers</div></div>
 </div>
 </section>
 
@@ -141,7 +141,7 @@ regress between releases.
 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z"/></svg>
 </div>
 ### Findings that fix themselves
-111 of the checks ship a one-shot patch. `--fix` prints a unified diff you can
+112 of the checks ship a one-shot patch. `--fix` prints a unified diff you can
 pipe to `git apply`, `--apply` writes the edits in place, and the `fix-pr`
 subcommand commits them to a fresh branch and opens the pull request (or GitLab
 MR). Fixers carry a `safe` / `unsafe` tier, so the default pass only touches
