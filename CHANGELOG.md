@@ -12,6 +12,16 @@ release commit collapses this section into `## [X.Y.Z] - <date>`.
 
 ### Added
 
+- **Local-LLM triage core (foundation for ``--triage``, #167).** New
+  ``core/triage.py`` (HTTP transport to an Ollama-style ``/api/generate``
+  endpoint, tolerant model-reply parsing into a ``confirmed`` /
+  ``needs_review`` / ``likely_fp`` verdict, and source-snippet extraction)
+  plus ``core/triage_prompts.py`` (the reviewable prompt template). The
+  endpoint defaults to loopback and the transport never raises (an
+  unreachable endpoint yields an ``UNAVAILABLE`` verdict), so a model can
+  only advise: a verdict never feeds back into the rule engine's severity
+  or confidence. The opt-in ``--triage`` CLI flag that renders these
+  verdicts lands in a follow-up.
 - **Groq + xAI + Postman + Doppler live secret verifiers
   (``--verify-secrets``).** Four more detectors that had no verifier gain
   one, each a single-token identity probe: Groq and xAI via the
