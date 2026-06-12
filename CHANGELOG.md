@@ -12,6 +12,13 @@ release commit collapses this section into `## [X.Y.Z] - <date>`.
 
 ### Added
 
+- **Figma + Notion token secret detectors.** The catalog now flags
+  hard-coded Figma personal access tokens (``figd_``) and Notion
+  internal-integration tokens (``ntn_``), both distinctive-prefix shapes
+  that ride the cross-provider ``*-008`` literal-secret rules. (A planned
+  Stripe / SendGrid / Vault / Doppler batch turned out to be already
+  covered under existing detector names, so only the two genuinely-new
+  shapes landed.) Detector catalog 54 -> 56.
 - **Incoming-webhook URL secret detectors (Slack + Discord).** A leaked
   Slack (``hooks.slack.com/services/T…/B…/…``) or Discord
   (``discord.com/api/webhooks/<id>/<token>``) incoming-webhook URL is a full

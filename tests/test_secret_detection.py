@@ -110,6 +110,9 @@ DETECTORS: list[tuple[str, str]] = [
      "https://hooks.slack.com/services/T00000000/B00000000/" + _FILLER[:24]),
     ("discord_webhook",
      "https://discord.com/api/webhooks/123456789012345678/" + _FILLER[:68]),
+    # ── New detectors (round 7): Figma + Notion tokens ──
+    ("figma_token",           "figd_" + _FILLER[:42]),
+    ("notion_token",          "ntn_" + _FILLER[:46]),
 ]
 
 
@@ -189,6 +192,9 @@ def test_detector_fires_on_real_shape_token(name, token):
      "Slack webhook needs T../B../24+ secret"),
     ("https://discord.com/api/webhooks/123/short",
      "Discord webhook needs 17-20 digit id + 60+ token"),
+    # ── New detectors (round 7): Figma + Notion tokens ──
+    ("figd_short",                          "Figma token needs 40+ chars after figd_"),
+    ("ntn_short",                           "Notion token needs 40+ chars after ntn_"),
 ])
 def test_detectors_reject_undersized_tokens(token, reason):
     """Loose detector regexes are a constant source of false positives.

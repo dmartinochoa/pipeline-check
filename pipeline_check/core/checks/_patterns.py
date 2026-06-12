@@ -161,6 +161,12 @@ _BUILTIN_PATTERNS: dict[str, str] = {
     "slack_webhook":          r"https://hooks\.slack\.com/services/T[A-Z0-9]{6,}/B[A-Z0-9]{6,}/[A-Za-z0-9]{20,}",
     # Discord webhook: discord(app).com/api/webhooks/<17-20 digit id>/<token>.
     "discord_webhook":        r"https://discord(?:app)?\.com/api/webhooks/[0-9]{17,20}/[A-Za-z0-9_\-]{60,}",
+    # ── More SaaS / infra tokens (distinctive prefixes) ──
+    # Figma personal access token (``figd_`` prefix).
+    "figma_token":            r"figd_[A-Za-z0-9_\-]{40,}",
+    # Notion internal-integration token (``ntn_`` prefix; the older
+    # ``secret_`` shape is too generic to match safely).
+    "notion_token":           r"ntn_[A-Za-z0-9]{40,}",
 }
 
 
