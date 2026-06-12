@@ -891,14 +891,16 @@ product. Grouped by horizon; effort (S/M/L) and impact noted.
   single source rather than hand-maintaining across `owasp_cicd_top_10`
   / `esf_supply_chain` / `nist_ssdf` / `nist_800_53` / `nist_csf_2` /
   `soc2` / `pci_dss_v4` + the per-provider counts + docs. Continue the
-  `cli.py` decomposition (6068 -> 5740 lines so far): the post-scan UX
-  hint emitters were extracted to `cli_hints.py`, and the scan-status +
-  scan/gate summary renderers (`_scan_status` / `_scan_incomplete_reason`
-  / `_emit_scan_summary` / `_build_gate_trailer` / `_emit_gate_summary`)
-  to `cli_scan_output.py` — both re-imported so call sites and the
-  test-suite imports are unchanged (pure refactor, suite green;
-  test-only re-exports kept past ruff via the redundant-alias form).
-  Next candidate cohesive block: the shell-completion callbacks.
+  `cli.py` decomposition (6068 -> 5574 lines so far): the post-scan UX
+  hint emitters were extracted to `cli_hints.py`, the scan-status +
+  scan/gate summary renderers to `cli_scan_output.py`, and the
+  shell-completion callbacks + check-ID enumerators
+  (`_complete_check_ids` / `_complete_standards` / `_complete_man_topics`
+  / `_all_check_ids` / `_known_attacked_check_ids`) to `cli_completion.py`
+  — all re-imported so the `shell_complete=` references, call sites, and
+  test-suite imports are unchanged (pure refactor, suite green). Next
+  candidate cohesive block: the eager-print informational commands
+  (`_eager_print_*` / `_list_checks_for_pipeline`).
 
 **New frontier / big bets (M-L):**
 
