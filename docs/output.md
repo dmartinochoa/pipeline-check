@@ -7,6 +7,7 @@ format carries the same finding set, only the rendering differs.
 |------------|------------------------------|------------------------------------------------------|
 | `terminal` | stdout (rich-formatted)      | Human reading in a local shell / CI log              |
 | `json`     | stdout                       | Machine parsing (`jq`, artifact archival)            |
+| `jsonl`    | stdout or `--output-file`    | Newline-delimited JSON, one failing finding per line (same shape as the `json` `findings` entries). Streamed / appended into log pipelines (Splunk, ELK, Datadog) or processed line by line with `jq -c` without loading the whole report |
 | `html`     | `--output-file` (required)   | Emailed / attached reports, screenshots              |
 | `sarif`    | stdout or `--output-file`    | GitHub code scanning, GitLab SAST, any SARIF UI      |
 | `markdown` | stdout or `--output-file`    | PR comments / Slack-style consumers; Attack Chains H2 sits between summary and the Failures table |
