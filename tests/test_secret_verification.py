@@ -81,6 +81,7 @@ class TestVerifierRegistry:
             "new_relic_api_key", "telegram_bot_token",
             "replicate_token", "cohere_api_key",
             "mailchimp_api_key", "square_access_token",
+            "figma_token", "notion_token",
         ]:
             assert has_verifier(det), f"missing verifier for {det}"
 
@@ -1074,3 +1075,70 @@ class TestSquareVerifier:
         assert v is not None
         result = v.probe("sq0atp-fake")
         assert result.outcome == VerifyOutcome.UNVERIFIED
+
+
+_MORE_SAAS_HTTP = (
+    "pipeline_check.core.checks._primitives.secret_verifiers"
+    ".more_saas_keys.http_probe"
+)
+
+
+class TestFigmaVerifier:
+    @patch(_MORE_SAAS_HTTP)
+    def test_verified_carries_handle(self, mock_probe: MagicMock) -> None:
+        mock_probe.return_value = ProbeResponse(
+            status=200, body=json.dumps({"handle": "designer"}).encode(),
+        )
+        v = get_verifier("figma_token")
+        assert v is not None
+        result = v.probe("figd_fake")
+        assert result.outcome == VerifyOutcome.VERIFIED
+        assert result.identity == "figma-user:designer"
+        # The token rides the X-Figma-Token header, not Bearer.
+        _, kwargs = mock_probe.call_args
+        assert kwargs["headers"]["X-Figma-Token"] == "figd_fake"
+
+    @patch(_MORE_SAAS_HTTP)
+    def test_unverified_on_403(self, mock_probe: MagicMock) -> None:
+        mock_probe.return_value = ProbeResponse(status=403, body=b"")
+        v = get_verifier("figma_token")
+        assert v is not None
+        assert v.probe("figd_fake").outcome == VerifyOutcome.UNVERIFIED
+
+    @patch(_MORE_SAAS_HTTP)
+    def test_unknown_on_server_error(self, mock_probe: MagicMock) -> None:
+        mock_probe.return_value = ProbeResponse(status=500, body=b"")
+        v = get_verifier("figma_token")
+        assert v is not None
+        assert v.probe("figd_fake").outcome == VerifyOutcome.UNKNOWN
+
+
+class TestNotionVerifier:
+    @patch(_MORE_SAAS_HTTP)
+    def test_verified_sends_version_header(self, mock_probe: MagicMock) -> None:
+        mock_probe.return_value = ProbeResponse(
+            status=200, body=json.dumps({"name": "my-integration"}).encode(),
+        )
+        v = get_verifier("notion_token")
+        assert v is not None
+        result = v.probe("ntn_fake")
+        assert result.outcome == VerifyOutcome.VERIFIED
+        assert result.identity == "notion-bot:my-integration"
+        # Notion rejects requests without a Notion-Version header.
+        _, kwargs = mock_probe.call_args
+        assert "Notion-Version" in kwargs["headers"]
+        assert kwargs["headers"]["Authorization"] == "Bearer ntn_fake"
+
+    @patch(_MORE_SAAS_HTTP)
+    def test_unverified_on_401(self, mock_probe: MagicMock) -> None:
+        mock_probe.return_value = ProbeResponse(status=401, body=b"")
+        v = get_verifier("notion_token")
+        assert v is not None
+        assert v.probe("ntn_fake").outcome == VerifyOutcome.UNVERIFIED
+
+    @patch(_MORE_SAAS_HTTP)
+    def test_unknown_on_server_error(self, mock_probe: MagicMock) -> None:
+        mock_probe.return_value = ProbeResponse(status=500, body=b"")
+        v = get_verifier("notion_token")
+        assert v is not None
+        assert v.probe("ntn_fake").outcome == VerifyOutcome.UNKNOWN
