@@ -224,6 +224,28 @@ class TestCurlPipeCommentOut:
         assert autofix.fixer_safety("HARNESS-005") == autofix.SAFE
 
 
+class TestGHA031DeprecatedCommandMigration:
+    def test_registered_as_safe(self):
+        assert "GHA-031" in autofix.available_fixers()
+        assert autofix.fixer_safety("GHA-031") == autofix.SAFE
+
+    def test_set_output_migrates_to_github_output(self):
+        wf = '      - run: echo "::set-output name=tag::$VERSION"\n'
+        after = autofix.generate_fix(_finding("GHA-031"), wf)
+        assert after is not None
+        assert after == '      - run: echo "tag=$VERSION" >> "$GITHUB_OUTPUT"\n'
+
+    def test_save_state_migrates_to_github_state(self):
+        wf = "      - run: echo '::save-state name=st::abc'\n"
+        after = autofix.generate_fix(_finding("GHA-031"), wf)
+        assert after is not None
+        assert 'echo "st=abc" >> "$GITHUB_STATE"' in after
+
+    def test_idempotent_after_migration(self):
+        wf = '      - run: echo "tag=$VERSION" >> "$GITHUB_OUTPUT"\n'
+        assert autofix.generate_fix(_finding("GHA-031"), wf) is None
+
+
 # ── Docker flag removal ────────────────────────────────────────────────
 
 
