@@ -12,6 +12,14 @@ release commit collapses this section into `## [X.Y.Z] - <date>`.
 
 ### Added
 
+- **Figma + Notion live secret verifiers (``--verify-secrets``).** The
+  Figma (``figd_``) and Notion (``ntn_``) detectors added last cycle now
+  have verifiers, so ``--verify-secrets`` can confirm whether a detected
+  token is live: Figma via ``GET /v1/me`` (the ``X-Figma-Token`` header,
+  not Bearer) and Notion via ``GET /v1/users/me`` (Bearer + the required
+  ``Notion-Version`` header). A valid token reports the owning handle /
+  integration name; an explicit auth failure reports UNVERIFIED; anything
+  else is UNKNOWN. No new network surface beyond the opt-in probe.
 - **JSON Lines output (``--output jsonl``).** Emits one failing finding
   per line as compact, newline-delimited JSON, using the same per-finding
   shape as the ``json`` output's ``findings`` entries. Unlike the single

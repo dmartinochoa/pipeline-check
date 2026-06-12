@@ -1,8 +1,8 @@
 """Verifiers for additional SaaS API tokens.
 
-Covers Replicate, Cohere, Mailchimp, and Square. Companion to
-``saas_api_keys.py`` (which holds Anthropic, OpenAI, HF, SendGrid,
-Stripe).
+Covers Replicate, Cohere, Mailchimp, Square, Figma, and Notion.
+Companion to ``saas_api_keys.py`` (which holds Anthropic, OpenAI, HF,
+SendGrid, Stripe).
 """
 from __future__ import annotations
 
@@ -147,4 +147,91 @@ class SquareAccessTokenVerifier(SecretVerifier):
         return VerifyResult(
             outcome=VerifyOutcome.UNKNOWN,
             reason=f"GET /v2/locations returned {resp.status}",
+        )
+
+
+# -- Figma ---------------------------------------------------------------
+
+
+class FigmaTokenVerifier(SecretVerifier):
+    """Verify Figma personal access tokens.
+
+    Figma authenticates with the ``X-Figma-Token`` header (not Bearer),
+    and ``GET /v1/me`` returns the owning account.
+    """
+
+    _ENDPOINT = "https://api.figma.com/v1/me"
+
+    def probe(self, secret_value: str) -> VerifyResult:
+        resp = http_probe(
+            self._ENDPOINT,
+            headers={"X-Figma-Token": secret_value},
+        )
+        if resp.ok:
+            try:
+                data = resp.json()
+                who = data.get("handle") or data.get("email") or "unknown"
+            except Exception:
+                who = "unknown"
+            return VerifyResult(
+                outcome=VerifyOutcome.VERIFIED,
+                identity=f"figma-user:{who}",
+                reason=f"GET /v1/me returned 200 (handle={who})",
+            )
+        if resp.auth_failure:
+            return VerifyResult(
+                outcome=VerifyOutcome.UNVERIFIED,
+                reason=f"GET /v1/me returned {resp.status}",
+            )
+        return VerifyResult(
+            outcome=VerifyOutcome.UNKNOWN,
+            reason=f"GET /v1/me returned {resp.status}",
+        )
+
+
+# -- Notion --------------------------------------------------------------
+
+
+class NotionTokenVerifier(SecretVerifier):
+    """Verify Notion internal-integration tokens.
+
+    Notion requires a ``Notion-Version`` header alongside the Bearer
+    token; ``GET /v1/users/me`` returns the integration's bot user.
+    """
+
+    _ENDPOINT = "https://api.notion.com/v1/users/me"
+    _NOTION_VERSION = "2022-06-28"
+
+    def probe(self, secret_value: str) -> VerifyResult:
+        resp = http_probe(
+            self._ENDPOINT,
+            headers={
+                "Authorization": f"Bearer {secret_value}",
+                "Notion-Version": self._NOTION_VERSION,
+            },
+        )
+        if resp.ok:
+            try:
+                data = resp.json()
+                bot = data.get("bot") if isinstance(data.get("bot"), dict) else {}
+                who = (
+                    data.get("name")
+                    or bot.get("workspace_name")
+                    or "unknown"
+                )
+            except Exception:
+                who = "unknown"
+            return VerifyResult(
+                outcome=VerifyOutcome.VERIFIED,
+                identity=f"notion-bot:{who}",
+                reason=f"GET /v1/users/me returned 200 (name={who})",
+            )
+        if resp.auth_failure:
+            return VerifyResult(
+                outcome=VerifyOutcome.UNVERIFIED,
+                reason=f"GET /v1/users/me returned {resp.status}",
+            )
+        return VerifyResult(
+            outcome=VerifyOutcome.UNKNOWN,
+            reason=f"GET /v1/users/me returned {resp.status}",
         )

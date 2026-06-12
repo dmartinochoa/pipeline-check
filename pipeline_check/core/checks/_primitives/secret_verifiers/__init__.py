@@ -127,7 +127,9 @@ def _register_builtins() -> None:
     from .jwt import JWTTokenVerifier
     from .more_saas_keys import (
         CohereAPIKeyVerifier,
+        FigmaTokenVerifier,
         MailchimpAPIKeyVerifier,
+        NotionTokenVerifier,
         ReplicateTokenVerifier,
         SquareAccessTokenVerifier,
     )
@@ -168,6 +170,8 @@ def _register_builtins() -> None:
     _REGISTRY["cohere_api_key"] = CohereAPIKeyVerifier()
     _REGISTRY["mailchimp_api_key"] = MailchimpAPIKeyVerifier()
     _REGISTRY["square_access_token"] = SquareAccessTokenVerifier()
+    _REGISTRY["figma_token"] = FigmaTokenVerifier()
+    _REGISTRY["notion_token"] = NotionTokenVerifier()
 
 
 def get_verifier(detector_name: str) -> SecretVerifier | None:
