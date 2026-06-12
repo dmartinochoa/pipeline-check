@@ -486,8 +486,10 @@ def _comment_curl_pipe(content: str, finding: Finding) -> str | None:
 for _cid in (
     "GHA-016", "GL-016", "ADO-016", "BB-012", "JF-016", "CC-016",
     # Buildkite has a dedicated curl-pipe rule (BK-004); the heuristic
-    # is provider-agnostic so the same comment-out fixer applies.
-    "BK-004",
+    # is provider-agnostic so the same comment-out fixer applies. Drone
+    # (DR-014) and Harness (HARNESS-005) carry the same pipe-to-shell
+    # rule and consume the same fixer.
+    "BK-004", "DR-014", "HARNESS-005",
 ):
     register(_cid, safety="safe")(_comment_curl_pipe)
 

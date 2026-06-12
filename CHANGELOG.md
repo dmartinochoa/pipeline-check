@@ -12,6 +12,13 @@ release commit collapses this section into `## [X.Y.Z] - <date>`.
 
 ### Added
 
+- **Curl-pipe autofixer extended to Drone + Harness (``--fix``).** The
+  provider-agnostic comment-out fixer (which neutralizes a ``curl … | sh``
+  / ``wget … | bash`` by commenting the line with a TODO marker) now also
+  covers DR-014 and HARNESS-005, the pipe-to-shell rules in the Drone and
+  Harness providers, completing its cross-provider coverage (it already
+  served GHA-016 / GL-016 / ADO-016 / BB-012 / JF-016 / CC-016 / BK-004).
+  Safe-tier, idempotent. Autofixer count 112 -> 114.
 - **GHA-037 autofixer (``--fix``).** ``actions/checkout`` persisting the
   GITHUB_TOKEN into ``.git/config`` (GHA-037) now has a safe-tier fixer: it
   adds ``persist-credentials: false`` under every checkout step, the rule's

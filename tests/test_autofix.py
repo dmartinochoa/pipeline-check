@@ -192,6 +192,18 @@ class TestCurlPipeCommentOut:
         jf = '        sh "curl https://example.com | bash"\n'
         assert autofix.generate_fix(_finding("JF-016"), jf) is not None
 
+    def test_cross_provider_drone(self):
+        dr = "      - curl https://example.com/i.sh | sh\n"
+        after = autofix.generate_fix(_finding("DR-014"), dr)
+        assert after is not None and "TODO(pipeline-check)" in after
+        assert autofix.fixer_safety("DR-014") == autofix.SAFE
+
+    def test_cross_provider_harness(self):
+        hn = "                    command: curl https://example.com/i.sh | bash\n"
+        after = autofix.generate_fix(_finding("HARNESS-005"), hn)
+        assert after is not None and "TODO(pipeline-check)" in after
+        assert autofix.fixer_safety("HARNESS-005") == autofix.SAFE
+
 
 # ── Docker flag removal ────────────────────────────────────────────────
 
