@@ -20,7 +20,7 @@ Kubernetes, …) when an audit asks for that framework's vocabulary.
 - **Controls in this standard:** 10
 - **Controls evidenced by at least one check:** 10 / 10
 - **Distinct checks evidencing this standard:** 979
-- **Of those, autofixable with `--fix`:** 116
+- **Of those, autofixable with `--fix`:** 118
 
 _Severity levels (`CRITICAL` / `HIGH` / `MEDIUM` / `LOW` / `INFO`) follow the same scale across every provider and standard. See [How to read severity](README.md#how-to-read-severity) on the standards overview for the definitions._
 
@@ -91,7 +91,7 @@ Reviews, approvals, branch protection, and deployment gates are the brakes on th
 | [`CP-001`](../providers/aws.md#cp-001) | No approval action before deploy stages | <span class="pg-sev pg-sev--high">HIGH</span> | [AWS](../providers/aws.md) |  |
 | [`CP-005`](../providers/aws.md#cp-005) | Production Deploy stage has no preceding ManualApproval | <span class="pg-sev pg-sev--medium">MEDIUM</span> | [AWS](../providers/aws.md) |  |
 | [`DR-003`](../providers/drone.md#dr-003) | Untrusted Drone template variable in shell command | <span class="pg-sev pg-sev--high">HIGH</span> | [Drone CI](../providers/drone.md) |  |
-| [`DR-006`](../providers/drone.md#dr-006) | TLS verification disabled in step commands | <span class="pg-sev pg-sev--high">HIGH</span> | [Drone CI](../providers/drone.md) |  |
+| [`DR-006`](../providers/drone.md#dr-006) | TLS verification disabled in step commands | <span class="pg-sev pg-sev--high">HIGH</span> | [Drone CI](../providers/drone.md) | <span class="pg-fix" title="`--fix` will patch this rule">🔧 fix</span> |
 | [`DR-009`](../providers/drone.md#dr-009) | Cache plugin key embeds an attacker-controllable Drone variable | <span class="pg-sev pg-sev--high">HIGH</span> | [Drone CI](../providers/drone.md) |  |
 | [`DR-011`](../providers/drone.md#dr-011) | node map interpolates attacker-controllable Drone variable | <span class="pg-sev pg-sev--high">HIGH</span> | [Drone CI](../providers/drone.md) |  |
 | [`DR-013`](../providers/drone.md#dr-013) | Pipeline defines no trigger event filter | <span class="pg-sev pg-sev--medium">MEDIUM</span> | [Drone CI](../providers/drone.md) |  |
@@ -115,7 +115,7 @@ Reviews, approvals, branch protection, and deployment gates are the brakes on th
 | [`GL-033`](../providers/gitlab.md#gl-033) | Global before_script / after_script propagates taint to every job | <span class="pg-sev pg-sev--high">HIGH</span> | [GitLab CI](../providers/gitlab.md) |  |
 | [`GL-044`](../providers/gitlab.md#gl-044) | Automatic production deployment on a merge-request pipeline | <span class="pg-sev pg-sev--critical">CRITICAL</span> | [GitLab CI](../providers/gitlab.md) |  |
 | [`GL-049`](../providers/gitlab.md#gl-049) | Agentic CLI output lands without human review | <span class="pg-sev pg-sev--high">HIGH</span> | [GitLab CI](../providers/gitlab.md) |  |
-| [`HARNESS-006`](../providers/harness.md#harness-006) | TLS verification disabled in step commands | <span class="pg-sev pg-sev--high">HIGH</span> | [Harness CI/CD](../providers/harness.md) |  |
+| [`HARNESS-006`](../providers/harness.md#harness-006) | TLS verification disabled in step commands | <span class="pg-sev pg-sev--high">HIGH</span> | [Harness CI/CD](../providers/harness.md) | <span class="pg-fix" title="`--fix` will patch this rule">🔧 fix</span> |
 | [`HARNESS-009`](../providers/harness.md#harness-009) | Agentic CLI output lands without human review | <span class="pg-sev pg-sev--high">HIGH</span> | [Harness CI/CD](../providers/harness.md) |  |
 | [`JF-005`](../providers/jenkins.md#jf-005) | Deploy stage missing manual `input` approval | <span class="pg-sev pg-sev--medium">MEDIUM</span> | [Jenkins](../providers/jenkins.md) |  |
 | [`JF-024`](../providers/jenkins.md#jf-024) | `input` approval step missing submitter restriction | <span class="pg-sev pg-sev--medium">MEDIUM</span> | [Jenkins](../providers/jenkins.md) |  |
@@ -377,7 +377,7 @@ Floating tags, range constraints, and unverified registries let an upstream main
 | [`DF-031`](../providers/dockerfile.md#df-031) | COPY --from external image not pinned to sha256 digest | <span class="pg-sev pg-sev--high">HIGH</span> | [Dockerfile](../providers/dockerfile.md) |  |
 | [`DR-001`](../providers/drone.md#dr-001) | Step image not pinned to a digest | <span class="pg-sev pg-sev--high">HIGH</span> | [Drone CI](../providers/drone.md) |  |
 | [`DR-005`](../providers/drone.md#dr-005) | Plugin step uses a floating image tag | <span class="pg-sev pg-sev--high">HIGH</span> | [Drone CI](../providers/drone.md) |  |
-| [`DR-006`](../providers/drone.md#dr-006) | TLS verification disabled in step commands | <span class="pg-sev pg-sev--high">HIGH</span> | [Drone CI](../providers/drone.md) |  |
+| [`DR-006`](../providers/drone.md#dr-006) | TLS verification disabled in step commands | <span class="pg-sev pg-sev--high">HIGH</span> | [Drone CI](../providers/drone.md) | <span class="pg-fix" title="`--fix` will patch this rule">🔧 fix</span> |
 | [`DR-008`](../providers/drone.md#dr-008) | Step uses ``pull: never`` (skips registry verification) | <span class="pg-sev pg-sev--medium">MEDIUM</span> | [Drone CI](../providers/drone.md) |  |
 | [`DR-009`](../providers/drone.md#dr-009) | Cache plugin key embeds an attacker-controllable Drone variable | <span class="pg-sev pg-sev--high">HIGH</span> | [Drone CI](../providers/drone.md) |  |
 | [`DR-010`](../providers/drone.md#dr-010) | Step commands run unpinned package installs | <span class="pg-sev pg-sev--medium">MEDIUM</span> | [Drone CI](../providers/drone.md) |  |
@@ -466,7 +466,7 @@ Floating tags, range constraints, and unverified registries let an upstream main
 | [`GOMOD-012`](../providers/gomod.md) | go.mod require / replace targets an insecure or non-canonical host | <span class="pg-sev pg-sev--high">HIGH</span> | [Go modules](../providers/gomod.md) |  |
 | [`HARNESS-001`](../providers/harness.md#harness-001) | Step image not pinned to a digest | <span class="pg-sev pg-sev--high">HIGH</span> | [Harness CI/CD](../providers/harness.md) |  |
 | [`HARNESS-005`](../providers/harness.md#harness-005) | Step pipes a remote download into a shell interpreter | <span class="pg-sev pg-sev--high">HIGH</span> | [Harness CI/CD](../providers/harness.md) | <span class="pg-fix" title="`--fix` will patch this rule">🔧 fix</span> |
-| [`HARNESS-006`](../providers/harness.md#harness-006) | TLS verification disabled in step commands | <span class="pg-sev pg-sev--high">HIGH</span> | [Harness CI/CD](../providers/harness.md) |  |
+| [`HARNESS-006`](../providers/harness.md#harness-006) | TLS verification disabled in step commands | <span class="pg-sev pg-sev--high">HIGH</span> | [Harness CI/CD](../providers/harness.md) | <span class="pg-fix" title="`--fix` will patch this rule">🔧 fix</span> |
 | [`HELM-001`](../providers/helm.md#helm-001) | Chart.yaml declares legacy apiVersion: v1 | <span class="pg-sev pg-sev--medium">MEDIUM</span> | [Helm](../providers/helm.md) | <span class="pg-fix" title="`--fix` will patch this rule">🔧 fix</span> |
 | [`HELM-002`](../providers/helm.md#helm-002) | Chart.lock missing per-dependency digests | <span class="pg-sev pg-sev--high">HIGH</span> | [Helm](../providers/helm.md) | <span class="pg-fix" title="`--fix` will patch this rule">🔧 fix</span> |
 | [`HELM-003`](../providers/helm.md#helm-003) | Chart dependency declared on a non-HTTPS repository | <span class="pg-sev pg-sev--high">HIGH</span> | [Helm](../providers/helm.md) | <span class="pg-fix" title="`--fix` will patch this rule">🔧 fix</span> |

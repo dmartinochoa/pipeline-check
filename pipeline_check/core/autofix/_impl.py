@@ -1292,6 +1292,11 @@ for _cid in (
     "GHA-023", "GL-023", "ADO-023", "BB-023", "JF-023", "CC-023",
     # Buildkite's TLS-bypass rule covers the same flags / env vars.
     "BK-008",
+    # Drone (DR-006) and Harness (HARNESS-006) detect TLS bypass through
+    # the same ``tls_bypass`` primitive, so the comment-out fix applies
+    # unchanged -- the analog of their curl-pipe siblings (DR-014 /
+    # HARNESS-005) already sharing ``_comment_curl_pipe``.
+    "DR-006", "HARNESS-006",
 ):
     register(_cid, safety="safe")(_comment_tls_bypass)
 

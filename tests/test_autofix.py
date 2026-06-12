@@ -700,6 +700,28 @@ class TestGCB011TLSBypass:
         assert "TODO(pipeline-check): remove TLS/SSL verification bypass" in after
 
 
+class TestDroneHarnessTLSBypass:
+    # DR-006 / HARNESS-006 detect TLS bypass through the same
+    # _primitives.tls_bypass detector as every other provider, so they
+    # share _comment_tls_bypass (the analog of DR-014 / HARNESS-005 already
+    # sharing the curl-pipe fixer).
+    def test_dr006_comments_out_tls_bypass(self):
+        dr = "      - curl --insecure https://example.com/x.sh -o x.sh\n"
+        after = autofix.generate_fix(_finding("DR-006"), dr)
+        assert after is not None
+        assert "TODO(pipeline-check): remove TLS/SSL verification bypass" in after
+        assert autofix.fixer_safety("DR-006") == autofix.SAFE
+        # idempotent: the commented line isn't re-flagged
+        assert autofix.generate_fix(_finding("DR-006"), after) is None
+
+    def test_harness006_comments_out_tls_bypass(self):
+        hn = "                      npm config set strict-ssl false\n"
+        after = autofix.generate_fix(_finding("HARNESS-006"), hn)
+        assert after is not None
+        assert "TODO(pipeline-check): remove TLS/SSL verification bypass" in after
+        assert autofix.fixer_safety("HARNESS-006") == autofix.SAFE
+
+
 # ── Dockerfile comment-only TODO fixers ───────────────────────────────
 
 

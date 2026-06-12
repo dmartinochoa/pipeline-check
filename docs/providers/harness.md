@@ -38,7 +38,7 @@ All other flags (`--output`, `--severity-threshold`, `--checks`,
 
 ## What it covers
 
-11 checks · 1 have an autofix patch (``--fix``).
+11 checks · 2 have an autofix patch (``--fix``).
 
 | Check | Title | Severity | Fix |
 |-------|-------|----------|-----|
@@ -47,7 +47,7 @@ All other flags (`--output`, `--severity-threshold`, `--checks`,
 | [HARNESS-003](#harness-003) | Step runs with privileged: true | <span class="pg-sev pg-sev--high">HIGH</span> |  |
 | [HARNESS-004](#harness-004) | Literal credential in a pipeline / stage variable | <span class="pg-sev pg-sev--critical">CRITICAL</span> |  |
 | [HARNESS-005](#harness-005) | Step pipes a remote download into a shell interpreter | <span class="pg-sev pg-sev--high">HIGH</span> | <span class="pg-fix" title="`--fix` will patch this rule">🔧 fix</span> |
-| [HARNESS-006](#harness-006) | TLS verification disabled in step commands | <span class="pg-sev pg-sev--high">HIGH</span> |  |
+| [HARNESS-006](#harness-006) | TLS verification disabled in step commands | <span class="pg-sev pg-sev--high">HIGH</span> | <span class="pg-fix" title="`--fix` will patch this rule">🔧 fix</span> |
 | [HARNESS-007](#harness-007) | Stage infrastructure mounts a sensitive host path | <span class="pg-sev pg-sev--high">HIGH</span> |  |
 | [HARNESS-008](#harness-008) | Untrusted context reaches an agentic AI CLI (prompt injection) | <span class="pg-sev pg-sev--high">HIGH</span> |  |
 | [HARNESS-009](#harness-009) | Agentic CLI output lands without human review | <span class="pg-sev pg-sev--high">HIGH</span> |  |
@@ -173,7 +173,7 @@ Replace every ``curl ... | sh`` / ``wget ... | bash`` pattern in a Run step ``co
 ## HARNESS-006: TLS verification disabled in step commands { #harness-006 }
 
 <div class="pg-rule__tags">
-<span class="pg-sev pg-sev--high">HIGH</span> <span class="pg-tag pg-tag--owasp">CICD-SEC-3</span> <span class="pg-tag pg-tag--owasp">CICD-SEC-1</span> <span class="pg-tag pg-tag--esf">ESF-D-RUNTIME-HARDENING</span> <span class="pg-tag pg-tag--cwe">CWE-295</span> <span class="pg-tag pg-tag--cwe">CWE-494</span>
+<span class="pg-sev pg-sev--high">HIGH</span> <span class="pg-fix pg-fix--rule" title="`--fix` will patch this rule">🔧 autofix</span> <span class="pg-tag pg-tag--owasp">CICD-SEC-3</span> <span class="pg-tag pg-tag--owasp">CICD-SEC-1</span> <span class="pg-tag pg-tag--esf">ESF-D-RUNTIME-HARDENING</span> <span class="pg-tag pg-tag--cwe">CWE-295</span> <span class="pg-tag pg-tag--cwe">CWE-494</span>
 </div>
 
 Reuses the cross-provider ``_primitives.tls_bypass`` detector shared with DR-006 / GHA-027 / BK-008 / JF-022 / ADO-026 / CC-024 / GCB-011 and the IaC packs (covers curl / wget / git / npm / yarn / pip / helm / kubectl / ssh / docker / maven / gradle / aws bypasses). The rule scans every step's ``spec.command`` text across CI and CD stages, through ``parallel`` / ``stepGroup`` nesting.

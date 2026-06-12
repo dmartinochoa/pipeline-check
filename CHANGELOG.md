@@ -12,6 +12,15 @@ release commit collapses this section into `## [X.Y.Z] - <date>`.
 
 ### Added
 
+- **DR-006 + HARNESS-006 TLS-bypass autofixers (``--fix``).** Drone and
+  Harness detect a TLS / certificate-verification bypass (``curl -k``,
+  ``npm config set strict-ssl false``, ``NODE_TLS_REJECT_UNAUTHORIZED=0``,
+  …) through the same ``_primitives.tls_bypass`` detector as every other
+  provider, so they now share the existing ``_comment_tls_bypass`` fixer
+  that comments the offending line out with a TODO marker (the analog of
+  their curl-pipe siblings DR-014 / HARNESS-005 already sharing the
+  curl-pipe fixer). No new logic, safe-tier, idempotent. Autofixer count
+  116 -> 118.
 - **Figma + Notion token secret detectors.** The catalog now flags
   hard-coded Figma personal access tokens (``figd_``) and Notion
   internal-integration tokens (``ntn_``), both distinctive-prefix shapes

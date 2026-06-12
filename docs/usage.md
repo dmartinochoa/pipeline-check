@@ -377,7 +377,7 @@ pipeline_check --fix --apply      # write patches in place
 pipeline_check --fix | git apply  # review first, then apply
 ```
 
-116 fixers cover pinning, secrets, timeouts, TLS bypass, script
+118 fixers cover pinning, secrets, timeouts, TLS bypass, script
 injection, Docker flags, Kubernetes securityContext, and more. See individual check pages under
 [providers/](providers/README.md) for which have autofix support.
 
