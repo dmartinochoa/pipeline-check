@@ -165,6 +165,23 @@ pipeline_check --pipeline scm --scm-platform github \
     --scm-repo octocat/hello-world \
     --scm-fixture-dir ./scm-fixtures/
 
+# Organization-wide per-repo fan-out. Runs the per-repo posture pack
+# across every non-archived repo the org exposes. GitHub (--scm-org is
+# the org login) runs the full pack; GitLab (a group path, subgroups
+# included) and Bitbucket (a workspace) run the 7-rule universal subset.
+# Scope it with repeatable --scm-include / --scm-exclude fnmatch globs,
+# and cap very large orgs with --scm-max-repos (0 = unlimited; truncation
+# is warned).
+pipeline_check --pipeline scm --scm-platform github --scm-org my-org \
+    --scm-include 'service-*' --scm-exclude '*-sandbox' --scm-max-repos 50
+pipeline_check --pipeline scm --scm-platform gitlab --scm-org my-group
+
+# Organization-wide governance (GitHub). Audits org-admin settings that
+# govern every repo at once (2FA requirement, default member permission).
+# Token from --gh-token or $GITHUB_TOKEN; needs admin:org / read:org.
+pipeline_check --pipeline scm_org --scm-org my-org \
+    --gh-token "$GITHUB_TOKEN"
+
 # Actions run-history forensics (GitHub only). Audits recent
 # Actions runs via the REST API for privileged-trigger and
 # fork-originated executions. Token comes from --gh-token or

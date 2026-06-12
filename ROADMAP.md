@@ -788,31 +788,117 @@ product. Grouped by horizon; effort (S/M/L) and impact noted.
   IOC registry (no RUN-006 analog), and the RUN-007 analog needs a new fetch
   of the pipeline's resolved config + parse, overlapping the static GitLab
   provider's include-pinning checks; defer unless demand appears.
-- **Live org-wide SCM governance (`--scm-org ORG`) (M, high).** The
-  55-rule SCM pack runs one repo at a time today; fleet clones configs.
-  Enumerate every repo + org-level settings (org-secret scoping, Actions
-  allow-lists, org-wide branch-protection defaults, member 2FA / SSO) in
-  one pass. The Legitify / Allstar buyer; rule pack and fetchers exist,
-  needs org enumeration + ~10 org-level rules.
-- **Provenance verification as a gate (`verify-artifact <ref>`) (M, high).**
-  The tool detects missing signing (GHA-100) and reads attestation
-  content, but never verifies a real artifact. Run the slsa-verifier /
-  cosign flow against an OCI ref or release and report pass/fail. Closes
-  "you should sign" -> "this artifact is verifiably built by who it
-  claims". Reuses the `opa`/`helm` shell-out pattern.
+- **Live org-wide SCM governance (`--scm-org ORG`) (M, high).** Started
+  2026-06-11: the new `scm_org` provider (`--pipeline scm_org --scm-org ORG`,
+  GitHub-first, prefix ORG-) ships **ORG-001** (org-wide 2FA not required),
+  **ORG-002** (default member permission write/admin), **ORG-003** (no
+  Actions allow-list, `allowed_actions: all`), **ORG-004** (default workflow
+  `GITHUB_TOKEN` is read-write), **ORG-005** (Actions can approve PRs, a
+  required-review bypass), **ORG-006** (org Actions secret scoped to all
+  repositories, the SCM-048 analog), and **ORG-007** (MEDIUM, private-repo
+  forking allowed: `members_can_fork_private_repositories`, so a member can
+  fork private/internal source to a personal account outside the org's branch
+  protection / audit log / secret scanning, a no-exploit data-exfiltration
+  path), and **ORG-008** (MEDIUM, member public-repo creation:
+  `members_can_create_public_repositories`, so a member can publish internal
+  source/secrets to the internet with no review, the Legitify
+  `non_admins_can_create_public_repositories` policy; guarded to pass when
+  `members_can_create_repositories` is false), and **ORG-009** (HIGH, a
+  self-hosted runner group with `allows_public_repositories: true`, so a public
+  repo / fork PR can run code on org infrastructure; the org-governance analog
+  of GHA-105 / GLRUN-005, via a new `GET /orgs/{org}/actions/runner-groups`
+  fetch + `actions_runner_groups` context slot), and **ORG-010** (MEDIUM, new
+  repos default to secret scanning without push protection:
+  `secret_scanning_enabled_for_new_repositories` true but
+  `secret_scanning_push_protection_enabled_for_new_repositories` not, the
+  org-default analog of SCM-015; scoped to the half-config so a non-GHAS org
+  never false-positives), and **ORG-011** (HIGH, an org webhook delivering
+  events over insecure transport: `config.url` is `http://` or
+  `insecure_ssl: "1"`, so the org-wide event stream is exposed to a network
+  attacker; the org-level analog of SCM-026 via a new `GET /orgs/{org}/hooks`
+  fetch + `org_hooks` context slot, scoped to transport security since the API
+  does not reliably report webhook secret presence), and **ORG-012** (LOW, new
+  repos get Dependabot alerts but not security updates:
+  `dependabot_alerts_enabled_for_new_repositories` true but
+  `dependabot_security_updates_enabled_for_new_repositories` not, the
+  org-default analog of SCM-005; gated like ORG-010 so a no-Dependabot org never
+  false-positives), and **ORG-013** (MEDIUM, an org ruleset whose `enforcement`
+  is `evaluate` / `disabled` rather than `active`, so org-wide branch / tag /
+  push governance is documented but not blocking; the org-level analog of
+  SCM-029 via a new `GET /orgs/{org}/rulesets` fetch + `org_rulesets` context
+  slot, with a `known_fp` for the legitimate short evaluate window). Reads
+  `GET /orgs/{org}`
+  (ORG-001/002/007/008/010/012) + `/actions/permissions` +
+  `/actions/permissions/workflow` + `/actions/secrets` + `/actions/runner-groups`
+  + `/hooks` + `/rulesets` over the existing SCM REST fetcher. Provider count
+  37 -> 38. **Remaining:** more org-level rules (member SSO / outside-collaborator
+  policy; org-wide branch-protection defaults now partly covered by ORG-013's
+  ruleset-enforcement check). The **per-repo fan-out first increment SHIPPED**:
+  the `scm` provider now accepts `--scm-org ORG` (GitHub) to enumerate every
+  non-archived org repo (paginated `GET /orgs/{org}/repos`) and run the full
+  per-repo posture pack across all of them, one finding per repo per rule, via a
+  new `SCMContext.for_org` classmethod (reuses the multi-repo `repos` list shape
+  `SCMContext` already had + the existing `for_repo` snapshot builder, so the
+  whole SCM rule pack runs unchanged). Fan-out **ergonomics SHIPPED**:
+  `--scm-include` / `--scm-exclude` (repeatable fnmatch globs over the repo name)
+  scope the fan-out and `--scm-max-repos N` caps it for very large orgs (0 =
+  unlimited, truncation reported as a warning), all applied inside
+  `SCMContext.for_org`. Per-repo snapshots now build **concurrently** over a
+  bounded thread pool (`_FAN_OUT_WORKERS=8`, order-preserving via
+  `executor.map`; the stateless `HttpSCMFetcher` makes it safe). **GitLab +
+  Bitbucket org fan-out SHIPPED**: `--scm-org` now works on all three platforms
+  (GitLab `ORG` is a group path with subgroups, Bitbucket `ORG` is a workspace);
+  both enumerate their projects / repos and run the 7-rule universal subset, via
+  `gitlab_context_for_org` / `bitbucket_context_for_org` reusing the shared
+  `_build_fan_out_context` helper (filter / cap / concurrency factored out of
+  `for_org`). **Remaining:** member SSO / outside-collaborator policy (org-level
+  rules). The Legitify / Allstar buyer.
+- ~~**Provenance verification as a gate (`verify-artifact <ref>`) (M, high).**~~
+  Shipped (`b9c33a00`). `pipeline_check verify-artifact REF` shells out to
+  `cosign` / `slsa-verifier` / `gh attestation` on PATH (`core/provenance.py`),
+  builds an injection-safe argv per tool, folds the outcomes into one verdict
+  (PASS / FAIL / INCONCLUSIVE) on the canonical exit-code contract (0/1/3),
+  and supports OCI + file artifacts, keyless + keyed cosign, `--json`, and a
+  per-tool timeout. A missing binary degrades to INCONCLUSIVE, never a crash,
+  mirroring the `opa`/`helm` pattern. Closed "you should sign" (GHA-100) into
+  "this artifact is verifiably built by who it claims". Covered by
+  `tests/test_provenance.py` + `tests/test_provenance_ref.py` (43 tests).
 - **Robustness / quality hardening sweep (M, med-high).** Audit every
   loader for the exception-class gap the RecursionError exposed
   (`RecursionError` / `MemoryError` / encoding cases slipping past
   `except yaml.YAMLError` / `except OSError`). Add a fuzz harness
   (Hypothesis) and differential testing (the same logical pipeline in
   different syntaxes must yield the same findings) as standing quality
-  gates beyond the goat bench.
+  gates beyond the goat bench. **Progress:** the standing
+  `tests/test_loader_robustness.py` gate (deep-nest + alias-bomb +
+  non-UTF-8 + differential, no Hypothesis dep) was extended to the XML
+  packs (maven / nuget) and a per-provider non-UTF-8 battery over the
+  seven distinct-parser providers; an empirical sweep confirmed all
+  degrade gracefully, and the one narrow-`except` gap found (maven
+  `_parse_pom` caught only `ET.ParseError`) was hardened to also catch
+  `RecursionError` / `MemoryError`. Differential coverage broadened past
+  GHA-002's `on:` shapes: GHA-003 (script injection) is now asserted
+  across every `run:` scalar style (inline / literal / folded / quoted)
+  and GHA-008 (hardcoded credential) across every value scalar style —
+  both confirmed representation-robust. A seeded, dependency-free
+  generative fuzz pass (random structured YAML + arbitrary byte blobs ->
+  shared loader -> no-crash, 400 inputs) now backs the curated battery;
+  it found no new crash class. Remaining: swapping the seeded generator
+  for Hypothesis proper (deferred — the dev deps are hash-locked, so
+  adding the library is a separate `requirements-dev.txt` regen step).
 - **Reduce new-rule wiring friction (M, med).** A new rule touches ~16
   files. Derive the standards-mapping and doc-count surfaces from a
   single source rather than hand-maintaining across `owasp_cicd_top_10`
   / `esf_supply_chain` / `nist_ssdf` / `nist_800_53` / `nist_csf_2` /
   `soc2` / `pci_dss_v4` + the per-provider counts + docs. Continue the
-  `cli.py` decomposition (~5,400 lines).
+  `cli.py` decomposition (6068 -> 5740 lines so far): the post-scan UX
+  hint emitters were extracted to `cli_hints.py`, and the scan-status +
+  scan/gate summary renderers (`_scan_status` / `_scan_incomplete_reason`
+  / `_emit_scan_summary` / `_build_gate_trailer` / `_emit_gate_summary`)
+  to `cli_scan_output.py` — both re-imported so call sites and the
+  test-suite imports are unchanged (pure refactor, suite green;
+  test-only re-exports kept past ruff via the redundant-alias form).
+  Next candidate cohesive block: the shell-completion callbacks.
 
 **New frontier / big bets (M-L):**
 
@@ -838,11 +924,13 @@ product. Grouped by horizon; effort (S/M/L) and impact noted.
   permissions (IAM simulator) and report "a fork PR on repo X can assume
   role Y that can delete prod". Turns a misconfig list into an
   executive-legible risk story no CI scanner tells.
-- **Shareable policy packs (`--policy-pack URL`) (M, med-high).** Ship
-  curated packs ("PCI-baseline", "SLSA-L3-gate", "fintech-strict") plus
-  a community registry. Turns the 18-framework compliance mapping into
-  distributable, sticky gates. Builds on `--policy` profiles + the Rego
-  / YAML loaders.
+- **Shareable policy packs (`--policy-pack URL`) (M, med-high).** Mostly
+  shipped: `policies.BUILTIN_PACKS` ships curated packs by name
+  (`--policy pr-gate` / `release-gate` / `slsa-l3` / `pci-dss` /
+  `supply-chain-strict`), and `--policy <https-url>` fetches a remote pack
+  through the same validated loader. Remaining: a discoverable community
+  registry (an index of third-party packs) rather than a single URL.
+  Turns the 18-framework compliance mapping into distributable, sticky gates.
 - **New providers (M each, med).** A HuggingFace / model-registry
   provider (ties to the AI pack), the enterprise CD systems with no
   scanner coverage (Harness / Spinnaker / Octopus), and a Backstage /
@@ -1194,9 +1282,12 @@ queued here.**
   secret-exfil direction, and TAINT/GHA-003 only model
   ``${{ }}`` + ``$GITHUB_OUTPUT``.
 
-**Tier 2 (queued, strong + clean):**
+**Tier 2 (ALL SHIPPED on ``dev``, 2026-06-04):** the OIDC-trust-in-IaC
+batch (IAM-008 widened + IAM-009 Azure WIF + IAM-010 GCP WIF), K8S-044,
+ARGOCD-019, DF-031, GL-042, DEV-006 all landed. Descriptions kept below
+for provenance; struck through.
 
-- **OIDC-trust-in-IaC batch** (HIGH). The CI-to-cloud OIDC trust surface is
+- ~~**OIDC-trust-in-IaC batch** (HIGH).~~ The CI-to-cloud OIDC trust surface is
   uncovered when an infra repo is scanned directly (GHA-062 lives in the
   github provider, needs a sibling workflow, and covers only the AWS
   org-segment ``repo:org/*`` + GCP org-prefix ``startsWith``). Three new
@@ -1208,28 +1299,28 @@ queued here.**
   OIDC trust whose ``sub`` ref-segment is ``:*`` / ``:pull_request`` (today
   ``oidc_subject_pinned`` treats any non-bare-``*`` sub as pinned, so a fork
   PR mints the prod-role token). Sharpen the shared ``_iam_policy`` helper.
-- **K8S-044: admission webhook fail-open / unscoped mutating webhook**
-  (HIGH). ``failurePolicy: Ignore`` lets an attacker DoS a security webhook
+- ~~**K8S-044: admission webhook fail-open / unscoped mutating webhook**
+  (HIGH).~~ ``failurePolicy: Ignore`` lets an attacker DoS a security webhook
   cluster-wide; a ``MutatingWebhookConfiguration`` with no
   ``namespaceSelector`` matching pods is a tenant-escape primitive. Novel:
   no rule reads ``admissionregistration.k8s.io`` objects.
-- **ARGOCD-019: ``ignoreDifferences`` / ``syncOptions: Validate=false``**
-  (HIGH). Tells Argo CD to stop reconciling a field; an attacker mutates the
+- ~~**ARGOCD-019: ``ignoreDifferences`` / ``syncOptions: Validate=false``**
+  (HIGH).~~ Tells Argo CD to stop reconciling a field; an attacker mutates the
   live image / RBAC out-of-band while the dashboard stays "Synced/Healthy"
   (stealth persistence). Novel: ARGOCD-003 only covers prune/selfHeal; the
   per-Application ``spec.ignoreDifferences`` is unread (ARGOCD-018's comment
   only refers to the ``argocd-cm`` key).
-- **DF-031: ``COPY --from=<external image>`` not digest-pinned** (HIGH).
+- ~~**DF-031: ``COPY --from=<external image>`` not digest-pinned** (HIGH).~~
   Pulls an external image at build time, fully sidestepping DF-001's
   ``FROM``-only digest check (DF-008's safe example even uses the named-stage
   form). Resolve ``--from`` against earlier ``FROM ... AS <stage>`` names;
   flag the image-ref case via the existing ``image_pinning`` classifier.
-- **GL-042: ``include: component:`` without a pinned version** (HIGH). A
+- ~~**GL-042: ``include: component:`` without a pinned version** (HIGH).~~ A
   mutable ``@~latest`` / ``@main`` component re-points to attacker pipeline
   code run with ``CI_JOB_TOKEN``. Novel: GL-005 walks only ``project:`` /
   ``remote:`` (GL-041 is the apply-RCE rule already on a branch).
-- **DEV-006: ``.vscode/settings.json`` exec-path key points at a repo-local
-  binary** (HIGH). ``git.path`` / ``python.defaultInterpreterPath`` /
+- ~~**DEV-006: ``.vscode/settings.json`` exec-path key points at a repo-local
+  binary** (HIGH).~~ ``git.path`` / ``python.defaultInterpreterPath`` /
   ``*.path`` set to an in-repo binary is RCE the moment a dev opens the
   clone. Novel: the devenv loader reads ``tasks.json`` but never
   ``settings.json``.

@@ -977,6 +977,19 @@ STANDARD = Standard(
         "CC-032":   ["IA-5", "AU-9"],                      # secret echoed to CircleCI log
         "SCM-048":  ["AC-6", "IA-5"],                      # org codespace secrets scoped to all repos
         "SCM-049":  ["AC-6", "IA-5"],                      # classic PAT used where fine-grained suffices
+        "ORG-001":  ["AC-6", "IA-5"],                      # org governance: 2FA not required org-wide
+        "ORG-002":  ["AC-6", "IA-5"],                      # org governance: default member permission too broad
+        "ORG-003":  ["SR-3", "SR-11", "SI-2", "RA-5"],     # org governance: no Actions allow-list (any action runs)
+        "ORG-004":  ["AC-6", "IA-5"],                      # org governance: default workflow token is write
+        "ORG-005":  ["SA-15"],                             # org governance: Actions can approve PRs (review bypass)
+        "ORG-006":  ["AC-6", "IA-5"],                      # org governance: Actions secret scoped to all repos
+        "ORG-007":  ["AC-6"],                              # org governance: private-repo forking allowed (code exfiltration)
+        "ORG-008":  ["AC-6"],                              # org governance: members can create public repos (code exposure)
+        "ORG-009":  ["CM-6", "CM-7"],                      # org governance: self-hosted runner group exposed to public repos
+        "ORG-010":  ["SI-7", "IA-5"],                      # org governance: new-repo secret-scanning push-protection default off
+        "ORG-011":  ["SC-8"],                              # org governance: org webhook over insecure transport
+        "ORG-012":  ["RA-5", "SI-2"],                      # org governance: new-repo Dependabot security-updates default off
+        "ORG-013":  ["SA-15", "CM-6"],                     # org governance: org ruleset not enforced (evaluate/disabled)
         "NPM-012":  ["IA-5", "SR-3"],                      # publish token missing restrictions
         # ── Azure Cloud (Entra ID / Storage / Key Vault / ACR / Monitor) ──
         "ENTRA-001": ["AC-3", "AC-6"],                     # SP assigned Global Administrator

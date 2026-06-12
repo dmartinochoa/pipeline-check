@@ -937,6 +937,19 @@ STANDARD = Standard(
         "CC-032":   ["CC6.1"],              # secret echoed to CircleCI log
         "SCM-048":  ["CC6.1"],                   # org codespace secrets scoped to all repos
         "SCM-049":  ["CC6.1", "CC6.3"],          # classic PAT used where fine-grained suffices
+        "ORG-001":  ["CC6.1", "CC6.3"],          # org governance: 2FA not required org-wide
+        "ORG-002":  ["CC6.1", "CC6.3"],          # org governance: default member permission too broad
+        "ORG-003":  ["CC8.1"],                   # org governance: no Actions allow-list (any action runs)
+        "ORG-004":  ["CC6.1", "CC6.3"],          # org governance: default workflow token is write
+        "ORG-005":  ["CC8.1"],                   # org governance: Actions can approve PRs (review bypass)
+        "ORG-006":  ["CC6.1"],                   # org governance: Actions secret scoped to all repos
+        "ORG-007":  ["CC6.1"],                   # org governance: private-repo forking allowed (code exfiltration)
+        "ORG-008":  ["CC6.1"],                   # org governance: members can create public repos (code exposure)
+        "ORG-009":  ["CC6.6"],                   # org governance: self-hosted runner group exposed to public repos
+        "ORG-010":  ["CC6.1"],                   # org governance: new-repo secret-scanning push-protection default off
+        "ORG-011":  ["CC6.7"],                   # org governance: org webhook over insecure transport
+        "ORG-012":  ["CC7.1"],                   # org governance: new-repo Dependabot security-updates default off
+        "ORG-013":  ["CC8.1"],                   # org governance: org ruleset not enforced (evaluate/disabled)
         "NPM-012":  ["CC6.1", "CC8.1"],          # publish token missing restrictions
         # ── SCM posture (governance via the platform REST API) ──────
         # Branch protection / review controls map to CC8.1 (Change

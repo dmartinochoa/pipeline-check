@@ -149,6 +149,13 @@ _BUILTIN_PATTERNS: dict[str, str] = {
     "tailscale_key":          r"tskey-(?:auth|api|client|webhook)-[0-9A-Za-z]+-[0-9A-Za-z]{24,}",
     # Sentry auth token, org (sntrys_) and user (sntryu_) forms.
     "sentry_auth_token":      r"sntry[su]_[A-Za-z0-9+/=_\-]{40,}",
+    # ── LLM provider API keys (round 5) ──
+    # Groq API keys (``gsk_`` prefix + 52-char body).
+    "groq_api_key":           r"gsk_[A-Za-z0-9]{48,}",
+    # xAI (Grok) API keys (``xai-`` prefix + long alphanumeric body).
+    "xai_api_key":            r"xai-[A-Za-z0-9]{64,}",
+    # Perplexity API keys (``pplx-`` prefix + 48-char body).
+    "perplexity_api_key":     r"pplx-[A-Za-z0-9]{40,}",
 }
 
 
