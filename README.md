@@ -232,6 +232,7 @@ standards, so a single scan satisfies multiple audit frameworks.
 ```bash
 pipeline_check --output terminal            # rich table to stdout (default)
 pipeline_check --output json                # machine-readable JSON
+pipeline_check --output jsonl --output-file findings.log     # one finding per line (SIEM / jq streaming)
 pipeline_check --output html --output-file report.html       # self-contained HTML
 pipeline_check --output sarif --output-file scan.sarif       # SARIF 2.1.0 for GitHub/GitLab
 pipeline_check --output junit --output-file junit.xml        # JUnit XML for test-runner UIs
@@ -408,7 +409,7 @@ See [docs/standards/](docs/standards/).
 |------|---------|-------------|
 | `--pipeline` / `-p` | `auto` | `auto` (detect from cwd), `aws`, `azure_cloud`, `gcp`, `terraform`, `cloudformation`, `pulumi`, `github`, `gitea`, `gitlab`, `bitbucket`, `azure`, `jenkins`, `circleci`, `cloudbuild`, `buildkite`, `drone`, `harness`, `tekton`, `argo`, `argocd`, `dockerfile`, `modelfile`, `kubernetes`, `helm`, `oci`, `scm`, `scm_org`, `npm`, `pypi`, `maven`, `nuget`, `composer`, `cargo`, `gomod`, `rubygems`, `devenv`, `runs`, `gitlab_runs` |
 | `--pipelines` | | Comma-separated multi-provider list (e.g. `--pipelines github,oci`). Mutually exclusive with `--pipeline`. Activates cross-provider attack chains (`XPC-NNN`) by evaluating the chain engine over the union of every sub-scan's findings. |
-| `--output` / `-o` | `terminal` | `terminal`, `json`, `html`, `sarif`, `junit`, `markdown`, `threatmodel`, `cyclonedx`, `spdx`, `codequality`, `both` |
+| `--output` / `-o` | `terminal` | `terminal`, `json`, `jsonl`, `html`, `sarif`, `junit`, `markdown`, `threatmodel`, `cyclonedx`, `spdx`, `codequality`, `csv`, `annotations`, `both` |
 | `--output-file` / `-O` | | Required with `html`; optional with `sarif` / `junit` / `markdown` / `threatmodel` / `cyclonedx` / `spdx` / `codequality` |
 | `--fail-on` / `-f` | | Fail if any finding >= severity (`CRITICAL`, `HIGH`, `MEDIUM`, `LOW`) |
 | `--min-grade` | | Fail if grade worse than `A`/`B`/`C`/`D` |

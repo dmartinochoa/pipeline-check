@@ -12,6 +12,14 @@ release commit collapses this section into `## [X.Y.Z] - <date>`.
 
 ### Added
 
+- **JSON Lines output (``--output jsonl``).** Emits one failing finding
+  per line as compact, newline-delimited JSON, using the same per-finding
+  shape as the ``json`` output's ``findings`` entries. Unlike the single
+  ``json`` document, a JSONL stream has no wrapping array or score block,
+  so it is appended to and parsed line by line: the native ingest format
+  for log pipelines (Splunk / ELK / Datadog) and the shape ``jq -c`` or a
+  shell loop can process without loading the whole report. New
+  ``core/jsonl_reporter.py``.
 - **GCB-012 + HARNESS-004 literal-secret autofixers (``--fix``).** Cloud
   Build (a credential literal in ``substitutions:``) and Harness (a literal
   ``variables:`` value) detect purely by value shape, so they now share the

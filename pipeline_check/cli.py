@@ -1429,7 +1429,7 @@ def _install_completion_callback(
     "-o",
     type=click.Choice(
         [
-            "terminal", "json", "html", "sarif", "junit",
+            "terminal", "json", "jsonl", "html", "sarif", "junit",
             "markdown", "threatmodel", "cyclonedx", "spdx", "codequality",
             "csv", "annotations", "both",
         ],
@@ -3286,6 +3286,10 @@ def _emit_scan_report(
         from pipeline_check.core.codequality_reporter import report_codequality
         return report_codequality(findings, inline_explain=inline_explain)
 
+    def _jsonl_text() -> str:
+        from pipeline_check.core.jsonl_reporter import report_jsonl
+        return report_jsonl(findings, inline_explain=inline_explain)
+
     def _csv_text() -> str:
         from pipeline_check.core.csv_reporter import report_csv
         return report_csv(findings, inline_explain=inline_explain)
@@ -3316,6 +3320,7 @@ def _emit_scan_report(
         )
 
     text_reporters: dict[str, tuple[Callable[[], str], str]] = {
+        "jsonl": (_jsonl_text, "JSON Lines report"),
         "sarif": (_sarif_text, "SARIF report"),
         "junit": (_junit_text, "JUnit report"),
         "markdown": (_markdown_text, "Markdown report"),

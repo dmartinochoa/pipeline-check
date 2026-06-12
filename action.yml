@@ -80,10 +80,11 @@ inputs:
     description: >
       Output format. ``sarif`` is the default so findings flow into
       the GitHub Security tab via the upload-sarif step. Other
-      options: ``terminal``, ``json``, ``html``, ``junit``,
-      ``markdown``, ``codequality``, ``csv``, ``annotations`` (GitHub
-      Actions inline ``::error`` annotations), ``cyclonedx``, ``spdx``,
-      ``both``.
+      options: ``terminal``, ``json``, ``jsonl`` (newline-delimited
+      JSON, one finding per line for log / SIEM ingestion), ``html``,
+      ``junit``, ``markdown``, ``codequality``, ``csv``, ``annotations``
+      (GitHub Actions inline ``::error`` annotations), ``cyclonedx``,
+      ``spdx``, ``both``.
     required: false
     default: 'sarif'
   output-file:

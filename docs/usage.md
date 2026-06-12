@@ -329,6 +329,7 @@ see [providers/aws.md#required-iam-permissions](providers/aws.md#required-iam-pe
 ```bash
 pipeline_check --output terminal                   # default (rich table)
 pipeline_check --output json                       # machine-parseable
+pipeline_check --output jsonl -O findings.log      # one finding per line (SIEM / jq streaming)
 pipeline_check --output html -O report.html        # self-contained file
 pipeline_check --output sarif -O scan.sarif        # GitHub/GitLab SAST
 pipeline_check --output markdown                   # PR comments
