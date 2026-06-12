@@ -12,6 +12,14 @@ release commit collapses this section into `## [X.Y.Z] - <date>`.
 
 ### Added
 
+- **Sentry + Pulumi + Render + Neon live secret verifiers
+  (``--verify-secrets``).** Four CI-relevant infrastructure tokens gain a
+  verifier: Sentry org auth tokens via ``GET /api/0/organizations/``
+  (Bearer, sentry.io SaaS), Pulumi access tokens via ``GET /api/user``
+  (the ``token`` auth scheme, not Bearer), Render via ``GET /v1/owners``
+  (Bearer), and Neon via ``GET /api/v2/users/me`` (Bearer). Standard
+  VERIFIED / UNVERIFIED / UNKNOWN outcomes; they appear in
+  ``--list-verifiers``.
 - **``--list-verifiers`` (secret-verifier discoverability).** Prints every
   secret detector that ``--verify-secrets`` can probe against its issuing
   API to confirm a credential is live (one per line: ``detector  shape``)

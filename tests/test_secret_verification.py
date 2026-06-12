@@ -84,6 +84,8 @@ class TestVerifierRegistry:
             "figma_token", "notion_token",
             "groq_api_key", "xai_api_key",
             "postman_api_key", "doppler_token",
+            "sentry_auth_token", "pulumi_access_token",
+            "render_api_key", "neon_api_key",
         ]:
             assert has_verifier(det), f"missing verifier for {det}"
 
@@ -1243,3 +1245,82 @@ class TestDopplerVerifier:
         v = get_verifier("doppler_token")
         assert v is not None
         assert v.probe("dp.st.fake").outcome == VerifyOutcome.UNKNOWN
+
+
+class TestSentryVerifier:
+    @patch(_MORE_SAAS_BEARER)
+    def test_verified_carries_org(self, mock_probe: MagicMock) -> None:
+        mock_probe.return_value = ProbeResponse(
+            status=200, body=json.dumps([{"slug": "acme"}]).encode(),
+        )
+        v = get_verifier("sentry_auth_token")
+        assert v is not None
+        result = v.probe("sntrys_fake")
+        assert result.outcome == VerifyOutcome.VERIFIED
+        assert result.identity == "sentry-org:acme"
+
+    @patch(_MORE_SAAS_BEARER)
+    def test_unverified(self, mock_probe: MagicMock) -> None:
+        mock_probe.return_value = ProbeResponse(status=401, body=b"")
+        v = get_verifier("sentry_auth_token")
+        assert v is not None
+        assert v.probe("sntrys_fake").outcome == VerifyOutcome.UNVERIFIED
+
+
+class TestPulumiVerifier:
+    @patch(_MORE_SAAS_HTTP)
+    def test_verified_uses_token_scheme(self, mock_probe: MagicMock) -> None:
+        mock_probe.return_value = ProbeResponse(
+            status=200, body=json.dumps({"githubLogin": "octocat"}).encode(),
+        )
+        v = get_verifier("pulumi_access_token")
+        assert v is not None
+        result = v.probe("pul-fake")
+        assert result.outcome == VerifyOutcome.VERIFIED
+        assert result.identity == "pulumi-user:octocat"
+        # Pulumi uses the "token" auth scheme, not Bearer.
+        _, kwargs = mock_probe.call_args
+        assert kwargs["headers"]["Authorization"] == "token pul-fake"
+
+    @patch(_MORE_SAAS_HTTP)
+    def test_unverified(self, mock_probe: MagicMock) -> None:
+        mock_probe.return_value = ProbeResponse(status=401, body=b"")
+        v = get_verifier("pulumi_access_token")
+        assert v is not None
+        assert v.probe("pul-fake").outcome == VerifyOutcome.UNVERIFIED
+
+
+class TestRenderVerifier:
+    @patch(_MORE_SAAS_BEARER)
+    def test_verified(self, mock_probe: MagicMock) -> None:
+        mock_probe.return_value = ProbeResponse(status=200, body=b"[]")
+        v = get_verifier("render_api_key")
+        assert v is not None
+        assert v.probe("rnd_fake").outcome == VerifyOutcome.VERIFIED
+
+    @patch(_MORE_SAAS_BEARER)
+    def test_unverified(self, mock_probe: MagicMock) -> None:
+        mock_probe.return_value = ProbeResponse(status=401, body=b"")
+        v = get_verifier("render_api_key")
+        assert v is not None
+        assert v.probe("rnd_fake").outcome == VerifyOutcome.UNVERIFIED
+
+
+class TestNeonVerifier:
+    @patch(_MORE_SAAS_BEARER)
+    def test_verified_carries_email(self, mock_probe: MagicMock) -> None:
+        mock_probe.return_value = ProbeResponse(
+            status=200, body=json.dumps({"email": "dev@example.com"}).encode(),
+        )
+        v = get_verifier("neon_api_key")
+        assert v is not None
+        result = v.probe("neon_fake")
+        assert result.outcome == VerifyOutcome.VERIFIED
+        assert result.identity == "neon-user:dev@example.com"
+
+    @patch(_MORE_SAAS_BEARER)
+    def test_unknown_on_server_error(self, mock_probe: MagicMock) -> None:
+        mock_probe.return_value = ProbeResponse(status=503, body=b"")
+        v = get_verifier("neon_api_key")
+        assert v is not None
+        assert v.probe("neon_fake").outcome == VerifyOutcome.UNKNOWN
