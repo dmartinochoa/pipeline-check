@@ -127,11 +127,15 @@ def _register_builtins() -> None:
     from .jwt import JWTTokenVerifier
     from .more_saas_keys import (
         CohereAPIKeyVerifier,
+        DopplerTokenVerifier,
         FigmaTokenVerifier,
+        GroqAPIKeyVerifier,
         MailchimpAPIKeyVerifier,
         NotionTokenVerifier,
+        PostmanAPIKeyVerifier,
         ReplicateTokenVerifier,
         SquareAccessTokenVerifier,
+        XaiAPIKeyVerifier,
     )
     from .npm import NpmTokenVerifier
     from .pypi import PyPITokenVerifier
@@ -172,6 +176,10 @@ def _register_builtins() -> None:
     _REGISTRY["square_access_token"] = SquareAccessTokenVerifier()
     _REGISTRY["figma_token"] = FigmaTokenVerifier()
     _REGISTRY["notion_token"] = NotionTokenVerifier()
+    _REGISTRY["groq_api_key"] = GroqAPIKeyVerifier()
+    _REGISTRY["xai_api_key"] = XaiAPIKeyVerifier()
+    _REGISTRY["postman_api_key"] = PostmanAPIKeyVerifier()
+    _REGISTRY["doppler_token"] = DopplerTokenVerifier()
 
 
 def get_verifier(detector_name: str) -> SecretVerifier | None:

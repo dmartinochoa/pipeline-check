@@ -82,6 +82,8 @@ class TestVerifierRegistry:
             "replicate_token", "cohere_api_key",
             "mailchimp_api_key", "square_access_token",
             "figma_token", "notion_token",
+            "groq_api_key", "xai_api_key",
+            "postman_api_key", "doppler_token",
         ]:
             assert has_verifier(det), f"missing verifier for {det}"
 
@@ -1142,3 +1144,102 @@ class TestNotionVerifier:
         v = get_verifier("notion_token")
         assert v is not None
         assert v.probe("ntn_fake").outcome == VerifyOutcome.UNKNOWN
+
+
+_MORE_SAAS_BEARER = (
+    "pipeline_check.core.checks._primitives.secret_verifiers"
+    ".more_saas_keys.bearer_probe"
+)
+
+
+class TestGroqVerifier:
+    @patch(_MORE_SAAS_BEARER)
+    def test_verified(self, mock_probe: MagicMock) -> None:
+        mock_probe.return_value = ProbeResponse(status=200, body=b"{}")
+        v = get_verifier("groq_api_key")
+        assert v is not None
+        result = v.probe("gsk_fake")
+        assert result.outcome == VerifyOutcome.VERIFIED
+        assert result.identity == "groq-api-key"
+
+    @patch(_MORE_SAAS_BEARER)
+    def test_unverified(self, mock_probe: MagicMock) -> None:
+        mock_probe.return_value = ProbeResponse(status=401, body=b"")
+        v = get_verifier("groq_api_key")
+        assert v is not None
+        assert v.probe("gsk_fake").outcome == VerifyOutcome.UNVERIFIED
+
+    @patch(_MORE_SAAS_BEARER)
+    def test_unknown_on_server_error(self, mock_probe: MagicMock) -> None:
+        mock_probe.return_value = ProbeResponse(status=500, body=b"")
+        v = get_verifier("groq_api_key")
+        assert v is not None
+        assert v.probe("gsk_fake").outcome == VerifyOutcome.UNKNOWN
+
+
+class TestXaiVerifier:
+    @patch(_MORE_SAAS_BEARER)
+    def test_verified(self, mock_probe: MagicMock) -> None:
+        mock_probe.return_value = ProbeResponse(status=200, body=b"{}")
+        v = get_verifier("xai_api_key")
+        assert v is not None
+        result = v.probe("xai-fake")
+        assert result.outcome == VerifyOutcome.VERIFIED
+        assert result.identity == "xai-api-key"
+
+    @patch(_MORE_SAAS_BEARER)
+    def test_unverified(self, mock_probe: MagicMock) -> None:
+        mock_probe.return_value = ProbeResponse(status=403, body=b"")
+        v = get_verifier("xai_api_key")
+        assert v is not None
+        assert v.probe("xai-fake").outcome == VerifyOutcome.UNVERIFIED
+
+
+class TestPostmanVerifier:
+    @patch(_MORE_SAAS_HTTP)
+    def test_verified_carries_username(self, mock_probe: MagicMock) -> None:
+        mock_probe.return_value = ProbeResponse(
+            status=200, body=json.dumps({"user": {"username": "tester"}}).encode(),
+        )
+        v = get_verifier("postman_api_key")
+        assert v is not None
+        result = v.probe("PMAK-fake")
+        assert result.outcome == VerifyOutcome.VERIFIED
+        assert result.identity == "postman-user:tester"
+        # Postman uses the X-Api-Key header, not Bearer.
+        _, kwargs = mock_probe.call_args
+        assert kwargs["headers"]["X-Api-Key"] == "PMAK-fake"
+
+    @patch(_MORE_SAAS_HTTP)
+    def test_unverified(self, mock_probe: MagicMock) -> None:
+        mock_probe.return_value = ProbeResponse(status=401, body=b"")
+        v = get_verifier("postman_api_key")
+        assert v is not None
+        assert v.probe("PMAK-fake").outcome == VerifyOutcome.UNVERIFIED
+
+
+class TestDopplerVerifier:
+    @patch(_MORE_SAAS_BEARER)
+    def test_verified_carries_name(self, mock_probe: MagicMock) -> None:
+        mock_probe.return_value = ProbeResponse(
+            status=200, body=json.dumps({"name": "ci-token"}).encode(),
+        )
+        v = get_verifier("doppler_token")
+        assert v is not None
+        result = v.probe("dp.st.fake")
+        assert result.outcome == VerifyOutcome.VERIFIED
+        assert result.identity == "doppler:ci-token"
+
+    @patch(_MORE_SAAS_BEARER)
+    def test_unverified(self, mock_probe: MagicMock) -> None:
+        mock_probe.return_value = ProbeResponse(status=401, body=b"")
+        v = get_verifier("doppler_token")
+        assert v is not None
+        assert v.probe("dp.st.fake").outcome == VerifyOutcome.UNVERIFIED
+
+    @patch(_MORE_SAAS_BEARER)
+    def test_unknown_on_server_error(self, mock_probe: MagicMock) -> None:
+        mock_probe.return_value = ProbeResponse(status=500, body=b"")
+        v = get_verifier("doppler_token")
+        assert v is not None
+        assert v.probe("dp.st.fake").outcome == VerifyOutcome.UNKNOWN
