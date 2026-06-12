@@ -1,8 +1,7 @@
 """DR-014. Step pipes a remote download into a shell interpreter."""
 from __future__ import annotations
 
-import re
-
+from ..._primitives.remote_script_exec import SIMPLE_PIPE_TO_SHELL_RE
 from ...base import Finding, Severity
 from ...rule import Rule
 from ..base import (
@@ -103,15 +102,6 @@ RULE = Rule(
 )
 
 
-# Match ``curl ... | sh`` and ``wget ... | bash`` patterns. The
-# regex allows arbitrary intermediate flags / arguments after curl
-# or wget but requires a pipe directly into ``sh`` or ``bash``
-# (with optional trailing args).
-_PIPE_RE = re.compile(
-    r"(?:curl|wget|fetch)\s+[^|]+\|\s*(?:sh|bash)(?:\s|$)",
-)
-
-
 def check(pipeline: Pipeline) -> Finding:
     if not is_container_pipeline(pipeline):
         return Finding(
@@ -127,7 +117,7 @@ def check(pipeline: Pipeline) -> Finding:
     locations = []
     for idx, step in iter_steps(pipeline):
         for cmd in step_commands(step):
-            if _PIPE_RE.search(cmd):
+            if SIMPLE_PIPE_TO_SHELL_RE.search(cmd):
                 name = step_label(step, idx)
                 offenders.append(f"{name}: {cmd.strip()[:60]}")
                 locations.append(step_location(pipeline.path, step))

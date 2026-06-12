@@ -613,7 +613,7 @@ _QUOTED_ASSIGNMENT_RE = _re.compile(
 )
 
 
-def is_quoted_assignment(line: str) -> bool:
+def is_quoted_assignment(line: str, *, paren_is_macro: bool = False) -> bool:
     """Return True if *line* is a ``VAR="…$X…"`` assignment (a safe idiom).
 
     Shared between the GitHub, GitLab, Bitbucket, and Azure
@@ -623,6 +623,13 @@ def is_quoted_assignment(line: str) -> bool:
     **Not** safe when the RHS contains a command substitution like
     ``$( … )`` wrapping untrusted input, the substitution executes
     the content even inside double quotes.
+
+    ``paren_is_macro`` is for Azure Pipelines, where ``$(Name)`` is an
+    ADO *macro* that the agent text-substitutes into the script BEFORE
+    the shell parses it (identical to GitHub ``${{ }}``), not a runtime
+    shell command substitution. With the flag set, any ``$( … )`` in the
+    value makes the capture unsafe: a ``"`` in the expanded macro closes
+    the assignment string and the rest runs as shell.
     """
     if not _QUOTED_ASSIGNMENT_RE.match(line):
         return False
@@ -631,6 +638,10 @@ def is_quoted_assignment(line: str) -> bool:
     rhs = line.split("=", 1)[1].strip()
     if rhs.startswith('"') and rhs.endswith('"'):
         rhs = rhs[1:-1]
+    # ADO macros are pre-shell text substitution, so a quoted ``$(Name)``
+    # capture is still injectable -- never a safe idiom.
+    if paren_is_macro and _re.search(r"\$\([^)]*\)", rhs):
+        return False
     # If the RHS contains $(...) that itself embeds an untrusted
     # interpolation (${{ ... }}, ${VAR}, or bare $VAR), it is NOT safe.
     if _re.search(r"\$\(.*(?:\$\{\{|\$\{?\w|\$\()", rhs):

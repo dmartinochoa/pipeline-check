@@ -960,19 +960,19 @@ STANDARD = Standard(
         "CC-032":   ["PS.1.1"],                        # secret echoed to CircleCI log
         "SCM-048":  ["PO.5.1"],                        # org codespace secrets scoped to all repos
         "SCM-049":  ["PS.1.1"],                        # classic PAT where fine-grained suffices
-        "ORG-001":  ["PS.1.1"],                        # org governance: 2FA not required org-wide
-        "ORG-002":  ["PS.1.1"],                        # org governance: default member permission too broad
-        "ORG-003":  ["PW.4.1", "PW.4.4"],              # org governance: no Actions allow-list (any action runs)
-        "ORG-004":  ["PS.1.1"],                        # org governance: default workflow token is write
-        "ORG-005":  ["PS.1.1"],                        # org governance: Actions can approve PRs (review bypass)
-        "ORG-006":  ["PO.5.1"],                        # org governance: Actions secret scoped to all repos
-        "ORG-007":  ["PS.1.1"],                        # org governance: private-repo forking allowed (code exfiltration)
-        "ORG-008":  ["PS.1.1"],                        # org governance: members can create public repos (code exposure)
-        "ORG-009":  ["PO.5.2", "PW.9.1"],              # org governance: self-hosted runner group exposed to public repos
-        "ORG-010":  ["PS.1.1"],                        # org governance: new-repo secret-scanning push-protection default off
-        "ORG-011":  ["PO.3.2"],                        # org governance: org webhook over insecure transport
-        "ORG-012":  ["PW.4.4", "RV.1.1"],              # org governance: new-repo Dependabot security-updates default off
-        "ORG-013":  ["PS.1.1"],                        # org governance: org ruleset not enforced (evaluate/disabled)
+        "ORG-001":  ["PS.1.1"],                        # org: 2FA not required org-wide
+        "ORG-002":  ["PS.1.1"],                        # org: default member permission too broad
+        "ORG-003":  ["PW.4.1", "PW.4.4"],              # org: no Actions allow-list (any action runs)
+        "ORG-004":  ["PS.1.1"],                        # org: default workflow token is write
+        "ORG-005":  ["PS.1.1"],                        # org: Actions can approve PRs (review bypass)
+        "ORG-006":  ["PO.5.1"],                        # org: Actions secret scoped to all repos
+        "ORG-007":  ["PS.1.1"],                        # org: private-repo forking allowed (code exfiltration)
+        "ORG-008":  ["PS.1.1"],                        # org: members can create public repos (code exposure)
+        "ORG-009":  ["PO.5.2", "PW.9.1"],              # org: self-hosted runner group exposed to public repos
+        "ORG-010":  ["PS.1.1"],                        # org: new-repo secret-scanning push-protection default off
+        "ORG-011":  ["PO.3.2"],                        # org: org webhook over insecure transport
+        "ORG-012":  ["PW.4.4", "RV.1.1"],              # org: new-repo Dependabot security-updates default off
+        "ORG-013":  ["PS.1.1"],                        # org: org ruleset not enforced (evaluate/disabled)
         # GitLab-specific platform posture (SCM-050..053)
         "SCM-050":  ["PS.1.1"],                        # GitLab push rules: prevent_secrets
         "SCM-051":  ["PO.5.1", "PS.1.1"],              # GitLab push rules: committer-email check

@@ -60,17 +60,24 @@ def _compile_cached(pattern: str) -> re.Pattern[str]:
 
 
 def has_direct_taint(
-    lines: Iterable[str], untrusted_re: re.Pattern[str]
+    lines: Iterable[str],
+    untrusted_re: re.Pattern[str],
+    *,
+    paren_is_macro: bool = False,
 ) -> bool:
     """Return True if any *line* directly interpolates an untrusted-
     context expression and is not a defensively-quoted assignment.
 
     ``untrusted_re`` is the provider-specific catalog of attacker-
     controllable shapes. ``is_quoted_assignment`` is the cross-provider
-    safe-idiom recogniser owned by ``checks.base``.
+    safe-idiom recogniser owned by ``checks.base``. ``paren_is_macro``
+    is forwarded to it (set by Azure, where ``$(Name)`` is a pre-shell
+    macro substitution, not a runtime command substitution).
     """
     for line in lines:
-        if untrusted_re.search(line) and not is_quoted_assignment(line):
+        if untrusted_re.search(line) and not is_quoted_assignment(
+            line, paren_is_macro=paren_is_macro
+        ):
             return True
     return False
 
@@ -80,6 +87,7 @@ def has_unsafe_reference(
     names: set[str],
     *,
     ref_pattern: Callable[[str], str],
+    paren_is_macro: bool = False,
 ) -> bool:
     """Return True if any *line* references one of *names* unquoted.
 
@@ -100,7 +108,7 @@ def has_unsafe_reference(
         for line in lines:
             if not rx.search(line):
                 continue
-            if is_quoted_assignment(line):
+            if is_quoted_assignment(line, paren_is_macro=paren_is_macro):
                 continue
             stripped = _QUOTED_SEGMENT_RE.sub("", line)
             if rx.search(stripped):

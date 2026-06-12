@@ -57,18 +57,23 @@ def _pbac003(ctx: TerraformContext) -> list[Finding]:
     for sg in ctx.resources("aws_security_group"):
         for rule in sg.values.get("egress") or []:
             cidrs = rule.get("cidr_blocks") or []
+            cidrs6 = rule.get("ipv6_cidr_blocks") or []
             proto = rule.get("protocol", "") or ""
             from_p = rule.get("from_port")
             to_p = rule.get("to_port")
-            if "0.0.0.0/0" in cidrs and (
+            # An all-port egress to ``::/0`` is the same exposure as
+            # ``0.0.0.0/0`` (the CloudFormation analog checks both).
+            open_cidr = "0.0.0.0/0" in cidrs or "::/0" in cidrs6
+            if open_cidr and (
                 proto in ("-1", "all") or (from_p in (0, None) and to_p in (65535, None))
             ):
+                dest = "0.0.0.0/0" if "0.0.0.0/0" in cidrs else "::/0"
                 out.append(Finding(
                     check_id="PBAC-003",
                     title="Security group allows 0.0.0.0/0 all-port egress",
                     severity=Severity.MEDIUM,
                     resource=sg.address,
-                    description="Egress rule allows 0.0.0.0/0 on all ports.",
+                    description=f"Egress rule allows {dest} on all ports.",
                     recommendation="Scope egress to specific destinations/ports.",
                     passed=False,
                 ))

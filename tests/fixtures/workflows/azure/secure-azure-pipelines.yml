@@ -21,7 +21,12 @@ stages:
           - task: DotNetCoreCLI@2.210.0
             inputs:
               command: 'build'
-          - script: BRANCH="$(Build.SourceBranchName)"
+          # ADO-002 safe: the untrusted macro expands into an env-var
+          # value; the script reads ``$BRANCH`` as a shell variable so the
+          # macro text is never spliced into the script body.
+          - script: echo "$BRANCH"
+            env:
+              BRANCH: $(Build.SourceBranchName)
           - script: trivy fs --severity HIGH .
           - script: syft . -o cyclonedx-json > sbom.json
           # ADO-021 safe: lockfile-enforcing install command.

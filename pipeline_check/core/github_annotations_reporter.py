@@ -15,7 +15,7 @@ from __future__ import annotations
 
 import os
 
-from .checks.base import Finding, Severity, inline_exploit
+from .checks.base import Finding, Location, Severity, inline_exploit
 from .report_view import ReportView
 
 #: CRITICAL / HIGH fail the build loudly; MEDIUM is a warning; LOW / INFO
@@ -73,7 +73,8 @@ def report_github_annotations(
         if exploit:
             msg = f"{msg}\n\nProof of exploit:\n{exploit}"
         title = f"{f.check_id}: {f.title}"
-        for loc in (f.locations or [None]):
+        locs: list[Location | None] = list(f.locations) if f.locations else [None]
+        for loc in locs:
             props: list[str] = []
             if loc is not None and loc.path:
                 props.append(f"file={_esc_prop(_norm_path(loc.path))}")

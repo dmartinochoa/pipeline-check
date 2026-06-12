@@ -1,6 +1,10 @@
 """Per-rule tests for GHA-064 (unsound contains with comma string)."""
 from __future__ import annotations
 
+import time
+
+from pipeline_check.core.checks.github.rules import gha064_unsound_contains
+
 from .conftest import run_check
 
 
@@ -98,3 +102,13 @@ class TestGHA064UnsoundContains:
             steps: [{run: echo}]
         """
         assert run_check(wf, "GHA-064").passed
+
+    def test_long_comma_run_is_linear_not_redos(self):
+        # A PR-controlled ``if:`` of ``contains('a,a,a,…`` with no closing
+        # quote used to drive the split-greedy haystack into O(n^2)
+        # backtracking (~80s at 200 KB). The first segment now stops at the
+        # first comma, so it scans in milliseconds.
+        evil = "contains('" + "a," * 100_000
+        start = time.perf_counter()
+        gha064_unsound_contains._scan_expression(evil)
+        assert time.perf_counter() - start < 1.0

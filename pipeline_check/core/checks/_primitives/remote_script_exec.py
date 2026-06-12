@@ -154,6 +154,21 @@ _POWERSHELL_RE = re.compile(
 )
 
 
+# A lightweight ``<fetcher> … | <interpreter>`` matcher for providers
+# whose step text is already command-scoped (drone / harness ``commands``
+# arrays), where the rich URL-aware ``scan()`` above is overkill and
+# requiring a literal ``http://`` URL would miss ``curl $URL | sh``. It
+# keeps the ``fetch`` (BSD) variant and stays URL-agnostic, but matches the
+# same interpreter set as ``_PIPE_RE`` (``sh`` / ``bash`` / ``python`` /
+# ``perl`` / ``ruby``, optional ``sudo``) so ``curl … | sudo bash`` and
+# ``… | python`` don't slip through a bare ``sh|bash`` matcher. ``[^|]+\|``
+# is linear (the negated class can't cross a pipe), so no ReDoS.
+SIMPLE_PIPE_TO_SHELL_RE = re.compile(
+    r"(?:curl|wget|fetch)\s+[^|]+\|\s*(?:sudo\s+)?"
+    r"(?:(?:ba)?sh|python[23]?|perl|ruby)(?:\s|$)",
+)
+
+
 # ── Public API ───────────────────────────────────────────────────
 
 

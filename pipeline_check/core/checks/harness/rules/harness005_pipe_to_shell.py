@@ -1,8 +1,7 @@
 """HARNESS-005. Step pipes a remote download into a shell interpreter."""
 from __future__ import annotations
 
-import re
-
+from ..._primitives.remote_script_exec import SIMPLE_PIPE_TO_SHELL_RE
 from ...base import Finding, Severity
 from ...rule import Rule
 from ..base import HarnessPipeline, iter_steps, step_command_text, step_label
@@ -69,18 +68,11 @@ RULE = Rule(
     ),
 )
 
-# ``curl|sh`` / ``wget|bash`` with arbitrary intermediate flags; mirrors
-# DR-014's pattern. Requires a pipe directly into ``sh`` / ``bash``.
-_PIPE_RE = re.compile(
-    r"(?:curl|wget|fetch)\s+[^|]+\|\s*(?:sh|bash)(?:\s|$)",
-)
-
-
 def check(pipeline: HarnessPipeline) -> Finding:
     offenders: list[str] = []
     for stage_id, step in iter_steps(pipeline):
         text = step_command_text(step)
-        if text and _PIPE_RE.search(text):
+        if text and SIMPLE_PIPE_TO_SHELL_RE.search(text):
             offenders.append(step_label(stage_id, step))
     passed = not offenders
     desc = (

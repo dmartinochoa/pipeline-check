@@ -6,7 +6,12 @@ owners, track remediation. Only failing findings are emitted (passing
 findings aren't actionable), mirroring the SARIF / Code Quality
 reporters. The stdlib ``csv`` writer handles quoting / escaping, so a
 comma, quote, or newline inside a description or recommendation can't
-break the column layout.
+break the column layout. A cell whose value begins with a spreadsheet
+formula trigger (``= + - @`` or a tab / carriage return) is prefixed with
+a single quote so Excel / Sheets / LibreOffice treat it as text rather
+than evaluating it (CSV formula injection): finding fields can carry
+attacker-influenced scanned content, and this is a triage artifact a
+human opens in a spreadsheet.
 """
 from __future__ import annotations
 
@@ -15,6 +20,17 @@ import io
 
 from .checks.base import Finding, inline_exploit
 from .report_view import ReportView
+
+#: Leading characters a spreadsheet interprets as the start of a formula.
+_FORMULA_LEADERS = frozenset("=+-@\t\r")
+
+
+def _csv_safe(value: object) -> str:
+    """Neutralize CSV formula injection by prefixing a dangerous leader."""
+    s = "" if value is None else str(value)
+    if s and s[0] in _FORMULA_LEADERS:
+        return "'" + s
+    return s
 
 #: Column order. Stable so a downstream sheet / import template can rely
 #: on it; new columns should be appended, not inserted.
@@ -54,7 +70,7 @@ def report_csv(findings: list[Finding], inline_explain: bool = False) -> str:
         cwe = ";".join(f.cwe) if f.cwe else ""
         locations = list(f.locations) if f.locations else [None]
         for loc in locations:
-            writer.writerow([
+            writer.writerow([_csv_safe(v) for v in (
                 f.check_id,
                 f.severity.value,
                 confidence,
@@ -65,5 +81,5 @@ def report_csv(findings: list[Finding], inline_explain: bool = False) -> str:
                 desc,
                 f.recommendation or "",
                 cwe,
-            ])
+            )])
     return buf.getvalue()

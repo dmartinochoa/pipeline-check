@@ -550,7 +550,10 @@ def _finding_to_result(f: Finding, rule_index: dict[str, int]) -> dict[str, Any]
         "ruleId": f.check_id,
         "ruleIndex": rule_index.get(f.check_id, 0),
         "level": level,
-        "message": {"text": f.description},
+        # SARIF 2.1.0 requires message.text to be a string; fall back to
+        # the title so an empty description can't emit ``"text": null``
+        # (every sibling reporter guards this the same way).
+        "message": {"text": f.description or f.title},
         "locations": locations,
         # ``partialFingerprints`` lets GHCS / GitLab / Azure DevOps
         # match the same finding across runs so an unchanged repo

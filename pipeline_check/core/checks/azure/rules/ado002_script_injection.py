@@ -181,8 +181,11 @@ def check(path: str, doc: dict[str, Any]) -> Finding:
             for body in bodies:
                 lines = body.splitlines()
                 # 1. Direct interpolation of untrusted ADO macros.
-                if has_direct_taint(lines, UNTRUSTED_VAR_RE) or job_tainted and has_unsafe_reference(
-                    lines, job_tainted, ref_pattern=_ado_ref_pattern
+                if has_direct_taint(
+                    lines, UNTRUSTED_VAR_RE, paren_is_macro=True
+                ) or job_tainted and has_unsafe_reference(
+                    lines, job_tainted, ref_pattern=_ado_ref_pattern,
+                    paren_is_macro=True,
                 ):
                     offenders.append(loc)
                     hit = True

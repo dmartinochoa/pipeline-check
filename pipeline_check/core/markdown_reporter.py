@@ -74,8 +74,11 @@ def _esc(s: str) -> str:
 
 def _row(f: Finding) -> str:
     sev = f"{_SEVERITY_EMOJI.get(f.severity, '')} {f.severity.value}".strip()
-    title = _esc(f.title)[:120]
-    resource = _esc(f.resource or "")[:80]
+    # Truncate the raw text first, THEN escape: slicing the escaped string
+    # can cut a two-char escape (``\\``) in half and leave a dangling
+    # backslash that escapes the trailing ``|`` cell separator.
+    title = _esc(f.title[:120])
+    resource = _esc((f.resource or "")[:80])
     controls = ""
     if f.controls:
         tags = [f"`{c.standard}:{c.control_id}`" for c in f.controls[:6]]

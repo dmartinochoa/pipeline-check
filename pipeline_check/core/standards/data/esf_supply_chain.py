@@ -436,19 +436,19 @@ STANDARD = Standard(
         # rules, the Supplier guide for actions-as-dependencies, and
         # the Customer guide for environment / deployment governance.
         "SCM-001":  ["ESF-D-CODE-REVIEW"],          # default branch unprotected
-        "ORG-001":  ["ESF-C-LEAST-PRIV"],           # org governance: 2FA not required org-wide
-        "ORG-002":  ["ESF-C-LEAST-PRIV"],           # org governance: default member permission too broad
-        "ORG-003":  ["ESF-S-VERIFY-DEPS"],          # org governance: no Actions allow-list (any action runs)
-        "ORG-004":  ["ESF-C-LEAST-PRIV", "ESF-D-TOKEN-HYGIENE"],  # org governance: default workflow token is write
-        "ORG-005":  ["ESF-D-CODE-REVIEW"],          # org governance: Actions can approve PRs (review bypass)
-        "ORG-006":  ["ESF-D-SECRETS"],              # org governance: Actions secret scoped to all repos
-        "ORG-007":  ["ESF-C-LEAST-PRIV"],           # org governance: private-repo forking allowed (code exfiltration)
-        "ORG-008":  ["ESF-C-LEAST-PRIV"],           # org governance: members can create public repos (code exposure)
-        "ORG-009":  ["ESF-D-BUILD-ENV", "ESF-D-PRIV-BUILD"],  # org governance: self-hosted runner group exposed to public repos
-        "ORG-010":  ["ESF-D-SECRETS"],              # org governance: new-repo secret-scanning push-protection default off
-        "ORG-011":  ["ESF-D-SECRETS"],              # org governance: org webhook over insecure transport
-        "ORG-012":  ["ESF-S-VULN-MGMT"],            # org governance: new-repo Dependabot security-updates default off
-        "ORG-013":  ["ESF-D-CODE-REVIEW"],          # org governance: org ruleset not enforced (evaluate/disabled)
+        "ORG-001":  ["ESF-C-LEAST-PRIV"],           # org: 2FA not required org-wide
+        "ORG-002":  ["ESF-C-LEAST-PRIV"],           # org: default member permission too broad
+        "ORG-003":  ["ESF-S-VERIFY-DEPS"],          # org: no Actions allow-list (any action runs)
+        "ORG-004":  ["ESF-C-LEAST-PRIV", "ESF-D-TOKEN-HYGIENE"],  # org: default workflow token is write
+        "ORG-005":  ["ESF-D-CODE-REVIEW"],          # org: Actions can approve PRs (review bypass)
+        "ORG-006":  ["ESF-D-SECRETS"],              # org: Actions secret scoped to all repos
+        "ORG-007":  ["ESF-C-LEAST-PRIV"],           # org: private-repo forking allowed (code exfiltration)
+        "ORG-008":  ["ESF-C-LEAST-PRIV"],           # org: members can create public repos (code exposure)
+        "ORG-009":  ["ESF-D-BUILD-ENV", "ESF-D-PRIV-BUILD"],  # org: self-hosted runner group exposed to public repos
+        "ORG-010":  ["ESF-D-SECRETS"],              # org: new-repo secret-scanning push-protection default off
+        "ORG-011":  ["ESF-D-SECRETS"],              # org: org webhook over insecure transport
+        "ORG-012":  ["ESF-S-VULN-MGMT"],            # org: new-repo Dependabot security-updates default off
+        "ORG-013":  ["ESF-D-CODE-REVIEW"],          # org: org ruleset not enforced (evaluate/disabled)
         "SCM-002":  ["ESF-D-CODE-REVIEW"],          # required reviews missing
         "SCM-004":  ["ESF-D-SECRETS"],              # secret scanning disabled
         "SCM-005":  ["ESF-S-VULN-MGMT"],            # Dependabot security updates off
