@@ -161,6 +161,14 @@ def _fix_gha002(content: str, finding: Finding) -> str | None:
 @register("BK-002", safety="safe")
 @register("TKN-005", safety="safe")
 @register("ARGO-006", safety="safe")
+# Cloud Build (GCB-012, a literal in ``substitutions:``) and Harness
+# (HARNESS-004, a literal ``variables:`` value) detect purely by value
+# shape, so redacting the value resolves the finding the same way it does
+# for the ``*-008`` family. Drone DR-004 is deliberately NOT here: it also
+# fires on a credential-named key holding any literal, so ``<REDACTED>``
+# (still a literal) wouldn't clear it -- that needs a from_secret rewrite.
+@register("GCB-012", safety="safe")
+@register("HARNESS-004", safety="safe")
 def _fix_gha008(content: str, finding: Finding) -> str | None:
     """Replace credential-shaped literals with ``<REDACTED>`` + TODO comment.
 

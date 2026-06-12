@@ -12,6 +12,16 @@ release commit collapses this section into `## [X.Y.Z] - <date>`.
 
 ### Added
 
+- **GCB-012 + HARNESS-004 literal-secret autofixers (``--fix``).** Cloud
+  Build (a credential literal in ``substitutions:``) and Harness (a literal
+  ``variables:`` value) detect purely by value shape, so they now share the
+  ``_fix_gha008`` redactor that the rest of the literal-secret family uses,
+  replacing the value with ``"<REDACTED>"`` + a rotate-and-wire-up TODO.
+  Safe-tier, idempotent, verified end-to-end (fires before / passes after).
+  Drone DR-004 was evaluated and deliberately left out: it also fires on a
+  credential-named key holding any literal, so a ``<REDACTED>`` placeholder
+  (still a literal) wouldn't clear it without a ``from_secret`` rewrite.
+  Autofixer count 118 -> 120.
 - **DR-006 + HARNESS-006 TLS-bypass autofixers (``--fix``).** Drone and
   Harness detect a TLS / certificate-verification bypass (``curl -k``,
   ``npm config set strict-ssl false``, ``NODE_TLS_REJECT_UNAUTHORIZED=0``,

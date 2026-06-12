@@ -1646,6 +1646,42 @@ class TestArgoFixers:
         assert autofix.generate_fix(_finding("ARGO-008"), manifest) is None
 
 
+class TestCloudBuildHarnessSecretRedaction:
+    # GCB-012 (a literal in ``substitutions:``) and HARNESS-004 (a literal
+    # ``variables:`` value) detect purely by value shape, so they share the
+    # ``_fix_gha008`` redactor like the rest of the literal-secret family.
+    def test_gcb012_redacts_substitution_literal(self):
+        cb = (
+            "substitutions:\n"
+            "  _GH_TOKEN: ghp_aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa\n"
+            "steps:\n"
+            "  - name: gcr.io/cloud-builders/gcloud\n"
+            "    args: [echo]\n"
+        )
+        after = autofix.generate_fix(_finding("GCB-012"), cb)
+        assert after is not None
+        assert "ghp_aaaaaaaa" not in after
+        assert "<REDACTED>" in after
+        assert autofix.fixer_safety("GCB-012") == autofix.SAFE
+        # idempotent: the redacted placeholder isn't re-flagged
+        assert autofix.generate_fix(_finding("GCB-012"), after) is None
+
+    def test_harness004_redacts_variable_literal(self):
+        hn = (
+            "pipeline:\n"
+            "  identifier: build\n"
+            "  variables:\n"
+            "    - name: GH_TOKEN\n"
+            "      type: String\n"
+            "      value: ghp_aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa\n"
+        )
+        after = autofix.generate_fix(_finding("HARNESS-004"), hn)
+        assert after is not None
+        assert "ghp_aaaaaaaa" not in after
+        assert "<REDACTED>" in after
+        assert autofix.fixer_safety("HARNESS-004") == autofix.SAFE
+
+
 # ── Roundtrip safety net ──────────────────────────────────────────────
 
 

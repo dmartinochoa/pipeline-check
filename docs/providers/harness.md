@@ -38,14 +38,14 @@ All other flags (`--output`, `--severity-threshold`, `--checks`,
 
 ## What it covers
 
-11 checks · 2 have an autofix patch (``--fix``).
+11 checks · 3 have an autofix patch (``--fix``).
 
 | Check | Title | Severity | Fix |
 |-------|-------|----------|-----|
 | [HARNESS-001](#harness-001) | Step image not pinned to a digest | <span class="pg-sev pg-sev--high">HIGH</span> |  |
 | [HARNESS-002](#harness-002) | Untrusted Harness expression interpolated into a step command | <span class="pg-sev pg-sev--high">HIGH</span> |  |
 | [HARNESS-003](#harness-003) | Step runs with privileged: true | <span class="pg-sev pg-sev--high">HIGH</span> |  |
-| [HARNESS-004](#harness-004) | Literal credential in a pipeline / stage variable | <span class="pg-sev pg-sev--critical">CRITICAL</span> |  |
+| [HARNESS-004](#harness-004) | Literal credential in a pipeline / stage variable | <span class="pg-sev pg-sev--critical">CRITICAL</span> | <span class="pg-fix" title="`--fix` will patch this rule">🔧 fix</span> |
 | [HARNESS-005](#harness-005) | Step pipes a remote download into a shell interpreter | <span class="pg-sev pg-sev--high">HIGH</span> | <span class="pg-fix" title="`--fix` will patch this rule">🔧 fix</span> |
 | [HARNESS-006](#harness-006) | TLS verification disabled in step commands | <span class="pg-sev pg-sev--high">HIGH</span> | <span class="pg-fix" title="`--fix` will patch this rule">🔧 fix</span> |
 | [HARNESS-007](#harness-007) | Stage infrastructure mounts a sensitive host path | <span class="pg-sev pg-sev--high">HIGH</span> |  |
@@ -125,7 +125,7 @@ Drop ``privileged: true`` from the step. The flag removes the container's syscal
 ## HARNESS-004: Literal credential in a pipeline / stage variable { #harness-004 }
 
 <div class="pg-rule__tags">
-<span class="pg-sev pg-sev--critical">CRITICAL</span> <span class="pg-tag pg-tag--owasp">CICD-SEC-6</span> <span class="pg-tag pg-tag--owasp">CICD-SEC-7</span> <span class="pg-tag pg-tag--esf">ESF-D-SECRETS</span> <span class="pg-tag pg-tag--cwe">CWE-798</span> <span class="pg-tag pg-tag--cwe">CWE-321</span>
+<span class="pg-sev pg-sev--critical">CRITICAL</span> <span class="pg-fix pg-fix--rule" title="`--fix` will patch this rule">🔧 autofix</span> <span class="pg-tag pg-tag--owasp">CICD-SEC-6</span> <span class="pg-tag pg-tag--owasp">CICD-SEC-7</span> <span class="pg-tag pg-tag--esf">ESF-D-SECRETS</span> <span class="pg-tag pg-tag--cwe">CWE-798</span> <span class="pg-tag pg-tag--cwe">CWE-321</span>
 </div>
 
 Fires on a pipeline-level or stage-level ``variables:`` entry whose ``value`` is a credential-shaped literal (matched by the shared secret-shape catalog, ``find_secret_values``) rather than a ``<+secrets.getValue(...)>`` expression. ``type: Secret`` variables and any ``<+...>`` expression value are skipped (those are managed references, not literals); empty values are ignored. The value is redacted in the finding. Same value-shape model as the literal-secret rules across the other providers (DR-004 / BK-002 / TKN-005).

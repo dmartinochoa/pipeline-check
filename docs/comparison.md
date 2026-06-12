@@ -62,7 +62,7 @@ missing major surfaces or requires extra config. No = not in scope.
 | Cross-provider attack chains (MITRE ATT&CK) | Yes (56 chains: 42 AC + 10 XPC + 4 CXPC cross-repo) | No | No | No | No | No |
 | Multi-scanner SARIF ingest + correlation | Yes (`--ingest`, `INGEST-<tool>-<rule>`, chain engine re-evaluates over the union) | No | No | No | No | No |
 | Vulnerable-by-design benchmark | Yes (synthetic `bench/cases` at 6/6 recall, plus pinned real-world goats; both CI-gated) | No | No | No | No | No |
-| Autofix patches (unified diff) | Yes (118 fixers) | Partial | No | Partial | No | No |
+| Autofix patches (unified diff) | Yes (120 fixers) | Partial | No | Partial | No | No |
 | Compliance frameworks (per-finding controls) | 18 (OWASP, SLSA, NIST SSDF, NIST 800-53, NIST 800-190, NIST CSF 2, CIS AWS, CIS Azure, CIS GCP, CIS GitHub, CIS Kubernetes, CIS Supply Chain, PCI DSS, SOC 2, ESF, OpenSSF, S2C2F, OSC&R) | Partial | Partial | Partial | No | Partial |
 | Custom rule DSL | Yes (YAML) | No | Yes (Rego/JSON) | Yes (YAML) | No | Partial |
 | Baseline / new-findings-only | Yes | Partial | No | Yes | No | No |
@@ -126,7 +126,7 @@ Trivy) are the right tool and lead.
   one scan satisfies SOC 2, PCI DSS, NIST SSDF, and SLSA evidence at
   once.
 - **You want autofix as code review, not just text.** `--fix` emits
-  unified-diff patches; `--fix --apply` writes in place. 118 fixers
+  unified-diff patches; `--fix --apply` writes in place. 120 fixers
   cover script injection, secret literals, pinning, securityContext,
   Cloud Build options, Helm chart-supply-chain TODOs, and more.
 
