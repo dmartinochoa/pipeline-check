@@ -12,6 +12,14 @@ release commit collapses this section into `## [X.Y.Z] - <date>`.
 
 ### Added
 
+- **GHA-031 autofixer: migrate retired ``::set-output`` / ``::save-state``
+  (``--fix``).** GitHub disabled the ``::set-output::`` / ``::save-state::``
+  stdout commands, so workflows using them are broken. The new safe-tier
+  fixer rewrites ``echo "::set-output name=X::V"`` to the documented,
+  behavior-equivalent (and injection-safe) file redirect ``echo "X=V" >>
+  "$GITHUB_OUTPUT"`` (``$GITHUB_STATE`` for save-state). Deterministic and
+  idempotent — the first new-logic fixer of this autofix batch (the others
+  reused existing functions). Autofixer count 115 -> 116.
 - **GitHub Actions annotations output (``--output annotations``).** Emits
   one ``::error`` / ``::warning`` / ``::notice file=…,line=…::message``
   workflow command per failing finding location. Printed inside a GitHub

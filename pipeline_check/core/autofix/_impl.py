@@ -496,6 +496,45 @@ for _cid in (
     register(_cid, safety="safe")(_comment_curl_pipe)
 
 
+# ── GHA-031: migrate retired ::set-output / ::save-state ──────────────────
+
+#: ``set-output`` writes to ``$GITHUB_OUTPUT``; ``save-state`` to
+#: ``$GITHUB_STATE`` (GitHub's documented file-redirect replacements).
+_DEPRECATED_CMD_TARGET = {
+    "set-output": "GITHUB_OUTPUT",
+    "save-state": "GITHUB_STATE",
+}
+#: The echoed form ``echo "::set-output name=NAME::VALUE"``. ``name`` is a
+#: command-key identifier; ``val`` runs to the closing quote (the
+#: non-greedy match stops at the first matching quote, which is the
+#: closing one for a well-formed shell string).
+_DEPRECATED_ECHO_RE = re.compile(
+    r"""echo\s+(?P<q>["'])::(?P<cmd>set-output|save-state)\s+"""
+    r"""name=(?P<name>[A-Za-z_][\w.\-]*)::(?P<val>[^\n]*?)(?P=q)""",
+    re.IGNORECASE,
+)
+
+
+@register("GHA-031", safety="safe")
+def _fix_gha031(content: str, finding: Finding) -> str | None:
+    """Migrate ``echo "::set-output name=X::V"`` to the file-redirect form.
+
+    GitHub retired the ``::set-output::`` / ``::save-state::`` stdout
+    commands (they're disabled on the runners), so the replacement is the
+    documented, behavior-equivalent file redirect:
+    ``echo "X=V" >> "$GITHUB_OUTPUT"`` (``$GITHUB_STATE`` for save-state).
+    The new form is also injection-safe (the runner no longer parses the
+    value out of stdout). Safe and idempotent: only the echoed command is
+    rewritten, and the rewritten line no longer matches.
+    """
+    def _sub(m: re.Match[str]) -> str:
+        env = _DEPRECATED_CMD_TARGET[m.group("cmd").lower()]
+        return f'echo "{m.group("name")}={m.group("val")}" >> "${env}"'
+
+    new = _DEPRECATED_ECHO_RE.sub(_sub, content)
+    return new if new != content else None
+
+
 # ── Docker --privileged removal ────────────────────────────────────────
 
 _DOCKER_FLAG_RE = re.compile(
