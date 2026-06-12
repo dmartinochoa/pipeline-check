@@ -891,16 +891,18 @@ product. Grouped by horizon; effort (S/M/L) and impact noted.
   single source rather than hand-maintaining across `owasp_cicd_top_10`
   / `esf_supply_chain` / `nist_ssdf` / `nist_800_53` / `nist_csf_2` /
   `soc2` / `pci_dss_v4` + the per-provider counts + docs. Continue the
-  `cli.py` decomposition (6068 -> 5401 lines so far): four cohesive blocks
+  `cli.py` decomposition (6068 -> 4989 lines so far): five cohesive blocks
   extracted to self-contained modules, all re-imported so call sites /
   `shell_complete=` references / test-suite imports are unchanged (pure
   refactors, suite green at each step): `cli_hints.py` (post-scan UX
   hints), `cli_scan_output.py` (scan-status + scan/gate summary
   renderers), `cli_completion.py` (shell-completion callbacks + check-ID
-  enumerators), and `cli_info_commands.py` (the `--list-checks` /
+  enumerators), `cli_info_commands.py` (the `--list-checks` /
   `--list-chains` / `--explain-chain` / `--standard-report` informational
-  handlers). Next candidate: the larger `scan()` body itself (already
-  partly phased in an earlier pass).
+  handlers), and `cli_paths.py` (the ~320-line provider-path
+  auto-detect/validate cluster: `_resolve_provider_path` / `_ScanPaths` /
+  `_resolve_provider_paths`). Next candidate: the larger `scan()` body
+  itself (already partly phased in an earlier pass).
 
 **New frontier / big bets (M-L):**
 
