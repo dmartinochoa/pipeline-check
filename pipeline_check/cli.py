@@ -242,6 +242,7 @@ class _GroupedCommand(click.Command):
             "--inventory", "--inventory-type", "--inventory-only",
             "--show-passed", "--show-controls", "--no-group",
             "--inline-explain", "--ingest",
+            "--triage", "--triage-endpoint", "--triage-model",
         })),
         ("Gate", frozenset({
             "--fail-on", "--min-grade", "--max-failures",
@@ -924,6 +925,39 @@ def _install_completion_callback(
         "description. Off by default to avoid leaking identity info "
         "into CI logs."
     ),
+)
+@click.option(
+    "--triage",
+    "triage",
+    is_flag=True,
+    default=False,
+    help=(
+        "After the report, ask a LOCAL LLM (Ollama / llama.cpp / LM "
+        "Studio) whether each failing finding is exploitable in this "
+        "repo's context, labeling it confirmed / needs_review / "
+        "likely_fp. Strictly advisory: it never changes severity, the "
+        "grade, or the gate. Local endpoint only unless "
+        "--triage-endpoint is given."
+    ),
+)
+@click.option(
+    "--triage-endpoint",
+    "triage_endpoint",
+    metavar="URL",
+    default="http://localhost:11434/api/generate",
+    show_default=True,
+    help=(
+        "Ollama-style /api/generate endpoint for --triage. A non-loopback "
+        "URL prints a one-line warning before any finding is sent."
+    ),
+)
+@click.option(
+    "--triage-model",
+    "triage_model",
+    metavar="NAME",
+    default="llama3.2",
+    show_default=True,
+    help="Model name passed to the --triage endpoint.",
 )
 @click.option(
     "--gha-search-path",
@@ -2190,6 +2224,9 @@ def scan(
     no_cache: bool = False,
     verify_secrets: bool = False,
     verify_secrets_show_identity: bool = False,
+    triage: bool = False,
+    triage_endpoint: str = "http://localhost:11434/api/generate",
+    triage_model: str = "llama3.2",
     gha_search_paths: tuple[str, ...] = (),
     gha_resolve_depth: int = 3,
 ) -> None:
@@ -2858,6 +2895,16 @@ def scan(
         target=target,
     )
 
+    if triage:
+        _emit_triage(
+            findings,
+            endpoint=triage_endpoint,
+            model=triage_model,
+            output=output,
+            output_file=output_file,
+            quiet=quiet,
+        )
+
     if fix:
         if apply_fixes:
             _apply_fix_patches(findings, tier=fix)
@@ -3169,6 +3216,55 @@ def _validate_scan_inputs(
                 f"--output {output!r} is not supported. Drop "
                 f"``--output`` or pass ``--output markdown``."
             )
+
+
+def _emit_triage(
+    findings: list[Any],
+    *,
+    endpoint: str,
+    model: str,
+    output: str,
+    output_file: str | None,
+    quiet: bool,
+) -> None:
+    """Run the opt-in local-LLM triage pass and print its advisory section.
+
+    Advisory only: it runs after the report and never touches findings,
+    the grade, or the gate. The section goes to stdout unless a
+    machine-readable format is already occupying stdout (no ``--output-
+    file``), in which case it's suppressed with a one-line stderr note so
+    the structured stream stays clean.
+    """
+    from pipeline_check.core.report_view import ReportView
+    from pipeline_check.core.triage import is_local_endpoint, triage_findings
+    from pipeline_check.core.triage_reporter import report_triage
+
+    failed = ReportView(findings).failed
+    if not failed:
+        if not quiet:
+            click.echo("LLM triage: no failing findings to triage.", err=True)
+        return
+    if not is_local_endpoint(endpoint):
+        click.echo(
+            f"warning: --triage is sending {len(failed)} finding(s) to a "
+            f"non-local endpoint ({endpoint}).",
+            err=True,
+        )
+    results = triage_findings(failed, endpoint=endpoint, model=model)
+    section = report_triage(results, endpoint=endpoint, model=model)
+    stdout_is_machine = output_file is None and output not in (
+        "terminal", "both",
+    )
+    if stdout_is_machine:
+        if not quiet:
+            click.echo(
+                "LLM triage ran; section suppressed to keep the "
+                f"{output} stream on stdout clean (use --output-file).",
+                err=True,
+            )
+        return
+    click.echo("")
+    click.echo(section, nl=False)
 
 
 def _emit_scan_report(
