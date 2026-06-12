@@ -383,6 +383,8 @@ _DETECTOR_DESCRIPTIONS: dict[str, str] = {
     "perplexity_api_key":     "pplx- + 48-char body (Perplexity)",
     "slack_webhook":          "hooks.slack.com/services/ incoming-webhook URL (Slack)",
     "discord_webhook":        "discord.com/api/webhooks/ URL (Discord)",
+    "figma_token":            "figd_ + 40-char body (Figma)",
+    "notion_token":           "ntn_ + 40-char body (Notion)",
 }
 
 
