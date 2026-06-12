@@ -335,6 +335,7 @@ pipeline_check --output markdown                   # PR comments
 pipeline_check --output junit -O junit.xml         # test-runner UIs
 pipeline_check --output codequality -O gl-code-quality-report.json  # GitLab MR annotations
 pipeline_check --output csv -O findings.csv        # flat export for spreadsheet triage
+pipeline_check --output annotations                # GitHub Actions inline ::error annotations
 pipeline_check --output threatmodel -O threats.md  # STRIDE threat model (Markdown)
 pipeline_check --output cyclonedx -O sbom.json     # CycloneDX 1.6 build SBOM
 pipeline_check --output spdx -O sbom.spdx.json     # SPDX 2.3 build SBOM

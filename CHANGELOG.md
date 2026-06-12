@@ -12,6 +12,18 @@ release commit collapses this section into `## [X.Y.Z] - <date>`.
 
 ### Added
 
+- **GitHub Actions annotations output (``--output annotations``).** Emits
+  one ``::error`` / ``::warning`` / ``::notice file=…,line=…::message``
+  workflow command per failing finding location. Printed inside a GitHub
+  Actions job, GitHub renders them as inline annotations on the changed
+  lines and the PR, with no SARIF upload step and no code-scanning /
+  Advanced Security requirement, so any repo gets inline feedback (the gap
+  the SARIF path leaves for repos without GHAS). CRITICAL/HIGH map to
+  ``::error``, MEDIUM to ``::warning``, LOW/INFO to ``::notice``; paths are
+  normalized repo-relative with forward slashes so GitHub maps them, and
+  message / property values are percent-encoded per the workflow-command
+  spec. Only failing findings are emitted. New
+  ``core/github_annotations_reporter.py``.
 - **GHA-054 autofixer (``--fix``).** GHA-054 (a checkout ``ssh-key``
   persisted into the repo's ``.git/config``) now shares the
   persist-credentials checkout fixer: ``persist-credentials: false`` is its
