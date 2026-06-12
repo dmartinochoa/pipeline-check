@@ -1424,7 +1424,7 @@ def _install_completion_callback(
         [
             "terminal", "json", "html", "sarif", "junit",
             "markdown", "threatmodel", "cyclonedx", "spdx", "codequality",
-            "both",
+            "csv", "both",
         ],
         case_sensitive=False,
     ),
@@ -3279,6 +3279,10 @@ def _emit_scan_report(
         from pipeline_check.core.codequality_reporter import report_codequality
         return report_codequality(findings, inline_explain=inline_explain)
 
+    def _csv_text() -> str:
+        from pipeline_check.core.csv_reporter import report_csv
+        return report_csv(findings, inline_explain=inline_explain)
+
     def _cyclonedx_text() -> str:
         from pipeline_check.core.cyclonedx_reporter import report_cyclonedx
         return report_cyclonedx(
@@ -3303,6 +3307,7 @@ def _emit_scan_report(
         "junit": (_junit_text, "JUnit report"),
         "markdown": (_markdown_text, "Markdown report"),
         "codequality": (_codequality_text, "Code Quality report"),
+        "csv": (_csv_text, "CSV report"),
         "cyclonedx": (_cyclonedx_text, "CycloneDX SBOM"),
         "spdx": (_spdx_text, "SPDX SBOM"),
         "threatmodel": (_threatmodel_text, "Threat-model report"),

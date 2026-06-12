@@ -12,6 +12,7 @@ format carries the same finding set, only the rendering differs.
 | `markdown` | stdout or `--output-file`    | PR comments / Slack-style consumers; Attack Chains H2 sits between summary and the Failures table |
 | `junit`    | stdout or `--output-file`    | Test-runner UIs (Jenkins, Bamboo, GitLab pipelines) that natively render JUnit XML |
 | `codequality` | stdout or `--output-file` | GitLab Code Quality JSON. Annotates Merge Request diffs natively via the `codequality` artifact report |
+| `csv`      | stdout or `--output-file`    | Flat, one-row-per-location export of the failing findings for spreadsheet triage: filter by severity, assign owners, track remediation. Columns: `check_id, severity, confidence, resource, file, line, title, description, recommendation, cwe` |
 | `threatmodel` | stdout or `--output-file` | STRIDE-mapped Markdown threat-model document. Auto-runs `--inventory`. SOC 2 / PCI / NIST SSDF evidence packages, architecture-review docs |
 | `cyclonedx` | stdout or `--output-file`  | CycloneDX 1.6 JSON SBOM of build-time dependencies (actions, base images, packages). PURL identifiers on every component |
 | `spdx` | stdout or `--output-file`  | SPDX 2.3 JSON SBOM of the same build-time dependencies. Each package carries a PURL `externalRef`; the document `DESCRIBES` every package |
