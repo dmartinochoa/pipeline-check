@@ -42,6 +42,16 @@ class SCMOrgContext:
     #: ``GET /orgs/{org}/actions/secrets`` body (``{total_count, secrets:
     #: [{name, visibility, ...}]}``), or ``None`` when unavailable. ORG-006.
     actions_secrets: dict[str, Any] | None = None
+    #: ``GET /orgs/{org}/actions/runner-groups`` body (``{total_count,
+    #: runner_groups: [{name, visibility, allows_public_repositories, ...}]}``),
+    #: or ``None`` when unavailable. ORG-009.
+    actions_runner_groups: dict[str, Any] | None = None
+    #: ``GET /orgs/{org}/hooks`` body (a list of ``{id, name, active, config:
+    #: {url, insecure_ssl, ...}}``), or ``None`` when unavailable. ORG-011.
+    org_hooks: list[Any] | None = None
+    #: ``GET /orgs/{org}/rulesets`` body (a list of ``{id, name, target,
+    #: enforcement, ...}``), or ``None`` when unavailable. ORG-013.
+    org_rulesets: list[Any] | None = None
     warnings: list[str] = field(default_factory=list)
     files_scanned: int = 0   # repurposed: 1 when any org endpoint was fetched
     files_skipped: int = 0
@@ -81,11 +91,25 @@ class SCMOrgContext:
         sec = fetcher.fetch(f"orgs/{org}/actions/secrets")
         if isinstance(sec, dict):
             ctx.actions_secrets = sec
+        rg = fetcher.fetch(f"orgs/{org}/actions/runner-groups")
+        if isinstance(rg, dict):
+            ctx.actions_runner_groups = rg
+        # The hooks endpoint returns a bare JSON array, not an object.
+        hk = fetcher.fetch(f"orgs/{org}/hooks")
+        if isinstance(hk, list):
+            ctx.org_hooks = hk
+        # The rulesets endpoint also returns a bare JSON array.
+        rs = fetcher.fetch(f"orgs/{org}/rulesets")
+        if isinstance(rs, list):
+            ctx.org_rulesets = rs
         fetched_any = any((
             ctx.org_meta is not None,
             ctx.actions_permissions is not None,
             ctx.actions_workflow_permissions is not None,
             ctx.actions_secrets is not None,
+            ctx.actions_runner_groups is not None,
+            ctx.org_hooks is not None,
+            ctx.org_rulesets is not None,
         ))
         ctx.files_scanned = 1 if fetched_any else 0
         ctx.files_skipped = 0 if fetched_any else 1

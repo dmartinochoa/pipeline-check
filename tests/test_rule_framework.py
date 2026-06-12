@@ -66,7 +66,7 @@ EXPECTED_RULE_COUNTS: dict[str, int] = {
     "drone":      17,
     "harness":    11,
     "scm":        55,
-    "scm_org":    6,
+    "scm_org":    13,
     "runs":       7,
     "gitlab_runs": 5,
     "npm":        20,

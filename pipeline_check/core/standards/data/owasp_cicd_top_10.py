@@ -920,6 +920,13 @@ STANDARD = Standard(
         "ORG-004":  ["CICD-SEC-2"],                # org governance: default workflow token is write
         "ORG-005":  ["CICD-SEC-1"],                # org governance: Actions can approve PRs (review bypass)
         "ORG-006":  ["CICD-SEC-2"],                # org governance: Actions secret scoped to all repos
+        "ORG-007":  ["CICD-SEC-2"],                # org governance: private-repo forking allowed (code exfiltration)
+        "ORG-008":  ["CICD-SEC-2"],                # org governance: members can create public repos (code exposure)
+        "ORG-009":  ["CICD-SEC-4", "CICD-SEC-7"],   # org governance: self-hosted runner group exposed to public repos
+        "ORG-010":  ["CICD-SEC-6"],                # org governance: new-repo secret-scanning push-protection default off
+        "ORG-011":  ["CICD-SEC-6", "CICD-SEC-10"],  # org governance: org webhook over insecure transport
+        "ORG-012":  ["CICD-SEC-3", "CICD-SEC-10"],  # org governance: new-repo Dependabot security-updates default off
+        "ORG-013":  ["CICD-SEC-1", "CICD-SEC-5"],   # org governance: org ruleset not enforced (evaluate/disabled)
         # GitLab-specific platform posture (SCM-050..053)
         "SCM-050":  ["CICD-SEC-6"],                # GitLab push rules: prevent_secrets
         "SCM-051":  ["CICD-SEC-1", "CICD-SEC-6"],  # GitLab push rules: committer-email check

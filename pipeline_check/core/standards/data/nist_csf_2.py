@@ -1030,6 +1030,13 @@ STANDARD = Standard(
         "ORG-004":  ["PR.AA-01", "PR.AA-05"],    # org governance: default workflow token is write
         "ORG-005":  ["PR.PS-06"],                # org governance: Actions can approve PRs (review bypass)
         "ORG-006":  ["PR.AA-05"],                # org governance: Actions secret scoped to all repos
+        "ORG-007":  ["PR.AA-05"],                # org governance: private-repo forking allowed (code exfiltration)
+        "ORG-008":  ["PR.AA-05"],                # org governance: members can create public repos (code exposure)
+        "ORG-009":  ["PR.PS-01"],                # org governance: self-hosted runner group exposed to public repos
+        "ORG-010":  ["PR.DS-01", "DE.CM-09"],    # org governance: new-repo secret-scanning push-protection default off
+        "ORG-011":  ["PR.DS-02"],                # org governance: org webhook over insecure transport
+        "ORG-012":  ["PR.PS-02", "GV.SC-05"],    # org governance: new-repo Dependabot security-updates default off
+        "ORG-013":  ["PR.PS-06", "PR.PS-01"],    # org governance: org ruleset not enforced (evaluate/disabled)
         "NPM-012":  ["PR.AA-01", "GV.SC-05"],   # publish token missing restrictions
         # ── Azure Cloud (Entra ID / Storage / Key Vault / ACR / Monitor) ──
         "ENTRA-001": ["PR.AA-05"],               # SP assigned Global Administrator

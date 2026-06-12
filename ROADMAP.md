@@ -794,12 +794,46 @@ product. Grouped by horizon; effort (S/M/L) and impact noted.
   **ORG-002** (default member permission write/admin), **ORG-003** (no
   Actions allow-list, `allowed_actions: all`), **ORG-004** (default workflow
   `GITHUB_TOKEN` is read-write), **ORG-005** (Actions can approve PRs, a
-  required-review bypass), and **ORG-006** (org Actions secret scoped to all
-  repositories, the SCM-048 analog). Reads `GET /orgs/{org}` +
-  `/actions/permissions` + `/actions/permissions/workflow` +
-  `/actions/secrets` over the existing SCM REST fetcher. Provider count
-  37 -> 38. **Remaining:** more org-level rules (member SSO /
-  outside-collaborator policy, org-wide branch-protection defaults) and the
+  required-review bypass), **ORG-006** (org Actions secret scoped to all
+  repositories, the SCM-048 analog), and **ORG-007** (MEDIUM, private-repo
+  forking allowed: `members_can_fork_private_repositories`, so a member can
+  fork private/internal source to a personal account outside the org's branch
+  protection / audit log / secret scanning, a no-exploit data-exfiltration
+  path), and **ORG-008** (MEDIUM, member public-repo creation:
+  `members_can_create_public_repositories`, so a member can publish internal
+  source/secrets to the internet with no review, the Legitify
+  `non_admins_can_create_public_repositories` policy; guarded to pass when
+  `members_can_create_repositories` is false), and **ORG-009** (HIGH, a
+  self-hosted runner group with `allows_public_repositories: true`, so a public
+  repo / fork PR can run code on org infrastructure; the org-governance analog
+  of GHA-105 / GLRUN-005, via a new `GET /orgs/{org}/actions/runner-groups`
+  fetch + `actions_runner_groups` context slot), and **ORG-010** (MEDIUM, new
+  repos default to secret scanning without push protection:
+  `secret_scanning_enabled_for_new_repositories` true but
+  `secret_scanning_push_protection_enabled_for_new_repositories` not, the
+  org-default analog of SCM-015; scoped to the half-config so a non-GHAS org
+  never false-positives), and **ORG-011** (HIGH, an org webhook delivering
+  events over insecure transport: `config.url` is `http://` or
+  `insecure_ssl: "1"`, so the org-wide event stream is exposed to a network
+  attacker; the org-level analog of SCM-026 via a new `GET /orgs/{org}/hooks`
+  fetch + `org_hooks` context slot, scoped to transport security since the API
+  does not reliably report webhook secret presence), and **ORG-012** (LOW, new
+  repos get Dependabot alerts but not security updates:
+  `dependabot_alerts_enabled_for_new_repositories` true but
+  `dependabot_security_updates_enabled_for_new_repositories` not, the
+  org-default analog of SCM-005; gated like ORG-010 so a no-Dependabot org never
+  false-positives), and **ORG-013** (MEDIUM, an org ruleset whose `enforcement`
+  is `evaluate` / `disabled` rather than `active`, so org-wide branch / tag /
+  push governance is documented but not blocking; the org-level analog of
+  SCM-029 via a new `GET /orgs/{org}/rulesets` fetch + `org_rulesets` context
+  slot, with a `known_fp` for the legitimate short evaluate window). Reads
+  `GET /orgs/{org}`
+  (ORG-001/002/007/008/010/012) + `/actions/permissions` +
+  `/actions/permissions/workflow` + `/actions/secrets` + `/actions/runner-groups`
+  + `/hooks` + `/rulesets` over the existing SCM REST fetcher. Provider count
+  37 -> 38. **Remaining:** more org-level rules (member SSO / outside-collaborator
+  policy; org-wide branch-protection defaults now partly covered by ORG-013's
+  ruleset-enforcement check) and the
   per-repo fan-out (run the 55-rule per-repo pack across every repo the org
   enumerates, the half that needs repo enumeration + the fleet config-clone
   path). The Legitify / Allstar buyer.

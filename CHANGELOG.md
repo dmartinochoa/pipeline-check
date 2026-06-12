@@ -13,7 +13,7 @@ release commit collapses this section into `## [X.Y.Z] - <date>`.
 ### Added
 
 - **``scm_org`` provider: GitHub organization-wide governance (ORG-001 ..
-  ORG-006).** A new ``--pipeline scm_org --scm-org ORG`` audits the
+  ORG-008).** A new ``--pipeline scm_org --scm-org ORG`` audits the
   org-admin settings that govern every repository at once, complementing
   the per-repo ``scm`` provider, over the same GitHub REST fetcher (token
   from ``--gh-token`` / ``$GITHUB_TOKEN``). **ORG-001** (HIGH) flags an org
@@ -29,10 +29,39 @@ release commit collapses this section into `## [X.Y.Z] - <date>`.
   org that lets GitHub Actions approve pull requests, so a workflow can
   self-approve a PR and satisfy a required-review gate with no human. **ORG-006**
   (HIGH) flags an org Actions secret scoped to ``All repositories``, readable
-  by every workflow in every repo (the SCM-048 analog at org level). Each
-  rule passes with an "unavailable" note when the token lacks the scope to
-  read the setting, so a low-scope token never produces a false finding. The
-  provider count is now 38.
+  by every workflow in every repo (the SCM-048 analog at org level). **ORG-007**
+  (MEDIUM) flags an org that allows forking of private repositories, so any
+  member can fork private or internal source code to a personal account
+  outside the org's branch protection, audit log, and secret scanning (a
+  data-exfiltration path that needs no exploit). **ORG-008** (MEDIUM) flags an
+  org that lets members create public repositories, so a member can publish
+  internal source code, secrets, or data to the internet with no review (the
+  Legitify ``non_admins_can_create_public_repositories`` policy). **ORG-009**
+  (HIGH) flags an org self-hosted runner group with ``allows_public_repositories:
+  true``, so a workflow in any public repo (including a fork pull request) can
+  run code on infrastructure the org operates (the org-governance analog of
+  GHA-105 / GLRUN-005, via ``GET /orgs/{org}/actions/runner-groups``). **ORG-010**
+  (MEDIUM) flags an org that enables secret scanning by default for new
+  repositories but not push protection, so every new repo catches credentials
+  only after they reach git history (the org-default analog of SCM-015; scoped
+  to the half-config, so an org without GitHub Advanced Security never false-
+  positives). **ORG-011** (HIGH) flags an org webhook delivering events over
+  insecure transport (``http://`` payload URL or ``insecure_ssl: "1"``), so the
+  org-wide event stream (PR diffs, push commits, security alerts for every repo)
+  is exposed to a network attacker (the org-level analog of SCM-026, via
+  ``GET /orgs/{org}/hooks``; scoped to transport security so it never
+  false-positives on the API's unreliable secret-presence reporting). **ORG-012**
+  (LOW) flags an org that enables Dependabot alerts by default for new
+  repositories but not Dependabot security updates, so every new repo surfaces a
+  vulnerable dependency but gets no automatic fix pull request (the org-default
+  analog of SCM-005; scoped to the half-config, so an org without Dependabot
+  never false-positives). **ORG-013** (MEDIUM) flags an organization ruleset
+  whose ``enforcement`` is ``evaluate`` (dry-run) or ``disabled`` rather than
+  ``active``, so the org-wide branch / tag / push governance it documents does
+  not actually block across the repos it targets (the org-level analog of
+  SCM-029, via ``GET /orgs/{org}/rulesets``). Each rule passes with an
+  "unavailable" note when the token lacks the scope to read the setting, so a
+  low-scope token never produces a false finding. The provider count is now 38.
 - **GLRUN-005: a fork pipeline ran on a self-managed runner (GitLab run
   forensics).** The GitLab analog of the `runs` provider's RUN-005, behind
   `--audit-runs-logs`. A fork merge-request pipeline executes untrusted

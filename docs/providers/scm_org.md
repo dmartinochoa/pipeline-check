@@ -22,7 +22,7 @@ pipeline_check --pipeline scm_org --scm-org my-org --gh-token "$GITHUB_TOKEN"
 
 ## What it covers
 
-6 checks · 0 have an autofix patch (``--fix``).
+13 checks · 0 have an autofix patch (``--fix``).
 
 | Check | Title | Severity | Fix |
 |-------|-------|----------|-----|
@@ -32,6 +32,13 @@ pipeline_check --pipeline scm_org --scm-org my-org --gh-token "$GITHUB_TOKEN"
 | [ORG-004](#org-004) | Organization default workflow token grants write permissions | <span class="pg-sev pg-sev--high">HIGH</span> |  |
 | [ORG-005](#org-005) | Organization lets GitHub Actions approve pull requests | <span class="pg-sev pg-sev--high">HIGH</span> |  |
 | [ORG-006](#org-006) | Organization Actions secret is exposed to every repository | <span class="pg-sev pg-sev--high">HIGH</span> |  |
+| [ORG-007](#org-007) | Organization allows forking of private repositories | <span class="pg-sev pg-sev--medium">MEDIUM</span> |  |
+| [ORG-008](#org-008) | Organization lets members create public repositories | <span class="pg-sev pg-sev--medium">MEDIUM</span> |  |
+| [ORG-009](#org-009) | Organization self-hosted runner group is available to public repositories | <span class="pg-sev pg-sev--high">HIGH</span> |  |
+| [ORG-010](#org-010) | New repositories default to secret scanning without push protection | <span class="pg-sev pg-sev--medium">MEDIUM</span> |  |
+| [ORG-011](#org-011) | Organization webhook delivers events over insecure transport | <span class="pg-sev pg-sev--high">HIGH</span> |  |
+| [ORG-012](#org-012) | New repositories get Dependabot alerts but not security updates | <span class="pg-sev pg-sev--low">LOW</span> |  |
+| [ORG-013](#org-013) | Organization ruleset is in evaluate / disabled mode (not enforced) | <span class="pg-sev pg-sev--medium">MEDIUM</span> |  |
 
 ---
 
@@ -150,6 +157,150 @@ Reads ``GET /orgs/{org}/actions/secrets`` and fires when any secret has ``visibi
 **Recommended action**
 
 Scope each org-level Actions secret to selected repositories (Org Settings -> Secrets and variables -> Actions -> edit the secret -> ``Repository access: Selected repositories``) instead of ``All repositories``. An all-repos secret is readable by every workflow in every current and future repo, including low-trust ones, so one script injection or compromised action in any repo exfiltrates it. Grant the secret only to the repos that build the system that needs it.
+
+</div>
+
+</div>
+
+<div class="pg-rule pg-rule--medium" markdown>
+
+## ORG-007: Organization allows forking of private repositories { #org-007 }
+
+<div class="pg-rule__tags">
+<span class="pg-sev pg-sev--medium">MEDIUM</span> <span class="pg-tag pg-tag--owasp">CICD-SEC-2</span> <span class="pg-tag pg-tag--cwe">CWE-200</span>
+</div>
+
+Reads ``members_can_fork_private_repositories`` from ``GET /orgs/{org}`` (the same fetch ORG-001 / ORG-002 use) and fires when it is ``true``. ``false`` passes. The field is only returned to an org-owner-scoped token (``admin:org``); when absent the rule passes with an 'unavailable' note rather than guessing, so a low-scope token never produces a false finding. Individual repos can still restrict forking below this org default.
+
+<div class="pg-rule__rec" markdown>
+
+**Recommended action**
+
+Turn off ``Allow forking of private repositories`` (Org Settings -> Member privileges -> Repository forking). When it is on, any member can fork a private or internal repository to their personal account, where the org's branch protection, audit log, secret scanning, and 2FA policy no longer apply, and the copy persists after the member leaves. That moves source code outside the controls that govern the org, a data-exfiltration and IP-leak path that needs no exploit. Allow forking only for the specific repos that require it, and prefer forking within the org.
+
+</div>
+
+</div>
+
+<div class="pg-rule pg-rule--medium" markdown>
+
+## ORG-008: Organization lets members create public repositories { #org-008 }
+
+<div class="pg-rule__tags">
+<span class="pg-sev pg-sev--medium">MEDIUM</span> <span class="pg-tag pg-tag--owasp">CICD-SEC-2</span> <span class="pg-tag pg-tag--cwe">CWE-200</span>
+</div>
+
+Reads ``members_can_create_public_repositories`` from ``GET /orgs/{org}`` (the same fetch ORG-001 / ORG-002 / ORG-007 use) and fires when it is ``true``. ``false`` passes. When repository creation is disabled for members altogether (``members_can_create_repositories: false``) the rule passes, since the public sub-setting is then moot. The field is only returned to an org-owner-scoped token (``admin:org``); when absent the rule passes with an 'unavailable' note rather than guessing, so a low-scope token never produces a false finding.
+
+<div class="pg-rule__rec" markdown>
+
+**Recommended action**
+
+Restrict public-repository creation to organization owners (Org Settings -> Member privileges -> Repository creation: allow members to create only ``Private`` repositories, or no repositories). When any member can create a ``Public`` repository, one push of internal code to a member-created public repo exposes source, secrets, or customer data to the whole internet, with no review and no admin in the loop. Owners can still create public repos for genuine open-source work, and members get private repos for everything else.
+
+</div>
+
+</div>
+
+<div class="pg-rule pg-rule--high" markdown>
+
+## ORG-009: Organization self-hosted runner group is available to public repositories { #org-009 }
+
+<div class="pg-rule__tags">
+<span class="pg-sev pg-sev--high">HIGH</span> <span class="pg-tag pg-tag--owasp">CICD-SEC-4</span> <span class="pg-tag pg-tag--owasp">CICD-SEC-7</span> <span class="pg-tag pg-tag--cwe">CWE-668</span>
+</div>
+
+Reads ``GET /orgs/{org}/actions/runner-groups`` and fires when any group has ``allows_public_repositories: true``. Group names are listed so the operator can find them. The org-governance analog of GHA-105 (a self-hosted runner reachable from an untrusted PR trigger) and GLRUN-005 (a fork pipeline on a self-managed runner). Needs a token with the ``admin:org`` / ``manage_runners:org`` scope; when the endpoint is unavailable (no scope, or the org has no runner groups) the rule passes with a note.
+
+<div class="pg-rule__rec" markdown>
+
+**Recommended action**
+
+Turn off ``Allow public repositories`` on the runner group (Org Settings -> Actions -> Runner groups -> edit the group). When it is on, a workflow in any public repository, including a pull request from a fork, can run jobs on the org's self-hosted runners. Fork code then executes on persistent infrastructure you operate: it can read other jobs' files, steal cached credentials, pivot into the network, or leave a backdoor on the host. GitHub's own hardening guidance is that self-hosted runners should never be available to public repositories. Use ephemeral, isolated runners for public repos, or keep the runner group scoped to trusted private repos.
+
+</div>
+
+</div>
+
+<div class="pg-rule pg-rule--medium" markdown>
+
+## ORG-010: New repositories default to secret scanning without push protection { #org-010 }
+
+<div class="pg-rule__tags">
+<span class="pg-sev pg-sev--medium">MEDIUM</span> <span class="pg-tag pg-tag--owasp">CICD-SEC-6</span> <span class="pg-tag pg-tag--cwe">CWE-798</span>
+</div>
+
+Reads ``secret_scanning_enabled_for_new_repositories`` and ``secret_scanning_push_protection_enabled_for_new_repositories`` from ``GET /orgs/{org}`` (the same fetch ORG-001 / ORG-002 use) and fires only when scanning is on for new repos but push protection is not, the org-default half-adoption. When scanning itself is off for new repos the rule passes (the push-protection default is then moot, and the field is plan-dependent), so an org without GitHub Advanced Security never produces a false finding. When the fields are absent (low scope / no security features) the rule passes with a note. The org-default analog of SCM-015 (per-repo push protection off).
+
+<div class="pg-rule__rec" markdown>
+
+**Recommended action**
+
+Turn on ``Automatically enable for new repositories`` for secret scanning push protection (Org Settings -> Code security -> Secret protection / Push protection). The organization already enables secret scanning by default for new repos (the detect step), but without push protection (the prevent step) every new repo starts out catching credentials only after they land in git history, where rotation is the only fix. Enabling the push-protection default refuses the push before the secret is ever committed. The per-repo analog is SCM-015.
+
+</div>
+
+</div>
+
+<div class="pg-rule pg-rule--high" markdown>
+
+## ORG-011: Organization webhook delivers events over insecure transport { #org-011 }
+
+<div class="pg-rule__tags">
+<span class="pg-sev pg-sev--high">HIGH</span> <span class="pg-tag pg-tag--owasp">CICD-SEC-6</span> <span class="pg-tag pg-tag--owasp">CICD-SEC-10</span> <span class="pg-tag pg-tag--cwe">CWE-319</span>
+</div>
+
+Reads ``GET /orgs/{org}/hooks`` and fires on any active webhook whose ``config.url`` starts with ``http://`` or whose ``config.insecure_ssl`` is ``"1"`` (TLS verification off). Inactive hooks (``active: false``) are skipped. Scoped to transport security: unlike the per-repo SCM-026 it does not flag a missing HMAC secret, because the org hooks endpoint does not reliably report secret presence. Needs a token with the ``admin:org_hook`` / ``admin:org`` scope; when the endpoint is unavailable the rule passes with a note. The org-level analog of SCM-026.
+
+<div class="pg-rule__rec" markdown>
+
+**Recommended action**
+
+For each flagged organization webhook (Org Settings -> Webhooks -> edit), switch the Payload URL to ``https://`` and set SSL verification to ``Enable SSL verification``. An org-level webhook fires on events across every repository, so its payloads carry pull request diffs, push commits, and security-alert content for the whole org. Over plain HTTP (or HTTPS with verification disabled) a network attacker between GitHub and the receiver reads all of it, and can tamper with deliveries. Also set a strong ``Secret`` and validate the ``X-Hub-Signature-256`` header on the receiver.
+
+</div>
+
+</div>
+
+<div class="pg-rule pg-rule--low" markdown>
+
+## ORG-012: New repositories get Dependabot alerts but not security updates { #org-012 }
+
+<div class="pg-rule__tags">
+<span class="pg-sev pg-sev--low">LOW</span> <span class="pg-tag pg-tag--owasp">CICD-SEC-3</span> <span class="pg-tag pg-tag--owasp">CICD-SEC-10</span> <span class="pg-tag pg-tag--cwe">CWE-1104</span>
+</div>
+
+Reads ``dependabot_alerts_enabled_for_new_repositories`` and ``dependabot_security_updates_enabled_for_new_repositories`` from ``GET /orgs/{org}`` (the same fetch ORG-001 / ORG-002 use) and fires only when alerts are on for new repos but security updates are not, the org-default half-adoption. When Dependabot alerts are off for new repos the rule passes (security updates require alerts first, and the field is plan-dependent), so an org without Dependabot never produces a false finding. When the fields are absent (low scope) the rule passes with a note. The org-default analog of SCM-005.
+
+<div class="pg-rule__rec" markdown>
+
+**Recommended action**
+
+Turn on ``Automatically enable for new repositories`` for Dependabot security updates (Org Settings -> Code security -> Dependabot security updates). The organization already turns on Dependabot alerts by default for new repos (so a vulnerable dependency is surfaced), but without security updates every new repo only gets the alert, with no automatic pull request that bumps the dependency to a fixed version. Teams then patch by hand, slowly or not at all. Enabling the security-updates default closes the loop from 'a vulnerable dependency was detected' to 'a fix PR is waiting'. The per-repo analog is SCM-005.
+
+</div>
+
+</div>
+
+<div class="pg-rule pg-rule--medium" markdown>
+
+## ORG-013: Organization ruleset is in evaluate / disabled mode (not enforced) { #org-013 }
+
+<div class="pg-rule__tags">
+<span class="pg-sev pg-sev--medium">MEDIUM</span> <span class="pg-tag pg-tag--owasp">CICD-SEC-1</span> <span class="pg-tag pg-tag--owasp">CICD-SEC-5</span> <span class="pg-tag pg-tag--cwe">CWE-693</span> <span class="pg-tag pg-tag--cwe">CWE-269</span>
+</div>
+
+Walks ``GET /orgs/{org}/rulesets`` and flags every entry whose ``enforcement`` is anything other than ``"active"`` (``evaluate`` = dry-run, ``disabled`` = explicit off). Passes when no org rulesets are configured (``[]``). Needs a token with the ``admin:org`` scope; when the endpoint is unavailable the rule passes with a note. The org-level analog of SCM-029.
+
+**Known false-positive modes**
+
+- A freshly-authored org ruleset legitimately sits in ``evaluate`` mode for a short audit window before promotion to ``active``. Suppress for that specific ruleset id with a calendar-bound rationale; the rule keeps flagging until the promotion lands so the transition window doesn't quietly become permanent.
+
+<div class="pg-rule__rec" markdown>
+
+**Recommended action**
+
+Flip every non-enforcing organization ruleset to ``enforcement: active`` (Org Settings -> Repository -> Rulesets -> <name> -> Enforcement status -> Active). An org-level ruleset applies branch / tag / push governance across every repository the ruleset targets, so a single ruleset left in ``evaluate`` (preview, runs the rule logic but never blocks) or ``disabled`` (explicit off) leaves all of those repos with the audit appearance of org-wide governance and the behavior of none. Operators commonly create a ruleset in ``evaluate`` to preview its effect and forget to promote it.
 
 </div>
 

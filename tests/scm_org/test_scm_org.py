@@ -115,15 +115,158 @@ class TestOrg002:
         assert "cannot read" in out[0].description
 
 
+# ── ORG-007: private-repository forking policy ────────────────────────────
+
+class TestOrg007:
+    def test_fires_when_forking_allowed(self):
+        ctx = _ctx({"members_can_fork_private_repositories": True})
+        out = [f for f in _for(_findings(ctx), "ORG-007") if not f.passed]
+        assert len(out) == 1
+        assert out[0].severity == Severity.MEDIUM
+        assert "forking of private" in out[0].description
+        assert out[0].resource == "github:org/acme"
+
+    def test_passes_when_forking_disallowed(self):
+        ctx = _ctx({"members_can_fork_private_repositories": False})
+        out = _for(_findings(ctx), "ORG-007")
+        assert out and all(f.passed for f in out)
+
+    def test_passes_with_note_when_field_absent(self):
+        ctx = _ctx({"login": "acme"})
+        out = _for(_findings(ctx), "ORG-007")
+        assert out and all(f.passed for f in out)
+        assert "cannot read" in out[0].description
+
+    def test_passes_with_note_when_org_unavailable(self):
+        ctx = _ctx(None)
+        out = _for(_findings(ctx), "ORG-007")
+        assert out and all(f.passed for f in out)
+
+
+# ── ORG-008: member public-repository creation ────────────────────────────
+
+class TestOrg008:
+    def test_fires_when_members_can_create_public(self):
+        ctx = _ctx({"members_can_create_public_repositories": True})
+        out = [f for f in _for(_findings(ctx), "ORG-008") if not f.passed]
+        assert len(out) == 1
+        assert out[0].severity == Severity.MEDIUM
+        assert "create public" in out[0].description
+        assert out[0].resource == "github:org/acme"
+
+    def test_passes_when_public_creation_restricted(self):
+        ctx = _ctx({"members_can_create_public_repositories": False})
+        out = _for(_findings(ctx), "ORG-008")
+        assert out and all(f.passed for f in out)
+
+    def test_passes_when_repo_creation_disabled(self):
+        # Public flag is moot when members can't create any repo.
+        ctx = _ctx({
+            "members_can_create_repositories": False,
+            "members_can_create_public_repositories": True,
+        })
+        out = _for(_findings(ctx), "ORG-008")
+        assert out and all(f.passed for f in out)
+        assert "not let members create" in out[0].description
+
+    def test_passes_with_note_when_field_absent(self):
+        ctx = _ctx({"login": "acme"})
+        out = _for(_findings(ctx), "ORG-008")
+        assert out and all(f.passed for f in out)
+        assert "cannot read" in out[0].description
+
+
+# ── ORG-010: new-repo secret-scanning push-protection default ─────────────
+
+class TestOrg010:
+    def test_fires_when_scanning_on_but_push_protection_off(self):
+        ctx = _ctx({
+            "secret_scanning_enabled_for_new_repositories": True,
+            "secret_scanning_push_protection_enabled_for_new_repositories": False,
+        })
+        out = [f for f in _for(_findings(ctx), "ORG-010") if not f.passed]
+        assert len(out) == 1
+        assert out[0].severity == Severity.MEDIUM
+        assert "push protection" in out[0].description
+        assert out[0].resource == "github:org/acme"
+
+    def test_passes_when_both_enabled(self):
+        ctx = _ctx({
+            "secret_scanning_enabled_for_new_repositories": True,
+            "secret_scanning_push_protection_enabled_for_new_repositories": True,
+        })
+        out = _for(_findings(ctx), "ORG-010")
+        assert out and all(f.passed for f in out)
+
+    def test_passes_when_scanning_off(self):
+        # Push-protection default is moot (and plan-dependent) when scanning
+        # itself is off for new repos; don't false-positive on free plans.
+        ctx = _ctx({
+            "secret_scanning_enabled_for_new_repositories": False,
+            "secret_scanning_push_protection_enabled_for_new_repositories": False,
+        })
+        out = _for(_findings(ctx), "ORG-010")
+        assert out and all(f.passed for f in out)
+        assert "does not enable secret scanning" in out[0].description
+
+    def test_passes_with_note_when_field_absent(self):
+        ctx = _ctx({"login": "acme"})
+        out = _for(_findings(ctx), "ORG-010")
+        assert out and all(f.passed for f in out)
+        assert "cannot read" in out[0].description
+
+
+# ── ORG-012: new-repo Dependabot security-updates default ─────────────────
+
+class TestOrg012:
+    def test_fires_when_alerts_on_but_updates_off(self):
+        ctx = _ctx({
+            "dependabot_alerts_enabled_for_new_repositories": True,
+            "dependabot_security_updates_enabled_for_new_repositories": False,
+        })
+        out = [f for f in _for(_findings(ctx), "ORG-012") if not f.passed]
+        assert len(out) == 1
+        assert out[0].severity == Severity.LOW
+        assert "security updates" in out[0].description
+        assert out[0].resource == "github:org/acme"
+
+    def test_passes_when_both_enabled(self):
+        ctx = _ctx({
+            "dependabot_alerts_enabled_for_new_repositories": True,
+            "dependabot_security_updates_enabled_for_new_repositories": True,
+        })
+        out = _for(_findings(ctx), "ORG-012")
+        assert out and all(f.passed for f in out)
+
+    def test_passes_when_alerts_off(self):
+        ctx = _ctx({
+            "dependabot_alerts_enabled_for_new_repositories": False,
+            "dependabot_security_updates_enabled_for_new_repositories": False,
+        })
+        out = _for(_findings(ctx), "ORG-012")
+        assert out and all(f.passed for f in out)
+        assert "does not enable Dependabot alerts" in out[0].description
+
+    def test_passes_with_note_when_field_absent(self):
+        ctx = _ctx({"login": "acme"})
+        out = _for(_findings(ctx), "ORG-012")
+        assert out and all(f.passed for f in out)
+        assert "cannot read" in out[0].description
+
+
 _PERMS_PATH = f"orgs/{_ORG}/actions/permissions"
 _WORKFLOW_PATH = f"orgs/{_ORG}/actions/permissions/workflow"
 _SECRETS_PATH = f"orgs/{_ORG}/actions/secrets"
+_RUNNER_GROUPS_PATH = f"orgs/{_ORG}/actions/runner-groups"
+_HOOKS_PATH = f"orgs/{_ORG}/hooks"
+_RULESETS_PATH = f"orgs/{_ORG}/rulesets"
 
 
 def _ctx_actions(
     permissions: dict | None = None,
     workflow: dict | None = None,
     secrets: dict | None = None,
+    runner_groups: dict | None = None,
 ) -> SCMOrgContext:
     mapping: dict[str, Any] = {_ORG_PATH: {"login": _ORG}}
     if permissions is not None:
@@ -132,6 +275,22 @@ def _ctx_actions(
         mapping[_WORKFLOW_PATH] = workflow
     if secrets is not None:
         mapping[_SECRETS_PATH] = secrets
+    if runner_groups is not None:
+        mapping[_RUNNER_GROUPS_PATH] = runner_groups
+    return SCMOrgContext.for_org(_ORG, FakeFetcher(mapping))
+
+
+def _ctx_hooks(hooks: list | None) -> SCMOrgContext:
+    mapping: dict[str, Any] = {_ORG_PATH: {"login": _ORG}}
+    if hooks is not None:
+        mapping[_HOOKS_PATH] = hooks
+    return SCMOrgContext.for_org(_ORG, FakeFetcher(mapping))
+
+
+def _ctx_rulesets(rulesets: list | None) -> SCMOrgContext:
+    mapping: dict[str, Any] = {_ORG_PATH: {"login": _ORG}}
+    if rulesets is not None:
+        mapping[_RULESETS_PATH] = rulesets
     return SCMOrgContext.for_org(_ORG, FakeFetcher(mapping))
 
 
@@ -241,6 +400,115 @@ class TestOrg006:
         assert "not available" in out[0].description
 
 
+# ── ORG-009: runner group available to public repos ───────────────────────
+
+class TestOrg009:
+    def test_fires_on_public_runner_group(self):
+        ctx = _ctx_actions(runner_groups={"total_count": 2, "runner_groups": [
+            {"name": "build", "allows_public_repositories": True},
+            {"name": "private-only", "allows_public_repositories": False},
+        ]})
+        out = [f for f in _for(_findings(ctx), "ORG-009") if not f.passed]
+        assert len(out) == 1
+        assert out[0].severity == Severity.HIGH
+        assert "build" in out[0].description
+        assert "private-only" not in out[0].description  # only public ones named
+
+    def test_passes_when_no_public_group(self):
+        ctx = _ctx_actions(runner_groups={"runner_groups": [
+            {"name": "default", "allows_public_repositories": False},
+        ]})
+        out = _for(_findings(ctx), "ORG-009")
+        assert out and all(f.passed for f in out)
+
+    def test_passes_with_note_when_unavailable(self):
+        ctx = _ctx_actions(runner_groups=None)
+        out = _for(_findings(ctx), "ORG-009")
+        assert out and all(f.passed for f in out)
+        assert "not available" in out[0].description
+
+
+# ── ORG-011: org webhook insecure transport ───────────────────────────────
+
+class TestOrg011:
+    def test_fires_on_http_url(self):
+        ctx = _ctx_hooks([
+            {"id": 1, "active": True, "config": {"url": "http://hook.example/gh"}},
+            {"id": 2, "active": True, "config": {"url": "https://safe.example/gh"}},
+        ])
+        out = [f for f in _for(_findings(ctx), "ORG-011") if not f.passed]
+        assert len(out) == 1
+        assert out[0].severity == Severity.HIGH
+        assert "http://hook.example/gh" in out[0].description
+        assert "safe.example" not in out[0].description  # only offenders named
+
+    def test_fires_on_insecure_ssl(self):
+        ctx = _ctx_hooks([
+            {"id": 3, "active": True,
+             "config": {"url": "https://hook.example/gh", "insecure_ssl": "1"}},
+        ])
+        out = [f for f in _for(_findings(ctx), "ORG-011") if not f.passed]
+        assert len(out) == 1
+        assert "TLS verification disabled" in out[0].description
+
+    def test_skips_inactive_hook(self):
+        ctx = _ctx_hooks([
+            {"id": 4, "active": False, "config": {"url": "http://hook.example/gh"}},
+        ])
+        out = _for(_findings(ctx), "ORG-011")
+        assert out and all(f.passed for f in out)
+
+    def test_passes_when_all_secure(self):
+        ctx = _ctx_hooks([
+            {"id": 5, "active": True,
+             "config": {"url": "https://hook.example/gh", "insecure_ssl": "0"}},
+        ])
+        out = _for(_findings(ctx), "ORG-011")
+        assert out and all(f.passed for f in out)
+
+    def test_passes_with_note_when_unavailable(self):
+        ctx = _ctx_hooks(None)
+        out = _for(_findings(ctx), "ORG-011")
+        assert out and all(f.passed for f in out)
+        assert "not available" in out[0].description
+
+
+# ── ORG-013: org ruleset not enforced ─────────────────────────────────────
+
+class TestOrg013:
+    @pytest.mark.parametrize("mode", ["evaluate", "disabled"])
+    def test_fires_on_non_active_ruleset(self, mode):
+        ctx = _ctx_rulesets([
+            {"id": 1, "name": "main-protection", "enforcement": mode},
+            {"id": 2, "name": "active-one", "enforcement": "active"},
+        ])
+        out = [f for f in _for(_findings(ctx), "ORG-013") if not f.passed]
+        assert len(out) == 1
+        assert out[0].severity == Severity.MEDIUM
+        assert "main-protection" in out[0].description
+        assert mode in out[0].description
+        assert "active-one" not in out[0].description  # only offenders named
+
+    def test_passes_when_all_active(self):
+        ctx = _ctx_rulesets([
+            {"id": 3, "name": "p", "enforcement": "active"},
+        ])
+        out = _for(_findings(ctx), "ORG-013")
+        assert out and all(f.passed for f in out)
+
+    def test_passes_when_no_rulesets(self):
+        ctx = _ctx_rulesets([])
+        out = _for(_findings(ctx), "ORG-013")
+        assert out and all(f.passed for f in out)
+        assert "no org-level rulesets" in out[0].description
+
+    def test_passes_with_note_when_unavailable(self):
+        ctx = _ctx_rulesets(None)
+        out = _for(_findings(ctx), "ORG-013")
+        assert out and all(f.passed for f in out)
+        assert "not available" in out[0].description
+
+
 # ── Provider wiring ───────────────────────────────────────────────────────
 
 class TestProvider:
@@ -265,6 +533,10 @@ class TestProvider:
             "ORG-001": "CICD-SEC-2", "ORG-002": "CICD-SEC-2",
             "ORG-003": "CICD-SEC-3", "ORG-004": "CICD-SEC-2",
             "ORG-005": "CICD-SEC-1", "ORG-006": "CICD-SEC-2",
+            "ORG-007": "CICD-SEC-2", "ORG-008": "CICD-SEC-2",
+            "ORG-009": "CICD-SEC-4", "ORG-010": "CICD-SEC-6",
+            "ORG-011": "CICD-SEC-6", "ORG-012": "CICD-SEC-3",
+            "ORG-013": "CICD-SEC-1",
         }
         for cid, ctrl in expected.items():
             controls = {c.control_id for c in resolve_for_check(cid)}

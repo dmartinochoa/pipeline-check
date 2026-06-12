@@ -989,6 +989,13 @@ STANDARD = Standard(
         "ORG-004":  ["1.3.4"],                           # org governance: default workflow token is write
         "ORG-005":  ["1.1.5"],                           # org governance: Actions can approve PRs (review bypass)
         "ORG-006":  ["2.4.3"],                           # org governance: Actions secret scoped to all repos
+        "ORG-007":  ["1.3.4"],                           # org governance: private-repo forking allowed (code exfiltration)
+        "ORG-008":  ["1.3.4"],                           # org governance: members can create public repos (code exposure)
+        "ORG-009":  ["2.2.2"],                           # org governance: self-hosted runner group exposed to public repos
+        "ORG-010":  ["1.5.1"],                           # org governance: new-repo secret-scanning push-protection default off
+        "ORG-011":  ["2.4.3"],                           # org governance: org webhook over insecure transport
+        "ORG-012":  ["1.1.8"],                           # org governance: new-repo Dependabot security-updates default off
+        "ORG-013":  ["1.1.17"],                          # org governance: org ruleset not enforced (evaluate/disabled)
         # GitLab-specific platform posture (SCM-050..053)
         "SCM-050":  ["1.5.1"],                           # GitLab push rules: prevent_secrets
         "SCM-051":  ["1.1.6"],                           # GitLab push rules: committer-email check
