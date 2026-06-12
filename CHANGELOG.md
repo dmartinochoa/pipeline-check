@@ -12,6 +12,14 @@ release commit collapses this section into `## [X.Y.Z] - <date>`.
 
 ### Added
 
+- **Groq + xAI + Postman + Doppler live secret verifiers
+  (``--verify-secrets``).** Four more detectors that had no verifier gain
+  one, each a single-token identity probe: Groq and xAI via the
+  OpenAI-compatible ``GET /v1/models`` (Bearer), Postman via ``GET /me``
+  (the ``X-Api-Key`` header) reporting the owning user, and Doppler via
+  ``GET /v3/me`` (Bearer) reporting the token name / workplace. Standard
+  VERIFIED / UNVERIFIED / UNKNOWN outcomes, no network surface beyond the
+  opt-in probe.
 - **Figma + Notion live secret verifiers (``--verify-secrets``).** The
   Figma (``figd_``) and Notion (``ntn_``) detectors added last cycle now
   have verifiers, so ``--verify-secrets`` can confirm whether a detected

@@ -1,8 +1,8 @@
 """Verifiers for additional SaaS API tokens.
 
-Covers Replicate, Cohere, Mailchimp, Square, Figma, and Notion.
-Companion to ``saas_api_keys.py`` (which holds Anthropic, OpenAI, HF,
-SendGrid, Stripe).
+Covers Replicate, Cohere, Mailchimp, Square, Figma, Notion, Groq, xAI,
+Postman, and Doppler. Companion to ``saas_api_keys.py`` (which holds
+Anthropic, OpenAI, HF, SendGrid, Stripe).
 """
 from __future__ import annotations
 
@@ -234,4 +234,132 @@ class NotionTokenVerifier(SecretVerifier):
         return VerifyResult(
             outcome=VerifyOutcome.UNKNOWN,
             reason=f"GET /v1/users/me returned {resp.status}",
+        )
+
+
+# -- Groq ----------------------------------------------------------------
+
+
+class GroqAPIKeyVerifier(SecretVerifier):
+    """Verify Groq API keys against the OpenAI-compatible models list."""
+
+    _ENDPOINT = "https://api.groq.com/openai/v1/models"
+
+    def probe(self, secret_value: str) -> VerifyResult:
+        resp = bearer_probe(self._ENDPOINT, secret_value)
+        if resp.ok:
+            return VerifyResult(
+                outcome=VerifyOutcome.VERIFIED,
+                identity="groq-api-key",
+                reason="GET /openai/v1/models returned 200",
+            )
+        if resp.auth_failure:
+            return VerifyResult(
+                outcome=VerifyOutcome.UNVERIFIED,
+                reason=f"GET /openai/v1/models returned {resp.status}",
+            )
+        return VerifyResult(
+            outcome=VerifyOutcome.UNKNOWN,
+            reason=f"GET /openai/v1/models returned {resp.status}",
+        )
+
+
+# -- xAI (Grok) ----------------------------------------------------------
+
+
+class XaiAPIKeyVerifier(SecretVerifier):
+    """Verify xAI (Grok) API keys against the OpenAI-compatible models list."""
+
+    _ENDPOINT = "https://api.x.ai/v1/models"
+
+    def probe(self, secret_value: str) -> VerifyResult:
+        resp = bearer_probe(self._ENDPOINT, secret_value)
+        if resp.ok:
+            return VerifyResult(
+                outcome=VerifyOutcome.VERIFIED,
+                identity="xai-api-key",
+                reason="GET /v1/models returned 200",
+            )
+        if resp.auth_failure:
+            return VerifyResult(
+                outcome=VerifyOutcome.UNVERIFIED,
+                reason=f"GET /v1/models returned {resp.status}",
+            )
+        return VerifyResult(
+            outcome=VerifyOutcome.UNKNOWN,
+            reason=f"GET /v1/models returned {resp.status}",
+        )
+
+
+# -- Postman -------------------------------------------------------------
+
+
+class PostmanAPIKeyVerifier(SecretVerifier):
+    """Verify Postman API keys.
+
+    Postman authenticates with the ``X-Api-Key`` header (not Bearer);
+    ``GET /me`` returns the owning user.
+    """
+
+    _ENDPOINT = "https://api.getpostman.com/me"
+
+    def probe(self, secret_value: str) -> VerifyResult:
+        resp = http_probe(
+            self._ENDPOINT,
+            headers={"X-Api-Key": secret_value},
+        )
+        if resp.ok:
+            try:
+                data = resp.json()
+                user = data.get("user") if isinstance(data.get("user"), dict) else {}
+                who = user.get("username") or str(user.get("id", "unknown"))
+            except Exception:
+                who = "unknown"
+            return VerifyResult(
+                outcome=VerifyOutcome.VERIFIED,
+                identity=f"postman-user:{who}",
+                reason=f"GET /me returned 200 (user={who})",
+            )
+        if resp.auth_failure:
+            return VerifyResult(
+                outcome=VerifyOutcome.UNVERIFIED,
+                reason=f"GET /me returned {resp.status}",
+            )
+        return VerifyResult(
+            outcome=VerifyOutcome.UNKNOWN,
+            reason=f"GET /me returned {resp.status}",
+        )
+
+
+# -- Doppler -------------------------------------------------------------
+
+
+class DopplerTokenVerifier(SecretVerifier):
+    """Verify Doppler service / personal tokens via the token-identity
+    endpoint. ``GET /v3/me`` echoes the token's name / workplace."""
+
+    _ENDPOINT = "https://api.doppler.com/v3/me"
+
+    def probe(self, secret_value: str) -> VerifyResult:
+        resp = bearer_probe(self._ENDPOINT, secret_value)
+        if resp.ok:
+            try:
+                data = resp.json()
+                wp = data.get("workplace") if isinstance(data.get("workplace"), dict) else {}
+                who = data.get("name") or wp.get("name") or data.get("slug") or "unknown"
+            except Exception:
+                who = "unknown"
+            return VerifyResult(
+                outcome=VerifyOutcome.VERIFIED,
+                identity=f"doppler:{who}",
+                reason=f"GET /v3/me returned 200 (name={who})",
+            )
+        if resp.auth_failure:
+            return VerifyResult(
+                outcome=VerifyOutcome.UNVERIFIED,
+                reason=f"GET /v3/me returned {resp.status}",
+            )
+        return VerifyResult(
+            outcome=VerifyOutcome.UNKNOWN,
+            reason=f"GET /v3/me returned {resp.status}",
         )
