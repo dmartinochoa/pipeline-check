@@ -38,7 +38,7 @@ All other flags (`--output`, `--severity-threshold`, `--checks`,
 
 ## What it covers
 
-11 checks · 0 have an autofix patch (``--fix``).
+11 checks · 1 have an autofix patch (``--fix``).
 
 | Check | Title | Severity | Fix |
 |-------|-------|----------|-----|
@@ -46,7 +46,7 @@ All other flags (`--output`, `--severity-threshold`, `--checks`,
 | [HARNESS-002](#harness-002) | Untrusted Harness expression interpolated into a step command | <span class="pg-sev pg-sev--high">HIGH</span> |  |
 | [HARNESS-003](#harness-003) | Step runs with privileged: true | <span class="pg-sev pg-sev--high">HIGH</span> |  |
 | [HARNESS-004](#harness-004) | Literal credential in a pipeline / stage variable | <span class="pg-sev pg-sev--critical">CRITICAL</span> |  |
-| [HARNESS-005](#harness-005) | Step pipes a remote download into a shell interpreter | <span class="pg-sev pg-sev--high">HIGH</span> |  |
+| [HARNESS-005](#harness-005) | Step pipes a remote download into a shell interpreter | <span class="pg-sev pg-sev--high">HIGH</span> | <span class="pg-fix" title="`--fix` will patch this rule">🔧 fix</span> |
 | [HARNESS-006](#harness-006) | TLS verification disabled in step commands | <span class="pg-sev pg-sev--high">HIGH</span> |  |
 | [HARNESS-007](#harness-007) | Stage infrastructure mounts a sensitive host path | <span class="pg-sev pg-sev--high">HIGH</span> |  |
 | [HARNESS-008](#harness-008) | Untrusted context reaches an agentic AI CLI (prompt injection) | <span class="pg-sev pg-sev--high">HIGH</span> |  |
@@ -145,7 +145,7 @@ Move the credential into a Harness secret and reference it as an expression inst
 ## HARNESS-005: Step pipes a remote download into a shell interpreter { #harness-005 }
 
 <div class="pg-rule__tags">
-<span class="pg-sev pg-sev--high">HIGH</span> <span class="pg-tag pg-tag--owasp">CICD-SEC-3</span> <span class="pg-tag pg-tag--owasp">CICD-SEC-5</span> <span class="pg-tag pg-tag--esf">ESF-S-VERIFY-DEPS</span> <span class="pg-tag pg-tag--cwe">CWE-494</span> <span class="pg-tag pg-tag--cwe">CWE-78</span>
+<span class="pg-sev pg-sev--high">HIGH</span> <span class="pg-fix pg-fix--rule" title="`--fix` will patch this rule">🔧 autofix</span> <span class="pg-tag pg-tag--owasp">CICD-SEC-3</span> <span class="pg-tag pg-tag--owasp">CICD-SEC-5</span> <span class="pg-tag pg-tag--esf">ESF-S-VERIFY-DEPS</span> <span class="pg-tag pg-tag--cwe">CWE-494</span> <span class="pg-tag pg-tag--cwe">CWE-78</span>
 </div>
 
 Walks every step's ``spec.command`` text and fires on the canonical pipe-to-shell shapes (``curl ... | sh`` / ``| bash``, ``wget ... -O - | sh``, ``fetch ... | sh``), allowing arbitrary intermediate flags so ``curl -fsSL <url> | sh -s -- --foo`` still matches. The download-then-execute form (``curl <url> -o f && sh f``) is NOT caught: the file lands on disk first, leaving room for a checksum-verify step. Same model as DR-014 / GHA-016 / BK-017 / TKN-008 across providers.
