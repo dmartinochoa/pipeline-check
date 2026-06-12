@@ -260,6 +260,7 @@ class _GroupedCommand(click.Command):
         ("Autofix", frozenset({"--fix", "--apply", "--list-fixers", "--safety"})),
         ("Info & Help", frozenset({
             "--list-checks", "--list-standards", "--standard-report",
+            "--list-verifiers",
             "--explain", "--man", "--config-check", "--config-strict",
             "--install-completion", "--config", "--version",
             "--policy", "--list-policies", "--serve",
@@ -1562,6 +1563,18 @@ def _install_completion_callback(
     ),
 )
 @click.option(
+    "--list-verifiers",
+    "list_verifiers",
+    is_flag=True,
+    default=False,
+    help=(
+        "List every secret detector that ``--verify-secrets`` can probe "
+        "against its issuing API to confirm whether the credential is "
+        "live (one per line: ``detector  shape``) and exit. No scan is "
+        "performed."
+    ),
+)
+@click.option(
     "--explain",
     "explain_id",
     default=None,
@@ -2173,6 +2186,7 @@ def scan(
     list_checks: bool,
     list_fixers: bool,
     fixer_safety_filter: str,
+    list_verifiers: bool,
     explain_id: str | None,
     ai_explain_id: str | None,
     ai_model_spec: str | None,
@@ -2268,6 +2282,7 @@ def scan(
         list_checks=list_checks,
         list_fixers=list_fixers,
         fixer_safety_filter=fixer_safety_filter,
+        list_verifiers=list_verifiers,
         annotate_fp=annotate_fp,
         fp_path=fp_path,
         list_chains=list_chains,
@@ -3441,6 +3456,7 @@ def _run_informational_commands(
     list_checks: bool,
     list_fixers: bool,
     fixer_safety_filter: str,
+    list_verifiers: bool,
     annotate_fp: tuple[str, str] | None,
     fp_path: str | None,
     list_chains: bool,
@@ -3529,6 +3545,22 @@ def _run_informational_commands(
                 err=True,
             )
         raise click.exceptions.Exit(fixers_code)
+
+    if list_verifiers:
+        from .core.checks._primitives.secret_verifiers import verifier_names
+        from .core.manual import detector_description
+
+        names = verifier_names()
+        width = max((len(n) for n in names), default=0)
+        for name in names:
+            click.echo(f"{name.ljust(width)}  {detector_description(name)}")
+        click.echo(
+            f"\n{len(names)} detectors have a live verifier. Run "
+            "`--verify-secrets` (with `--resolve-remote`) to probe matching "
+            "findings against their issuing API.",
+            err=True,
+        )
+        raise click.exceptions.Exit(0)
 
     if annotate_fp:
         # ``--annotate-fp CHECK_ID RESOURCE`` writes the local
