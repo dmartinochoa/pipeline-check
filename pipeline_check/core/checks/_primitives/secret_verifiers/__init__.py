@@ -131,9 +131,13 @@ def _register_builtins() -> None:
         FigmaTokenVerifier,
         GroqAPIKeyVerifier,
         MailchimpAPIKeyVerifier,
+        NeonAPIKeyVerifier,
         NotionTokenVerifier,
         PostmanAPIKeyVerifier,
+        PulumiAccessTokenVerifier,
+        RenderAPIKeyVerifier,
         ReplicateTokenVerifier,
+        SentryAuthTokenVerifier,
         SquareAccessTokenVerifier,
         XaiAPIKeyVerifier,
     )
@@ -180,6 +184,10 @@ def _register_builtins() -> None:
     _REGISTRY["xai_api_key"] = XaiAPIKeyVerifier()
     _REGISTRY["postman_api_key"] = PostmanAPIKeyVerifier()
     _REGISTRY["doppler_token"] = DopplerTokenVerifier()
+    _REGISTRY["sentry_auth_token"] = SentryAuthTokenVerifier()
+    _REGISTRY["pulumi_access_token"] = PulumiAccessTokenVerifier()
+    _REGISTRY["render_api_key"] = RenderAPIKeyVerifier()
+    _REGISTRY["neon_api_key"] = NeonAPIKeyVerifier()
 
 
 def get_verifier(detector_name: str) -> SecretVerifier | None:

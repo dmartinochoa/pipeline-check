@@ -1,8 +1,9 @@
 """Verifiers for additional SaaS API tokens.
 
 Covers Replicate, Cohere, Mailchimp, Square, Figma, Notion, Groq, xAI,
-Postman, and Doppler. Companion to ``saas_api_keys.py`` (which holds
-Anthropic, OpenAI, HF, SendGrid, Stripe).
+Postman, Doppler, Sentry, Pulumi, Render, and Neon. Companion to
+``saas_api_keys.py`` (which holds Anthropic, OpenAI, HF, SendGrid,
+Stripe).
 """
 from __future__ import annotations
 
@@ -362,4 +363,139 @@ class DopplerTokenVerifier(SecretVerifier):
         return VerifyResult(
             outcome=VerifyOutcome.UNKNOWN,
             reason=f"GET /v3/me returned {resp.status}",
+        )
+
+
+# -- Sentry --------------------------------------------------------------
+
+
+class SentryAuthTokenVerifier(SecretVerifier):
+    """Verify Sentry org auth tokens against the SaaS API.
+
+    Targets sentry.io; a token scoped to a self-hosted instance will read
+    as UNVERIFIED (it can't be probed without the instance URL).
+    """
+
+    _ENDPOINT = "https://sentry.io/api/0/organizations/"
+
+    def probe(self, secret_value: str) -> VerifyResult:
+        resp = bearer_probe(self._ENDPOINT, secret_value)
+        if resp.ok:
+            try:
+                data = resp.json()
+                slug = data[0].get("slug") if isinstance(data, list) and data else None
+            except Exception:
+                slug = None
+            who = slug or "unknown"
+            return VerifyResult(
+                outcome=VerifyOutcome.VERIFIED,
+                identity=f"sentry-org:{who}",
+                reason=f"GET /api/0/organizations/ returned 200 (org={who})",
+            )
+        if resp.auth_failure:
+            return VerifyResult(
+                outcome=VerifyOutcome.UNVERIFIED,
+                reason=f"GET /api/0/organizations/ returned {resp.status}",
+            )
+        return VerifyResult(
+            outcome=VerifyOutcome.UNKNOWN,
+            reason=f"GET /api/0/organizations/ returned {resp.status}",
+        )
+
+
+# -- Pulumi --------------------------------------------------------------
+
+
+class PulumiAccessTokenVerifier(SecretVerifier):
+    """Verify Pulumi Cloud access tokens.
+
+    Pulumi authenticates with the ``token`` scheme (``Authorization: token
+    <pul-...>``), not Bearer; ``GET /api/user`` returns the owning login.
+    """
+
+    _ENDPOINT = "https://api.pulumi.com/api/user"
+
+    def probe(self, secret_value: str) -> VerifyResult:
+        resp = http_probe(
+            self._ENDPOINT,
+            headers={"Authorization": f"token {secret_value}"},
+        )
+        if resp.ok:
+            try:
+                data = resp.json()
+                who = data.get("githubLogin") or data.get("name") or "unknown"
+            except Exception:
+                who = "unknown"
+            return VerifyResult(
+                outcome=VerifyOutcome.VERIFIED,
+                identity=f"pulumi-user:{who}",
+                reason=f"GET /api/user returned 200 (login={who})",
+            )
+        if resp.auth_failure:
+            return VerifyResult(
+                outcome=VerifyOutcome.UNVERIFIED,
+                reason=f"GET /api/user returned {resp.status}",
+            )
+        return VerifyResult(
+            outcome=VerifyOutcome.UNKNOWN,
+            reason=f"GET /api/user returned {resp.status}",
+        )
+
+
+# -- Render --------------------------------------------------------------
+
+
+class RenderAPIKeyVerifier(SecretVerifier):
+    """Verify Render API keys against the owners list."""
+
+    _ENDPOINT = "https://api.render.com/v1/owners"
+
+    def probe(self, secret_value: str) -> VerifyResult:
+        resp = bearer_probe(self._ENDPOINT, secret_value)
+        if resp.ok:
+            return VerifyResult(
+                outcome=VerifyOutcome.VERIFIED,
+                identity="render-api-key",
+                reason="GET /v1/owners returned 200",
+            )
+        if resp.auth_failure:
+            return VerifyResult(
+                outcome=VerifyOutcome.UNVERIFIED,
+                reason=f"GET /v1/owners returned {resp.status}",
+            )
+        return VerifyResult(
+            outcome=VerifyOutcome.UNKNOWN,
+            reason=f"GET /v1/owners returned {resp.status}",
+        )
+
+
+# -- Neon ----------------------------------------------------------------
+
+
+class NeonAPIKeyVerifier(SecretVerifier):
+    """Verify Neon (Postgres) API keys via the current-user endpoint."""
+
+    _ENDPOINT = "https://console.neon.tech/api/v2/users/me"
+
+    def probe(self, secret_value: str) -> VerifyResult:
+        resp = bearer_probe(self._ENDPOINT, secret_value)
+        if resp.ok:
+            try:
+                data = resp.json()
+                who = data.get("email") or data.get("name") or "unknown"
+            except Exception:
+                who = "unknown"
+            return VerifyResult(
+                outcome=VerifyOutcome.VERIFIED,
+                identity=f"neon-user:{who}",
+                reason=f"GET /api/v2/users/me returned 200 (user={who})",
+            )
+        if resp.auth_failure:
+            return VerifyResult(
+                outcome=VerifyOutcome.UNVERIFIED,
+                reason=f"GET /api/v2/users/me returned {resp.status}",
+            )
+        return VerifyResult(
+            outcome=VerifyOutcome.UNKNOWN,
+            reason=f"GET /api/v2/users/me returned {resp.status}",
         )
