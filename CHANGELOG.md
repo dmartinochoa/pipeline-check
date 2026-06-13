@@ -24,6 +24,17 @@ release commit collapses this section into `## [X.Y.Z] - <date>`.
   Uses "make it pass" semantics, only a claim that would fail the gate is
   touched, so a run against an in-sync tree changes nothing.
 
+### Changed
+
+- **`cli.py` decomposition: auxiliary subcommands moved to
+  `cli_aux_commands.py`.** The four self-contained top-level verbs
+  (`explain`, `fp-stats`, `history`, `verify-artifact`) moved out of the
+  5,100-line `cli.py` into a sibling module; `cli` re-imports them so
+  `main`'s dispatch and the `pipeline_check.cli.<cmd>` references in the
+  test suite are unchanged. No behavior change. `scan` and its plumbing
+  stay in `cli.py`; `init` / `fleet` / `fix-pr` stay too (they share
+  scanner-setup helpers with the scan path).
+
 ## [1.14.1] - 2026-06-13
 
 ### Added
