@@ -19,7 +19,7 @@ Kubernetes, …) when an audit asks for that framework's vocabulary.
 
 - **Controls in this standard:** 10
 - **Controls evidenced by at least one check:** 10 / 10
-- **Distinct checks evidencing this standard:** 982
+- **Distinct checks evidencing this standard:** 983
 - **Of those, autofixable with `--fix`:** 120
 
 _Severity levels (`CRITICAL` / `HIGH` / `MEDIUM` / `LOW` / `INFO`) follow the same scale across every provider and standard. See [How to read severity](README.md#how-to-read-severity) on the standards overview for the definitions._
@@ -31,7 +31,7 @@ Click a control ID to jump to the per-control section with the full check list. 
 | Control | Title | Checks | Severity mix |
 |---------|-------|-------:|--------------|
 | [`CICD-SEC-1`](#ctrl-cicd-sec-1) | Insufficient Flow Control Mechanisms | 106 | 7C · 55H · 36M · 8L |
-| [`CICD-SEC-2`](#ctrl-cicd-sec-2) | Inadequate Identity and Access Management | 88 | 11C · 51H · 25M · 1L |
+| [`CICD-SEC-2`](#ctrl-cicd-sec-2) | Inadequate Identity and Access Management | 89 | 11C · 51H · 26M · 1L |
 | [`CICD-SEC-3`](#ctrl-cicd-sec-3) | Dependency Chain Abuse | 318 | 12C · 169H · 113M · 24L |
 | [`CICD-SEC-4`](#ctrl-cicd-sec-4) | Poisoned Pipeline Execution | 162 | 33C · 92H · 25M · 12L |
 | [`CICD-SEC-5`](#ctrl-cicd-sec-5) | Insufficient PBAC | 79 | 4C · 56H · 19M |
@@ -177,7 +177,7 @@ Reviews, approvals, branch protection, and deployment gates are the brakes on th
 
 Long-lived static credentials, shared service accounts, and human identities reused for automation collapse the blast radius of a single compromise to the whole pipeline.
 
-**Evidenced by 88 checks** across 20 providers (AWS, Argo CD, Argo Workflows, Azure Cloud, Azure DevOps, Bitbucket, Buildkite, CircleCI, Cloud Build, GCP, GitHub Actions, GitLab CI, GitLab group governance, Kubernetes, OCI manifest, Pulumi, SCM, SCM org governance, Tekton, Terraform).
+**Evidenced by 89 checks** across 20 providers (AWS, Argo CD, Argo Workflows, Azure Cloud, Azure DevOps, Bitbucket, Buildkite, CircleCI, Cloud Build, GCP, GitHub Actions, GitLab CI, GitLab group governance, Kubernetes, OCI manifest, Pulumi, SCM, SCM org governance, Tekton, Terraform).
 
 | Check | Title | Severity | Provider | Fix |
 |-------|-------|----------|----------|-----|
@@ -233,6 +233,7 @@ Long-lived static credentials, shared service accounts, and human identities reu
 | [`GL-050`](../providers/gitlab.md#gl-050) | Package-publish job relies on a long-lived registry token | <span class="pg-sev pg-sev--high">HIGH</span> | [GitLab CI](../providers/gitlab.md) |  |
 | [`GLGRP-001`](../providers/gitlab_group.md#glgrp-001) | GitLab group does not require two-factor authentication | <span class="pg-sev pg-sev--high">HIGH</span> | [GitLab group governance](../providers/gitlab_group.md) |  |
 | [`GLGRP-002`](../providers/gitlab_group.md#glgrp-002) | GitLab group allows forking projects outside the group | <span class="pg-sev pg-sev--medium">MEDIUM</span> | [GitLab group governance](../providers/gitlab_group.md) |  |
+| [`GLGRP-003`](../providers/gitlab_group.md#glgrp-003) | GitLab group allows sharing projects outside the group hierarchy | <span class="pg-sev pg-sev--medium">MEDIUM</span> | [GitLab group governance](../providers/gitlab_group.md) |  |
 | [`IAM-001`](../providers/aws.md#iam-001) | CI/CD role has AdministratorAccess policy attached | <span class="pg-sev pg-sev--critical">CRITICAL</span> | [AWS](../providers/aws.md) |  |
 | [`IAM-002`](../providers/aws.md#iam-002) | CI/CD role has wildcard Action in attached policy | <span class="pg-sev pg-sev--high">HIGH</span> | [AWS](../providers/aws.md) |  |
 | [`IAM-003`](../providers/aws.md#iam-003) | CI/CD role has no permission boundary | <span class="pg-sev pg-sev--medium">MEDIUM</span> | [AWS](../providers/aws.md) |  |

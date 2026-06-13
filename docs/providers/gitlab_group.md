@@ -24,12 +24,13 @@ pipeline_check --pipeline gitlab_group --scm-org my-group \
 
 ## What it covers
 
-2 checks · 0 have an autofix patch (``--fix``).
+3 checks · 0 have an autofix patch (``--fix``).
 
 | Check | Title | Severity | Fix |
 |-------|-------|----------|-----|
 | [GLGRP-001](#glgrp-001) | GitLab group does not require two-factor authentication | <span class="pg-sev pg-sev--high">HIGH</span> |  |
 | [GLGRP-002](#glgrp-002) | GitLab group allows forking projects outside the group | <span class="pg-sev pg-sev--medium">MEDIUM</span> |  |
+| [GLGRP-003](#glgrp-003) | GitLab group allows sharing projects outside the group hierarchy | <span class="pg-sev pg-sev--medium">MEDIUM</span> |  |
 
 ---
 
@@ -68,6 +69,26 @@ Reads ``prevent_forking_outside_group`` from ``GET /groups/{group}`` and fires w
 **Recommended action**
 
 Turn on ``Prevent project forking outside current group`` (Group Settings -> General -> Permissions and group features). When it is off, any member can fork a private or internal project to a namespace outside the group, where the group's branch protection, approval rules, and member 2FA policy no longer apply, and the copy persists after the member leaves. That moves source code outside the controls that govern the group, a data-exfiltration and IP-leak path that needs no exploit. The GitHub-org analog is ORG-007.
+
+</div>
+
+</div>
+
+<div class="pg-rule pg-rule--medium" markdown>
+
+## GLGRP-003: GitLab group allows sharing projects outside the group hierarchy { #glgrp-003 }
+
+<div class="pg-rule__tags">
+<span class="pg-sev pg-sev--medium">MEDIUM</span> <span class="pg-tag pg-tag--owasp">CICD-SEC-2</span> <span class="pg-tag pg-tag--cwe">CWE-284</span>
+</div>
+
+Reads ``prevent_sharing_groups_outside_hierarchy`` from ``GET /groups/{group}`` and fires when it is ``false`` (sharing outside the hierarchy is allowed). ``true`` passes. The setting is tied to Premium / SAML group features; on a plan or token that does not return it the rule passes with an 'unavailable' note rather than guessing, so a low-scope token or free-tier group never produces a false finding. Sits alongside GLGRP-002 (forking outside the group): both are group-level access-boundary controls.
+
+<div class="pg-rule__rec" markdown>
+
+**Recommended action**
+
+Turn on ``Prevent members from sharing projects in this group with groups outside the hierarchy`` (Group Settings -> General -> Permissions and group features). When it is off, a member can share a private or internal project with a group outside the current hierarchy, granting that external group's members standing access to the project, outside the controls (branch protection, approval rules, 2FA policy, audit log) that govern this group. Restrict sharing to the hierarchy and grant external access only through reviewed, time-bound membership. The GitHub-org analog is ORG-007 (forking) / outside-collaborator policy.
 
 </div>
 
