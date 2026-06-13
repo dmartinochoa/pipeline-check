@@ -446,6 +446,7 @@ STANDARD = Standard(
         "GLGRP-001":  ["ESF-C-LEAST-PRIV"],  # gitlab group: 2FA not required
         "GLGRP-002":  ["ESF-C-LEAST-PRIV"],  # gitlab group: forking outside group allowed
         "GLGRP-003":  ["ESF-C-LEAST-PRIV"],  # gitlab group: sharing projects outside the hierarchy
+        "GLGRP-004":  ["ESF-D-CODE-REVIEW"],  # gitlab group: default branch protection disabled for new projects
         "ORG-008":  ["ESF-C-LEAST-PRIV"],           # org: members can create public repos (code exposure)
         "ORG-009":  ["ESF-D-BUILD-ENV", "ESF-D-PRIV-BUILD"],  # org: self-hosted runner group exposed to public repos
         "ORG-010":  ["ESF-D-SECRETS"],              # org: new-repo secret-scanning push-protection default off

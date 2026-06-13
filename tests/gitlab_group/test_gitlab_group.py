@@ -129,3 +129,33 @@ class TestGLGRP003SharingOutsideHierarchy:
     def test_passes_when_group_unavailable(self):
         f = _for(_findings(_ctx(None)), "GLGRP-003")[0]
         assert f.passed
+
+
+class TestGLGRP004DefaultBranchProtection:
+    def test_metadata(self):
+        f = _for(_findings(_ctx({})), "GLGRP-004")[0]
+        assert f.check_id == "GLGRP-004"
+        assert f.severity == Severity.MEDIUM
+
+    def test_fails_when_not_protected(self):
+        f = _for(_findings(_ctx({"default_branch_protection": 0})), "GLGRP-004")[0]
+        assert not f.passed
+
+    def test_passes_when_partially_protected(self):
+        f = _for(_findings(_ctx({"default_branch_protection": 1})), "GLGRP-004")[0]
+        assert f.passed
+
+    def test_passes_when_fully_protected(self):
+        f = _for(_findings(_ctx({"default_branch_protection": 2})), "GLGRP-004")[0]
+        assert f.passed
+
+    def test_passes_when_only_newer_dict_form(self):
+        # GitLab migrating to default_branch_protection_defaults: the integer
+        # is absent -> conservative pass-with-note, no guess at the object.
+        ctx = _ctx({"default_branch_protection_defaults": {"allow_force_push": True}})
+        f = _for(_findings(ctx), "GLGRP-004")[0]
+        assert f.passed
+
+    def test_passes_when_group_unavailable(self):
+        f = _for(_findings(_ctx(None)), "GLGRP-004")[0]
+        assert f.passed

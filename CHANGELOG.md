@@ -12,6 +12,16 @@ release commit collapses this section into `## [X.Y.Z] - <date>`.
 
 ### Added
 
+- **GLGRP-004: GitLab group default branch protection disabled for new
+  projects.** Extends the `gitlab_group` pack. Reads
+  ``default_branch_protection`` from ``GET /groups/{group}`` and fires
+  (MEDIUM) when it is ``0`` (Not protected): every new project in the group
+  starts with a default branch any Developer can push to directly,
+  force-push, and delete, with no review gate. Levels ``1``-``4`` pass.
+  GitLab is migrating this integer to a
+  ``default_branch_protection_defaults`` object; when only the newer form is
+  returned the rule passes with an "unavailable" note rather than guessing
+  at its shape. The group-default analog of the repo-level SCM-001.
 - **GLGRP-003: GitLab group allows sharing projects outside the group
   hierarchy.** Extends the `gitlab_group` pack. Reads
   ``prevent_sharing_groups_outside_hierarchy`` from ``GET /groups/{group}``
