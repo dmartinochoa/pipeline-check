@@ -95,12 +95,23 @@ from .cli_scan_output import (
     _scan_incomplete_reason,
     _scan_status,
 )
+
+# Re-exported for the test suite, which reaches ``_autofix`` /
+# ``_detect_pipeline_from_cwd`` through the ``cli`` namespace
+# (``test_cli_fix`` patches ``cli._autofix``; ``test_cli_ease_of_use``
+# imports ``cli._detect_pipeline_from_cwd``). The init/fleet/fix-pr split
+# moved their only in-module users into ``cli_ops_commands``, so the
+# trailing per-line ignores mark the intentional re-export past ruff.
+from .core import autofix as _autofix  # noqa: F401
 from .core import providers as _providers
 from .core import standards as _standards
 from .core.checks.base import Confidence, Severity, confidence_rank
 from .core.config import load_config
 from .core.detect import (
     detect_all_pipelines_from_cwd as _detect_all_pipelines_from_cwd,
+)
+from .core.detect import (
+    detect_pipeline_from_cwd as _detect_pipeline_from_cwd,  # noqa: F401
 )
 from .core.fix_apply import (
     apply_fix_patches as _apply_fix_patches,
