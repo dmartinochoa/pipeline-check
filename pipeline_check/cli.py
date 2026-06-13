@@ -3128,7 +3128,11 @@ def _validate_scan_flags_early(
     # Validate --baseline early so a typo'd path doesn't surface as
     # "no regressions found" after a full scan completes.
     if baseline and not os.path.isfile(baseline):
-        raise click.UsageError(f"--baseline file not found: {baseline}")
+        raise click.UsageError(
+            f"--baseline file not found: {baseline}. Create one from the "
+            f"current findings with `pipeline_check --write-baseline {baseline}`, "
+            f"then pass `--baseline {baseline}` to gate only on new findings."
+        )
 
 
 def _validate_scan_inputs(
