@@ -1324,3 +1324,88 @@ class TestNeonVerifier:
         v = get_verifier("neon_api_key")
         assert v is not None
         assert v.probe("neon_fake").outcome == VerifyOutcome.UNKNOWN
+
+
+_WEBHOOKS_HTTP = (
+    "pipeline_check.core.checks._primitives.secret_verifiers"
+    ".webhooks.http_probe"
+)
+
+_DISCORD_URL = (
+    "https://discord.com/api/webhooks/123456789012345678/"
+    "AbCdEfGhIjKlMnOpQrStUvWxYz0123456789AbCdEfGhIjKlMnOpQrStUvWx"
+)
+_SLACK_URL = (
+    "https://hooks.slack.com/services/T00000000/B00000000/"
+    "abcdefghijklmnopqrstuvwx"
+)
+
+
+class TestDiscordWebhookVerifier:
+    @patch(_WEBHOOKS_HTTP)
+    def test_verified_carries_name(self, mock_probe: MagicMock) -> None:
+        mock_probe.return_value = ProbeResponse(
+            status=200,
+            body=json.dumps({"name": "deploybot", "channel_id": "42"}).encode(),
+        )
+        v = get_verifier("discord_webhook")
+        assert v is not None
+        result = v.probe(_DISCORD_URL)
+        assert result.outcome == VerifyOutcome.VERIFIED
+        assert result.identity == "discord-webhook:deploybot#42"
+        # The probe GETs the webhook URL as-is — a read, never a POST.
+        args, kwargs = mock_probe.call_args
+        assert args[0] == _DISCORD_URL
+        assert kwargs.get("method", "GET") == "GET"
+
+    @patch(_WEBHOOKS_HTTP)
+    def test_unverified_on_rotated_token(self, mock_probe: MagicMock) -> None:
+        mock_probe.return_value = ProbeResponse(status=401, body=b"")
+        v = get_verifier("discord_webhook")
+        assert v is not None
+        assert v.probe(_DISCORD_URL).outcome == VerifyOutcome.UNVERIFIED
+
+    @patch(_WEBHOOKS_HTTP)
+    def test_unverified_on_deleted_webhook(self, mock_probe: MagicMock) -> None:
+        mock_probe.return_value = ProbeResponse(status=404, body=b"")
+        v = get_verifier("discord_webhook")
+        assert v is not None
+        assert v.probe(_DISCORD_URL).outcome == VerifyOutcome.UNVERIFIED
+
+    @patch(_WEBHOOKS_HTTP)
+    def test_unknown_on_server_error(self, mock_probe: MagicMock) -> None:
+        mock_probe.return_value = ProbeResponse(status=503, body=b"")
+        v = get_verifier("discord_webhook")
+        assert v is not None
+        assert v.probe(_DISCORD_URL).outcome == VerifyOutcome.UNKNOWN
+
+
+class TestSlackWebhookVerifier:
+    @patch(_WEBHOOKS_HTTP)
+    def test_verified_on_invalid_payload(self, mock_probe: MagicMock) -> None:
+        # A live webhook rejects the empty body with 400 invalid_payload.
+        mock_probe.return_value = ProbeResponse(
+            status=400, body=b"invalid_payload",
+        )
+        v = get_verifier("slack_webhook")
+        assert v is not None
+        result = v.probe(_SLACK_URL)
+        assert result.outcome == VerifyOutcome.VERIFIED
+        # The probe sends an empty JSON body so no message is ever posted.
+        args, kwargs = mock_probe.call_args
+        assert kwargs["method"] == "POST"
+        assert kwargs["body"] == b"{}"
+
+    @patch(_WEBHOOKS_HTTP)
+    def test_unverified_on_no_service(self, mock_probe: MagicMock) -> None:
+        mock_probe.return_value = ProbeResponse(status=404, body=b"no_service")
+        v = get_verifier("slack_webhook")
+        assert v is not None
+        assert v.probe(_SLACK_URL).outcome == VerifyOutcome.UNVERIFIED
+
+    @patch(_WEBHOOKS_HTTP)
+    def test_unknown_on_server_error(self, mock_probe: MagicMock) -> None:
+        mock_probe.return_value = ProbeResponse(status=500, body=b"")
+        v = get_verifier("slack_webhook")
+        assert v is not None
+        assert v.probe(_SLACK_URL).outcome == VerifyOutcome.UNKNOWN

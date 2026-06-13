@@ -152,6 +152,7 @@ def _register_builtins() -> None:
     )
     from .slack import SlackTokenVerifier
     from .telegram import TelegramBotTokenVerifier
+    from .webhooks import DiscordWebhookVerifier, SlackWebhookVerifier
 
     _REGISTRY["github_token"] = GitHubTokenVerifier()
     _REGISTRY["npm_token"] = NpmTokenVerifier()
@@ -188,6 +189,8 @@ def _register_builtins() -> None:
     _REGISTRY["pulumi_access_token"] = PulumiAccessTokenVerifier()
     _REGISTRY["render_api_key"] = RenderAPIKeyVerifier()
     _REGISTRY["neon_api_key"] = NeonAPIKeyVerifier()
+    _REGISTRY["slack_webhook"] = SlackWebhookVerifier()
+    _REGISTRY["discord_webhook"] = DiscordWebhookVerifier()
 
 
 def get_verifier(detector_name: str) -> SecretVerifier | None:
