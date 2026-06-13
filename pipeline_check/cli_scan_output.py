@@ -26,6 +26,12 @@ def _scan_status(meta: Any, findings: list[Any]) -> dict[str, Any]:
     the JSON and SARIF outputs so CI consumers can detect an incomplete
     scan, and it backs :func:`_scan_incomplete_reason` (the terminal
     status line). ``reason`` is present only when the scan is incomplete.
+
+    ``warnings`` carries the raw scan-metadata warning strings (parse
+    failures, a provider's ``post_filter`` crash, a rule-set filter
+    notice) when any fired, so a programmatic consumer sees the same
+    detail the stderr summary prints rather than only the parse / degraded
+    counts. Absent when the scan produced no warnings.
     """
     parse_fail = 0
     for w in getattr(meta, "warnings", None) or []:
@@ -43,6 +49,9 @@ def _scan_status(meta: Any, findings: list[Any]) -> dict[str, Any]:
         "files_unparsed": parse_fail,
         "degraded_modules": degraded,
     }
+    warnings = [str(w) for w in (getattr(meta, "warnings", None) or [])]
+    if warnings:
+        status["warnings"] = warnings
     parts: list[str] = []
     if parse_fail:
         parts.append(f"{parse_fail} file(s) could not be parsed")

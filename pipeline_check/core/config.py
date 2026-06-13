@@ -203,11 +203,24 @@ def _load_pyproject(p: Path) -> dict[str, Any]:
     try:
         with p.open("rb") as fh:
             doc = tomllib.load(fh)
-    except (OSError, UnicodeDecodeError, tomllib.TOMLDecodeError, RecursionError, MemoryError):
+    except (OSError, UnicodeDecodeError, tomllib.TOMLDecodeError,
+            RecursionError, MemoryError) as exc:
         # ``tomllib.load`` decodes UTF-8 and raises ``UnicodeDecodeError``
         # (a sibling of ``TOMLDecodeError``, not a subclass) on a non-UTF-8
         # ``pyproject.toml``; without it the eager config callback crashes
         # before the scan. Mirrors the guard in ``_load_path``.
+        #
+        # ``pyproject.toml`` is auto-probed shared real estate, so a file we
+        # don't even configure through stays silent. But when it carries a
+        # ``[tool.pipeline_check]`` table the user clearly meant to configure
+        # us there; a silent drop would strand that config, so surface the
+        # parse failure the way ``_load_path`` does for an explicit config.
+        try:
+            text = p.read_text(encoding="utf-8", errors="replace")
+        except OSError:
+            text = ""
+        if "[tool.pipeline_check" in text:
+            print(f"[config] could not parse {p}: {exc}", file=sys.stderr)
         return {}
     section = doc.get("tool", {}).get("pipeline_check", {}) or {}
     if not section:

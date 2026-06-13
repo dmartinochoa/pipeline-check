@@ -609,7 +609,7 @@ def test_bug_i_ignore_files_survive_non_utf8(tmp_path):
     assert _load_ignore_yaml(yml) == []  # must not raise
 
 
-def test_bug_i_pyproject_load_survives_non_utf8(tmp_path):
+def test_bug_i_pyproject_load_survives_non_utf8(tmp_path, capsys):
     # ``tomllib.load`` decodes UTF-8 and raises ``UnicodeDecodeError``
     # (a sibling of ``TOMLDecodeError``, not a subclass), which the
     # sibling ``_load_path`` guarded but ``_load_pyproject`` did not.
@@ -617,6 +617,21 @@ def test_bug_i_pyproject_load_survives_non_utf8(tmp_path):
     p = tmp_path / "pyproject.toml"
     p.write_bytes(b'[tool.pipeline_check]\nfail_on = "caf\xe9"\n')
     assert _load_pyproject(p) == {}  # must not raise
+    # The file carries a ``[tool.pipeline_check]`` table, so the parse
+    # failure is the user's pipeline-check config being stranded; surface
+    # it rather than dropping it silently the way ``_load_path`` does.
+    assert "could not parse" in capsys.readouterr().err
+
+
+def test_pyproject_parse_failure_silent_without_our_table(tmp_path, capsys):
+    # ``pyproject.toml`` is auto-probed, so a malformed file that doesn't
+    # configure pipeline-check at all must stay silent: warning about an
+    # unrelated project's broken pyproject would be noise.
+    from pipeline_check.core.config import _load_pyproject
+    p = tmp_path / "pyproject.toml"
+    p.write_text('[build-system]\nrequires = [unterminated\n', encoding="utf-8")
+    assert _load_pyproject(p) == {}  # must not raise
+    assert capsys.readouterr().err == ""
 
 
 def test_bug_i_baseline_load_survives_non_utf8(tmp_path):
