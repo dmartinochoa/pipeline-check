@@ -10,6 +10,20 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 PRs landing on `dev` between releases append entries below. The
 release commit collapses this section into `## [X.Y.Z] - <date>`.
 
+### Added
+
+- **`scripts/sync_doc_claims.py`: registry-derived doc-claim writer.**
+  `tests/test_doc_claims.py` already *checks* that headline counts ("39
+  providers", "120 autofixers", "1220+ checks", the per-provider "N
+  checks" cells, the README architecture ID ranges) match the live
+  registries; this is the *writer* for the same claims, so adding a rule
+  or provider no longer means hand-editing README.md, `action.yml`,
+  `docs/comparison.md`, CONTRIBUTING.md, and the Docker Hub README (step 7
+  of the `new_rule.py` checklist). `--check` reports drift and exits
+  non-zero (now part of `scripts/preflight.py`); the default rewrites.
+  Uses "make it pass" semantics, only a claim that would fail the gate is
+  touched, so a run against an in-sync tree changes nothing.
+
 ## [1.14.1] - 2026-06-13
 
 ### Added
