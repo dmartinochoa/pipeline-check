@@ -19,9 +19,18 @@ release commit collapses this section into `## [X.Y.Z] - <date>`.
   binary-free mock tests (`tests/custom/test_rego_mocked.py`, 51 cases)
   exercise every pure-logic helper directly and mock the two external
   seams (`shutil.which("opa")` and `subprocess.run`), raising the three
-  modules to 97-100% and letting them come off the `coveragerc-no-fleet`
-  omit list. Whole-repo coverage stays above the 90% gate (91.8%).
-  `fleet.py` stays omitted (it runs in its own serial CI job).
+  modules to 97-100% and letting them come off the coverage-omit list.
+  Whole-repo coverage stays above the 90% gate (91.8%).
+- **`fleet.py` brought into coverage measurement; the omit list is now
+  empty and removed.** `fleet.py` was the last omitted module (its 71
+  tests ran in a separate, non-coverage `test-fleet` CI job). The main
+  test step now runs the suite under xdist with the fleet tests excluded,
+  then runs them serially with `--cov-append`, so their coverage combines
+  into the gated total (`fleet.py` measured at 88%, repo at 91.8%). The
+  redundant `test-fleet` job and the `.github/coveragerc-no-fleet` file
+  are removed, and the step uses `shell: bash` so the two invocations
+  share fail-fast semantics on the Windows runner too. Every
+  `pipeline_check` module is now measured against the 90% gate.
 
 ### Added
 

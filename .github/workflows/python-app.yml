@@ -153,40 +153,17 @@ jobs:
 
       - if: ${{ !matrix.master-only || github.event_name == 'push' }}
         name: Test with pytest
+        # ``shell: bash`` (git-bash on the Windows runner too) so the two
+        # invocations below share ``set -eo pipefail`` semantics: a failure
+        # in the main run fails the step instead of being masked by the
+        # fleet run's exit code (PowerShell would only surface the last).
+        shell: bash
         run: |
-          pytest -n auto --dist worksteal --ignore=tests/test_fleet.py --cov=pipeline_check --cov-report=term-missing --cov-fail-under=90 --cov-config=.github/coveragerc-no-fleet
-
-  test-fleet:
-    runs-on: ${{ matrix.os }}
-    timeout-minutes: 10
-
-    strategy:
-      fail-fast: false
-      matrix:
-        os: [ubuntu-latest]
-        python-version: ["3.12"]
-        include:
-          - os: windows-latest
-            python-version: "3.12"
-
-    steps:
-      - uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10  # v6.0.3
-        with:
-          persist-credentials: false
-
-      - name: Set up Python ${{ matrix.python-version }}
-        uses: actions/setup-python@a309ff8b426b58ec0e2a45f0f869d46889d02405  # v6.2.0
-        with:
-          python-version: ${{ matrix.python-version }}
-          cache: "pip"
-          cache-dependency-path: requirements-dev.txt
-
-      - name: Install dependencies
-        run: |
-          python -m pip install --upgrade pip
-          pip install --require-hashes -r requirements-dev.txt
-          pip install -e .
-
-      - name: Fleet tests
-        run: |
-          pytest tests/test_fleet.py -v
+          # Main suite under xdist, with the fleet tests excluded. They
+          # monkeypatch module globals and ran in a separate serial job
+          # historically; keeping them out of the parallel run preserves
+          # that isolation. They run serially just below and append to the
+          # same coverage data, so ``fleet.py`` is measured (not omitted)
+          # and the 90% gate covers the combined total.
+          pytest -n auto --dist worksteal --ignore=tests/test_fleet.py --cov=pipeline_check --cov-report= -q
+          pytest tests/test_fleet.py --cov=pipeline_check --cov-append --cov-report=term-missing --cov-fail-under=90
