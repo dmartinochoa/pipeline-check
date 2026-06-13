@@ -1,6 +1,10 @@
+# ``fleet.py`` runs in its own serial CI job (``test-fleet``) rather than
+# the main ``-n auto`` coverage run, so it is omitted here to avoid showing
+# as uncovered in the gated measurement. The rego engine modules
+# (rego_errors / rego_loader / rego_runner) used to be omitted too because
+# their integration tests skip without the ``opa`` binary; they are now
+# covered by the binary-free mock tests in tests/custom/test_rego_mocked.py
+# and so are measured normally.
 [run]
 omit =
     pipeline_check/core/fleet.py
-    pipeline_check/core/checks/custom/rego_errors.py
-    pipeline_check/core/checks/custom/rego_loader.py
-    pipeline_check/core/checks/custom/rego_runner.py
