@@ -10,6 +10,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 PRs landing on `dev` between releases append entries below. The
 release commit collapses this section into `## [X.Y.Z] - <date>`.
 
+### Fixed
+
+- **Docker publish: `apt-get upgrade` layer no longer served stale from
+  cache.** The release image build pins the base by digest and runs
+  `apt-get upgrade` to pull the latest Debian security patches, but the
+  layer's instruction text and base digest are both stable, so BuildKit
+  replayed a cached layer on every build and the upgrade never re-ran.
+  That silently stranded fixable base-package CVEs (the v1.14.0 publish
+  failed Docker Scout on four HIGH openssl CVEs already patched in
+  `trixie-security`). An `APT_CACHE_BUST` build-arg fed the commit SHA
+  busts that layer per build so the upgrade re-runs against the current
+  index.
+
 ## [1.14.0] - 2026-06-13
 
 ### Added
