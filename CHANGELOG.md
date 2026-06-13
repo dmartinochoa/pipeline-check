@@ -32,8 +32,17 @@ release commit collapses this section into `## [X.Y.Z] - <date>`.
   5,100-line `cli.py` into a sibling module; `cli` re-imports them so
   `main`'s dispatch and the `pipeline_check.cli.<cmd>` references in the
   test suite are unchanged. No behavior change. `scan` and its plumbing
-  stay in `cli.py`; `init` / `fleet` / `fix-pr` stay too (they share
-  scanner-setup helpers with the scan path).
+  stay in `cli.py`.
+- **`cli.py` decomposition: operational subcommands moved to
+  `cli_ops_commands.py`.** The remaining three verbs (`init`, `fleet`,
+  `fix-pr`) and their scanner-setup helpers (`_init_scanner_kwargs_for`,
+  `_print_init_summary`, `_fix_pr_scan`, the `_INIT_*` / `_FIX_PR_TIERS`
+  maps) moved into a second sibling module, taking `cli.py` from ~4,770 to
+  ~3,930 lines. `init` and `fix-pr` build a Scanner directly, so the
+  smart-init tests now patch `pipeline_check.cli_ops_commands.Scanner`. As
+  with the aux split, `cli` re-imports the command objects, so dispatch and
+  the `pipeline_check.cli.<cmd>` test imports are unchanged. No behavior
+  change. `scan` and its option/validation plumbing remain in `cli.py`.
 
 ## [1.14.1] - 2026-06-13
 
