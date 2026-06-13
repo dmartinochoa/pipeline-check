@@ -409,6 +409,7 @@ STANDARD = Standard(
         "GL-047":   ["EX-6"],# unsafe pickle deser of fetched artifact = code exec
         "GL-048":   ["EX-6"],# untrusted MR context into agentic CLI = prompt injection
         "GL-049":   ["DE-1"],# agentic CLI output lands without review
+        "GL-050":   ["IA-22"],  # publish job long-lived registry token (GHA-050 analog)
         "BB-002":   ["EX-6"],
         "BB-035":   ["EX-6"],   # trust_remote_code model load = code exec
         "BB-036":   ["EX-6"],   # untrusted PR context into agentic CLI = prompt injection

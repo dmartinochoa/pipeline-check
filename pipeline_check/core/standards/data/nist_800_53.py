@@ -292,6 +292,7 @@ STANDARD = Standard(
         "GL-031":   ["AC-3", "IA-5"],                    # id_tokens missing audience pin
         "GL-040":   ["AC-3", "IA-5"],                    # CI_JOB_TOKEN used for cross-project access
         "GL-041":   ["CM-6", "SA-11", "SA-15"],          # IaC apply on an untrusted MR trigger
+        "GL-050":   ["IA-5", "AC-6"],  # publish job long-lived registry token (GHA-050 analog)
         "GL-032":   ["CM-6", "SA-11"],                   # tags interpolates untrusted
         "GL-033":   ["CM-6", "SA-11"],                   # global before_script taint
         "GL-034":   ["SR-3", "SR-11", "SI-7"],            # npm install without audit signatures

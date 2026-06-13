@@ -625,6 +625,7 @@ STANDARD = Standard(
         "GL-031":   ["ESF-D-TOKEN-HYGIENE", "ESF-C-APPROVAL"],  # id_tokens missing audience pin
         "GL-040":   ["ESF-D-TOKEN-HYGIENE", "ESF-C-APPROVAL"],  # CI_JOB_TOKEN used for cross-project access
         "GL-041":   ["ESF-D-INJECTION"],  # IaC apply on an untrusted MR trigger
+        "GL-050":   ["ESF-D-TOKEN-HYGIENE"],  # publish job long-lived registry token (GHA-050 analog)
         "BB-033":   ["ESF-D-INJECTION"],  # IaC apply on a pull-request pipeline
         "BB-034":   ["ESF-C-APPROVAL", "ESF-C-ENV-SEP"],  # production deploy on a pull-request pipeline
         "GL-032":   ["ESF-D-INJECTION"],            # tags interpolates untrusted

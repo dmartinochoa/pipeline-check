@@ -215,6 +215,7 @@ STANDARD = Standard(
         "GL-031":   ["Build.L3.NonFalsifiable"],                   # id_tokens missing audience pin
         "GL-040":   ["Build.L3.NonFalsifiable"],                   # CI_JOB_TOKEN used for cross-project access
         "GL-041":   ["Build.L3.Isolated"],                         # IaC apply on an untrusted MR trigger
+        "GL-050":   ["Build.L2.Signed"],  # publish job long-lived registry token (GHA-050 analog)
         "GL-032":   ["Build.L3.Isolated"],                         # tags interpolates untrusted variable
         "GL-033":   ["Build.L3.Isolated"],                         # global before_script taint
         "GL-034":   ["Build.L3.NonFalsifiable"],                   # npm install without audit signatures

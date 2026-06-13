@@ -295,6 +295,7 @@ STANDARD = Standard(
         "GL-031":   ["CICD-SEC-2"],   # id_tokens missing audience pin / env binding
         "GL-040":   ["CICD-SEC-2"],   # CI_JOB_TOKEN used for cross-project access
         "GL-041":   ["CICD-SEC-4"],   # IaC apply on an untrusted MR trigger
+        "GL-050":   ["CICD-SEC-2", "CICD-SEC-6"],  # publish job long-lived registry token (GHA-050 analog)
         "GL-043":   ["CICD-SEC-7"],   # native security scanner disabled
         "BB-033":   ["CICD-SEC-4"],   # IaC apply on a pull-request pipeline
         "BB-034":   ["CICD-SEC-1"],   # production deploy on a pull-request pipeline

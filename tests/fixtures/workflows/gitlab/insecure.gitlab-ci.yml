@@ -210,3 +210,12 @@ deploy-from-extends:
   script:
     - echo Deploying branch $BRANCH
     - echo "Token is $DEPLOY_TOKEN"
+
+# GL-050 — npm publish authenticated by a long-lived NPM_TOKEN instead of
+# OIDC trusted publishing. The static token is worm-propagation fuel: any
+# postinstall in a build dependency can read it and re-publish packages.
+publish-npm:
+  stage: deploy
+  script:
+    - echo "//registry.npmjs.org/:_authToken=${NPM_TOKEN}" > .npmrc
+    - npm publish

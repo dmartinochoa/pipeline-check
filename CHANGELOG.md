@@ -12,6 +12,20 @@ release commit collapses this section into `## [X.Y.Z] - <date>`.
 
 ### Added
 
+- **GL-050: GitLab package-publish job relies on a long-lived registry
+  token.** The GitLab analog of GHA-050, motivated by npm's September 2025
+  plan to disallow token-based publishing by default and expand OIDC
+  trusted publishing (GitLab is a named provider). Fires when a job's
+  ``script:`` runs a publish verb (``npm`` / ``pnpm`` / ``yarn publish``,
+  ``twine upload``, ``poetry`` / ``uv publish``, ``gem push``,
+  ``cargo publish``) and the job / its ``variables:`` / the top-level
+  ``variables:`` reference a long-lived external-registry token
+  (``NPM_TOKEN``, ``NODE_AUTH_TOKEN``, ``PYPI_TOKEN``, ``TWINE_PASSWORD``,
+  …). GitLab's built-in per-job ``CI_JOB_TOKEN`` is deliberately excluded
+  (it's the native, auto-expiring path to the project's own Package
+  Registry), and a job that publishes via OIDC (``id_tokens:``) with no
+  long-lived token does not fire. HIGH severity; the recommendation points
+  at GitLab OIDC trusted publishing. GitLab 51 -> 52 checks.
 - **Slack + Discord incoming-webhook live verifiers (``--verify-secrets``).**
   The webhook-URL detectors shipped last cycle now have verifiers, so
   ``--verify-secrets`` can confirm whether a leaked webhook is still live

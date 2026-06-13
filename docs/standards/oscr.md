@@ -25,7 +25,7 @@ axis.
 
 - **Controls in this standard:** 86
 - **Controls evidenced by at least one check:** 61 / 86
-- **Distinct checks evidencing this standard:** 697
+- **Distinct checks evidencing this standard:** 698
 - **Of those, autofixable with `--fix`:** 112
 
 _Severity levels (`CRITICAL` / `HIGH` / `MEDIUM` / `LOW` / `INFO`) follow the same scale across every provider and standard. See [How to read severity](README.md#how-to-read-severity) on the standards overview for the definitions._
@@ -73,7 +73,7 @@ Click a control ID to jump to the per-control section with the full check list. 
 | [`IA-19`](#ctrl-ia-19) | Repojacking | 2 | 2H |
 | [`IA-20`](#ctrl-ia-20) | Compromised user account | 4 | 3H · 1M |
 | [`IA-21`](#ctrl-ia-21) | Typosquatting | 1 | 1H |
-| [`IA-22`](#ctrl-ia-22) | Weak authentication methods | 12 | 10H · 2M |
+| [`IA-22`](#ctrl-ia-22) | Weak authentication methods | 13 | 11H · 2M |
 | [`IA-23`](#ctrl-ia-23) | Brandjacking | 1 | 1H |
 | [`IA-24`](#ctrl-ia-24) | Shadow IT | 2 | 1H · 1M |
 | [`EX-1`](#ctrl-ex-1) | Installation scripts | 15 | 13H · 2M |
@@ -629,7 +629,7 @@ _No checks in this scanner currently evidence this control. Open an issue if you
 
 ### IA-22: Weak authentication methods { #ctrl-ia-22 }
 
-**Evidenced by 12 checks** across 5 providers (Azure DevOps, Bitbucket, CircleCI, GitHub Actions, GitLab CI).
+**Evidenced by 13 checks** across 5 providers (Azure DevOps, Bitbucket, CircleCI, GitHub Actions, GitLab CI).
 
 | Check | Title | Severity | Provider | Fix |
 |-------|-------|----------|----------|-----|
@@ -645,6 +645,7 @@ _No checks in this scanner currently evidence this control. Open an issue if you
 | [`GHA-115`](../providers/github.md#gha-115) | ``id-token: write`` granted workflow-wide instead of job-scoped | <span class="pg-sev pg-sev--medium">MEDIUM</span> | [GitHub Actions](../providers/github.md) |  |
 | [`GL-031`](../providers/gitlab.md#gl-031) | id_tokens: missing audience pin or environment binding | <span class="pg-sev pg-sev--high">HIGH</span> | [GitLab CI](../providers/gitlab.md) |  |
 | [`GL-040`](../providers/gitlab.md#gl-040) | CI_JOB_TOKEN used for cross-project / remote access | <span class="pg-sev pg-sev--high">HIGH</span> | [GitLab CI](../providers/gitlab.md) |  |
+| [`GL-050`](../providers/gitlab.md#gl-050) | Package-publish job relies on a long-lived registry token | <span class="pg-sev pg-sev--high">HIGH</span> | [GitLab CI](../providers/gitlab.md) |  |
 
 ### IA-23: Brandjacking { #ctrl-ia-23 }
 
