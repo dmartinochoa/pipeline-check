@@ -49,6 +49,7 @@ _BUILTINS: dict[str, str] = {
     "gitea": "GiteaProvider",
     "github": "GitHubProvider",
     "gitlab": "GitLabProvider",
+    "gitlab_group": "GitLabGroupProvider",
     "gitlab_runs": "GitLabRunsProvider",
     "gomod": "GoModProvider",
     "helm": "HelmProvider",

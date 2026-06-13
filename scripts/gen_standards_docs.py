@@ -71,6 +71,7 @@ _PROVIDER_PACKAGES: tuple[tuple[str, str, str], ...] = (
     ("oci",        "pipeline_check.core.checks.oci.rules",        "OCI manifest"),
     ("scm",        "pipeline_check.core.checks.scm.rules",        "SCM"),
     ("scm_org",    "pipeline_check.core.checks.scm_org.rules",    "SCM org governance"),
+    ("gitlab_group", "pipeline_check.core.checks.gitlab_group.rules", "GitLab group governance"),
     ("runs",       "pipeline_check.core.checks.runs.rules",       "Actions run history"),
     ("gitlab_runs", "pipeline_check.core.checks.gitlab_runs.rules", "GitLab pipeline run history"),
     ("devenv",     "pipeline_check.core.checks.devenv.rules",     "Developer environment"),
@@ -110,7 +111,7 @@ _ANCHORED_PROVIDERS: frozenset[str] = frozenset({
     "cloudbuild", "buildkite", "drone", "harness", "tekton", "argo", "dockerfile",
     "modelfile", "kubernetes", "scm", "runs", "oci", "maven", "nuget",
     "aws", "cloudformation", "terraform", "npm", "pypi", "helm", "argocd",
-    "gitlab_runs", "scm_org",
+    "gitlab_runs", "scm_org", "gitlab_group",
 })
 
 _DOC_FILENAME_OVERRIDES: dict[str, str] = {

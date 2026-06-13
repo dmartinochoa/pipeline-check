@@ -443,6 +443,8 @@ STANDARD = Standard(
         "ORG-005":  ["ESF-D-CODE-REVIEW"],          # org: Actions can approve PRs (review bypass)
         "ORG-006":  ["ESF-D-SECRETS"],              # org: Actions secret scoped to all repos
         "ORG-007":  ["ESF-C-LEAST-PRIV"],           # org: private-repo forking allowed (code exfiltration)
+        "GLGRP-001":  ["ESF-C-LEAST-PRIV"],  # gitlab group: 2FA not required
+        "GLGRP-002":  ["ESF-C-LEAST-PRIV"],  # gitlab group: forking outside group allowed
         "ORG-008":  ["ESF-C-LEAST-PRIV"],           # org: members can create public repos (code exposure)
         "ORG-009":  ["ESF-D-BUILD-ENV", "ESF-D-PRIV-BUILD"],  # org: self-hosted runner group exposed to public repos
         "ORG-010":  ["ESF-D-SECRETS"],              # org: new-repo secret-scanning push-protection default off

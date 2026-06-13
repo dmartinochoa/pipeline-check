@@ -991,6 +991,8 @@ STANDARD = Standard(
         "ORG-005":  ["1.1.5"],                           # org: Actions can approve PRs (review bypass)
         "ORG-006":  ["2.4.3"],                           # org: Actions secret scoped to all repos
         "ORG-007":  ["1.3.4"],                           # org: private-repo forking allowed (code exfiltration)
+        "GLGRP-001":  ["1.3.4"],  # gitlab group: 2FA not required
+        "GLGRP-002":  ["1.3.4"],  # gitlab group: forking outside group allowed
         "ORG-008":  ["1.3.4"],                           # org: members can create public repos (code exposure)
         "ORG-009":  ["2.2.2"],                           # org: self-hosted runner group exposed to public repos
         "ORG-010":  ["1.5.1"],                           # org: new-repo secret-scanning push-protection default off

@@ -25,7 +25,7 @@
 
 Pipeline-Check is a security scanner for GitHub Actions, GitLab CI, Jenkins, CircleCI, Azure DevOps, Bitbucket Pipelines, Buildkite, Drone, Harness, Tekton, Argo Workflows, and Google Cloud Build, plus Terraform, CloudFormation, Kubernetes, Helm, Dockerfile, OCI image manifests, and live AWS, Azure, and GCP accounts. It maps every finding to the [OWASP Top 10 CI/CD Security Risks](https://owasp.org/www-project-top-10-ci-cd-security-risks/), SLSA, NIST SSDF, PCI DSS, SOC 2, the CIS GitHub Benchmark, and twelve other frameworks, and scores each scan A through D so you can gate merges on the result.
 
-**1220+ checks** across **38 providers**, mapped to **18 compliance standards**, with **120 autofixers**, plus **56 attack chains** correlating findings into MITRE ATT&CK-mapped kill chains. A dataflow taint engine catches multi-step and cross-job propagation that single-rule scanners miss.
+**1220+ checks** across **39 providers**, mapped to **18 compliance standards**, with **120 autofixers**, plus **56 attack chains** correlating findings into MITRE ATT&CK-mapped kill chains. A dataflow taint engine catches multi-step and cross-job propagation that single-rule scanners miss.
 
 [Quick start](#-quick-start) |
 [Usage guide](docs/usage.md) |
@@ -179,7 +179,7 @@ for the full per-check reference.
 
 ```
                  +-----------+
-  Config files   |  Scanner  |   1220+ checks across 38 providers
+  Config files   |  Scanner  |   1220+ checks across 39 providers
   or live APIs ---->         +---> Findings (check_id, severity, resource)
                  +-----------+
                        |
@@ -407,7 +407,7 @@ See [docs/standards/](docs/standards/).
 
 | Flag | Default | Description |
 |------|---------|-------------|
-| `--pipeline` / `-p` | `auto` | `auto` (detect from cwd), `aws`, `azure_cloud`, `gcp`, `terraform`, `cloudformation`, `pulumi`, `github`, `gitea`, `gitlab`, `bitbucket`, `azure`, `jenkins`, `circleci`, `cloudbuild`, `buildkite`, `drone`, `harness`, `tekton`, `argo`, `argocd`, `dockerfile`, `modelfile`, `kubernetes`, `helm`, `oci`, `scm`, `scm_org`, `npm`, `pypi`, `maven`, `nuget`, `composer`, `cargo`, `gomod`, `rubygems`, `devenv`, `runs`, `gitlab_runs` |
+| `--pipeline` / `-p` | `auto` | `auto` (detect from cwd), `aws`, `azure_cloud`, `gcp`, `terraform`, `cloudformation`, `pulumi`, `github`, `gitea`, `gitlab`, `bitbucket`, `azure`, `jenkins`, `circleci`, `cloudbuild`, `buildkite`, `drone`, `harness`, `tekton`, `argo`, `argocd`, `dockerfile`, `modelfile`, `kubernetes`, `helm`, `oci`, `scm`, `scm_org`, `gitlab_group`, `npm`, `pypi`, `maven`, `nuget`, `composer`, `cargo`, `gomod`, `rubygems`, `devenv`, `runs`, `gitlab_runs` |
 | `--pipelines` | | Comma-separated multi-provider list (e.g. `--pipelines github,oci`). Mutually exclusive with `--pipeline`. Activates cross-provider attack chains (`XPC-NNN`) by evaluating the chain engine over the union of every sub-scan's findings. |
 | `--output` / `-o` | `terminal` | `terminal`, `json`, `jsonl`, `html`, `sarif`, `junit`, `markdown`, `threatmodel`, `cyclonedx`, `spdx`, `codequality`, `csv`, `annotations`, `both` |
 | `--output-file` / `-O` | | Required with `html`; optional with `sarif` / `junit` / `markdown` / `threatmodel` / `cyclonedx` / `spdx` / `codequality` |
@@ -556,6 +556,7 @@ pipeline_check/
         ├── helm/rules/        # HELM-001 .. HELM-017 + renders charts so the K8S rule pack also applies
         ├── scm/rules/         # SCM-001 .. SCM-055 — repo governance via the platform REST API (GitHub SCM-001..049 full pack: Actions governance + environment protection + deploy-keys + webhook security + outside-collaborator audit + private-repo fork policy + ruleset enforcement / always-bypass / PR-review / status-checks / force-push / deletion / signed-commits / stale-review dismissal / linear-history / required-workflows / code-scanning-gate / deployment-env-gate / merge-queue + auto-merge audit + tag-ruleset signing + admin-bypass-on-signing + default-scanning query-suite / paused / language-coverage; GitLab platform pack SCM-050..053: push-rule prevent_secrets / committer-check, MR discussions-resolved, MR author self-approval; Bitbucket platform pack SCM-054..055: private-repo fork policy, default-branch write-side restriction kinds; GitLab + Bitbucket universal subset SCM-001/002/006/007/008/009/017)
         ├── scm_org/rules/     # ORG-001 .. ORG-013 — GitHub organization-wide governance via the REST API (org-wide 2FA requirement, default member repository permission, Actions allow-list, default workflow token permission, Actions-can-approve-PRs review bypass, org secret scoped to all repos, private-repo forking allowed, member public-repo creation, self-hosted runner group exposed to public repos, new-repo push-protection default, webhook insecure transport, new-repo Dependabot security-updates default, org ruleset not enforced); complements scm (one repo) with org-level posture
+        ├── gitlab_group/rules/ # GLGRP-001 .. GLGRP-002 — GitLab group-wide governance via the REST API (group-wide 2FA requirement, project forking outside the group allowed); the GitLab analog of scm_org
         ├── npm/rules/         # NPM-001 .. NPM-020 — package.json + package-lock.json + .npmrc supply-chain hygiene + curated compromised-package registry + files-field secret-leak detector + broad-files-field publish-blast-radius detector + cooldown gate + OSV advisory lookup + single-publisher / provenance / untrusted-ref / OpenSSF-Scorecard / new-publisher-takeover behavioral signals + overrides/resolutions source-redirect + .npmrc registry-repoint
         ├── pypi/rules/        # PYPI-001 .. PYPI-021 — requirements.txt + pyproject.toml supply-chain hygiene + curated compromised-package registry + cooldown gate + OSV advisory lookup + index-URL credentials + --trusted-host + build-system requires pinning + dynamic-dep deferral + custom-source HTTP + direct-artifact-URL / repointed-index / find-links / no-binary + PEP 740 provenance gap + provenance non-release ref + low upstream OpenSSF Scorecard
         ├── maven/rules/       # MVN-001 .. MVN-018 — pom.xml + settings.xml supply-chain hygiene + curated compromised-package registry (Log4Shell / Spring4Shell / Text4Shell) + cooldown gate + OSV advisory lookup + settings.xml plaintext server credentials + repo URL embedded credentials + build plugin / extension floating versions + Maven Wrapper distributionSha256Sum verification + lifecycle-bound command-running plugin (build-time RCE) + gradle allowInsecureProtocol + settings.xml private-key plaintext passphrase + distributionManagement release repo accepting SNAPSHOTs

@@ -91,6 +91,7 @@ _RULE_PACKAGES: tuple[str, ...] = (
     "pipeline_check.core.checks.scm.rules",
     "pipeline_check.core.checks.scm_org.rules",
     "pipeline_check.core.checks.runs.rules",
+    "pipeline_check.core.checks.gitlab_group.rules",
     "pipeline_check.core.checks.gitlab_runs.rules",
     "pipeline_check.core.checks.npm.rules",
     "pipeline_check.core.checks.pypi.rules",

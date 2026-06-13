@@ -922,6 +922,8 @@ STANDARD = Standard(
         "ORG-005":  ["CICD-SEC-1"],                # org: Actions can approve PRs (review bypass)
         "ORG-006":  ["CICD-SEC-2"],                # org: Actions secret scoped to all repos
         "ORG-007":  ["CICD-SEC-2"],                # org: private-repo forking allowed (code exfiltration)
+        "GLGRP-001":  ["CICD-SEC-2"],  # gitlab group: 2FA not required
+        "GLGRP-002":  ["CICD-SEC-2"],  # gitlab group: forking outside group allowed
         "ORG-008":  ["CICD-SEC-2"],                # org: members can create public repos (code exposure)
         "ORG-009":  ["CICD-SEC-4", "CICD-SEC-7"],   # org: self-hosted runner group exposed to public repos
         "ORG-010":  ["CICD-SEC-6"],                # org: new-repo secret-scanning push-protection default off
