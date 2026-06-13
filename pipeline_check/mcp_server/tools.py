@@ -109,6 +109,7 @@ _PROVIDER_PATH_KW: dict[str, str | None] = {
     "gcp":            None,
     "scm":            None,
     "scm_org":        None,
+    "gitlab_group":   None,
     "runs":           None,
     "gitlab_runs":    None,
 }
@@ -237,6 +238,16 @@ def _provider_kwarg(
                     )
                 org_out["scm_fixture_dir"] = str(resolved_fx)
             return org_out
+        if provider == "gitlab_group":
+            # ``gitlab_group`` is path-less: it audits a GitLab group's
+            # settings over the REST API. The group path is passed through
+            # the ``scm_repo`` slot (a group or subgroup path, '/' allowed).
+            if not scm_repo:
+                raise ValueError(
+                    "provider 'gitlab_group' requires scm_repo set to a "
+                    "GitLab group path (e.g. my-group or my-group/platform)."
+                )
+            return {"scm_org": scm_repo}
         # AWS: no path, but accept ``path`` silently when supplied
         # so an agent guessing the call shape doesn't trip over it.
         return {}

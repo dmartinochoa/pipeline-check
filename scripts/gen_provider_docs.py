@@ -1078,6 +1078,36 @@ pipeline_check --pipeline scm_org --scm-org my-org --gh-token "$GITHUB_TOKEN"
 ```
 """,
     ),
+    "gitlab_group": (
+        "GitLab group governance",
+        "pipeline_check.core.checks.gitlab_group.rules",
+        _REPO_ROOT / "docs" / "providers" / "gitlab_group.md",
+        """\
+# GitLab group governance
+
+Where the [`gitlab`](gitlab.md) provider audits one project's
+`.gitlab-ci.yml`, the `gitlab_group` provider audits the group-wide
+controls that govern every project in a GitLab group at once: whether
+two-factor authentication is required of all members, whether members can
+fork the group's projects outside the group, and the rest of the
+group-owner settings layer. It pulls `GET /groups/{group}` via the same
+GitLab REST v4 fetcher the `scm` provider's GitLab path uses. The GitLab
+analog of the GitHub-only [`scm_org`](scm_org.md) provider.
+
+The group-owner settings are only returned to a token with `read_api`
+and Owner access to the group; without one, or on any 404 / network
+error, each rule passes with an "unavailable" note rather than firing on
+absence, so a low-scope token never produces a false finding.
+
+## Producer workflow
+
+```bash
+# Token comes from --gitlab-token or $GITLAB_TOKEN (needs read_api + Owner).
+pipeline_check --pipeline gitlab_group --scm-org my-group \\
+               --gitlab-token "$GITLAB_TOKEN"
+```
+""",
+    ),
     "scm": (
         "SCM posture (GitHub)",
         "pipeline_check.core.checks.scm.rules",

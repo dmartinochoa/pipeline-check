@@ -945,6 +945,8 @@ STANDARD = Standard(
         "ORG-005":  ["CC8.1"],                   # org governance: Actions can approve PRs (review bypass)
         "ORG-006":  ["CC6.1"],                   # org governance: Actions secret scoped to all repos
         "ORG-007":  ["CC6.1"],                   # org governance: private-repo forking allowed (code exfiltration)
+        "GLGRP-001":  ["CC6.1", "CC6.3"],  # gitlab group: 2FA not required
+        "GLGRP-002":  ["CC6.1"],  # gitlab group: forking outside group allowed
         "ORG-008":  ["CC6.1"],                   # org governance: members can create public repos (code exposure)
         "ORG-009":  ["CC6.6"],                   # org governance: self-hosted runner group exposed to public repos
         "ORG-010":  ["CC6.1"],                   # org governance: new-repo secret-scanning push-protection default off

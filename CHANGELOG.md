@@ -12,6 +12,19 @@ release commit collapses this section into `## [X.Y.Z] - <date>`.
 
 ### Added
 
+- **New `gitlab_group` provider: GitLab group-level governance.** The
+  GitLab analog of the GitHub-only `scm_org` provider. Audits the
+  group-wide controls that govern every project in a GitLab group at once,
+  via `GET /groups/{group}` over the same GitLab REST v4 fetcher the `scm`
+  provider's GitLab path uses. Ships two flagship rules: **GLGRP-001**
+  (HIGH, group does not require two-factor authentication, the ORG-001
+  analog) and **GLGRP-002** (MEDIUM, group allows forking its projects
+  outside the group, the ORG-007 data-exfiltration analog). Invoked with
+  `--pipeline gitlab_group --scm-org GROUP` (a group / subgroup path);
+  token from `--gitlab-token` / `$GITLAB_TOKEN`, `--gitlab-url` for
+  self-managed. A missing token / 404 / Premium-gated field degrades to an
+  "unavailable" pass-with-note rather than a false finding. Provider count
+  38 -> 39.
 - **GL-050: GitLab package-publish job relies on a long-lived registry
   token.** The GitLab analog of GHA-050, motivated by npm's September 2025
   plan to disallow token-based publishing by default and expand OIDC

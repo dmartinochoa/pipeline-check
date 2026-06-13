@@ -182,6 +182,14 @@ pipeline_check --pipeline scm --scm-platform gitlab --scm-org my-group
 pipeline_check --pipeline scm_org --scm-org my-org \
     --gh-token "$GITHUB_TOKEN"
 
+# Group-wide governance (GitLab), the scm_org analog. Audits group-owner
+# settings that govern every project at once (2FA requirement, project
+# forking outside the group). Token from --gitlab-token or $GITLAB_TOKEN
+# (needs read_api + Owner); --gitlab-url for self-managed. --scm-org takes
+# the group path (subgroups like my-group/platform are allowed).
+pipeline_check --pipeline gitlab_group --scm-org my-group \
+    --gitlab-token "$GITLAB_TOKEN"
+
 # Actions run-history forensics (GitHub only). Audits recent
 # Actions runs via the REST API for privileged-trigger and
 # fork-originated executions. Token comes from --gh-token or
