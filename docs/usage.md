@@ -416,7 +416,7 @@ can tell at a glance which rules have a fixer and which tier it belongs
 to. Narrow the listing with `--safety`:
 
 ```bash
-pipeline_check --list-fixers                 # all 111, grouped by ID
+pipeline_check --list-fixers                 # all 120, grouped by ID
 pipeline_check --list-fixers --safety safe   # only the default --fix tier
 pipeline_check --list-fixers --safety unsafe # inference-dependent fixers
 pipeline_check --list-fixers | grep '^GHA-'  # one provider's fixers

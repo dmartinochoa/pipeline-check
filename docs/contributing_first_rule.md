@@ -129,8 +129,8 @@ every CI-provider rule, so keep the class name in sync with the ID.
 The scaffold printed these. The framework makes the count bump a
 deliberate step, so it is not automated:
 
-1. Set `EXPECTED_RULE_COUNTS["github"] = 98` in
-   `tests/test_rule_framework.py`.
+1. Set `EXPECTED_RULE_COUNTS["github"] = 115` in
+   `tests/test_rule_framework.py` (the current count plus your new rule).
 2. Add a positive trigger to `tests/fixtures/workflows/github/insecure-*`
    and bump `EXPECTED_IDS` in `tests/test_workflow_fixtures.py`.
 3. Regenerate the provider doc:
