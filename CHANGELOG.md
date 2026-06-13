@@ -12,6 +12,15 @@ release commit collapses this section into `## [X.Y.Z] - <date>`.
 
 ### Added
 
+- **GLGRP-003: GitLab group allows sharing projects outside the group
+  hierarchy.** Extends the `gitlab_group` pack. Reads
+  ``prevent_sharing_groups_outside_hierarchy`` from ``GET /groups/{group}``
+  and fires (MEDIUM) when it is ``false``: a member can share a private or
+  internal project with a group outside the current hierarchy, granting
+  that external group standing access outside the group's branch
+  protection, approval rules, and 2FA policy. A Premium / SAML setting, so
+  an absent field passes with an "unavailable" note (no free-tier false
+  positive). The group-level access-boundary sibling of GLGRP-002.
 - **New `gitlab_group` provider: GitLab group-level governance.** The
   GitLab analog of the GitHub-only `scm_org` provider. Audits the
   group-wide controls that govern every project in a GitLab group at once,

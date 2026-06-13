@@ -106,3 +106,26 @@ class TestGLGRP002ForkingOutsideGroup:
         # Premium-only field absent on free tier -> pass with note, no FP.
         f = _for(_findings(_ctx({"id": 1})), "GLGRP-002")[0]
         assert f.passed
+
+
+class TestGLGRP003SharingOutsideHierarchy:
+    def test_metadata(self):
+        f = _for(_findings(_ctx({})), "GLGRP-003")[0]
+        assert f.check_id == "GLGRP-003"
+        assert f.severity == Severity.MEDIUM
+
+    def test_fails_when_sharing_outside_allowed(self):
+        f = _for(_findings(_ctx({"prevent_sharing_groups_outside_hierarchy": False})), "GLGRP-003")[0]
+        assert not f.passed
+
+    def test_passes_when_sharing_outside_prevented(self):
+        f = _for(_findings(_ctx({"prevent_sharing_groups_outside_hierarchy": True})), "GLGRP-003")[0]
+        assert f.passed
+
+    def test_passes_when_field_absent(self):
+        f = _for(_findings(_ctx({"id": 1})), "GLGRP-003")[0]
+        assert f.passed
+
+    def test_passes_when_group_unavailable(self):
+        f = _for(_findings(_ctx(None)), "GLGRP-003")[0]
+        assert f.passed

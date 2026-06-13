@@ -976,6 +976,7 @@ STANDARD = Standard(
         "ORG-007":  ["7.2.5"],                            # org: private-repo forking allowed (code exfiltration)
         "GLGRP-001":  ["8.2.1", "7.2.5"],  # gitlab group: 2FA not required
         "GLGRP-002":  ["7.2.5"],  # gitlab group: forking outside group allowed
+        "GLGRP-003":  ["7.2.5"],  # gitlab group: sharing projects outside the hierarchy
         "ORG-008":  ["7.2.5"],                            # org: members can create public repos (code exposure)
         "ORG-009":  ["6.4.1"],                            # org: self-hosted runner group exposed to public repos
         "ORG-010":  ["6.5.1"],                            # org: new-repo secret-scanning push-protection default off
