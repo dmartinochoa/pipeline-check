@@ -178,10 +178,11 @@ graph (repos as nodes, cross-repo chains as edges) ships in `fleet.json`.
 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
 </div>
 ### Output that integrates
-Rich terminal table for humans, JSON for scripts, HTML report (with a
-per-resource blast-radius heatmap and an attack-chains panel) for sharing,
-SARIF 2.1.0 for GitHub code scanning and Defender for DevOps, plus
-markdown for PR comments and JUnit XML for test-runner UIs.
+Rich terminal table for humans, JSON / JSON Lines for scripts and log
+pipelines, HTML report (with a per-resource blast-radius heatmap and an
+attack-chains panel) for sharing, SARIF 2.1.0 for GitHub code scanning and
+Defender for DevOps, CycloneDX + SPDX SBOMs, plus markdown for PR comments,
+GitHub Actions annotations, CSV, and JUnit XML for test-runner UIs.
 <a class="pg-feature__link" href="output/">Output formats</a>
 </div>
 
