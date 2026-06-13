@@ -630,9 +630,16 @@ Covers IAM, Cloud Storage, Cloud KMS, and Cloud Logging controls.
 # --------------------------------------------------------------------------- #
 def _check_link(row: _CheckRow) -> str:
     """Markdown link for a check_id pointing at the provider doc's per-rule
-    anchor."""
+    anchor.
+
+    ``*-000`` ids are degraded-mode, service-level findings (emitted at
+    runtime when a cloud service can't be enumerated, e.g. ``ECR-000``);
+    they are not rules under ``<provider>/rules/`` so the provider doc has
+    no per-rule section / anchor for them. Link those to the page top
+    instead of a dead ``#<svc>-000`` fragment.
+    """
     doc_slug = _DOC_FILENAME_OVERRIDES.get(row.provider_slug, row.provider_slug)
-    if row.provider_slug in _ANCHORED_PROVIDERS:
+    if row.provider_slug in _ANCHORED_PROVIDERS and not row.check_id.endswith("-000"):
         anchor = row.check_id.lower()
         return f"[`{row.check_id}`](../providers/{doc_slug}.md#{anchor})"
     return f"[`{row.check_id}`](../providers/{doc_slug}.md)"
