@@ -10,6 +10,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 PRs landing on `dev` between releases append entries below. The
 release commit collapses this section into `## [X.Y.Z] - <date>`.
 
+### Changed
+
+- **Rego engine modules brought into coverage measurement.** The
+  `--rego-rules` loader / runner / errors modules were omitted from the
+  gated coverage run because their integration tests skip without the
+  `opa` binary (absent in CI), leaving them at 13-58% measured. New
+  binary-free mock tests (`tests/custom/test_rego_mocked.py`, 51 cases)
+  exercise every pure-logic helper directly and mock the two external
+  seams (`shutil.which("opa")` and `subprocess.run`), raising the three
+  modules to 97-100% and letting them come off the `coveragerc-no-fleet`
+  omit list. Whole-repo coverage stays above the 90% gate (91.8%).
+  `fleet.py` stays omitted (it runs in its own serial CI job).
+
 ### Added
 
 - **`scripts/sync_doc_claims.py`: registry-derived doc-claim writer.**
