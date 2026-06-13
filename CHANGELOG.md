@@ -12,6 +12,18 @@ release commit collapses this section into `## [X.Y.Z] - <date>`.
 
 ### Added
 
+- **Slack + Discord incoming-webhook live verifiers (``--verify-secrets``).**
+  The webhook-URL detectors shipped last cycle now have verifiers, so
+  ``--verify-secrets`` can confirm whether a leaked webhook is still live
+  (a webhook URL is itself a credential: anyone holding it can post to the
+  channel). Both probes are side-effect-free and never post a message.
+  Discord is a read-only ``GET`` on the webhook URL, which returns the
+  webhook's name / channel for a live URL and 401 / 404 once it is deleted
+  or its token is rotated. Slack has no read endpoint, so the probe
+  ``POST``s an empty JSON body (``{}``): a live webhook rejects it with HTTP
+  400 ``invalid_payload`` (nothing posts, because there is no ``text``) and
+  a deleted webhook answers 404 ``no_service``. New ``webhooks.py`` in the
+  verifier package; both appear in ``--list-verifiers``.
 - **Sentry + Pulumi + Render + Neon live secret verifiers
   (``--verify-secrets``).** Four CI-relevant infrastructure tokens gain a
   verifier: Sentry org auth tokens via ``GET /api/0/organizations/``
