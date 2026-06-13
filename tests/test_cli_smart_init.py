@@ -60,7 +60,7 @@ class TestSmartInit:
                 passed=False,
             ),
         ]
-        with patch("pipeline_check.cli.Scanner") as MS:
+        with patch("pipeline_check.cli_ops_commands.Scanner") as MS:
             MS.return_value.run.return_value = failing
             MS.return_value.metadata = _mock_meta()
             result = runner.invoke(init_cmd, [])
@@ -94,7 +94,7 @@ class TestSmartInit:
                 passed=True,
             ),
         ]
-        with patch("pipeline_check.cli.Scanner") as MS:
+        with patch("pipeline_check.cli_ops_commands.Scanner") as MS:
             MS.return_value.run.return_value = passing
             MS.return_value.metadata = _mock_meta()
             result = runner.invoke(init_cmd, [])
@@ -111,7 +111,7 @@ class TestSmartInit:
     ):
         monkeypatch.chdir(tmp_path)
         (tmp_path / ".github" / "workflows").mkdir(parents=True)
-        with patch("pipeline_check.cli.Scanner") as MS:
+        with patch("pipeline_check.cli_ops_commands.Scanner") as MS:
             result = runner.invoke(init_cmd, ["--no-scan"])
         assert result.exit_code == 0
         # Scanner never invoked.
@@ -127,7 +127,7 @@ class TestSmartInit:
         self, runner, tmp_path, monkeypatch
     ):
         monkeypatch.chdir(tmp_path)
-        with patch("pipeline_check.cli.Scanner") as MS:
+        with patch("pipeline_check.cli_ops_commands.Scanner") as MS:
             result = runner.invoke(init_cmd, [])
         assert result.exit_code == 0
         MS.assert_not_called()
@@ -139,7 +139,7 @@ class TestSmartInit:
     ):
         monkeypatch.chdir(tmp_path)
         (tmp_path / ".github" / "workflows").mkdir(parents=True)
-        with patch("pipeline_check.cli.Scanner") as MS:
+        with patch("pipeline_check.cli_ops_commands.Scanner") as MS:
             MS.side_effect = RuntimeError("boom")
             result = runner.invoke(init_cmd, [])
         assert result.exit_code == 0
