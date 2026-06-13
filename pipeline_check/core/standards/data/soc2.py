@@ -518,6 +518,7 @@ STANDARD = Standard(
         "GL-031":   ["CC6.1", "CC8.1"],     # id_tokens missing audience pin
         "GL-040":   ["CC6.1", "CC8.1"],     # CI_JOB_TOKEN used for cross-project access
         "GL-041":   ["CC6.8"],              # IaC apply on an untrusted MR trigger
+        "GL-050":   ["CC6.1", "CC6.3"],  # publish job long-lived registry token (GHA-050 analog)
         "BB-033":   ["CC6.8"],              # IaC apply on a PR pipeline
         "ADO-033":  ["CC6.8"],              # IaC apply on a PR-validated pipeline
         "BK-016":   ["CC6.8"],              # dangerous shell idiom

@@ -16,7 +16,7 @@ pipeline_check --pipeline gitlab --gitlab-path ci/
 
 ## What it covers
 
-51 checks · 12 have an autofix patch (``--fix``).
+52 checks · 12 have an autofix patch (``--fix``).
 
 | Check | Title | Severity | Fix |
 |-------|-------|----------|-----|
@@ -69,6 +69,7 @@ pipeline_check --pipeline gitlab --gitlab-path ci/
 | [GL-047](#gl-047) | Unsafe deserialization of a fetched artifact (pickle RCE) | <span class="pg-sev pg-sev--high">HIGH</span> |  |
 | [GL-048](#gl-048) | Untrusted MR/commit context reaches an agentic AI CLI (prompt injection) | <span class="pg-sev pg-sev--high">HIGH</span> |  |
 | [GL-049](#gl-049) | Agentic CLI output lands without human review | <span class="pg-sev pg-sev--high">HIGH</span> |  |
+| [GL-050](#gl-050) | Package-publish job relies on a long-lived registry token | <span class="pg-sev pg-sev--high">HIGH</span> |  |
 | [TAINT-004](#taint-004) | Untrusted input flows across jobs via dotenv artifact | <span class="pg-sev pg-sev--high">HIGH</span> |  |
 | [TAINT-008](#taint-008) | Untrusted input flows via GitLab ``extends:`` template inheritance | <span class="pg-sev pg-sev--high">HIGH</span> |  |
 
@@ -1153,6 +1154,44 @@ Does NOT fire when the agent only opens a merge request for review (``glab mr cr
 **Recommended action**
 
 Don't let an agentic CLI's output reach a branch or a merge without a human review gate. Have the agent open a normal merge request (``glab mr create`` with no auto-merge) so a person reviews the diff before it lands; drop ``glab mr merge --auto-merge`` / ``--yes`` and the ``merge_request.merge_when_pipeline_succeeds`` push option from the agent's job, and don't pair the agent with a ``git push`` straight to a protected branch. If the agent's prompt can be influenced by untrusted input (an MR title / description, a fetched page), treat the committed result as attacker-controlled.
+
+</div>
+
+</div>
+
+<div class="pg-rule pg-rule--high" markdown>
+
+## GL-050: Package-publish job relies on a long-lived registry token { #gl-050 }
+
+<div class="pg-rule__tags">
+<span class="pg-sev pg-sev--high">HIGH</span> <span class="pg-tag pg-tag--owasp">CICD-SEC-2</span> <span class="pg-tag pg-tag--owasp">CICD-SEC-6</span> <span class="pg-tag pg-tag--esf">ESF-D-SECRETS</span> <span class="pg-tag pg-tag--esf">ESF-S-VERIFY-DEPS</span> <span class="pg-tag pg-tag--cwe">CWE-798</span> <span class="pg-tag pg-tag--cwe">CWE-1357</span>
+</div>
+
+Fires when a job's `script:` (or `before_script:` / `after_script:`) runs a package-publish verb AND the job, its `variables:`, or the pipeline's top-level `variables:` reference a long-lived external-registry token. Publish verbs covered: `npm` / `pnpm` / `yarn publish`, `twine upload`, `poetry publish`, `uv publish`, `gem push`, `cargo publish`. Long-lived secrets: `NPM_TOKEN`, `NODE_AUTH_TOKEN`, `NPM_AUTH_TOKEN`, `PYPI_TOKEN`, `TWINE_PASSWORD`, `POETRY_PYPI_TOKEN`, `RUBYGEMS_API_KEY`, `GEM_HOST_API_KEY`, `CARGO_REGISTRY_TOKEN`.
+
+GitLab's built-in `${CI_JOB_TOKEN}` is deliberately excluded: it is the per-job, automatically-expiring token used to publish to the project's own GitLab Package Registry (the native path), not a long-lived external credential. A publish job that uses OIDC (`id_tokens:`) and references no long-lived token does not match. The GitHub Actions analog is GHA-050; the cloud-credentials side is GL-013 (long-lived AWS keys) / GL-031 (OIDC trust).
+
+**Known false-positive modes**
+
+- A private / internal registry that genuinely can't do OIDC (self-hosted Artifactory / Nexus without an OIDC broker) requires a static token. Gate that publish job behind a protected environment with required approvers and suppress this rule with a rationale naming the registry.
+- First-publish bootstrap of a new package (npm and PyPI both require an initial manual publish before trusted publishing can be wired). The rule fires; suppress on the specific job until the trusted-publisher record is in place.
+
+**Seen in the wild**
+
+- Shai-Hulud npm worm (2025-2026): the worm scraped `NPM_TOKEN` from the runner env / `~/.npmrc` and used it to `npm publish` patched versions of other packages the maintainer's account owned. OIDC trusted publishing turns that step into a no-op: the token doesn't survive the job.
+- npm 'Our plan for a more secure npm supply chain' (2025-09-22): npm will disallow token-based publishing by default and expand OIDC trusted publishing, with GitLab named as a supported provider.
+
+<div class="pg-rule__rec" markdown>
+
+**Recommended action**
+
+Publish to public registries with GitLab OIDC trusted publishing instead of a long-lived registry token. Concretely:
+
+- **npm**: configure an `id_tokens:` block with `aud: https://registry.npmjs.org` on the publish job and run `npm publish` (npm CLI >= 11.5.1 exchanges the OIDC token for a short-lived upload token); drop the `${NPM_TOKEN}` / `${NODE_AUTH_TOKEN}` `.npmrc` line. npm's September 2025 plan disallows token-based publishing by default and lists GitLab as a supported OIDC provider.
+- **PyPI**: use PyPI trusted publishing (the GitLab OIDC provider) rather than a `${TWINE_PASSWORD}` / `${PYPI_TOKEN}`.
+- Publishing to the **GitLab Package Registry** of the same project already uses the built-in, per-job `${CI_JOB_TOKEN}` (which this rule does not flag); reserve long-lived tokens for registries that genuinely can't do OIDC, and protect those jobs with a protected environment / branch rule.
+
+A long-lived `NPM_TOKEN` in a publish job is the fuel a Shai-Hulud-shaped worm needs: once scraped from the job env or a `.npmrc` it can publish more compromised packages on the project's behalf. An OIDC token expires in minutes and is scoped to the job that requested it. The GitHub Actions analog is GHA-050.
 
 </div>
 
