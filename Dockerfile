@@ -23,6 +23,15 @@ FROM python:3.12-slim@sha256:090ba77e2958f6af52a5341f788b50b032dd4ca28377d2893dc
 # ``apt-get upgrade`` here pulls the latest deb13uN of every package
 # already installed, then drops the apt lists so the runtime layer
 # doesn't carry the index.
+#
+# ``APT_CACHE_BUST`` busts the build cache for this layer. The
+# instruction text and the base digest are both stable, so without it
+# BuildKit replays a cached ``apt-get upgrade`` layer on every build
+# and the upgrade never re-runs, silently stranding the very CVEs this
+# step exists to patch (e.g. an openssl deb13uN security update).
+# docker-publish.yml feeds it the commit SHA so each release rebuilds
+# the layer against the current trixie-security index.
+ARG APT_CACHE_BUST=
 RUN apt-get update \
  && apt-get upgrade -y --no-install-recommends \
  && apt-get clean \

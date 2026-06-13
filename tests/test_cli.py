@@ -432,6 +432,9 @@ class TestFlagMarshallingEndToEnd:
         )
         assert result.exit_code == 2, result.output
         assert "--baseline file not found" in result.output
+        # Point the user at the one command that creates the missing file
+        # instead of leaving them to guess.
+        assert "--write-baseline" in result.output
 
     def test_diff_base_rejects_leading_dash(self, tmp_path, monkeypatch):
         # cli.py:2414 enforces "--diff-base must not start with '-'"

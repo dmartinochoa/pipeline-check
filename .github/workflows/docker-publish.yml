@@ -138,6 +138,13 @@ jobs:
           push: true
           tags: ghcr.io/dmartinochoa/pipeline-check:scan-${{ github.sha }}
           labels: ${{ steps.meta.outputs.labels }}
+          # Force the Dockerfile's ``apt-get upgrade`` layer to re-run
+          # each build. Without a per-build value here, BuildKit replays
+          # a cached layer (identical instruction text + pinned base
+          # digest) and the security upgrade never executes, leaving
+          # fixable base-package CVEs in the published image.
+          build-args: |
+            APT_CACHE_BUST=${{ github.sha }}
           # SLSA build provenance and an SBOM attached to the image
           # manifest. Keeps parity with release.yml's CycloneDX SBOM
           # for the wheel. Both attestations are bound to the digest,

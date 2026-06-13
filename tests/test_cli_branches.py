@@ -102,8 +102,12 @@ class TestIncompleteScan:
         assert status["files_unparsed"] == 1
         assert status["degraded_modules"] == 0
         assert "could not be parsed" in status["reason"]
+        # The raw warning strings ride along so a JSON/SARIF consumer sees
+        # the same detail the stderr summary prints, not just the counts.
+        assert status["warnings"] == ["bad.yml: YAML parse error: ..."]
 
-        # A clean scan: complete, no reason key (consumers test `complete`).
+        # A clean scan: complete, no reason key (consumers test `complete`),
+        # and no ``warnings`` key when nothing warned (exact-dict below).
         ok = _finding(check_id="CB-001", passed=True)
         clean = _scan_status(SimpleNamespace(warnings=[], files_scanned=2), [ok])
         assert clean == {
