@@ -27,7 +27,7 @@ expression.
 
 ## What it covers
 
-36 checks · 12 have an autofix patch (``--fix``).
+38 checks · 12 have an autofix patch (``--fix``).
 
 | Check | Title | Severity | Fix |
 |-------|-------|----------|-----|
@@ -67,6 +67,8 @@ expression.
 | [JF-034](#jf-034) | Pipeline declares a password() build parameter | <span class="pg-sev pg-sev--high">HIGH</span> |  |
 | [JF-035](#jf-035) | httpRequest step disables SSL verification | <span class="pg-sev pg-sev--high">HIGH</span> |  |
 | [JF-036](#jf-036) | Script step interpolates a build parameter (params.*) | <span class="pg-sev pg-sev--high">HIGH</span> |  |
+| [JF-037](#jf-037) | Untrusted PR/build context reaches an agentic AI CLI (prompt injection) | <span class="pg-sev pg-sev--high">HIGH</span> |  |
+| [JF-038](#jf-038) | Agentic CLI output lands without human review | <span class="pg-sev pg-sev--high">HIGH</span> |  |
 
 ---
 
@@ -826,6 +828,48 @@ A Jenkins build parameter is set by whoever queues the run: anyone with Build pe
 **Recommended action**
 
 Don't splice `${params.X}` into a double-quoted `sh` / `bat` / `powershell` body. Single-quote the Groovy string so it isn't interpolated, and let the shell read the value from the environment: `withEnv(["TAG=${params.TAG}"]) { sh 'build --tag "$TAG"' }`. The single-quoted form passes the value as one literal argument instead of letting it break out of the command.
+
+</div>
+
+</div>
+
+<div class="pg-rule pg-rule--high" markdown>
+
+## JF-037: Untrusted PR/build context reaches an agentic AI CLI (prompt injection) { #jf-037 }
+
+<div class="pg-rule__tags">
+<span class="pg-sev pg-sev--high">HIGH</span> <span class="pg-tag pg-tag--owasp">CICD-SEC-4</span> <span class="pg-tag pg-tag--esf">ESF-D-INJECTION</span> <span class="pg-tag pg-tag--cwe">CWE-94</span> <span class="pg-tag pg-tag--cwe">CWE-77</span>
+</div>
+
+The AI analog of JF-002 (script injection). Fires when a ``sh`` / ``bat`` / ``powershell`` step invokes an agentic CLI (claude / gemini / cursor-agent / aider / openhands / goose / ``q chat``) AND attacker-controllable Jenkins context reaches it: an SCM-event env var (`$BRANCH_NAME` / `$CHANGE_TITLE` / `$CHANGE_BRANCH` / `$TAG_NAME` / `$GIT_*`) or a `${params.X}` build parameter. Unlike JF-002, both single- and double-quoted step bodies are flagged: an LLM ingests the value as prompt text regardless of Groovy quoting, so the JF-002 mitigation (single-quote the body) does not apply, which is why this is a separate rule.
+
+<div class="pg-rule__rec" markdown>
+
+**Recommended action**
+
+Do not place attacker-controllable context (a PR's branch / tag / title, `$CHANGE_*`, or a `${params.X}` build parameter) in an agentic CLI's prompt. Groovy single-quoting does NOT sanitize a prompt the way it does a shell command, the model still reads the value. If the agent must see PR content, run it in a stage with no credentials bound and no tool / shell access, and treat its output as untrusted.
+
+</div>
+
+</div>
+
+<div class="pg-rule pg-rule--high" markdown>
+
+## JF-038: Agentic CLI output lands without human review { #jf-038 }
+
+<div class="pg-rule__tags">
+<span class="pg-sev pg-sev--high">HIGH</span> <span class="pg-tag pg-tag--owasp">CICD-SEC-1</span> <span class="pg-tag pg-tag--esf">ESF-C-APPROVAL</span> <span class="pg-tag pg-tag--cwe">CWE-94</span> <span class="pg-tag pg-tag--cwe">CWE-693</span>
+</div>
+
+Fires when one Jenkinsfile both invokes an agentic CLI (``claude`` / ``gemini`` / ``cursor-agent`` / ``aider`` / ``openhands`` / ``goose`` / ``q chat``) in a ``sh`` / ``bat`` / ``powershell`` step and, in the same pipeline, lands the result with a ``git push`` (the Jenkins idiom for committing straight to a branch, since there are no ``uses:`` actions). Coupling is pipeline-level because the stages of one pipeline share a checkout.
+
+Does NOT fire when the agent only opens a pull request for review, nor on a push step that does not run an agent (ordinary formatting / generated-file jobs). The agent-plus-push coupling is the signal. A ``git push --dry-run`` is ignored.
+
+<div class="pg-rule__rec" markdown>
+
+**Recommended action**
+
+Don't let an agentic CLI's output reach a branch without a human review gate. Have the agent open a normal pull request (no auto-merge) so a person reviews the diff before it lands, and don't pair the agent with a ``git push`` straight to a branch in the same pipeline. If the agent's prompt can be influenced by untrusted input (a PR title / branch, a build parameter), treat the committed result as attacker-controlled.
 
 </div>
 

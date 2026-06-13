@@ -35,6 +35,7 @@ PROVIDER_DETECT_FILES: tuple[tuple[str, tuple[str, ...], tuple[str, ...]], ...] 
     ("cloudbuild", ("cloudbuild.yaml", "cloudbuild.yml"), ()),
     ("buildkite", (".buildkite/pipeline.yml", ".buildkite/pipeline.yaml"), ()),
     ("drone", (".drone.yml", ".drone.yaml"), ()),
+    ("harness", (), (".harness",)),
     ("dockerfile", ("Dockerfile", "Containerfile"), ()),
     ("npm", ("package.json", "package-lock.json"), ()),
     ("pypi", ("requirements.txt",), ()),

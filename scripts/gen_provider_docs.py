@@ -880,6 +880,50 @@ All other flags (`--output`, `--severity-threshold`, `--checks`,
   a maintainer can ratchet plugin pinning up first.
 """,
     ),
+    "harness": (
+        "Harness CI/CD",
+        "pipeline_check.core.checks.harness.rules",
+        _REPO_ROOT / "docs" / "providers" / "harness.md",
+        """\
+# Harness CI/CD provider
+
+Parses Harness pipeline YAML (the Git Experience / pipeline-as-code
+form) on disk. Harness has no canonical filename, so the loader globs
+``*.yml`` / ``*.yaml`` and keeps the documents whose top-level key is
+``pipeline:`` (its discriminator); a ``template:`` document or
+unrelated YAML in the same directory is skipped. A pipeline nests
+steps several levels deep (``stages`` -> ``stage.spec.execution.steps``
+-> ``step`` / ``parallel`` / ``stepGroup``); the rule pack flattens
+all of that and scans every leaf step across CI and CD stages.
+
+## Producer workflow
+
+```bash
+# --harness-path is auto-detected when a .harness/ directory exists at cwd.
+pipeline_check --pipeline harness
+
+# ...or pass it explicitly (a file or a directory of pipelines).
+pipeline_check --pipeline harness --harness-path .harness/
+
+pipeline_check --pipeline harness --harness-path pipelines/build.yaml
+```
+
+All other flags (`--output`, `--severity-threshold`, `--checks`,
+`--standard`, ...) behave the same as with the other providers.
+
+### Harness-specific checks
+
+- **HARNESS-002**, Harness substitutes a ``<+...>`` expression's text
+  into a step ``command`` *before* the shell runs it, so an
+  attacker-controllable expression (``<+codebase.prTitle>``,
+  ``<+codebase.commitMessage>``, a branch / tag name, or any
+  ``<+trigger.*>`` / ``<+eventPayload.*>`` value) is a command-injection
+  primitive. ``<+codebase.commitSha>`` / ``<+codebase.repoUrl>`` are
+  excluded (not injectable text). Bind the value to an ``envVariables``
+  entry and quote it (``"$PR_TITLE"``) to clear the finding. Same model
+  as GHA-002 / GL-002 / DR-003 in this catalog.
+""",
+    ),
     "oci": (
         "OCI image manifest",
         "pipeline_check.core.checks.oci.rules",
@@ -973,6 +1017,94 @@ passes) rather than crashing the scan.
 # Token comes from --gh-token or $GITHUB_TOKEN (needs ``actions:read``).
 pipeline_check --pipeline runs --scm-repo owner/name \\
                --gh-token "$GITHUB_TOKEN"
+```
+""",
+    ),
+    "gitlab_runs": (
+        "GitLab pipeline run forensics",
+        "pipeline_check.core.checks.gitlab_runs.rules",
+        _REPO_ROOT / "docs" / "providers" / "gitlab_runs.md",
+        """\
+# GitLab pipeline run forensics
+
+Where the `gitlab` provider reasons about what a `.gitlab-ci.yml` *could*
+do, the `gitlab_runs` provider audits what *actually executed*. It pulls
+recent pipelines via the GitLab REST API
+(`GET /projects/:id/pipelines`) and flags pipelines that ran on a
+merge-request event: code a contributor proposed, and (when "Run
+pipelines for fork merge requests" is enabled) code from a fork running
+in the project's CI context. This is the GitLab analog of the `runs`
+provider's GitHub Actions forensics.
+
+Findings carry the pipeline's URL and trigger source so an operator can
+open the pipeline directly. A missing token, a 404, or a network error
+degrades to a warning (every rule then sees an empty pipeline list and
+passes) rather than crashing the scan.
+
+## Producer workflow
+
+```bash
+# Token comes from --gitlab-token or $GITLAB_TOKEN (needs ``read_api``).
+pipeline_check --pipeline gitlab_runs --scm-repo group/project \\
+               --gitlab-token "$GITLAB_TOKEN"
+```
+""",
+    ),
+    "scm_org": (
+        "SCM org governance (GitHub)",
+        "pipeline_check.core.checks.scm_org.rules",
+        _REPO_ROOT / "docs" / "providers" / "scm_org.md",
+        """\
+# SCM org governance: GitHub
+
+Where the [`scm`](scm_github.md) provider audits one repository's
+settings, the `scm_org` provider audits the organization-wide controls
+that govern every repository at once: whether two-factor authentication
+is required of all members, the default permission members get on org
+repos, and the rest of the org-admin settings layer. It pulls
+`GET /orgs/{org}` (and sibling endpoints as the rule pack grows) via the
+same GitHub REST fetcher the `scm` provider uses.
+
+The org-admin settings are only returned to a token with `admin:org` /
+`read:org` scope; without one, or on any 404 / network error, each rule
+passes with an "unavailable" note rather than firing on absence, so a
+low-scope token never produces a false finding.
+
+## Producer workflow
+
+```bash
+# Token comes from --gh-token or $GITHUB_TOKEN (needs admin:org / read:org).
+pipeline_check --pipeline scm_org --scm-org my-org --gh-token "$GITHUB_TOKEN"
+```
+""",
+    ),
+    "gitlab_group": (
+        "GitLab group governance",
+        "pipeline_check.core.checks.gitlab_group.rules",
+        _REPO_ROOT / "docs" / "providers" / "gitlab_group.md",
+        """\
+# GitLab group governance
+
+Where the [`gitlab`](gitlab.md) provider audits one project's
+`.gitlab-ci.yml`, the `gitlab_group` provider audits the group-wide
+controls that govern every project in a GitLab group at once: whether
+two-factor authentication is required of all members, whether members can
+fork the group's projects outside the group, and the rest of the
+group-owner settings layer. It pulls `GET /groups/{group}` via the same
+GitLab REST v4 fetcher the `scm` provider's GitLab path uses. The GitLab
+analog of the GitHub-only [`scm_org`](scm_org.md) provider.
+
+The group-owner settings are only returned to a token with `read_api`
+and Owner access to the group; without one, or on any 404 / network
+error, each rule passes with an "unavailable" note rather than firing on
+absence, so a low-scope token never produces a false finding.
+
+## Producer workflow
+
+```bash
+# Token comes from --gitlab-token or $GITLAB_TOKEN (needs read_api + Owner).
+pipeline_check --pipeline gitlab_group --scm-org my-group \\
+               --gitlab-token "$GITLAB_TOKEN"
 ```
 """,
     ),

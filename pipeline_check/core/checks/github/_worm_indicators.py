@@ -199,8 +199,3 @@ def registry_size() -> int:
     """Number of registry entries. Tests consult this so a removed
     entry trips the suite."""
     return len(_REGISTRY)
-
-
-def known_categories() -> frozenset[str]:
-    """Set of IOC categories the registry currently covers."""
-    return frozenset(e.category for e in _REGISTRY)

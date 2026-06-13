@@ -48,13 +48,27 @@ def strip_groovy_comments(text: str) -> str:
 PINNED_REF_RE = re.compile(r"^(?:v?\d+(?:\.\d+){1,2}|[0-9a-f]{40})$")
 FLOATING_REFS = frozenset({"main", "master", "develop", "head", "trunk", "latest"})
 
-UNTRUSTED_ENV_RE = re.compile(
-    r"\$\{?\s*(?:env\.)?"
-    r"(?:BRANCH_NAME|GIT_BRANCH|TAG_NAME"
+#: The attacker-controllable Jenkins env-var names. Multibranch /
+#: pipeline ``CHANGE_*`` + git author/committer fields, plus the GitHub
+#: Pull Request Builder (``ghprb*``) plugin vars, the dominant
+#: attacker-controlled source on classic Jenkins PR jobs: a fork PR sets
+#: the source branch name, PR title/description, and commit author.
+#: ``ghprbTargetBranch`` is the repo's own branch (author-controlled) and
+#: is deliberately excluded. Defined once so the direct-injection and
+#: agent-label catalogs (below) can't drift apart.
+_UNTRUSTED_ENV_NAMES = (
+    r"BRANCH_NAME|GIT_BRANCH|TAG_NAME"
     r"|CHANGE_TITLE|CHANGE_BRANCH|CHANGE_AUTHOR(?:_DISPLAY_NAME)?"
     r"|CHANGE_URL|CHANGE_TARGET"
     r"|GIT_AUTHOR_NAME|GIT_AUTHOR_EMAIL"
-    r"|GIT_COMMITTER_NAME|GIT_COMMITTER_EMAIL)"
+    r"|GIT_COMMITTER_NAME|GIT_COMMITTER_EMAIL"
+    r"|ghprbSourceBranch|ghprbActualCommitAuthor(?:Email)?"
+    r"|ghprbPull(?:Title|Description|AuthorLogin|Link)"
+)
+
+UNTRUSTED_ENV_RE = re.compile(
+    r"\$\{?\s*(?:env\.)?"
+    r"(?:" + _UNTRUSTED_ENV_NAMES + r")"
     r"\s*\}?"
 )
 
@@ -80,11 +94,7 @@ PARAMS_TAINT_RE = re.compile(_PARAMS_TAINT)
 #: ``${env.WORKSPACE}`` are NOT in the catalog.
 LABEL_TAINT_RE = re.compile(
     r"\$\{?\s*(?:env\.)?"
-    r"(?:BRANCH_NAME|GIT_BRANCH|TAG_NAME"
-    r"|CHANGE_TITLE|CHANGE_BRANCH|CHANGE_AUTHOR(?:_DISPLAY_NAME)?"
-    r"|CHANGE_URL|CHANGE_TARGET"
-    r"|GIT_AUTHOR_NAME|GIT_AUTHOR_EMAIL"
-    r"|GIT_COMMITTER_NAME|GIT_COMMITTER_EMAIL)"
+    r"(?:" + _UNTRUSTED_ENV_NAMES + r")"
     r"\s*\}?"
     r"|" + _PARAMS_TAINT
 )

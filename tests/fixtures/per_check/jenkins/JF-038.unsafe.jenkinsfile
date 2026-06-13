@@ -1,0 +1,15 @@
+pipeline {
+  agent any
+  stages {
+    stage('ai-autofix') {
+      steps {
+        sh "claude -p 'Fix the failing test and commit the change'"
+      }
+    }
+    stage('publish') {
+      steps {
+        sh "git push origin HEAD"
+      }
+    }
+  }
+}

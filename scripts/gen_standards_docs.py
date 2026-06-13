@@ -60,6 +60,7 @@ _PROVIDER_PACKAGES: tuple[tuple[str, str, str], ...] = (
     ("cloudbuild", "pipeline_check.core.checks.cloudbuild.rules", "Cloud Build"),
     ("buildkite",  "pipeline_check.core.checks.buildkite.rules",  "Buildkite"),
     ("drone",      "pipeline_check.core.checks.drone.rules",      "Drone CI"),
+    ("harness",    "pipeline_check.core.checks.harness.rules",    "Harness CI/CD"),
     ("tekton",     "pipeline_check.core.checks.tekton.rules",     "Tekton"),
     ("argo",       "pipeline_check.core.checks.argo.rules",       "Argo Workflows"),
     ("argocd",     "pipeline_check.core.checks.argocd.rules",     "Argo CD"),
@@ -69,7 +70,10 @@ _PROVIDER_PACKAGES: tuple[tuple[str, str, str], ...] = (
     ("helm",       "pipeline_check.core.checks.helm.rules",       "Helm"),
     ("oci",        "pipeline_check.core.checks.oci.rules",        "OCI manifest"),
     ("scm",        "pipeline_check.core.checks.scm.rules",        "SCM"),
+    ("scm_org",    "pipeline_check.core.checks.scm_org.rules",    "SCM org governance"),
+    ("gitlab_group", "pipeline_check.core.checks.gitlab_group.rules", "GitLab group governance"),
     ("runs",       "pipeline_check.core.checks.runs.rules",       "Actions run history"),
+    ("gitlab_runs", "pipeline_check.core.checks.gitlab_runs.rules", "GitLab pipeline run history"),
     ("devenv",     "pipeline_check.core.checks.devenv.rules",     "Developer environment"),
     # cloudformation, terraform, npm, pypi each ship a rule-based
     # ``rules/`` package now. Listing them BEFORE aws preserves the
@@ -104,9 +108,10 @@ _PROVIDER_PACKAGES: tuple[tuple[str, str, str], ...] = (
 # --------------------------------------------------------------------------- #
 _ANCHORED_PROVIDERS: frozenset[str] = frozenset({
     "github", "gitlab", "bitbucket", "azure", "jenkins", "circleci",
-    "cloudbuild", "buildkite", "drone", "tekton", "argo", "dockerfile",
+    "cloudbuild", "buildkite", "drone", "harness", "tekton", "argo", "dockerfile",
     "modelfile", "kubernetes", "scm", "runs", "oci", "maven", "nuget",
     "aws", "cloudformation", "terraform", "npm", "pypi", "helm", "argocd",
+    "gitlab_runs", "scm_org", "gitlab_group",
 })
 
 _DOC_FILENAME_OVERRIDES: dict[str, str] = {
@@ -626,9 +631,16 @@ Covers IAM, Cloud Storage, Cloud KMS, and Cloud Logging controls.
 # --------------------------------------------------------------------------- #
 def _check_link(row: _CheckRow) -> str:
     """Markdown link for a check_id pointing at the provider doc's per-rule
-    anchor."""
+    anchor.
+
+    ``*-000`` ids are degraded-mode, service-level findings (emitted at
+    runtime when a cloud service can't be enumerated, e.g. ``ECR-000``);
+    they are not rules under ``<provider>/rules/`` so the provider doc has
+    no per-rule section / anchor for them. Link those to the page top
+    instead of a dead ``#<svc>-000`` fragment.
+    """
     doc_slug = _DOC_FILENAME_OVERRIDES.get(row.provider_slug, row.provider_slug)
-    if row.provider_slug in _ANCHORED_PROVIDERS:
+    if row.provider_slug in _ANCHORED_PROVIDERS and not row.check_id.endswith("-000"):
         anchor = row.check_id.lower()
         return f"[`{row.check_id}`](../providers/{doc_slug}.md#{anchor})"
     return f"[`{row.check_id}`](../providers/{doc_slug}.md)"

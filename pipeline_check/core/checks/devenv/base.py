@@ -15,7 +15,6 @@ a URL survives) before handing off to ``json.loads``.
 from __future__ import annotations
 
 import json
-from collections.abc import Iterator
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Any
@@ -419,7 +418,3 @@ def location_for(path: str, raw: str, needle: str) -> list[Location]:
     if line is None:
         return []
     return [Location(path=path, start_line=line, end_line=line)]
-
-
-def iter_files(ctx: DevEnvContext) -> Iterator[WorkspaceFile]:
-    yield from ctx.files

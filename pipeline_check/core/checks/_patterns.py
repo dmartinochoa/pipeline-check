@@ -149,6 +149,24 @@ _BUILTIN_PATTERNS: dict[str, str] = {
     "tailscale_key":          r"tskey-(?:auth|api|client|webhook)-[0-9A-Za-z]+-[0-9A-Za-z]{24,}",
     # Sentry auth token, org (sntrys_) and user (sntryu_) forms.
     "sentry_auth_token":      r"sntry[su]_[A-Za-z0-9+/=_\-]{40,}",
+    # ── LLM provider API keys (round 5) ──
+    # Groq API keys (``gsk_`` prefix + 52-char body).
+    "groq_api_key":           r"gsk_[A-Za-z0-9]{48,}",
+    # xAI (Grok) API keys (``xai-`` prefix + long alphanumeric body).
+    "xai_api_key":            r"xai-[A-Za-z0-9]{64,}",
+    # Perplexity API keys (``pplx-`` prefix + 48-char body).
+    "perplexity_api_key":     r"pplx-[A-Za-z0-9]{40,}",
+    # ── Incoming-webhook URLs (full credential: anyone with the URL can post) ──
+    # Slack incoming webhook: hooks.slack.com/services/T<id>/B<id>/<24 secret>.
+    "slack_webhook":          r"https://hooks\.slack\.com/services/T[A-Z0-9]{6,}/B[A-Z0-9]{6,}/[A-Za-z0-9]{20,}",
+    # Discord webhook: discord(app).com/api/webhooks/<17-20 digit id>/<token>.
+    "discord_webhook":        r"https://discord(?:app)?\.com/api/webhooks/[0-9]{17,20}/[A-Za-z0-9_\-]{60,}",
+    # ── More SaaS / infra tokens (distinctive prefixes) ──
+    # Figma personal access token (``figd_`` prefix).
+    "figma_token":            r"figd_[A-Za-z0-9_\-]{40,}",
+    # Notion internal-integration token (``ntn_`` prefix; the older
+    # ``secret_`` shape is too generic to match safely).
+    "notion_token":           r"ntn_[A-Za-z0-9]{40,}",
 }
 
 

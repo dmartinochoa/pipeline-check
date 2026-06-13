@@ -292,6 +292,16 @@ STANDARD = Standard(
         "TKN-016": ["IA-11"],  # remote resolver / bundle task body not pinned
         "ARGO-001": ["IA-11"],
         "DR-001":   ["IA-11"],
+        "HARNESS-001":   ["IA-11"],  # Harness step image not digest-pinned
+        "HARNESS-002":   ["EX-6"],  # Harness expression injection in step command
+        "HARNESS-003":   ["PE-2"],  # Harness privileged step
+        "HARNESS-004":   ["REC-2", "CA-6"],  # Harness literal credential in variable
+        "HARNESS-006":   ["COL-1"],  # Harness TLS bypass in commands
+        "HARNESS-007":   ["PE-2"],  # Harness sensitive host-path mount
+        "HARNESS-008":   ["EX-6"],  # Harness agentic-CLI prompt injection
+        "HARNESS-010":   ["EX-6"],  # Harness model trust_remote_code (code exec)
+        "HARNESS-011":   ["EX-6"],  # Harness unsafe model deser (pickle RCE)
+        "HARNESS-009":   ["DE-1"],  # Harness agentic-CLI output autolands without review
         "DR-005":   ["IA-11"],
         "DF-001":   ["IA-11"],
         "MODEL-001": ["IA-11"],   # unpinned base model
@@ -399,11 +409,20 @@ STANDARD = Standard(
         "GL-047":   ["EX-6"],# unsafe pickle deser of fetched artifact = code exec
         "GL-048":   ["EX-6"],# untrusted MR context into agentic CLI = prompt injection
         "GL-049":   ["DE-1"],# agentic CLI output lands without review
+        "GL-050":   ["IA-22"],  # publish job long-lived registry token (GHA-050 analog)
         "BB-002":   ["EX-6"],
         "BB-035":   ["EX-6"],   # trust_remote_code model load = code exec
+        "BB-036":   ["EX-6"],   # untrusted PR context into agentic CLI = prompt injection
+        "BB-037":   ["EX-6"],   # unsafe pickle deser of fetched artifact = code exec
+        "BB-039":   ["DE-1"],   # agentic CLI output lands without review
+        "JF-038":   ["DE-1"],   # agentic CLI output lands without review
         "ADO-002":  ["EX-6"],
         "ADO-034":  ["EX-6"],   # trust_remote_code model load = code exec
+        "ADO-035":  ["EX-6"],   # untrusted PR context into agentic CLI = prompt injection
+        "ADO-036":  ["EX-6"],   # unsafe pickle deser of fetched artifact = code exec
+        "ADO-038":  ["DE-1"],   # agentic CLI output lands without review
         "JF-002":   ["EX-6"],
+        "JF-037":   ["EX-6"],   # agentic CLI ingests untrusted context (prompt injection)
         "CC-002":   ["EX-6"],
         "BK-003":   ["EX-6"],
         "TKN-003":  ["EX-6"],

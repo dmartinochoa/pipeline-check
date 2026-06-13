@@ -140,7 +140,16 @@ STANDARD = Standard(
         "GHA-002":  ["CM-6", "SI-7", "SA-11"],           # pull_request_target + PR head
         "RUN-001":  ["CM-6", "SI-7", "SA-11"],           # forensics: fork PR ran on privileged trigger
         "RUN-002":  ["CM-6", "SI-7", "SA-11"],           # forensics: privileged trigger fired
+        "GLRUN-001": ["CM-6", "SI-7", "SA-11"],  # gitlab forensics: merge-request pipeline executed
+        "GLRUN-002": ["CM-6", "SI-7", "SA-11"],  # gitlab forensics: fork merge-request pipeline executed
+        "GLRUN-003": ["CM-6", "SI-7", "SA-11"],  # gitlab forensics: secret leaked in fork pipeline trace
+        "GLRUN-004": ["CM-6", "SI-7", "SA-11", "AC-6"],  # gitlab forensics: fork pipeline minted a cloud OIDC token
+        "GLRUN-005": ["CM-6", "SI-7", "SA-11", "SC-7"],  # gitlab forensics: fork pipeline ran on a self-managed runner
         "RUN-003":  ["CM-6", "SI-7", "SA-11"],           # forensics: secret leaked in run logs
+        "RUN-004":  ["CM-6", "SI-7", "SA-11", "AC-6"],   # forensics: fork run minted a cloud OIDC token
+        "RUN-005":  ["CM-6", "SI-7", "SA-11", "SC-7"],   # forensics: fork run on a self-hosted runner
+        "RUN-006":  ["SR-3", "SR-11", "RA-5"],   # forensics: known-compromised action executed
+        "RUN-007":  ["SR-3", "SR-11"],           # forensics: unpinned third-party action ran with secrets
         "GHA-003":  ["CM-6", "SA-11", "SA-15"],          # script injection
         "GHA-119":  ["CM-6", "SA-11", "SA-15"],          # untrusted context into an agentic AI CLI
         "GHA-120":  ["CM-6", "SA-11", "SA-15"],          # trust_remote_code model load = code exec
@@ -283,6 +292,7 @@ STANDARD = Standard(
         "GL-031":   ["AC-3", "IA-5"],                    # id_tokens missing audience pin
         "GL-040":   ["AC-3", "IA-5"],                    # CI_JOB_TOKEN used for cross-project access
         "GL-041":   ["CM-6", "SA-11", "SA-15"],          # IaC apply on an untrusted MR trigger
+        "GL-050":   ["IA-5", "AC-6"],  # publish job long-lived registry token (GHA-050 analog)
         "GL-032":   ["CM-6", "SA-11"],                   # tags interpolates untrusted
         "GL-033":   ["CM-6", "SA-11"],                   # global before_script taint
         "GL-034":   ["SR-3", "SR-11", "SI-7"],            # npm install without audit signatures
@@ -291,6 +301,11 @@ STANDARD = Standard(
         "BB-001":   ["SR-3", "SR-11", "SI-2"],
         "BB-002":   ["SI-7", "SA-11", "CM-6"],
         "BB-035":   ["SI-7", "SA-11", "CM-6"],   # trust_remote_code model load = code exec
+        "BB-036":   ["SI-7", "SA-11", "CM-6"],   # untrusted PR context into agentic CLI = prompt injection
+        "BB-037":   ["CM-6", "SA-11", "SA-15"],   # unsafe pickle deser of fetched artifact = code exec
+        "BB-038":   ["SR-3", "SR-11", "SI-2"],   # model pulled without a pinned revision
+        "BB-039":   ["SA-10", "AC-3"],   # agentic CLI output lands without review
+        "JF-038":   ["SA-10", "AC-3"],   # agentic CLI output lands without review
         "BB-003":   ["IA-5"],
         "BB-004":   ["SA-10", "AC-3"],
         "BB-034":   ["SA-10", "AC-3"],                   # prod deploy on a PR pipeline
@@ -329,6 +344,10 @@ STANDARD = Standard(
         "ADO-001":  ["SR-3", "SR-11", "SI-2"],
         "ADO-002":  ["SI-7", "SA-11", "CM-6"],
         "ADO-034":  ["SI-7", "SA-11", "CM-6"],   # trust_remote_code model load = code exec
+        "ADO-035":  ["SI-7", "SA-11", "CM-6"],   # untrusted PR context into agentic CLI = prompt injection
+        "ADO-036":  ["CM-6", "SA-11", "SA-15"],   # unsafe pickle deser of fetched artifact = code exec
+        "ADO-037":  ["SR-3", "SR-11", "SI-2"],   # model pulled without a pinned revision
+        "ADO-038":  ["SA-10", "AC-3"],   # agentic CLI output lands without review
         "ADO-003":  ["IA-5"],
         "ADO-004":  ["SA-10", "AC-3"],
         "ADO-005":  ["SR-3", "SR-11", "CM-2"],
@@ -401,6 +420,7 @@ STANDARD = Standard(
         "JF-034":   ["IA-5", "SC-28"],                   # password() build parameter
         "JF-035":   ["SC-8", "SC-13"],                   # httpRequest ignoreSslErrors
         "JF-002":   ["CM-6", "SA-11"],                   # script step untrusted env
+        "JF-037":   ["CM-6", "SA-11"],                   # agentic CLI ingests untrusted context (prompt injection)
         "JF-003":   ["AC-6", "CM-6"],                    # agent any (no executor isolation)
         "JF-005":   ["SA-10", "SA-15"],                  # deploy stage missing manual input
         "JF-006":   ["SI-7", "SR-4"],                    # artifacts not signed
@@ -428,6 +448,17 @@ STANDARD = Standard(
         "JF-032":   ["CM-6", "SA-11"],                   # agent label interpolates untrusted
         # ── Drone CI ─────────────────────────────────────────────
         "DR-001":   ["SR-3", "SR-11", "SI-2"],           # step image not digest-pinned
+        "HARNESS-001":   ["SR-3", "SR-11", "SI-2"],  # Harness step image not digest-pinned
+        "HARNESS-002":   ["CM-6", "SA-11"],  # Harness expression injection in step command
+        "HARNESS-003":   ["AC-6", "CM-7"],  # Harness privileged step
+        "HARNESS-004":   ["IA-5"],  # Harness literal credential in variable
+        "HARNESS-005":   ["SI-7", "CM-7"],  # Harness pipe-to-shell
+        "HARNESS-006":   ["SC-8", "SC-13"],  # Harness TLS bypass in commands
+        "HARNESS-007":   ["SC-7", "AC-6", "SI-7"],  # Harness sensitive host-path mount
+        "HARNESS-008":   ["CM-6", "SA-11"],  # Harness agentic-CLI prompt injection
+        "HARNESS-010":   ["CM-6", "SA-11", "SA-15"],  # Harness model trust_remote_code (code exec)
+        "HARNESS-011":   ["CM-6", "SA-11", "SA-15"],  # Harness unsafe model deser (pickle RCE)
+        "HARNESS-009":   ["SA-10", "AC-3"],  # Harness agentic-CLI output autolands without review
         "DR-002":   ["AC-6", "CM-7"],                    # privileged step
         "DR-003":   ["CM-6", "SA-11"],                   # Drone variable injection
         "DR-004":   ["IA-5"],                            # literal credential
@@ -947,6 +978,23 @@ STANDARD = Standard(
         "CC-032":   ["IA-5", "AU-9"],                      # secret echoed to CircleCI log
         "SCM-048":  ["AC-6", "IA-5"],                      # org codespace secrets scoped to all repos
         "SCM-049":  ["AC-6", "IA-5"],                      # classic PAT used where fine-grained suffices
+        "ORG-001":  ["AC-6", "IA-5"],                      # org: 2FA not required org-wide
+        "ORG-002":  ["AC-6", "IA-5"],                      # org: default member permission too broad
+        "ORG-003":  ["SR-3", "SR-11", "SI-2", "RA-5"],     # org: no Actions allow-list (any action runs)
+        "ORG-004":  ["AC-6", "IA-5"],                      # org: default workflow token is write
+        "ORG-005":  ["SA-15"],                             # org: Actions can approve PRs (review bypass)
+        "ORG-006":  ["AC-6", "IA-5"],                      # org: Actions secret scoped to all repos
+        "ORG-007":  ["AC-6"],                              # org: private-repo forking allowed (code exfiltration)
+        "GLGRP-001":  ["AC-6", "IA-5"],  # gitlab group: 2FA not required
+        "GLGRP-002":  ["AC-6"],  # gitlab group: forking outside group allowed
+        "GLGRP-003":  ["AC-6"],  # gitlab group: sharing projects outside the hierarchy
+        "GLGRP-004":  ["SA-15", "AC-3"],  # gitlab group: default branch protection disabled for new projects
+        "ORG-008":  ["AC-6"],                              # org: members can create public repos (code exposure)
+        "ORG-009":  ["CM-6", "CM-7"],                      # org: self-hosted runner group exposed to public repos
+        "ORG-010":  ["SI-7", "IA-5"],                      # org: new-repo secret-scanning push-protection default off
+        "ORG-011":  ["SC-8"],                              # org: org webhook over insecure transport
+        "ORG-012":  ["RA-5", "SI-2"],                      # org: new-repo Dependabot security-updates default off
+        "ORG-013":  ["SA-15", "CM-6"],                     # org: org ruleset not enforced (evaluate/disabled)
         "NPM-012":  ["IA-5", "SR-3"],                      # publish token missing restrictions
         # ── Azure Cloud (Entra ID / Storage / Key Vault / ACR / Monitor) ──
         "ENTRA-001": ["AC-3", "AC-6"],                     # SP assigned Global Administrator

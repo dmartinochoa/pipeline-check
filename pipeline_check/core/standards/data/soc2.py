@@ -170,17 +170,25 @@ STANDARD = Standard(
         "GL-026":   ["CC6.8"],
         "BB-002":   ["CC6.8"],
         "BB-035":   ["CC6.8"],   # trust_remote_code model load = code exec
+        "BB-036":   ["CC6.8"],   # untrusted PR context into agentic CLI = prompt injection
+        "BB-037":   ["CC6.8"],   # unsafe pickle deser of fetched artifact = code exec
+        "BB-039":   ["CC8.1"],   # agentic CLI output lands without review
+        "JF-038":   ["CC8.1"],   # agentic CLI output lands without review
         "BB-012":   ["CC6.8"],
         "BB-015":   ["CC6.8"],
         "BB-025":   ["CC6.8"],
         "BB-026":   ["CC6.8"],
         "ADO-002":  ["CC6.8"],
         "ADO-034":  ["CC6.8"],   # trust_remote_code model load = code exec
+        "ADO-035":  ["CC6.8"],   # untrusted PR context into agentic CLI = prompt injection
+        "ADO-036":  ["CC6.8"],   # unsafe pickle deser of fetched artifact = code exec
+        "ADO-038":  ["CC8.1"],   # agentic CLI output lands without review
         "ADO-016":  ["CC6.8"],
         "ADO-020":  ["CC6.8"],
         "ADO-026":  ["CC6.8"],
         "ADO-027":  ["CC6.8"],
         "JF-002":   ["CC6.8"],
+        "JF-037":   ["CC6.8"],   # agentic CLI ingests untrusted context (prompt injection)
         "JF-016":   ["CC6.8"],
         "JF-020":   ["CC6.8"],
         "JF-029":   ["CC6.8"],
@@ -411,7 +419,16 @@ STANDARD = Standard(
         "GHA-002":  ["CC6.6", "CC6.8"],     # pull_request_target + PR head
         "RUN-001":  ["CC6.6", "CC6.8"],     # forensics: fork PR ran on privileged trigger
         "RUN-002":  ["CC6.6", "CC6.8"],     # forensics: privileged trigger fired
+        "GLRUN-001": ["CC6.6", "CC6.8"],  # gitlab forensics: merge-request pipeline executed
+        "GLRUN-002": ["CC6.6", "CC6.8"],  # gitlab forensics: fork merge-request pipeline executed
+        "GLRUN-003": ["CC6.6", "CC6.8"],  # gitlab forensics: secret leaked in fork pipeline trace
+        "GLRUN-004": ["CC6.6", "CC6.8"],  # gitlab forensics: fork pipeline minted a cloud OIDC token
+        "GLRUN-005": ["CC6.6", "CC6.8"],  # gitlab forensics: fork pipeline ran on a self-managed runner
         "RUN-003":  ["CC6.6", "CC6.8"],     # forensics: secret leaked in run logs
+        "RUN-004":  ["CC6.6", "CC6.8"],     # forensics: fork run minted a cloud OIDC token
+        "RUN-005":  ["CC6.6", "CC6.8"],     # forensics: fork run on a self-hosted runner
+        "RUN-006":  ["CC6.8", "CC8.1"],     # forensics: known-compromised action executed
+        "RUN-007":  ["CC6.8", "CC8.1"],     # forensics: unpinned third-party action ran with secrets
         "GHA-006":  ["CC8.1"],              # unsigned artifacts
         "GHA-007":  ["CC8.1"],              # no SBOM
         "GHA-009":  ["CC6.6", "CC6.8"],     # workflow_run upstream artifact unverified
@@ -501,6 +518,7 @@ STANDARD = Standard(
         "GL-031":   ["CC6.1", "CC8.1"],     # id_tokens missing audience pin
         "GL-040":   ["CC6.1", "CC8.1"],     # CI_JOB_TOKEN used for cross-project access
         "GL-041":   ["CC6.8"],              # IaC apply on an untrusted MR trigger
+        "GL-050":   ["CC6.1", "CC6.3"],  # publish job long-lived registry token (GHA-050 analog)
         "BB-033":   ["CC6.8"],              # IaC apply on a PR pipeline
         "ADO-033":  ["CC6.8"],              # IaC apply on a PR-validated pipeline
         "BK-016":   ["CC6.8"],              # dangerous shell idiom
@@ -526,6 +544,7 @@ STANDARD = Standard(
         "BB-029":   ["CC8.1"],              # step + service image not pinned
         "BB-030":   ["CC8.1"],              # npm install without audit signatures
         "BB-031":   ["CC8.1"],              # pip install without --require-hashes
+        "BB-038":   ["CC8.1"],              # model pulled without a pinned revision
         # ── Azure DevOps Pipelines ───────────────────────────────
         "ADO-005":  ["CC8.1"],              # unpinned container
         "ADO-006":  ["CC8.1"],              # unsigned artifacts
@@ -542,6 +561,7 @@ STANDARD = Standard(
         "ADO-028":  ["CC8.1"],              # install bypasses registry integrity
         "ADO-029":  ["CC8.1"],              # service-conn job w/o env gate
         "ADO-030":  ["CC6.8"],              # pool interpolates untrusted
+        "ADO-037":  ["CC8.1"],              # model pulled without a pinned revision
         # ── CircleCI ──────────────────────────────────────────────
         "CC-003":   ["CC8.1"],              # image not pinned to digest
         "CC-004":   ["CC6.1"],              # unrestricted context
@@ -573,6 +593,17 @@ STANDARD = Standard(
         "JF-032":   ["CC6.8"],              # agent label interpolates untrusted
         # ── Drone CI ─────────────────────────────────────────────
         "DR-001":   ["CC8.1"],              # step image not digest-pinned
+        "HARNESS-001":   ["CC8.1"],  # Harness step image not digest-pinned
+        "HARNESS-002":   ["CC6.8"],  # Harness expression injection in step command
+        "HARNESS-003":   ["CC6.1", "CC6.8"],  # Harness privileged step
+        "HARNESS-004":   ["CC6.1"],  # Harness literal credential in variable
+        "HARNESS-005":   ["CC8.1"],  # Harness pipe-to-shell
+        "HARNESS-006":   ["CC6.7"],  # Harness TLS bypass in commands
+        "HARNESS-007":   ["CC6.6", "CC6.8"],  # Harness sensitive host-path mount
+        "HARNESS-008":   ["CC6.8"],  # Harness agentic-CLI prompt injection
+        "HARNESS-010":   ["CC6.8"],  # Harness model trust_remote_code (code exec)
+        "HARNESS-011":   ["CC6.8"],  # Harness unsafe model deser (pickle RCE)
+        "HARNESS-009":   ["CC8.1"],  # Harness agentic-CLI output autolands without review
         "DR-002":   ["CC6.1", "CC6.8"],     # privileged step
         "DR-003":   ["CC6.8"],              # Drone variable injection
         "DR-004":   ["CC6.1"],              # literal credential
@@ -907,6 +938,23 @@ STANDARD = Standard(
         "CC-032":   ["CC6.1"],              # secret echoed to CircleCI log
         "SCM-048":  ["CC6.1"],                   # org codespace secrets scoped to all repos
         "SCM-049":  ["CC6.1", "CC6.3"],          # classic PAT used where fine-grained suffices
+        "ORG-001":  ["CC6.1", "CC6.3"],          # org governance: 2FA not required org-wide
+        "ORG-002":  ["CC6.1", "CC6.3"],          # org governance: default member permission too broad
+        "ORG-003":  ["CC8.1"],                   # org governance: no Actions allow-list (any action runs)
+        "ORG-004":  ["CC6.1", "CC6.3"],          # org governance: default workflow token is write
+        "ORG-005":  ["CC8.1"],                   # org governance: Actions can approve PRs (review bypass)
+        "ORG-006":  ["CC6.1"],                   # org governance: Actions secret scoped to all repos
+        "ORG-007":  ["CC6.1"],                   # org governance: private-repo forking allowed (code exfiltration)
+        "GLGRP-001":  ["CC6.1", "CC6.3"],  # gitlab group: 2FA not required
+        "GLGRP-002":  ["CC6.1"],  # gitlab group: forking outside group allowed
+        "GLGRP-003":  ["CC6.1"],  # gitlab group: sharing projects outside the hierarchy
+        "GLGRP-004":  ["CC8.1"],  # gitlab group: default branch protection disabled for new projects
+        "ORG-008":  ["CC6.1"],                   # org governance: members can create public repos (code exposure)
+        "ORG-009":  ["CC6.6"],                   # org governance: self-hosted runner group exposed to public repos
+        "ORG-010":  ["CC6.1"],                   # org governance: new-repo secret-scanning push-protection default off
+        "ORG-011":  ["CC6.7"],                   # org governance: org webhook over insecure transport
+        "ORG-012":  ["CC7.1"],                   # org governance: new-repo Dependabot security-updates default off
+        "ORG-013":  ["CC8.1"],                   # org governance: org ruleset not enforced (evaluate/disabled)
         "NPM-012":  ["CC6.1", "CC8.1"],          # publish token missing restrictions
         # ── SCM posture (governance via the platform REST API) ──────
         # Branch protection / review controls map to CC8.1 (Change

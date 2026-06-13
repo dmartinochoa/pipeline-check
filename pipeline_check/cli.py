@@ -50,12 +50,40 @@ import os
 import re
 import sys
 from collections.abc import Callable
-from dataclasses import dataclass
 from typing import Any
 
 import click
 
 from . import __version__
+from .cli_completion import (
+    _complete_check_ids,
+    _complete_man_topics,
+    _complete_standards,
+    _known_attacked_check_ids,
+)
+from .cli_hints import (
+    _maybe_emit_degraded_scan_warning,
+    _maybe_emit_npm_alongside_github_hint,
+    _maybe_emit_wrong_provider_hint,
+)
+from .cli_info_commands import (
+    _eager_print_explain_chain,
+    _eager_print_list_chains,
+    _eager_print_standard_report,
+    _list_checks_for_pipeline,
+)
+from .cli_paths import _resolve_provider_paths
+
+# Re-export for the test suite (it imports this from ``cli``); ``cli``
+# itself only reaches it through ``_emit_gate_summary``, so the redundant
+# alias marks an intentional re-export and keeps it past ruff's F401 sweep.
+from .cli_scan_output import _build_gate_trailer as _build_gate_trailer
+from .cli_scan_output import (
+    _emit_gate_summary,
+    _emit_scan_summary,
+    _scan_incomplete_reason,
+    _scan_status,
+)
 from .core import autofix as _autofix
 from .core import providers as _providers
 from .core import standards as _standards
@@ -189,12 +217,14 @@ class _GroupedCommand(click.Command):
             "--buildkite-path", "--tekton-path", "--argo-path",
             "--argocd-path",
             "--helm-values", "--helm-set", "--oci-manifest",
-            "--drone-path", "--npm-path", "--pypi-path",
+            "--drone-path", "--harness-path", "--npm-path", "--pypi-path",
             "--maven-path", "--nuget-path", "--gomod-path",
             "--cargo-path", "--pulumi-path", "--composer-path",
             "--rubygems-path", "--devenv-path", "--modelfile-path",
             "--gitea-path", "--pipelines",
-            "--scm-platform", "--scm-repo", "--scm-fixture-dir",
+            "--scm-platform", "--scm-repo", "--scm-org",
+            "--scm-include", "--scm-exclude", "--scm-max-repos",
+            "--scm-fixture-dir",
             "--gh-token", "--gitlab-token", "--gitlab-url",
             "--resolve-remote", "--gha-search-path", "--gha-resolve-depth",
             "--npm-base-ref", "--audit-runs-logs", "--no-cache",
@@ -212,6 +242,7 @@ class _GroupedCommand(click.Command):
             "--inventory", "--inventory-type", "--inventory-only",
             "--show-passed", "--show-controls", "--no-group",
             "--inline-explain", "--ingest",
+            "--triage", "--triage-endpoint", "--triage-model",
         })),
         ("Gate", frozenset({
             "--fail-on", "--min-grade", "--max-failures",
@@ -229,6 +260,7 @@ class _GroupedCommand(click.Command):
         ("Autofix", frozenset({"--fix", "--apply", "--list-fixers", "--safety"})),
         ("Info & Help", frozenset({
             "--list-checks", "--list-standards", "--standard-report",
+            "--list-verifiers",
             "--explain", "--man", "--config-check", "--config-strict",
             "--install-completion", "--config", "--version",
             "--policy", "--list-policies", "--serve",
@@ -329,317 +361,6 @@ def _emit_report(
         click.echo(text)
 
 
-# ────────────────────────────────────────────────────────────────────────────
-# Shell completion helpers
-# ────────────────────────────────────────────────────────────────────────────
-
-
-def _completion_debug(source: str, exc: BaseException) -> None:
-    """Log a completion-helper exception to stderr when ``$PIPELINE_CHECK_DEBUG``
-    is truthy.
-
-    Tab-completion runs in the user's interactive shell, where stderr
-    output during a Tab press is invisible (the shell renders the
-    candidate list, not stderr). Silent ``except`` is therefore the
-    only reasonable production behavior: a broken helper must not eat
-    the keypress with a traceback. But debugging "why does my Tab
-    show no candidates" requires *some* breadcrumb, so we honor an
-    opt-in env var. Default off to keep the live path quiet.
-    """
-    if os.environ.get("PIPELINE_CHECK_DEBUG"):
-        click.echo(
-            f"[completion] {source}: {type(exc).__name__}: {exc}",
-            err=True,
-        )
-
-
-def _complete_check_ids(
-    ctx: click.Context, param: click.Parameter, incomplete: str,
-) -> list[Any]:
-    """Tab-complete check IDs (GHA-001, GL-002, CB-001, etc.)."""
-    from click.shell_completion import CompletionItem
-    try:
-        ids = _all_check_ids()
-    except Exception as exc:
-        _completion_debug("check-ids", exc)
-        return []
-    return [
-        CompletionItem(cid)
-        for cid in ids
-        if cid.lower().startswith(incomplete.lower())
-    ]
-
-
-def _complete_standards(
-    ctx: click.Context, param: click.Parameter, incomplete: str,
-) -> list[Any]:
-    """Tab-complete standard names."""
-    from click.shell_completion import CompletionItem
-    try:
-        names = _standards.available()
-    except Exception as exc:
-        _completion_debug("standards", exc)
-        return []
-    return [
-        CompletionItem(n)
-        for n in names
-        if n.lower().startswith(incomplete.lower())
-    ]
-
-
-def _complete_man_topics(
-    ctx: click.Context, param: click.Parameter, incomplete: str,
-) -> list[Any]:
-    """Tab-complete --man topic names."""
-    from click.shell_completion import CompletionItem
-    try:
-        from .core.manual import topics
-        names = topics()
-    except Exception as exc:
-        _completion_debug("man-topics", exc)
-        return []
-    return [
-        CompletionItem(t)
-        for t in names
-        if t.lower().startswith(incomplete.lower())
-    ]
-
-
-def _list_checks_for_pipeline(pipeline: str) -> None:
-    """Render every available check for *pipeline* as ``ID  SEV  TITLE``.
-
-    Rule-based providers (all workflow providers + ``aws/rules/`` +
-    ``cloudformation/*`` + ``terraform/*``) expose ``Rule`` metadata via
-    ``discover_rules``. Class-based modules (AWS core services,
-    Terraform core services) have the same info in their module
-    docstring header. We parse it so the output is uniform.
-    """
-    rows: list[tuple[str, str, str]] = []
-    # Rule-based packages are derived from the filesystem so a new
-    # provider under ``pipeline_check/core/checks/<name>/rules/``
-    # is auto-listed without a CLI edit. Same source-of-truth
-    # pattern as ``_all_check_ids`` and the custom-rule loader's
-    # built-in-ID collision check.
-    from pathlib import Path as _Path
-    _checks_root = _Path(__file__).parent / "core" / "checks"
-    _provider_rule_dir = _checks_root / pipeline / "rules"
-    rule_packages: dict[str, list[str]] = {}
-    if _provider_rule_dir.is_dir():
-        rule_packages[pipeline] = [
-            f"pipeline_check.core.checks.{pipeline}.rules"
-        ]
-    from .core.checks.rule import discover_rules
-    for pkg in rule_packages.get(pipeline, []):
-        try:
-            for rule, _ in discover_rules(pkg):
-                rows.append((rule.id, rule.severity.value, rule.title))
-        except Exception as exc:  # pragma: no cover - defensive
-            click.echo(f"[warn] could not load {pkg}: {exc}", err=True)
-
-    # Class-based modules, parse the docstring header. CloudFormation
-    # modules don't carry the table header (their docstrings point at
-    # Terraform's mirror); scan Terraform's source as a fallback so
-    # ``--pipeline cloudformation --list-checks`` produces the same
-    # IDs/severities a CFN scan would.
-    import importlib
-    import pkgutil
-    _class_packages = {
-        "aws": ["pipeline_check.core.checks.aws"],
-        "terraform": ["pipeline_check.core.checks.terraform"],
-        "cloudformation": [
-            "pipeline_check.core.checks.terraform",
-            "pipeline_check.core.checks.cloudformation",
-        ],
-    }
-    class_pkg_names = _class_packages.get(pipeline) or []
-    if class_pkg_names:
-        _row_re = re.compile(
-            r"^\s*(?P<id>[A-Z]+-\d+)\s{2,}(?P<title>.+?)\s{2,}"
-            r"(?P<sev>CRITICAL|HIGH|MEDIUM|LOW|INFO)\b",
-            re.MULTILINE,
-        )
-        for class_pkg_name in class_pkg_names:
-            try:
-                # ``class_pkg_module`` is distinct from the ``pkg`` loop
-                # variables earlier and later in this function (which are
-                # strings) so mypy doesn't carry a stale ``str`` inference.
-                class_pkg_module = importlib.import_module(class_pkg_name)
-                for info in pkgutil.iter_modules(class_pkg_module.__path__):
-                    if info.name.startswith("_") or info.name == "rules":
-                        continue
-                    mod = importlib.import_module(f"{class_pkg_name}.{info.name}")
-                    doc = mod.__doc__ or ""
-                    for m in _row_re.finditer(doc):
-                        rows.append((m["id"], m["sev"], m["title"].strip()))
-            except Exception as exc:  # pragma: no cover - defensive
-                click.echo(f"[warn] could not scan {class_pkg_name}: {exc}", err=True)
-
-    if not rows:
-        click.echo(
-            f"[list-checks] no checks registered for --pipeline {pipeline}.",
-            err=True,
-        )
-        raise click.exceptions.Exit(3)
-
-    # Deduplicate (rule-based + class-based overlap on IDs like CB-001)
-    # and sort so ``GHA-001`` < ``GHA-010`` reads naturally.
-    dedup: dict[str, tuple[str, str, str]] = {}
-    for row in rows:
-        dedup.setdefault(row[0], row)
-    id_width = max(len(i) for i in dedup) if dedup else 0
-    sev_width = max(len(r[1]) for r in dedup.values()) if dedup else 0
-    for cid in sorted(dedup):
-        _, sev, title = dedup[cid]
-        click.echo(f"{cid:<{id_width}}  {sev:<{sev_width}}  {title}")
-
-
-def _eager_print_list_chains() -> int:
-    """``--list-chains`` handler. Returns the exit code the CLI
-    should propagate to ``sys.exit``."""
-    from .core import chains as _chains_pkg
-    rules = _chains_pkg.list_rules()
-    if not rules:
-        click.echo("[list-chains] no attack chains registered.", err=True)
-        return 3
-    id_w = max(len(r.id) for r in rules)
-    sev_w = max(len(r.severity.value) for r in rules)
-    for r in sorted(rules, key=lambda x: x.id):
-        click.echo(f"{r.id:<{id_w}}  {r.severity.value:<{sev_w}}  {r.title}")
-    return 0
-
-
-def _eager_print_explain_chain(chain_id: str) -> int:
-    """``--explain-chain <ID>`` handler. Returns the exit code."""
-    from .core import chains as _chains_pkg
-    # Distinct local name so mypy doesn't fold the list-typed
-    # ``list_rules()`` inference into the dict reassignment.
-    rules_by_id = {r.id.upper(): r for r in _chains_pkg.list_rules()}
-    target_id = chain_id.upper()
-    rule = rules_by_id.get(target_id)
-    if rule is None:
-        import difflib
-        rule_ids: list[str] = list(rules_by_id.keys())
-        suggestions = difflib.get_close_matches(target_id, rule_ids, n=3)
-        hint = f" Did you mean: {', '.join(suggestions)}?" if suggestions else ""
-        click.echo(
-            f"[explain-chain] unknown chain {chain_id!r}.{hint}",
-            err=True,
-        )
-        return 3
-    click.echo(f"{rule.id}, {rule.title}")
-    click.echo(f"  Severity: {rule.severity.value}")
-    if rule.providers:
-        click.echo(f"  Providers: {', '.join(rule.providers)}")
-    if rule.kill_chain_phase:
-        click.echo(f"  Kill chain: {rule.kill_chain_phase}")
-    if rule.mitre_attack:
-        click.echo(f"  MITRE ATT&CK: {', '.join(rule.mitre_attack)}")
-    click.echo("")
-    click.echo("Summary:")
-    click.echo(f"  {rule.summary}")
-    click.echo("")
-    click.echo("Recommendation:")
-    click.echo(f"  {rule.recommendation}")
-    if rule.references:
-        click.echo("")
-        click.echo("References:")
-        for ref in rule.references:
-            click.echo(f"  - {ref}")
-    return 0
-
-
-def _eager_print_standard_report(standard_id: str) -> None:
-    """``--standard-report <std>`` handler. Raises ``UsageError`` on
-    unknown standard so the CLI surfaces a clean argument error
-    instead of an exit code."""
-    report_std = _standards.get(standard_id)
-    if report_std is None:
-        available = ", ".join(_standards.available())
-        raise click.UsageError(
-            f"Unknown standard {standard_id!r}. "
-            f"Available: {available or 'none'}."
-        )
-    click.echo(f"{report_std.name} ,  {report_std.title} (v{report_std.version or 'n/a'})")
-    if report_std.url:
-        click.echo(f"  {report_std.url}")
-    click.echo("")
-    click.echo("Control -> check mapping:")
-    gaps: list[tuple[str, str]] = []
-    for ctrl_id in sorted(report_std.controls):
-        title = report_std.controls[ctrl_id]
-        check_ids = [
-            cid for cid, controls in report_std.mappings.items()
-            if ctrl_id in controls
-        ]
-        if check_ids:
-            joined = ", ".join(sorted(check_ids))
-            click.echo(f"  [{ctrl_id}] {title}")
-            click.echo(f"      checks: {joined}")
-        else:
-            gaps.append((ctrl_id, title))
-    if gaps:
-        click.echo("")
-        click.echo(f"Gaps ({len(gaps)} control(s) with no mapped check):")
-        for ctrl_id, title in gaps:
-            click.echo(f"  [{ctrl_id}] {title}")
-
-
-def _resolve_provider_path(
-    provider_lc: str,
-    *,
-    flag: str,
-    value: str | None,
-    candidates: tuple[str, ...] = (),
-    candidate_kind: str = "file",
-    validate_kind: str = "exists",
-    detect_label: str = "",
-    not_found_label: str = "",
-) -> str:
-    """Auto-detect, validate, and return a per-provider input path.
-
-    Replaces the per-provider elif ladder that ``main()`` used to
-    carry. Cloudformation and helm have edge cases (template-folder
-    detection, ``--helm-values`` validation) so they stay inline;
-    every other provider's contract is exactly:
-
-      1. If the user didn't pass ``--<flag>``, walk *candidates*
-         and pick the first one that exists. ``candidate_kind`` is
-         ``file`` for canonical files (``.gitlab-ci.yml``) or
-         ``dir`` for canonical directories (``.github/workflows``).
-      2. If still empty, raise ``UsageError`` with a hint that names
-         the canonical files we looked for (*detect_label*).
-      3. Validate that the resolved path exists. ``validate_kind``
-         is ``exists`` (default; file or dir), ``file``, or ``dir``.
-         ``not_found_label`` ("directory" / "path") inserts a noun
-         into the error message when the validation kind is stricter
-         than ``exists``.
-    """
-    if not value:
-        check = os.path.isdir if candidate_kind == "dir" else os.path.isfile
-        for cand in candidates:
-            if check(cand):
-                value = cand
-                click.echo(f"[auto] using --{flag} {value}", err=True)
-                break
-    if not value:
-        suffix = (
-            f" (no {detect_label} found in the current directory)."
-            if detect_label else "."
-        )
-        raise click.UsageError(
-            f"--{flag} PATH is required when --pipeline {provider_lc}{suffix}"
-        )
-    validators = {
-        "exists": os.path.exists,
-        "file": os.path.isfile,
-        "dir": os.path.isdir,
-    }
-    if not validators[validate_kind](value):
-        kind_word = (not_found_label + " ") if not_found_label else ""
-        raise click.UsageError(
-            f"--{flag} {kind_word}not found: {value}"
-        )
-    return value
 
 
 # ── Inline ignore collection ─────────────────────────────────────────────
@@ -658,6 +379,7 @@ _INLINE_IGNORE_GLOBS: dict[str, tuple[str, ...]] = {
     "cloudbuild": ("*.yml", "*.yaml"),
     "buildkite": ("*.yml", "*.yaml"),
     "drone": ("*.yml", "*.yaml"),
+    "harness": ("*.yml", "*.yaml"),
     "tekton": ("*.yml", "*.yaml"),
     "argo": ("*.yml", "*.yaml"),
     "argocd": ("*.yml", "*.yaml"),
@@ -685,6 +407,7 @@ _PROVIDER_PATH_KWARG: dict[str, str] = {
     "cloudbuild": "cloudbuild_path",
     "buildkite": "buildkite_path",
     "drone": "drone_path",
+    "harness": "harness_path",
     "tekton": "tekton_path",
     "argo": "argo_path",
     "argocd": "argocd_path",
@@ -731,7 +454,8 @@ def _collect_inline_ignores(
                 if not os.path.isfile(filepath):
                     continue
                 try:
-                    text = open(filepath, encoding="utf-8").read()
+                    with open(filepath, encoding="utf-8") as _fh:
+                        text = _fh.read()
                 except (OSError, UnicodeDecodeError):
                     # Skip unreadable or non-UTF-8 files rather than
                     # aborting the whole scan over one stray byte.
@@ -742,102 +466,6 @@ def _collect_inline_ignores(
                     rel = filepath.replace("\\", "/")
                 all_rules.extend(extract_inline_ignores(rel, text))
     return build_inline_index(all_rules)
-
-
-_CHECK_IDS_CACHE: list[str] | None = None
-_KNOWN_ATTACKED_IDS_CACHE: list[str] | None = None
-
-
-def _known_attacked_check_ids() -> list[str]:
-    """Collect check IDs whose ``Rule.incident_refs`` is non-empty.
-
-    The ``--only-known-attacked`` filter (zizmor proposal #1135)
-    narrows the rule set to rules whose detection shape is anchored
-    to a documented real-world incident, CVE, or vendor disclosure.
-    Useful for burning down the incident-driven worklist on a fresh
-    repo without the full pack noise.
-
-    Cached after the first call. AWS / Terraform class-based checks
-    don't currently carry ``Rule.incident_refs`` (their metadata
-    lives in module docstrings); they're omitted from the filter
-    surface today.
-    """
-    global _KNOWN_ATTACKED_IDS_CACHE
-    if _KNOWN_ATTACKED_IDS_CACHE is not None:
-        return _KNOWN_ATTACKED_IDS_CACHE
-    ids: list[str] = []
-    from pathlib import Path
-    checks_root = Path(__file__).parent / "core" / "checks"
-    rule_pkgs = sorted(
-        f"pipeline_check.core.checks.{p.parent.parent.name}.rules"
-        for p in checks_root.glob("*/rules/__init__.py")
-    )
-    for pkg in rule_pkgs:
-        try:
-            from .core.checks.rule import discover_rules
-            for rule, _ in discover_rules(pkg):
-                if rule.incident_refs:
-                    ids.append(rule.id)
-        except Exception as exc:
-            _completion_debug(f"known-attacked-discover {pkg}", exc)
-    _KNOWN_ATTACKED_IDS_CACHE = ids
-    return ids
-
-
-def _all_check_ids() -> list[str]:
-    """Collect every check ID from every provider's rules registry.
-
-    Cached after the first call so repeated completions are fast.
-    CI providers use the ``Rule`` registry; AWS and Terraform check
-    IDs are extracted from source via regex since they use class-based
-    checks without a ``Rule`` dataclass.
-    """
-    global _CHECK_IDS_CACHE
-    if _CHECK_IDS_CACHE is not None:
-        return _CHECK_IDS_CACHE
-    ids: list[str] = []
-    # Rule-based providers, each has a rules/ package with RULE.id.
-    # Derive the package list from the filesystem so adding a new
-    # provider under ``pipeline_check/core/checks/<name>/rules/``
-    # automatically surfaces in ``--list-checks`` / ``--explain`` /
-    # autocomplete. Class-based AWS / Terraform IDs are scanned by
-    # the regex pass below; ``set`` deduplication catches any overlap.
-    from pathlib import Path
-    checks_root = Path(__file__).parent / "core" / "checks"
-    rule_pkgs = sorted(
-        f"pipeline_check.core.checks.{p.parent.parent.name}.rules"
-        for p in checks_root.glob("*/rules/__init__.py")
-    )
-    for pkg in rule_pkgs:
-        try:
-            from .core.checks.rule import discover_rules
-            for rule, _ in discover_rules(pkg):
-                ids.append(rule.id)
-        except Exception as exc:
-            _completion_debug(f"rule-discover {pkg}", exc)
-    # AWS / Terraform, class-based checks with hardcoded check_id strings.
-    _id_re = re.compile(r'check_id="([A-Z]+-\d+)"')
-    for provider_pkg_name in (
-        "pipeline_check.core.checks.aws",
-        "pipeline_check.core.checks.terraform",
-    ):
-        try:
-            import importlib
-            import pkgutil
-            # Distinct from the ``pkg`` loop variables earlier (lines
-            # 264, 378) which iterate over strings, the inferred
-            # ``str`` type would conflict with this Module assignment.
-            provider_pkg_module = importlib.import_module(provider_pkg_name)
-            for info in pkgutil.iter_modules(provider_pkg_module.__path__):
-                mod = importlib.import_module(f"{provider_pkg_name}.{info.name}")
-                if mod.__file__:
-                    with open(mod.__file__, encoding="utf-8") as fh:
-                        ids.extend(_id_re.findall(fh.read()))
-        except Exception as exc:
-            _completion_debug(f"id-scan {provider_pkg_name}", exc)
-    ids = sorted(set(ids))
-    _CHECK_IDS_CACHE = ids
-    return ids
 
 
 _SEVERITY_CHOICES = [
@@ -940,8 +568,11 @@ def _install_completion_callback(
         line = 'eval "$(_PIPELINE_CHECK_COMPLETE=bash_source pipeline_check)"'
         rc = os.path.expanduser("~/.bashrc")
         marker = "# pipeline_check completion"
+        existing = ""
         try:
-            existing = open(rc, encoding="utf-8").read() if os.path.exists(rc) else ""
+            if os.path.exists(rc):
+                with open(rc, encoding="utf-8") as _fh:
+                    existing = _fh.read()
         except OSError:
             existing = ""
         if marker in existing:
@@ -955,8 +586,11 @@ def _install_completion_callback(
         line = 'eval "$(_PIPELINE_CHECK_COMPLETE=zsh_source pipeline_check)"'
         rc = os.path.expanduser("~/.zshrc")
         marker = "# pipeline_check completion"
+        existing = ""
         try:
-            existing = open(rc, encoding="utf-8").read() if os.path.exists(rc) else ""
+            if os.path.exists(rc):
+                with open(rc, encoding="utf-8") as _fh:
+                    existing = _fh.read()
         except OSError:
             existing = ""
         if marker in existing:
@@ -1081,7 +715,8 @@ def _install_completion_callback(
         "--bitbucket-path, --azure-path, --jenkinsfile-path, "
         "--circleci-path, --cloudbuild-path, --dockerfile-path, "
         "--k8s-path, --helm-path, --buildkite-path, --tekton-path, "
-        "--argo-path, --argocd-path, --oci-manifest, --drone-path, --npm-path, "
+        "--argo-path, --argocd-path, --oci-manifest, --drone-path, "
+        "--harness-path, --npm-path, "
         "--pypi-path, --maven-path); "
         "AWS scans the live account via boto3. For multi-provider "
         "scans (so cross-provider attack chains like XPC-001 fire) "
@@ -1291,6 +926,39 @@ def _install_completion_callback(
         "description. Off by default to avoid leaking identity info "
         "into CI logs."
     ),
+)
+@click.option(
+    "--triage",
+    "triage",
+    is_flag=True,
+    default=False,
+    help=(
+        "After the report, ask a LOCAL LLM (Ollama / llama.cpp / LM "
+        "Studio) whether each failing finding is exploitable in this "
+        "repo's context, labeling it confirmed / needs_review / "
+        "likely_fp. Strictly advisory: it never changes severity, the "
+        "grade, or the gate. Local endpoint only unless "
+        "--triage-endpoint is given."
+    ),
+)
+@click.option(
+    "--triage-endpoint",
+    "triage_endpoint",
+    metavar="URL",
+    default="http://localhost:11434/api/generate",
+    show_default=True,
+    help=(
+        "Ollama-style /api/generate endpoint for --triage. A non-loopback "
+        "URL prints a one-line warning before any finding is sent."
+    ),
+)
+@click.option(
+    "--triage-model",
+    "triage_model",
+    metavar="NAME",
+    default="llama3.2",
+    show_default=True,
+    help="Model name passed to the --triage endpoint.",
 )
 @click.option(
     "--gha-search-path",
@@ -1631,6 +1299,17 @@ def _install_completion_callback(
     ),
 )
 @click.option(
+    "--harness-path",
+    "harness_path",
+    default=None,
+    metavar="PATH",
+    help=(
+        "Path to a Harness pipeline YAML file or a directory "
+        "containing Harness pipelines (required when --pipeline "
+        "harness). Auto-detects ./.harness/."
+    ),
+)
+@click.option(
     "--scm-platform",
     "scm_platform",
     default=None,
@@ -1652,6 +1331,53 @@ def _install_completion_callback(
         "``--scm-repo octocat/hello-world``. Token comes from "
         "``--gh-token`` or ``$GITHUB_TOKEN``; without one only "
         "public-repo endpoints succeed (rate-limited to 60 req/hr)."
+    ),
+)
+@click.option(
+    "--scm-org",
+    "scm_org",
+    default=None,
+    metavar="ORG",
+    help=(
+        "GitHub organization to audit. With --pipeline scm_org, audits the "
+        "org-wide governance settings (2FA requirement, default member "
+        "permission). With --pipeline scm (and no --scm-repo), fans the "
+        "per-repo posture pack out across every non-archived repo in the "
+        "org. E.g. ``--scm-org my-org``. Needs a token (``--gh-token`` / "
+        "``$GITHUB_TOKEN``) with ``admin:org`` / ``read:org``."
+    ),
+)
+@click.option(
+    "--scm-include",
+    "scm_include",
+    multiple=True,
+    metavar="GLOB",
+    help=(
+        "For the --scm-org fan-out: include only repos whose name matches "
+        "this glob (repeatable, fnmatch syntax). Applied after enumeration."
+    ),
+)
+@click.option(
+    "--scm-exclude",
+    "scm_exclude",
+    multiple=True,
+    metavar="GLOB",
+    help=(
+        "For the --scm-org fan-out: exclude repos whose name matches this "
+        "glob (repeatable, fnmatch syntax). Applied after --scm-include."
+    ),
+)
+@click.option(
+    "--scm-max-repos",
+    "scm_max_repos",
+    type=int,
+    default=0,
+    show_default=True,
+    metavar="N",
+    help=(
+        "For the --scm-org fan-out: cap the number of repos audited "
+        "(0 = unlimited). A safety net for very large orgs; truncation is "
+        "reported as a scan warning."
     ),
 )
 @click.option(
@@ -1738,9 +1464,9 @@ def _install_completion_callback(
     "-o",
     type=click.Choice(
         [
-            "terminal", "json", "html", "sarif", "junit",
+            "terminal", "json", "jsonl", "html", "sarif", "junit",
             "markdown", "threatmodel", "cyclonedx", "spdx", "codequality",
-            "both",
+            "csv", "annotations", "both",
         ],
         case_sensitive=False,
     ),
@@ -1834,6 +1560,18 @@ def _install_completion_callback(
         "Filter ``--list-fixers`` by autofix tier: 'safe' (semantically "
         "equivalent or additive edits), 'unsafe' (inference-dependent), "
         "or 'all'. Only meaningful with ``--list-fixers``."
+    ),
+)
+@click.option(
+    "--list-verifiers",
+    "list_verifiers",
+    is_flag=True,
+    default=False,
+    help=(
+        "List every secret detector that ``--verify-secrets`` can probe "
+        "against its issuing API to confirm whether the credential is "
+        "live (one per line: ``detector  shape``) and exit. No scan is "
+        "performed."
     ),
 )
 @click.option(
@@ -2426,8 +2164,13 @@ def scan(
     helm_set: tuple[str, ...],
     oci_manifest: str | None,
     drone_path: str | None,
+    harness_path: str | None,
     scm_platform: str | None,
     scm_repo: str | None,
+    scm_org: str | None,
+    scm_include: tuple[str, ...],
+    scm_exclude: tuple[str, ...],
+    scm_max_repos: int,
     scm_fixture_dir: str | None,
     audit_runs_logs: bool,
     ingest_paths: tuple[str, ...],
@@ -2443,6 +2186,7 @@ def scan(
     list_checks: bool,
     list_fixers: bool,
     fixer_safety_filter: str,
+    list_verifiers: bool,
     explain_id: str | None,
     ai_explain_id: str | None,
     ai_model_spec: str | None,
@@ -2494,6 +2238,9 @@ def scan(
     no_cache: bool = False,
     verify_secrets: bool = False,
     verify_secrets_show_identity: bool = False,
+    triage: bool = False,
+    triage_endpoint: str = "http://localhost:11434/api/generate",
+    triage_model: str = "llama3.2",
     gha_search_paths: tuple[str, ...] = (),
     gha_resolve_depth: int = 3,
 ) -> None:
@@ -2535,6 +2282,7 @@ def scan(
         list_checks=list_checks,
         list_fixers=list_fixers,
         fixer_safety_filter=fixer_safety_filter,
+        list_verifiers=list_verifiers,
         annotate_fp=annotate_fp,
         fp_path=fp_path,
         list_chains=list_chains,
@@ -2664,6 +2412,7 @@ def scan(
         helm_path=helm_path,
         oci_manifest=oci_manifest,
         drone_path=drone_path,
+        harness_path=harness_path,
         npm_path=npm_path,
         pypi_path=pypi_path,
         maven_path=maven_path,
@@ -2774,6 +2523,7 @@ def scan(
         helm_set=list(helm_set) or None,
         oci_manifest=_paths.oci_manifest,
         drone_path=_paths.drone_path,
+        harness_path=_paths.harness_path,
         npm_path=_paths.npm_path,
         npm_base_ref=npm_base_ref,
         pypi_path=_paths.pypi_path,
@@ -2788,6 +2538,10 @@ def scan(
         modelfile_path=modelfile_path,
         scm_platform=scm_platform,
         scm_repo=scm_repo,
+        scm_org=scm_org,
+        scm_include=scm_include,
+        scm_exclude=scm_exclude,
+        scm_max_repos=scm_max_repos,
         scm_fixture_dir=scm_fixture_dir,
         audit_runs_logs=audit_runs_logs,
     )
@@ -3037,6 +2791,7 @@ def scan(
             helm_set=helm_set,
             oci_manifest=oci_manifest,
             drone_path=drone_path,
+            harness_path=harness_path,
             npm_path=npm_path,
             pypi_path=pypi_path,
             maven_path=maven_path,
@@ -3155,6 +2910,16 @@ def scan(
         target=target,
     )
 
+    if triage:
+        _emit_triage(
+            findings,
+            endpoint=triage_endpoint,
+            model=triage_model,
+            output=output,
+            output_file=output_file,
+            quiet=quiet,
+        )
+
     if fix:
         if apply_fixes:
             _apply_fix_patches(findings, tier=fix)
@@ -3225,6 +2990,7 @@ def scan(
             "cloudbuild_path": cloudbuild_path,
             "buildkite_path": buildkite_path,
             "drone_path": drone_path,
+            "harness_path": harness_path,
             "tekton_path": tekton_path,
             "argo_path": argo_path,
             "argocd_path": argocd_path,
@@ -3467,353 +3233,53 @@ def _validate_scan_inputs(
             )
 
 
-@dataclass
-class _ScanPaths:
-    """The per-provider source paths after auto-detect / validation.
-
-    ``scan()`` carries one ``--<provider>-path`` flag per provider;
-    :func:`_resolve_provider_paths` resolves each and returns them
-    bundled here so the scanner-kwargs construction reads one object
-    instead of ~30 loose locals.
-    """
-    tf_plan: str | None = None
-    tf_source: str | None = None
-    gha_path: str | None = None
-    gitea_path: str | None = None
-    gitlab_path: str | None = None
-    bitbucket_path: str | None = None
-    azure_path: str | None = None
-    jenkinsfile_path: str | None = None
-    circleci_path: str | None = None
-    cfn_template: str | None = None
-    cloudbuild_path: str | None = None
-    buildkite_path: str | None = None
-    tekton_path: str | None = None
-    argo_path: str | None = None
-    argocd_path: str | None = None
-    dockerfile_path: str | None = None
-    k8s_path: str | None = None
-    helm_path: str | None = None
-    oci_manifest: str | None = None
-    drone_path: str | None = None
-    npm_path: str | None = None
-    pypi_path: str | None = None
-    maven_path: str | None = None
-    nuget_path: str | None = None
-    gomod_path: str | None = None
-    cargo_path: str | None = None
-    composer_path: str | None = None
-    rubygems_path: str | None = None
-    pulumi_path: str | None = None
-
-
-def _resolve_provider_paths(
-    pipelines_to_resolve: list[str],
+def _emit_triage(
+    findings: list[Any],
     *,
-    tf_plan: str | None,
-    tf_source: str | None,
-    gha_path: str | None,
-    gitea_path: str | None,
-    gitlab_path: str | None,
-    bitbucket_path: str | None,
-    azure_path: str | None,
-    jenkinsfile_path: str | None,
-    circleci_path: str | None,
-    cfn_template: str | None,
-    cloudbuild_path: str | None,
-    buildkite_path: str | None,
-    tekton_path: str | None,
-    argo_path: str | None,
-    argocd_path: str | None,
-    dockerfile_path: str | None,
-    k8s_path: str | None,
-    helm_path: str | None,
-    oci_manifest: str | None,
-    drone_path: str | None,
-    npm_path: str | None,
-    pypi_path: str | None,
-    maven_path: str | None,
-    nuget_path: str | None,
-    gomod_path: str | None,
-    cargo_path: str | None,
-    composer_path: str | None,
-    rubygems_path: str | None,
-    pulumi_path: str | None,
-    helm_values: tuple[str, ...],
-) -> _ScanPaths:
-    """Resolve / auto-detect each selected provider's source path.
+    endpoint: str,
+    model: str,
+    output: str,
+    output_file: str | None,
+    quiet: bool,
+) -> None:
+    """Run the opt-in local-LLM triage pass and print its advisory section.
 
-    Runs once per provider in *pipelines_to_resolve* (one entry in
-    single-pipeline mode, the full list in multi-pipeline mode),
-    auto-detecting a canonical path when the flag was omitted and raising
-    ``click.UsageError`` on a missing or invalid one. Returns the
-    resolved paths bundled for the scanner kwargs.
+    Advisory only: it runs after the report and never touches findings,
+    the grade, or the gate. The section goes to stdout unless a
+    machine-readable format is already occupying stdout (no ``--output-
+    file``), in which case it's suppressed with a one-line stderr note so
+    the structured stream stays clean.
     """
-    for pipeline_lc in pipelines_to_resolve:
-        if pipeline_lc == "terraform":
-            if tf_plan and tf_source:
-                raise click.UsageError(
-                    "--tf-plan and --tf-source are mutually exclusive."
-                )
-            if tf_plan:
-                tf_plan = _resolve_provider_path(
-                    "terraform", flag="tf-plan", value=tf_plan,
-                    validate_kind="file", not_found_label="path",
-                )
-            elif tf_source:
-                tf_source = _resolve_provider_path(
-                    "terraform", flag="tf-source", value=tf_source,
-                    validate_kind="dir", not_found_label="directory",
-                )
-            elif os.path.isfile("main.tf"):
-                tf_source = "."
-                click.echo(
-                    "[auto] using --tf-source . (main.tf detected)",
-                    err=True,
-                )
-        elif pipeline_lc == "github":
-            gha_path = _resolve_provider_path(
-                "github", flag="gha-path", value=gha_path,
-                candidates=(".github/workflows",), candidate_kind="dir",
-                validate_kind="dir", detect_label=".github/workflows",
-                not_found_label="directory",
-            )
-        elif pipeline_lc == "gitea":
-            gitea_path = _resolve_provider_path(
-                "gitea", flag="gitea-path", value=gitea_path,
-                candidates=(".gitea/workflows", ".forgejo/workflows"),
-                candidate_kind="dir",
-                validate_kind="dir",
-                detect_label=".gitea/workflows or .forgejo/workflows",
-                not_found_label="directory",
-            )
-        elif pipeline_lc == "gitlab":
-            gitlab_path = _resolve_provider_path(
-                "gitlab", flag="gitlab-path", value=gitlab_path,
-                candidates=(".gitlab-ci.yml",),
-                detect_label=".gitlab-ci.yml",
-            )
-        elif pipeline_lc == "bitbucket":
-            bitbucket_path = _resolve_provider_path(
-                "bitbucket", flag="bitbucket-path", value=bitbucket_path,
-                candidates=("bitbucket-pipelines.yml",),
-                detect_label="bitbucket-pipelines.yml",
-            )
-        elif pipeline_lc == "azure":
-            azure_path = _resolve_provider_path(
-                "azure", flag="azure-path", value=azure_path,
-                candidates=("azure-pipelines.yml",),
-                detect_label="azure-pipelines.yml",
-            )
-        elif pipeline_lc == "jenkins":
-            jenkinsfile_path = _resolve_provider_path(
-                "jenkins", flag="jenkinsfile-path", value=jenkinsfile_path,
-                candidates=("Jenkinsfile",),
-                detect_label="Jenkinsfile",
-            )
-        elif pipeline_lc == "circleci":
-            circleci_path = _resolve_provider_path(
-                "circleci", flag="circleci-path", value=circleci_path,
-                candidates=(".circleci/config.yml",),
-                detect_label=".circleci/config.yml",
-            )
-        elif pipeline_lc == "cloudformation":
-            if not cfn_template:
-                for _candidate in (
-                    "template.yml", "template.yaml", "template.json",
-                    "cloudformation.yml", "cloudformation.yaml",
-                    "cfn.yml", "cfn.yaml",
-                ):
-                    if os.path.isfile(_candidate):
-                        cfn_template = _candidate
-                        click.echo(
-                            f"[auto] using --cfn-template {cfn_template}",
-                            err=True,
-                        )
-                        break
-            if not cfn_template:
-                raise click.UsageError(
-                    "--cfn-template PATH is required when --pipeline "
-                    "cloudformation (no template.yml / template.json / "
-                    "cloudformation.yml / cfn.yaml found in the current "
-                    "directory)."
-                )
-            if not os.path.exists(cfn_template):
-                raise click.UsageError(
-                    f"--cfn-template not found: {cfn_template}"
-                )
-            # Distinguish "directory but no templates" from "file not found" —
-            # the former is a common mistake when someone points the flag at
-            # their project root instead of an infrastructure subdirectory.
-            if os.path.isdir(cfn_template):
-                _exts = (".yml", ".yaml", ".json", ".template")
-                has_templates = any(
-                    _ent.is_file() and _ent.name.lower().endswith(_exts)
-                    for _ent in os.scandir(cfn_template)
-                )
-                if not has_templates:
-                    raise click.UsageError(
-                        f"--cfn-template directory {cfn_template!r} contains "
-                        f"no .yml / .yaml / .json / .template files."
-                    )
-        elif pipeline_lc == "cloudbuild":
-            cloudbuild_path = _resolve_provider_path(
-                "cloudbuild", flag="cloudbuild-path", value=cloudbuild_path,
-                candidates=("cloudbuild.yaml", "cloudbuild.yml"),
-                detect_label="cloudbuild.yaml/cloudbuild.yml",
-            )
-        elif pipeline_lc == "buildkite":
-            buildkite_path = _resolve_provider_path(
-                "buildkite", flag="buildkite-path", value=buildkite_path,
-                candidates=(".buildkite/pipeline.yml", ".buildkite/pipeline.yaml"),
-                detect_label=".buildkite/pipeline.yml",
-            )
-        elif pipeline_lc == "tekton":
-            tekton_path = _resolve_provider_path(
-                "tekton", flag="tekton-path", value=tekton_path,
-            )
-        elif pipeline_lc == "argo":
-            argo_path = _resolve_provider_path(
-                "argo", flag="argo-path", value=argo_path,
-            )
-        elif pipeline_lc == "argocd":
-            argocd_path = _resolve_provider_path(
-                "argocd", flag="argocd-path", value=argocd_path,
-            )
-        elif pipeline_lc == "dockerfile":
-            dockerfile_path = _resolve_provider_path(
-                "dockerfile", flag="dockerfile-path", value=dockerfile_path,
-                candidates=("Dockerfile", "Containerfile"),
-                detect_label="Dockerfile/Containerfile",
-            )
-        elif pipeline_lc == "kubernetes":
-            k8s_path = _resolve_provider_path(
-                "kubernetes", flag="k8s-path", value=k8s_path,
-                candidates=("kubernetes", "k8s", "manifests"),
-                candidate_kind="dir",
-                detect_label="kubernetes/, k8s/, or manifests/ directory",
-            )
-        elif pipeline_lc == "helm":
-            if not helm_path:
-                if os.path.isfile("Chart.yaml"):
-                    helm_path = "."
-                    click.echo("[auto] using --helm-path .", err=True)
-                elif os.path.isdir("charts"):
-                    helm_path = "charts"
-                    click.echo("[auto] using --helm-path charts", err=True)
-            if not helm_path:
-                raise click.UsageError(
-                    "--helm-path PATH is required when --pipeline helm "
-                    "(no Chart.yaml or charts/ directory found in cwd)."
-                )
-            if not os.path.exists(helm_path):
-                raise click.UsageError(
-                    f"--helm-path not found: {helm_path}"
-                )
-            for vf in helm_values:
-                if not os.path.isfile(vf):
-                    raise click.UsageError(
-                        f"--helm-values not found: {vf}"
-                    )
-        elif pipeline_lc == "oci":
-            oci_manifest = _resolve_provider_path(
-                "oci", flag="oci-manifest", value=oci_manifest,
-                candidates=("index.json",),
-                detect_label="index.json",
-            )
-        elif pipeline_lc == "drone":
-            drone_path = _resolve_provider_path(
-                "drone", flag="drone-path", value=drone_path,
-                candidates=(".drone.yml", ".drone.yaml"),
-                detect_label=".drone.yml/.drone.yaml",
-            )
-        elif pipeline_lc == "npm":
-            npm_path = _resolve_provider_path(
-                "npm", flag="npm-path", value=npm_path,
-                candidates=("package.json", "package-lock.json"),
-                detect_label="package.json/package-lock.json",
-            )
-        elif pipeline_lc == "pypi":
-            pypi_path = _resolve_provider_path(
-                "pypi", flag="pypi-path", value=pypi_path,
-                candidates=("requirements.txt",),
-                detect_label="requirements.txt",
-            )
-        elif pipeline_lc == "maven":
-            maven_path = _resolve_provider_path(
-                "maven", flag="maven-path", value=maven_path,
-                candidates=("pom.xml",),
-                detect_label="pom.xml",
-            )
-        elif pipeline_lc == "nuget":
-            nuget_path = _resolve_provider_path(
-                "nuget", flag="nuget-path", value=nuget_path,
-                candidates=("Directory.Packages.props",),
-                detect_label="Directory.Packages.props",
-            )
-        elif pipeline_lc == "gomod":
-            gomod_path = _resolve_provider_path(
-                "gomod", flag="gomod-path", value=gomod_path,
-                candidates=("go.mod",),
-                detect_label="go.mod",
-            )
-        elif pipeline_lc == "cargo":
-            cargo_path = _resolve_provider_path(
-                "cargo", flag="cargo-path", value=cargo_path,
-                candidates=("Cargo.toml",),
-                detect_label="Cargo.toml",
-            )
-        elif pipeline_lc == "composer":
-            composer_path = _resolve_provider_path(
-                "composer", flag="composer-path",
-                value=composer_path,
-                candidates=("composer.json",),
-                detect_label="composer.json",
-            )
-        elif pipeline_lc == "rubygems":
-            rubygems_path = _resolve_provider_path(
-                "rubygems", flag="rubygems-path",
-                value=rubygems_path,
-                candidates=("Gemfile",),
-                detect_label="Gemfile",
-            )
-        elif pipeline_lc == "pulumi":
-            pulumi_path = _resolve_provider_path(
-                "pulumi", flag="pulumi-path", value=pulumi_path,
-                candidates=("Pulumi.yaml",),
-                detect_label="Pulumi.yaml",
-            )
-    return _ScanPaths(
-        tf_plan=tf_plan,
-        tf_source=tf_source,
-        gha_path=gha_path,
-        gitea_path=gitea_path,
-        gitlab_path=gitlab_path,
-        bitbucket_path=bitbucket_path,
-        azure_path=azure_path,
-        jenkinsfile_path=jenkinsfile_path,
-        circleci_path=circleci_path,
-        cfn_template=cfn_template,
-        cloudbuild_path=cloudbuild_path,
-        buildkite_path=buildkite_path,
-        tekton_path=tekton_path,
-        argo_path=argo_path,
-        argocd_path=argocd_path,
-        dockerfile_path=dockerfile_path,
-        k8s_path=k8s_path,
-        helm_path=helm_path,
-        oci_manifest=oci_manifest,
-        drone_path=drone_path,
-        npm_path=npm_path,
-        pypi_path=pypi_path,
-        maven_path=maven_path,
-        nuget_path=nuget_path,
-        gomod_path=gomod_path,
-        cargo_path=cargo_path,
-        composer_path=composer_path,
-        rubygems_path=rubygems_path,
-        pulumi_path=pulumi_path,
+    from pipeline_check.core.report_view import ReportView
+    from pipeline_check.core.triage import is_local_endpoint, triage_findings
+    from pipeline_check.core.triage_reporter import report_triage
+
+    failed = ReportView(findings).failed
+    if not failed:
+        if not quiet:
+            click.echo("LLM triage: no failing findings to triage.", err=True)
+        return
+    if not is_local_endpoint(endpoint):
+        click.echo(
+            f"warning: --triage is sending {len(failed)} finding(s) to a "
+            f"non-local endpoint ({endpoint}).",
+            err=True,
+        )
+    results = triage_findings(failed, endpoint=endpoint, model=model)
+    section = report_triage(results, endpoint=endpoint, model=model)
+    stdout_is_machine = output_file is None and output not in (
+        "terminal", "both",
     )
+    if stdout_is_machine:
+        if not quiet:
+            click.echo(
+                "LLM triage ran; section suppressed to keep the "
+                f"{output} stream on stdout clean (use --output-file).",
+                err=True,
+            )
+        return
+    click.echo("")
+    click.echo(section, nl=False)
 
 
 def _emit_scan_report(
@@ -3931,6 +3397,20 @@ def _emit_scan_report(
         from pipeline_check.core.codequality_reporter import report_codequality
         return report_codequality(findings, inline_explain=inline_explain)
 
+    def _jsonl_text() -> str:
+        from pipeline_check.core.jsonl_reporter import report_jsonl
+        return report_jsonl(findings, inline_explain=inline_explain)
+
+    def _csv_text() -> str:
+        from pipeline_check.core.csv_reporter import report_csv
+        return report_csv(findings, inline_explain=inline_explain)
+
+    def _annotations_text() -> str:
+        from pipeline_check.core.github_annotations_reporter import (
+            report_github_annotations,
+        )
+        return report_github_annotations(findings, inline_explain=inline_explain)
+
     def _cyclonedx_text() -> str:
         from pipeline_check.core.cyclonedx_reporter import report_cyclonedx
         return report_cyclonedx(
@@ -3951,10 +3431,13 @@ def _emit_scan_report(
         )
 
     text_reporters: dict[str, tuple[Callable[[], str], str]] = {
+        "jsonl": (_jsonl_text, "JSON Lines report"),
         "sarif": (_sarif_text, "SARIF report"),
         "junit": (_junit_text, "JUnit report"),
         "markdown": (_markdown_text, "Markdown report"),
         "codequality": (_codequality_text, "Code Quality report"),
+        "csv": (_csv_text, "CSV report"),
+        "annotations": (_annotations_text, "GitHub Actions annotations"),
         "cyclonedx": (_cyclonedx_text, "CycloneDX SBOM"),
         "spdx": (_spdx_text, "SPDX SBOM"),
         "threatmodel": (_threatmodel_text, "Threat-model report"),
@@ -3973,6 +3456,7 @@ def _run_informational_commands(
     list_checks: bool,
     list_fixers: bool,
     fixer_safety_filter: str,
+    list_verifiers: bool,
     annotate_fp: tuple[str, str] | None,
     fp_path: str | None,
     list_chains: bool,
@@ -4061,6 +3545,22 @@ def _run_informational_commands(
                 err=True,
             )
         raise click.exceptions.Exit(fixers_code)
+
+    if list_verifiers:
+        from .core.checks._primitives.secret_verifiers import verifier_names
+        from .core.manual import detector_description
+
+        names = verifier_names()
+        width = max((len(n) for n in names), default=0)
+        for name in names:
+            click.echo(f"{name.ljust(width)}  {detector_description(name)}")
+        click.echo(
+            f"\n{len(names)} detectors have a live verifier. Run "
+            "`--verify-secrets` (with `--resolve-remote`) to probe matching "
+            "findings against their issuing API.",
+            err=True,
+        )
+        raise click.exceptions.Exit(0)
 
     if annotate_fp:
         # ``--annotate-fp CHECK_ID RESOURCE`` writes the local
@@ -4271,6 +3771,7 @@ def _build_pr_diff_subprocess_argv(
     helm_set: tuple[str, ...],
     oci_manifest: str | None,
     drone_path: str | None,
+    harness_path: str | None,
     npm_path: str | None,
     pypi_path: str | None,
     maven_path: str | None,
@@ -4344,6 +3845,7 @@ def _build_pr_diff_subprocess_argv(
         ("--helm-path", helm_path),
         ("--oci-manifest", oci_manifest),
         ("--drone-path", drone_path),
+        ("--harness-path", harness_path),
         ("--npm-path", npm_path),
         ("--pypi-path", pypi_path),
         ("--maven-path", maven_path),
@@ -4372,334 +3874,6 @@ def _build_pr_diff_subprocess_argv(
     return argv
 
 
-def _find_sibling_package_jsons(root: str, max_depth: int = 3) -> list[str]:
-    """Return up to a handful of ``package.json`` paths under *root*.
-
-    Bounded by ``max_depth`` and skipping the usual heavy directories
-    (``node_modules`` chief among them — a single transitive install
-    can land tens of thousands of nested ``package.json`` files, and
-    none of them belong to the consuming repo). Used by the
-    npm-alongside-github hint so the scanner can nudge users who
-    invoke ``--pipeline github`` alone in a repo that also ships
-    JavaScript code.
-    """
-    skip_dirs: frozenset[str] = frozenset({
-        "node_modules", ".git", "vendor", "dist", "build",
-        ".venv", "venv", "__pycache__", ".tox", ".mypy_cache",
-        ".pytest_cache", "target",
-    })
-    hits: list[str] = []
-    root_abs = os.path.abspath(root)
-    root_depth = root_abs.rstrip(os.sep).count(os.sep)
-    for dirpath, dirnames, filenames in os.walk(root_abs):
-        dirnames[:] = [d for d in dirnames if d not in skip_dirs]
-        if dirpath.count(os.sep) - root_depth > max_depth:
-            dirnames[:] = []
-            continue
-        if "package.json" in filenames:
-            hits.append(os.path.join(dirpath, "package.json"))
-            if len(hits) >= 5:
-                break
-    return hits
-
-
-def _maybe_emit_npm_alongside_github_hint(
-    pipelines_resolved: list[str],
-    findings: list[Any],
-) -> None:
-    """Nudge the user when ``--pipeline github`` scanned a tree that
-    also ships ``package.json`` files.
-
-    The npm provider catches dependency-confusion / floating-range /
-    lockfile-integrity issues that the github pipeline can't see (it
-    only inspects workflow YAML, not the consumed manifests). Fires
-    only on single-provider ``--pipeline github`` invocations where
-    a quick depth-bounded walk of cwd finds a ``package.json``
-    outside ``node_modules`` / build / vendor directories. Off when
-    the user explicitly multi-provider-ran ``github,npm`` (the npm
-    coverage is already in scope).
-    """
-    if pipelines_resolved != ["github"]:
-        return
-    pjs = _find_sibling_package_jsons(".")
-    if not pjs:
-        return
-    def _safe_relpath(p: str) -> str:
-        try:
-            return os.path.relpath(p)
-        except ValueError:
-            return p
-
-    sample = ", ".join(_safe_relpath(p) for p in pjs[:3])
-    more = "" if len(pjs) <= 3 else f" (+{len(pjs) - 3} more)"
-    # One ``package.json`` at the repo root resolves via the npm
-    # provider's own cwd auto-detection (``pipeline_check --pipeline
-    # npm`` without ``--npm-path``); multiple or nested manifests need
-    # an explicit ``--npm-path <dir>`` per manifest, so the hint
-    # surfaces the directory the user would point at.
-    pj_dirs = sorted({
-        _safe_relpath(os.path.dirname(p)) or "." for p in pjs
-    })
-    if len(pj_dirs) == 1 and pj_dirs[0] in (".", ""):
-        suggestion = (
-            "rerun with ``--pipelines github,npm`` to also scan the "
-            "manifest"
-        )
-    else:
-        dir_sample = ", ".join(pj_dirs[:3])
-        suggestion = (
-            f"rerun with ``--pipeline npm --npm-path <dir>`` for each "
-            f"({dir_sample})"
-        )
-    click.echo(
-        f"[hint] this repo also ships package.json files ({sample}"
-        f"{more}). ``--pipeline github`` only inspects workflow "
-        f"YAML; {suggestion} for dependency-confusion / "
-        f"lockfile-integrity / floating-range coverage.",
-        err=True,
-    )
-
-
-def _maybe_emit_wrong_provider_hint(pipeline_lc: str, findings: list[Any]) -> None:
-    """Nudge the user when AWS was scanned but a CI config file exists.
-
-    Fires only when the caller explicitly picked ``--pipeline aws`` (or
-    configured it) AND every finding is a degraded ``*-000`` API-access
-    probe AND cwd looks like a CI repo. Designed to catch the common
-    'wrong credentials / wrong provider' first-run mistake without
-    spamming legitimate AWS runs.
-    """
-    if pipeline_lc != "aws" or not findings:
-        return
-    if not all(getattr(f, "check_id", "").endswith("-000") for f in findings):
-        return
-    detected = _detect_pipeline_from_cwd()
-    if not detected:
-        return
-    click.echo(
-        f"[hint] no real AWS results. This looks like a '{detected}' "
-        f"repo; try: pipeline_check --pipeline {detected}",
-        err=True,
-    )
-
-
-def _maybe_emit_degraded_scan_warning(findings: list[Any]) -> None:
-    """Surface a ``[warn]`` line when degraded-mode findings dominate.
-
-    Every AWS module emits a single ``<PREFIX>-000`` INFO-severity
-    finding when its boto3 enumeration fails (missing credentials,
-    AccessDenied, throttling). Those findings are NOT security gaps —
-    they're tool-status — but they still render as "FAIL" rows in the
-    table, and they don't count toward the score (INFO is ignored by
-    the weighted formula), so a fully-degraded scan can confusingly
-    display "Score 100 / Grade A" right next to fourteen FAIL rows.
-
-    This helper bridges that gap: when ``>0`` degraded-mode findings
-    exist, emit a stderr ``[warn]`` line listing how many modules
-    failed API access so the operator knows the score reflects only
-    the modules that actually returned data.
-    """
-    degraded = [
-        f for f in findings
-        if getattr(f, "check_id", "").endswith("-000")
-        and not getattr(f, "passed", True)
-    ]
-    if not degraded:
-        return
-    n = len(degraded)
-    click.echo(
-        f"[warn] scan degraded: {n} module(s) failed API access. The "
-        f"score reflects only the modules that returned data; run "
-        f"with --verbose to see which modules were skipped.",
-        err=True,
-    )
-
-
-def _scan_status(meta: Any, findings: list[Any]) -> dict[str, Any]:
-    """Structured completeness summary of a scan.
-
-    A scan is incomplete when a file it tried to read could not be
-    parsed (malformed YAML / JSON, read error) or when a cloud module
-    failed API access (the ``*-000`` degraded probes). The score then
-    reflects only what was actually scanned. This summary is emitted in
-    the JSON and SARIF outputs so CI consumers can detect an incomplete
-    scan, and it backs :func:`_scan_incomplete_reason` (the terminal
-    status line). ``reason`` is present only when the scan is incomplete.
-    """
-    parse_fail = 0
-    for w in getattr(meta, "warnings", None) or []:
-        wl = str(w).lower()
-        if "parse error" in wl or "read error" in wl:
-            parse_fail += 1
-    degraded = sum(
-        1 for f in findings
-        if getattr(f, "check_id", "").endswith("-000")
-        and not getattr(f, "passed", True)
-    )
-    status: dict[str, Any] = {
-        "complete": parse_fail == 0 and degraded == 0,
-        "files_scanned": int(getattr(meta, "files_scanned", 0) or 0),
-        "files_unparsed": parse_fail,
-        "degraded_modules": degraded,
-    }
-    parts: list[str] = []
-    if parse_fail:
-        parts.append(f"{parse_fail} file(s) could not be parsed")
-    if degraded:
-        parts.append(f"{degraded} module(s) failed API access")
-    if parts:
-        status["reason"] = (
-            f"{'; '.join(parts)}. The grade reflects only what was scanned."
-        )
-    return status
-
-
-def _scan_incomplete_reason(meta: Any, findings: list[Any]) -> str | None:
-    """The human-readable reason a scan is incomplete, or ``None`` when
-    it fully ran. Drives the terminal report's status line."""
-    return _scan_status(meta, findings).get("reason")
-
-
-def _emit_scan_summary(meta: Any) -> None:
-    """Render the scan summary line and any parse warnings to stderr."""
-    from .core.scanner import ScanMetadata
-    if not isinstance(meta, ScanMetadata):
-        return
-    for w in meta.warnings:
-        click.echo(f"[warn] {w}", err=True)
-    if meta.files_scanned == 0 and meta.files_skipped == 0:
-        click.echo("[warn] no pipeline files found to scan", err=True)
-        return
-    skip_part = f" ({meta.files_skipped} skipped)" if meta.files_skipped else ""
-    click.echo(
-        f"[scan] {meta.provider}: scanned {meta.files_scanned} file(s){skip_part}"
-        f" in {meta.elapsed_seconds:.1f}s",
-        err=True,
-    )
-
-
-def _build_gate_trailer(
-    gate: Any,
-    *,
-    baseline_path: str | None,
-    baseline_from_git: str | None,
-) -> str | None:
-    """Construct the one-line "what next" hint for a failing gate.
-
-    Picks the most actionable suggestion based on the failing set:
-    autofix when at least one finding has a registered fixer,
-    otherwise a baseline-write when none was provided, otherwise
-    point the user at ``explain`` for the highest-severity failure.
-    """
-    effective = list(gate.effective)
-    if not effective:
-        return None
-    from .core.autofix import available_fixers
-    fixers = set(available_fixers())
-    fixable = [f for f in effective if f.check_id.upper() in fixers]
-    n_total = len(effective)
-    if fixable:
-        message = (
-            f"{len(fixable)} of {n_total} failing findings "
-            f"are autofixable; run `pipeline_check --fix --apply` to apply them"
-        )
-    elif not baseline_path and not baseline_from_git:
-        message = (
-            "no baseline configured; run `pipeline_check "
-            "--write-baseline baseline.json` then pair with "
-            "`--baseline baseline.json` to gate only on new findings"
-        )
-    else:
-        from .core.checks.base import severity_rank
-        top = sorted(
-            effective,
-            key=lambda f: (-severity_rank(f.severity), f.check_id),
-        )[0]
-        message = (
-            f"start with the highest-severity rule: "
-            f"`pipeline_check explain {top.check_id}`"
-        )
-    return f"[gate] next: {message}"
-
-
-def _emit_gate_summary(
-    gate: Any,
-    *,
-    grade: str | None = None,
-    baseline_path: str | None = None,
-    baseline_from_git: str | None = None,
-) -> None:
-    """Render the gate outcome to stderr so JSON/SARIF on stdout stays clean.
-
-    When the gate fails, also emit a single-line "what next" trailer:
-    how many of the failing findings have autofixers, and the
-    one-command path to close the loop (fix-and-apply, baseline-write,
-    or explain-the-rule). The trailer is intentionally short so a CI
-    log scan picks it up without scrolling.
-
-    A strong *grade* (A or B) sitting on top of a failing gate is the
-    most confusing outcome a first-time user hits, since the grade reads
-    as "all good" while the build still exits non-zero. When that
-    happens, a one-line note clarifies that the grade is a posture score
-    and the gate is a separate blocking policy.
-    """
-    n_effective = len(gate.effective)
-    n_chains_tripped = len(getattr(gate, "tripped_chains", []) or [])
-    if gate.passed:
-        msg_lines = [f"[gate] PASS ({n_effective} effective finding(s) evaluated)"]
-        for cond in getattr(gate, "conditions_evaluated", []):
-            msg_lines.append(f"        - {cond}")
-    else:
-        msg_lines = ["[gate] FAIL"]
-        for reason in gate.reasons:
-            msg_lines.append(f"        - {reason}")
-        if grade in ("A", "B"):
-            msg_lines.append(
-                f"[gate] note: Grade {grade} is overall posture (checks "
-                "weighted by severity), not this gate. A strong grade can "
-                "still fail the gate on a single blocking finding."
-            )
-        trailer = _build_gate_trailer(
-            gate,
-            baseline_path=baseline_path,
-            baseline_from_git=baseline_from_git,
-        )
-        if trailer:
-            msg_lines.append(trailer)
-    if n_chains_tripped:
-        ids = ", ".join(sorted({c.chain_id for c in gate.tripped_chains}))
-        msg_lines.append(f"[gate] {n_chains_tripped} attack chain(s) tripped: {ids}")
-    if gate.baseline_matched:
-        msg_lines.append(
-            f"[gate] {len(gate.baseline_matched)} finding(s) suppressed by baseline"
-        )
-    if gate.suppressed:
-        msg_lines.append(
-            f"[gate] {len(gate.suppressed)} finding(s) suppressed by ignore file"
-        )
-    if gate.expired_rules:
-        for r in gate.expired_rules:
-            scope = f":{r.resource}" if r.resource else ""
-            msg_lines.append(
-                f"[gate] ignore rule expired on {r.expires}: "
-                f"{r.check_id}{scope} (no longer suppressing)"
-            )
-    if gate.expiring_soon:
-        # Forewarn before expiry so the team schedules a revisit
-        # rather than discovering the lapsed suppression in CI.
-        for r in gate.expiring_soon:
-            scope = f":{r.resource}" if r.resource else ""
-            days = r.days_until_expiry()
-            day_word = "day" if days == 1 else "days"
-            when = "today" if days == 0 else f"in {days} {day_word}"
-            msg_lines.append(
-                f"[gate] ignore rule expires {when} on {r.expires}: "
-                f"{r.check_id}{scope} (still suppressing, but plan to revisit)"
-            )
-    for line in msg_lines:
-        click.echo(line, err=True)
-
-
 # ────────────────────────────────────────────────────────────────────────────
 # `init` subcommand, scaffold a starter config file.
 # ────────────────────────────────────────────────────────────────────────────
@@ -4726,6 +3900,7 @@ _INIT_SCANNER_KWARGS: dict[str, tuple[str, tuple[str, ...]]] = {
         (".buildkite/pipeline.yml", ".buildkite/pipeline.yaml"),
     ),
     "drone": ("drone_path", (".drone.yml", ".drone.yaml")),
+    "harness": ("harness_path", (".harness",)),
     "dockerfile": ("dockerfile_path", ("Dockerfile", "Containerfile")),
     "modelfile": ("modelfile_path", ("Modelfile",)),
     "kubernetes": ("k8s_path", ("kubernetes", "k8s", "manifests")),

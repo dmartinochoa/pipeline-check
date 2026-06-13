@@ -127,9 +127,19 @@ def _register_builtins() -> None:
     from .jwt import JWTTokenVerifier
     from .more_saas_keys import (
         CohereAPIKeyVerifier,
+        DopplerTokenVerifier,
+        FigmaTokenVerifier,
+        GroqAPIKeyVerifier,
         MailchimpAPIKeyVerifier,
+        NeonAPIKeyVerifier,
+        NotionTokenVerifier,
+        PostmanAPIKeyVerifier,
+        PulumiAccessTokenVerifier,
+        RenderAPIKeyVerifier,
         ReplicateTokenVerifier,
+        SentryAuthTokenVerifier,
         SquareAccessTokenVerifier,
+        XaiAPIKeyVerifier,
     )
     from .npm import NpmTokenVerifier
     from .pypi import PyPITokenVerifier
@@ -142,6 +152,7 @@ def _register_builtins() -> None:
     )
     from .slack import SlackTokenVerifier
     from .telegram import TelegramBotTokenVerifier
+    from .webhooks import DiscordWebhookVerifier, SlackWebhookVerifier
 
     _REGISTRY["github_token"] = GitHubTokenVerifier()
     _REGISTRY["npm_token"] = NpmTokenVerifier()
@@ -168,6 +179,18 @@ def _register_builtins() -> None:
     _REGISTRY["cohere_api_key"] = CohereAPIKeyVerifier()
     _REGISTRY["mailchimp_api_key"] = MailchimpAPIKeyVerifier()
     _REGISTRY["square_access_token"] = SquareAccessTokenVerifier()
+    _REGISTRY["figma_token"] = FigmaTokenVerifier()
+    _REGISTRY["notion_token"] = NotionTokenVerifier()
+    _REGISTRY["groq_api_key"] = GroqAPIKeyVerifier()
+    _REGISTRY["xai_api_key"] = XaiAPIKeyVerifier()
+    _REGISTRY["postman_api_key"] = PostmanAPIKeyVerifier()
+    _REGISTRY["doppler_token"] = DopplerTokenVerifier()
+    _REGISTRY["sentry_auth_token"] = SentryAuthTokenVerifier()
+    _REGISTRY["pulumi_access_token"] = PulumiAccessTokenVerifier()
+    _REGISTRY["render_api_key"] = RenderAPIKeyVerifier()
+    _REGISTRY["neon_api_key"] = NeonAPIKeyVerifier()
+    _REGISTRY["slack_webhook"] = SlackWebhookVerifier()
+    _REGISTRY["discord_webhook"] = DiscordWebhookVerifier()
 
 
 def get_verifier(detector_name: str) -> SecretVerifier | None:
@@ -180,6 +203,16 @@ def has_verifier(detector_name: str) -> bool:
     """True if a live-verification probe exists for *detector_name*."""
     _register_builtins()
     return detector_name in _REGISTRY
+
+
+def verifier_names() -> list[str]:
+    """Return the sorted detector names that have a live verifier.
+
+    Backs ``--list-verifiers`` so users can see which detected secret
+    types ``--verify-secrets`` can actually confirm as active.
+    """
+    _register_builtins()
+    return sorted(_REGISTRY)
 
 
 # ── Cache helpers ───────────────────────────────────────────────────

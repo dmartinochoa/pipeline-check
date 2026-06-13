@@ -76,7 +76,8 @@ pipeline_check
 Auto-detect looks for: `.github/workflows/`, `.gitlab-ci.yml`,
 `bitbucket-pipelines.yml`, `azure-pipelines.yml`, `Jenkinsfile`,
 `.circleci/config.yml`, `cloudbuild.yaml`, `.buildkite/pipeline.yml`,
-`.drone.yml` / `.drone.yaml`, `Dockerfile`/`Containerfile`,
+`.drone.yml` / `.drone.yaml`, a `.harness/` directory of Harness
+pipelines, `Dockerfile`/`Containerfile`,
 CloudFormation templates (`*.yml`, `*.yaml`, `*.json` at repo root),
 a `kubernetes/` / `k8s/` / `manifests/` directory of K8s manifests,
 and Helm `Chart.yaml`. When nothing matches, the CLI exits with a
@@ -124,6 +125,7 @@ pipeline_check --pipeline kubernetes --k8s-path manifests/
 pipeline_check --pipeline helm --helm-path charts/myapp/
 
 pipeline_check --pipeline drone --drone-path .drone.yml
+pipeline_check --pipeline harness --harness-path .harness/
 pipeline_check --pipeline oci --oci-manifest index.json
 
 # Developer-environment configs that auto-execute on repo open
@@ -163,6 +165,31 @@ pipeline_check --pipeline scm --scm-platform github \
     --scm-repo octocat/hello-world \
     --scm-fixture-dir ./scm-fixtures/
 
+# Organization-wide per-repo fan-out. Runs the per-repo posture pack
+# across every non-archived repo the org exposes. GitHub (--scm-org is
+# the org login) runs the full pack; GitLab (a group path, subgroups
+# included) and Bitbucket (a workspace) run the 7-rule universal subset.
+# Scope it with repeatable --scm-include / --scm-exclude fnmatch globs,
+# and cap very large orgs with --scm-max-repos (0 = unlimited; truncation
+# is warned).
+pipeline_check --pipeline scm --scm-platform github --scm-org my-org \
+    --scm-include 'service-*' --scm-exclude '*-sandbox' --scm-max-repos 50
+pipeline_check --pipeline scm --scm-platform gitlab --scm-org my-group
+
+# Organization-wide governance (GitHub). Audits org-admin settings that
+# govern every repo at once (2FA requirement, default member permission).
+# Token from --gh-token or $GITHUB_TOKEN; needs admin:org / read:org.
+pipeline_check --pipeline scm_org --scm-org my-org \
+    --gh-token "$GITHUB_TOKEN"
+
+# Group-wide governance (GitLab), the scm_org analog. Audits group-owner
+# settings that govern every project at once (2FA requirement, project
+# forking outside the group). Token from --gitlab-token or $GITLAB_TOKEN
+# (needs read_api + Owner); --gitlab-url for self-managed. --scm-org takes
+# the group path (subgroups like my-group/platform are allowed).
+pipeline_check --pipeline gitlab_group --scm-org my-group \
+    --gitlab-token "$GITLAB_TOKEN"
+
 # Actions run-history forensics (GitHub only). Audits recent
 # Actions runs via the REST API for privileged-trigger and
 # fork-originated executions. Token comes from --gh-token or
@@ -175,6 +202,12 @@ pipeline_check --pipeline runs --scm-repo owner/name \
 # needs the actions:read scope.
 pipeline_check --pipeline runs --scm-repo owner/name \
     --gh-token "$GITHUB_TOKEN" --audit-runs-logs
+
+# GitLab pipeline run-history forensics. Audits recent pipelines via the
+# GitLab REST API for merge-request executions. Token from --gitlab-token
+# or $GITLAB_TOKEN (needs read_api); --gitlab-url for self-managed.
+pipeline_check --pipeline gitlab_runs --scm-repo group/project \
+    --gitlab-token "$GITLAB_TOKEN"
 ```
 
 Full per-provider reference: [providers/](providers/README.md).
@@ -304,11 +337,14 @@ see [providers/aws.md#required-iam-permissions](providers/aws.md#required-iam-pe
 ```bash
 pipeline_check --output terminal                   # default (rich table)
 pipeline_check --output json                       # machine-parseable
+pipeline_check --output jsonl -O findings.log      # one finding per line (SIEM / jq streaming)
 pipeline_check --output html -O report.html        # self-contained file
 pipeline_check --output sarif -O scan.sarif        # GitHub/GitLab SAST
 pipeline_check --output markdown                   # PR comments
 pipeline_check --output junit -O junit.xml         # test-runner UIs
 pipeline_check --output codequality -O gl-code-quality-report.json  # GitLab MR annotations
+pipeline_check --output csv -O findings.csv        # flat export for spreadsheet triage
+pipeline_check --output annotations                # GitHub Actions inline ::error annotations
 pipeline_check --output threatmodel -O threats.md  # STRIDE threat model (Markdown)
 pipeline_check --output cyclonedx -O sbom.json     # CycloneDX 1.6 build SBOM
 pipeline_check --output spdx -O sbom.spdx.json     # SPDX 2.3 build SBOM
@@ -325,6 +361,34 @@ carry the field unconditionally. See [output.md](output.md) for the
 per-format detail.
 
 Format schemas: [output.md](output.md).
+
+## LLM-assisted triage (`--triage`)
+
+```bash
+# Needs a local model server running (e.g. `ollama serve` with a pulled model).
+pipeline_check --triage                                   # uses localhost Ollama + llama3.2
+pipeline_check --triage --triage-model qwen2.5-coder      # pick a model
+pipeline_check --triage --triage-endpoint http://localhost:1234/api/generate  # LM Studio, etc.
+```
+
+After the report, `--triage` sends each *failing* finding plus a snippet
+of the surrounding pipeline to a **local** LLM and asks whether it's
+actually exploitable in this repo's context, labeling it `confirmed` /
+`needs_review` / `likely_fp` in a separate advisory section.
+
+It is deliberately constrained:
+
+- **Local by default.** `--triage-endpoint` defaults to loopback; a
+  non-local URL prints a one-line warning before any finding is sent, so
+  the no-telemetry promise holds unless you opt out explicitly.
+- **Advisory only.** The label never touches a finding's severity or
+  confidence, the grade, or the gate, so a hallucinating model can't
+  flip a HIGH to a LOW. An unreachable endpoint degrades to `unavailable`
+  rather than failing the scan.
+- The section prints to stdout for `terminal` / `both` output (or any
+  format written to `--output-file`); when a machine-readable format is
+  already on stdout it's suppressed with a one-line stderr note so the
+  stream stays clean.
 
 ## Filter what gets scanned
 
@@ -350,7 +414,7 @@ pipeline_check --fix --apply      # write patches in place
 pipeline_check --fix | git apply  # review first, then apply
 ```
 
-111 fixers cover pinning, secrets, timeouts, TLS bypass, script
+120 fixers cover pinning, secrets, timeouts, TLS bypass, script
 injection, Docker flags, Kubernetes securityContext, and more. See individual check pages under
 [providers/](providers/README.md) for which have autofix support.
 
@@ -360,7 +424,7 @@ can tell at a glance which rules have a fixer and which tier it belongs
 to. Narrow the listing with `--safety`:
 
 ```bash
-pipeline_check --list-fixers                 # all 111, grouped by ID
+pipeline_check --list-fixers                 # all 120, grouped by ID
 pipeline_check --list-fixers --safety safe   # only the default --fix tier
 pipeline_check --list-fixers --safety unsafe # inference-dependent fixers
 pipeline_check --list-fixers | grep '^GHA-'  # one provider's fixers
@@ -578,6 +642,14 @@ For teams that want the broadest coverage, `--resolve-remote` is
 recommended. The tradeoff is scan speed (network calls add latency) and
 the need for API tokens (`--gh-token`, `--gitlab-token`) for higher rate
 limits.
+
+`--verify-secrets` only confirms detectors that have a live verifier.
+To see which ones (no scan performed):
+
+```bash
+pipeline_check --list-verifiers              # detector + shape, one per line
+pipeline_check --list-verifiers | grep token # filter
+```
 
 ## Dataflow secret detection
 

@@ -96,6 +96,15 @@ stages:
           - script: pip install git+https://example.com/internal/helper.git
           # ADO-033: IaC apply on a PR-validated pipeline (pr: set above).
           - script: terraform apply -auto-approve
+          # ADO-035: untrusted PR commit message fed into an agentic AI CLI prompt.
+          - script: claude -p "Triage this PR from commit $(Build.SourceVersionMessage)"
+          # ADO-036: fetched artifact deserialized through pickle (RCE at load).
+          - script: python -c "import torch; torch.load('model.bin', weights_only=False)"
+          # ADO-037: model fetched from a registry with no pinned revision.
+          - script: huggingface-cli download vendor/llm
+          # ADO-038: agentic CLI output (claude step above) pushed straight
+          # to a branch in the same job, with no review gate.
+          - script: git push origin HEAD
 
   - stage: Deploy
     dependsOn: Build

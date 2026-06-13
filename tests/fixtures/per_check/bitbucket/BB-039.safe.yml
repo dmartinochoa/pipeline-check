@@ -1,0 +1,6 @@
+pipelines:
+  default:
+    - step:
+        name: ai-suggest
+        script:
+          - claude -p "Suggest a fix and open a pull request for review"

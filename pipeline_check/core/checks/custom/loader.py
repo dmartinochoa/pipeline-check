@@ -143,6 +143,15 @@ def load_custom_rules(
                 raise CustomRuleError(
                     f"{file_path}: YAML parse error: {exc}"
                 ) from exc
+            except (RecursionError, MemoryError) as exc:
+                # Deeply-nested / alias-expanding input raises a builtin,
+                # not a yaml.YAMLError. Surface it as the loader's own
+                # file-pointing error so a malformed custom-rule file
+                # fails fast instead of aborting with a raw traceback.
+                raise CustomRuleError(
+                    f"{file_path}: document too deeply nested or large "
+                    "to parse safely"
+                ) from exc
             for rule, provider, body in _compile_file(file_path, data):
                 if rule.id in builtin:
                     raise CustomRuleError(

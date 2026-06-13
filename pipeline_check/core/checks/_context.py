@@ -133,65 +133,6 @@ def looks_like_example(blob: str, match_start: int, window: int = 200) -> bool:
     return bool(_EXAMPLE_INLINE_RE.search(prior))
 
 
-# ── Curl-pipe allowlist ──────────────────────────────────────────────
-# Well-known vendor installers that ship with HTTPS and publish their
-# install.sh via their own CDN. A ``curl … | bash`` against one of
-# these is an established idiom, not a smoking gun. Findings that
-# match only against this list should be LOW-confidence, not a hard
-# fail, the user should still consider cryptographic verification,
-# but the finding shouldn't gate every PR that installs Docker.
-_KNOWN_INSTALLERS: frozenset[str] = frozenset({
-    "get.docker.com",
-    "sh.rustup.rs",
-    "bun.sh/install",
-    "deno.land/install.sh",
-    "fnm.vercel.app/install",
-    "raw.githubusercontent.com/nvm-sh/nvm",    # nvm install
-    "raw.githubusercontent.com/rbenv/rbenv-installer",
-    "awscli.amazonaws.com/awscli-exe-linux",   # AWS CLI
-    "cli.github.com/install",
-    "get.helm.sh/helm",
-    "get.k3s.io",
-    "install.scala-lang.org",
-    "install.python-poetry.org",
-    "get.sdkman.io",
-})
-
-
-def is_known_installer(url: str) -> bool:
-    """Return True when *url* matches a vendored installer on the allowlist.
-
-    Matches on the parsed host (exact or subdomain) plus, for the
-    path-bearing entries, a path prefix. A bare substring test would let
-    an attacker-controlled URL that merely *contains* an allowlisted
-    string (``https://get.docker.com.evil.com/x`` via a suffix, or
-    ``https://evil.com/get.docker.com`` via the path) demote to the
-    trusted-installer path, weakening the curl-pipe finding. The
-    allowlist is intentionally conservative; adding a new entry should
-    require evidence that the installer uses HTTPS with cryptographic
-    trust (sigstore / notary or a published GPG key).
-    """
-    if not isinstance(url, str):
-        return False
-    m = re.match(r"https?://([^/\s:?#]+)(?::\d+)?(/[^\s?#]*)?", url.lower())
-    if not m:
-        return False
-    host = m.group(1)
-    path = (m.group(2) or "").lstrip("/")
-    for marker in _KNOWN_INSTALLERS:
-        marker_host, _, marker_path = marker.partition("/")
-        if host != marker_host and not host.endswith("." + marker_host):
-            continue
-        # Match on a path-segment boundary, not a bare prefix, so
-        # ``nvm-sh/nvm-malicious`` doesn't satisfy ``nvm-sh/nvm``.
-        if marker_path and path != marker_path and not path.startswith(
-            marker_path + "/"
-        ):
-            continue
-        return True
-    return False
-
-
 # ── IAM Condition allow-list ─────────────────────────────────────────
 # Conditions that meaningfully constrain a wildcard action or resource.
 # IAM-002 / IAM-004 / IAM-006 should demote statements that carry one

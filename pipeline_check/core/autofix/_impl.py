@@ -75,13 +75,18 @@ def _fix_gha004(content: str, finding: Finding) -> str | None:
 
 
 @register("GHA-002", safety="safe")
+@register("GHA-037", safety="safe")
+@register("GHA-054", safety="safe")
 def _fix_gha002(content: str, finding: Finding) -> str | None:
     """Add ``persist-credentials: false`` under every actions/checkout step.
 
-    Doesn't resolve the underlying GHA-002 (pull_request_target +
-    PR head) on its own — that requires a workflow redesign — but
-    the checkout option is a defense-in-depth measure that reduces
-    the blast radius of the issue and is always safe to apply.
+    For GHA-037 (``actions/checkout`` persists the GITHUB_TOKEN into
+    ``.git/config``) and GHA-054 (a checkout ``ssh-key`` persisted into the
+    repo's ``.git/config``) this is the canonical fix and resolves the
+    finding outright. For GHA-002 (pull_request_target + PR head) it
+    doesn't resolve the underlying issue on its own — that requires a
+    workflow redesign — but the checkout option is a defense-in-depth
+    measure that reduces the blast radius and is always safe to apply.
     Idempotent: skips checkout steps that already set the flag.
     """
     edits: list[tuple[int, int, str]] = []
@@ -156,6 +161,14 @@ def _fix_gha002(content: str, finding: Finding) -> str | None:
 @register("BK-002", safety="safe")
 @register("TKN-005", safety="safe")
 @register("ARGO-006", safety="safe")
+# Cloud Build (GCB-012, a literal in ``substitutions:``) and Harness
+# (HARNESS-004, a literal ``variables:`` value) detect purely by value
+# shape, so redacting the value resolves the finding the same way it does
+# for the ``*-008`` family. Drone DR-004 is deliberately NOT here: it also
+# fires on a credential-named key holding any literal, so ``<REDACTED>``
+# (still a literal) wouldn't clear it -- that needs a from_secret rewrite.
+@register("GCB-012", safety="safe")
+@register("HARNESS-004", safety="safe")
 def _fix_gha008(content: str, finding: Finding) -> str | None:
     """Replace credential-shaped literals with ``<REDACTED>`` + TODO comment.
 
@@ -177,7 +190,10 @@ def _fix_gha008(content: str, finding: Finding) -> str | None:
         new_line = line
         # Conservative: only redact whole-token matches on the RHS of
         # a ``key: value`` pair, not inside arbitrary scripts.
-        m = re.match(r"^(\s*[^#:\n]+:\s*)(\S+)(\s*)(#.*)?(\n?)$", new_line)
+        # ``[^\S\n]*`` for the trailing whitespace, NOT ``\s*``: ``\s``
+        # includes the newline, so on a comment-less line it would swallow
+        # the ``\n`` and push the TODO marker onto its own mis-indented line.
+        m = re.match(r"^(\s*[^#:\n]+:\s*)(\S+)([^\S\n]*)(#.*)?(\n?)$", new_line)
         if m:
             prefix, value, trailing_ws, comment, newline = m.groups()
             stripped = value.strip("\"'")
@@ -483,10 +499,51 @@ def _comment_curl_pipe(content: str, finding: Finding) -> str | None:
 for _cid in (
     "GHA-016", "GL-016", "ADO-016", "BB-012", "JF-016", "CC-016",
     # Buildkite has a dedicated curl-pipe rule (BK-004); the heuristic
-    # is provider-agnostic so the same comment-out fixer applies.
-    "BK-004",
+    # is provider-agnostic so the same comment-out fixer applies. Drone
+    # (DR-014) and Harness (HARNESS-005) carry the same pipe-to-shell
+    # rule and consume the same fixer.
+    "BK-004", "DR-014", "HARNESS-005",
 ):
     register(_cid, safety="safe")(_comment_curl_pipe)
+
+
+# ── GHA-031: migrate retired ::set-output / ::save-state ──────────────────
+
+#: ``set-output`` writes to ``$GITHUB_OUTPUT``; ``save-state`` to
+#: ``$GITHUB_STATE`` (GitHub's documented file-redirect replacements).
+_DEPRECATED_CMD_TARGET = {
+    "set-output": "GITHUB_OUTPUT",
+    "save-state": "GITHUB_STATE",
+}
+#: The echoed form ``echo "::set-output name=NAME::VALUE"``. ``name`` is a
+#: command-key identifier; ``val`` runs to the closing quote (the
+#: non-greedy match stops at the first matching quote, which is the
+#: closing one for a well-formed shell string).
+_DEPRECATED_ECHO_RE = re.compile(
+    r"""echo\s+(?P<q>["'])::(?P<cmd>set-output|save-state)\s+"""
+    r"""name=(?P<name>[A-Za-z_][\w.\-]*)::(?P<val>[^\n]*?)(?P=q)""",
+    re.IGNORECASE,
+)
+
+
+@register("GHA-031", safety="safe")
+def _fix_gha031(content: str, finding: Finding) -> str | None:
+    """Migrate ``echo "::set-output name=X::V"`` to the file-redirect form.
+
+    GitHub retired the ``::set-output::`` / ``::save-state::`` stdout
+    commands (they're disabled on the runners), so the replacement is the
+    documented, behavior-equivalent file redirect:
+    ``echo "X=V" >> "$GITHUB_OUTPUT"`` (``$GITHUB_STATE`` for save-state).
+    The new form is also injection-safe (the runner no longer parses the
+    value out of stdout). Safe and idempotent: only the echoed command is
+    rewritten, and the rewritten line no longer matches.
+    """
+    def _sub(m: re.Match[str]) -> str:
+        env = _DEPRECATED_CMD_TARGET[m.group("cmd").lower()]
+        return f'echo "{m.group("name")}={m.group("val")}" >> "${env}"'
+
+    new = _DEPRECATED_ECHO_RE.sub(_sub, content)
+    return new if new != content else None
 
 
 # ── Docker --privileged removal ────────────────────────────────────────
@@ -1243,6 +1300,11 @@ for _cid in (
     "GHA-023", "GL-023", "ADO-023", "BB-023", "JF-023", "CC-023",
     # Buildkite's TLS-bypass rule covers the same flags / env vars.
     "BK-008",
+    # Drone (DR-006) and Harness (HARNESS-006) detect TLS bypass through
+    # the same ``tls_bypass`` primitive, so the comment-out fix applies
+    # unchanged -- the analog of their curl-pipe siblings (DR-014 /
+    # HARNESS-005) already sharing ``_comment_curl_pipe``.
+    "DR-006", "HARNESS-006",
 ):
     register(_cid, safety="safe")(_comment_tls_bypass)
 

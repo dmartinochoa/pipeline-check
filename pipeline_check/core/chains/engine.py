@@ -168,11 +168,3 @@ def evaluate_cross_repo(
         out.extend(matches)
     out.sort(key=lambda c: (c.chain_id, severity_rank(c.severity), ",".join(c.resources)))
     return out
-
-
-def reset_cache() -> None:
-    """Clear the rule-discovery cache. Test-only, production scans
-    don't reload rules at runtime."""
-    global _RULES_CACHE, _CXPC_RULES_CACHE
-    _RULES_CACHE = None
-    _CXPC_RULES_CACHE = None

@@ -241,6 +241,10 @@ def _esc(s: str) -> str:
     return (
         s.replace("\\", "\\\\")
         .replace("|", "\\|")
+        # Cells sit inside / next to inline code spans, so an unbalanced
+        # backtick would spill a code span across cells (matches the
+        # markdown reporter's escaping).
+        .replace("`", "\\`")
         .replace("\n", " ")
         .replace("\r", "")
     )

@@ -274,15 +274,23 @@ STANDARD = Standard(
         "GL-026":   ["PR.PS-05"],
         "BB-002":   ["PR.PS-05"],
         "BB-035":   ["PR.PS-05"],   # trust_remote_code model load = code exec
+        "BB-036":   ["PR.PS-05"],   # untrusted PR context into agentic CLI = prompt injection
+        "BB-037":   ["PR.PS-05"],   # unsafe pickle deser of fetched artifact = code exec
+        "BB-039":   ["PR.PS-06"],   # agentic CLI output lands without review
+        "JF-038":   ["PR.PS-06"],   # agentic CLI output lands without review
         "BB-012":   ["PR.PS-05"],
         "BB-025":   ["PR.PS-05"],
         "BB-026":   ["PR.PS-05"],
         "ADO-002":  ["PR.PS-05"],
         "ADO-034":  ["PR.PS-05"],   # trust_remote_code model load = code exec
+        "ADO-035":  ["PR.PS-05"],   # untrusted PR context into agentic CLI = prompt injection
+        "ADO-036":  ["PR.PS-05"],   # unsafe pickle deser of fetched artifact = code exec
+        "ADO-038":  ["PR.PS-06"],   # agentic CLI output lands without review
         "ADO-016":  ["PR.PS-05"],
         "ADO-026":  ["PR.PS-05"],
         "ADO-027":  ["PR.PS-05"],
         "JF-002":   ["PR.PS-05"],
+        "JF-037":   ["PR.PS-05"],   # agentic CLI ingests untrusted context (prompt injection)
         "JF-012":   ["PR.PS-05"],
         "JF-016":   ["PR.PS-05"],
         "JF-019":   ["PR.PS-05"],
@@ -329,7 +337,16 @@ STANDARD = Standard(
         "GHA-002":  ["PR.IR-01"],
         "RUN-001":  ["PR.IR-01"],
         "RUN-002":  ["PR.IR-01"],
+        "GLRUN-001": ["PR.IR-01"],  # gitlab forensics: merge-request pipeline executed
+        "GLRUN-002": ["PR.IR-01"],  # gitlab forensics: fork merge-request pipeline executed
+        "GLRUN-003": ["PR.IR-01"],  # gitlab forensics: secret leaked in fork pipeline trace
+        "GLRUN-004": ["PR.IR-01"],  # gitlab forensics: fork pipeline minted a cloud OIDC token
+        "GLRUN-005": ["PR.IR-01"],  # gitlab forensics: fork pipeline ran on a self-managed runner
         "RUN-003":  ["PR.IR-01"],
+        "RUN-004":  ["PR.IR-01"],
+        "RUN-005":  ["PR.IR-01"],
+        "RUN-006":  ["GV.SC-05", "GV.SC-07"],
+        "RUN-007":  ["GV.SC-05", "GV.SC-07"],
         "GHA-009":  ["PR.IR-01"],
         "GHA-010":  ["PR.IR-01"],
         "GHA-011":  ["PR.IR-01"],
@@ -570,6 +587,7 @@ STANDARD = Standard(
         "GL-031":  ["PR.AA-05"],                # id_tokens missing audience pin
         "GL-040":  ["PR.AA-05"],                # CI_JOB_TOKEN used for cross-project access
         "GL-041":  ["PR.PS-05"],                # IaC apply on an untrusted MR trigger
+        "GL-050":   ["PR.AA-01"],  # publish job long-lived registry token (GHA-050 analog)
         "GL-032":  ["PR.PS-05"],                # tags interpolates untrusted
         "GL-033":  ["PR.PS-05"],                # global before_script taint
         "GL-034":  ["GV.SC-05"],                # npm install without audit signatures
@@ -585,10 +603,12 @@ STANDARD = Standard(
         "BB-029":  ["GV.SC-05"],                # step+service image not pinned
         "BB-030":  ["GV.SC-05"],                # npm install without audit signatures
         "BB-031":  ["GV.SC-05"],                # pip install without --require-hashes
+        "BB-038":  ["GV.SC-05"],                # model pulled without a pinned revision
         # ── Azure DevOps Pipelines ───────────────────────────────
         "ADO-004": ["PR.PS-06"],                # deploy missing environment
         "ADO-029": ["PR.PS-06"],                # service-conn job w/o env gate
         "ADO-030": ["PR.PS-05"],                # pool interpolates untrusted
+        "ADO-037": ["GV.SC-05"],                # model pulled without a pinned revision
         # ── CircleCI ──────────────────────────────────────────────
         "CC-004":  ["PR.AA-01"],                # unrestricted context
         "CC-009":  ["PR.PS-06"],                # job missing approval gate
@@ -601,6 +621,17 @@ STANDARD = Standard(
         "JF-032":  ["PR.PS-05"],                # agent label interpolates untrusted
         # ── Drone CI ─────────────────────────────────────────────
         "DR-001":  ["GV.SC-05"],                # step image not digest-pinned
+        "HARNESS-001":   ["GV.SC-05"],  # Harness step image not digest-pinned
+        "HARNESS-002":   ["PR.PS-05"],  # Harness expression injection in step command
+        "HARNESS-003":   ["PR.PS-01"],  # Harness privileged step
+        "HARNESS-004":   ["PR.AA-01"],  # Harness literal credential in variable
+        "HARNESS-005":   ["GV.SC-05"],  # Harness pipe-to-shell
+        "HARNESS-006":   ["PR.DS-02"],  # Harness TLS bypass in commands
+        "HARNESS-007":   ["PR.PS-01"],  # Harness sensitive host-path mount
+        "HARNESS-008":   ["PR.PS-05"],  # Harness agentic-CLI prompt injection
+        "HARNESS-010":   ["PR.PS-05"],  # Harness model trust_remote_code (code exec)
+        "HARNESS-011":   ["PR.PS-05"],  # Harness unsafe model deser (pickle RCE)
+        "HARNESS-009":   ["PR.PS-06"],  # Harness agentic-CLI output autolands without review
         "DR-002":  ["PR.PS-01"],                # privileged step
         "DR-003":  ["PR.PS-05"],                # Drone variable injection
         "DR-004":  ["PR.AA-01"],                # literal credential
@@ -994,6 +1025,23 @@ STANDARD = Standard(
         "CC-032":   ["PR.AA-01", "PR.DS-01"],   # secret echoed to CircleCI log
         "SCM-048":  ["PR.AA-05"],                # org codespace secrets scoped to all repos
         "SCM-049":  ["PR.AA-01", "PR.AA-05"],    # classic PAT used where fine-grained suffices
+        "ORG-001":  ["PR.AA-01", "PR.AA-05"],    # org governance: 2FA not required org-wide
+        "ORG-002":  ["PR.AA-01", "PR.AA-05"],    # org governance: default member permission too broad
+        "ORG-003":  ["GV.SC-05", "GV.SC-07"],    # org governance: no Actions allow-list (any action runs)
+        "ORG-004":  ["PR.AA-01", "PR.AA-05"],    # org governance: default workflow token is write
+        "ORG-005":  ["PR.PS-06"],                # org governance: Actions can approve PRs (review bypass)
+        "ORG-006":  ["PR.AA-05"],                # org governance: Actions secret scoped to all repos
+        "ORG-007":  ["PR.AA-05"],                # org governance: private-repo forking allowed (code exfiltration)
+        "GLGRP-001":  ["PR.AA-01", "PR.AA-05"],  # gitlab group: 2FA not required
+        "GLGRP-002":  ["PR.AA-05"],  # gitlab group: forking outside group allowed
+        "GLGRP-003":  ["PR.AA-05"],  # gitlab group: sharing projects outside the hierarchy
+        "GLGRP-004":  ["PR.PS-06", "PR.AA-05"],  # gitlab group: default branch protection disabled for new projects
+        "ORG-008":  ["PR.AA-05"],                # org governance: members can create public repos (code exposure)
+        "ORG-009":  ["PR.PS-01"],                # org governance: self-hosted runner group exposed to public repos
+        "ORG-010":  ["PR.DS-01", "DE.CM-09"],    # org governance: new-repo secret-scanning push-protection default off
+        "ORG-011":  ["PR.DS-02"],                # org governance: org webhook over insecure transport
+        "ORG-012":  ["PR.PS-02", "GV.SC-05"],    # org governance: new-repo Dependabot security-updates default off
+        "ORG-013":  ["PR.PS-06", "PR.PS-01"],    # org governance: org ruleset not enforced (evaluate/disabled)
         "NPM-012":  ["PR.AA-01", "GV.SC-05"],   # publish token missing restrictions
         # ── Azure Cloud (Entra ID / Storage / Key Vault / ACR / Monitor) ──
         "ENTRA-001": ["PR.AA-05"],               # SP assigned Global Administrator

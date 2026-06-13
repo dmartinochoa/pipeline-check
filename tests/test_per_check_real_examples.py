@@ -428,6 +428,7 @@ CASES: list[CheckCase] = [
     CheckCase("GL-047", "CICD-SEC-4", ("ESF-D-INJECTION",)),
     CheckCase("GL-048", "CICD-SEC-4", ("ESF-D-INJECTION",)),
     CheckCase("GL-049", "CICD-SEC-1", ("ESF-C-APPROVAL",)),
+    CheckCase("GL-050", "CICD-SEC-2"),
     CheckCase("GL-037", "CICD-SEC-3", ("ESF-S-VERIFY-DEPS",)),
     # ── Bitbucket Pipelines backfill (BB-026..029) ───────────────────
     CheckCase("BB-026", "CICD-SEC-4", ("ESF-D-INJECTION",)),
@@ -440,6 +441,10 @@ CASES: list[CheckCase] = [
     CheckCase("BB-033", "CICD-SEC-4", ("ESF-D-INJECTION",)),
     CheckCase("BB-034", "CICD-SEC-1", ("ESF-C-APPROVAL", "ESF-C-ENV-SEP")),
     CheckCase("BB-035", "CICD-SEC-4", ("ESF-D-INJECTION",)),
+    CheckCase("BB-036", "CICD-SEC-4", ("ESF-D-INJECTION",)),
+    CheckCase("BB-037", "CICD-SEC-4", ("ESF-D-INJECTION",)),
+    CheckCase("BB-038", "CICD-SEC-3", ("ESF-S-PIN-DEPS", "ESF-S-VERIFY-DEPS")),
+    CheckCase("BB-039", "CICD-SEC-1", ("ESF-C-APPROVAL",)),
     # ── Azure DevOps backfill (ADO-027..030) ─────────────────────────
     CheckCase("ADO-027", "CICD-SEC-4", ("ESF-D-INJECTION",)),
     CheckCase("ADO-028", "CICD-SEC-3", ("ESF-S-PIN-DEPS", "ESF-S-VERIFY-DEPS")),
@@ -449,6 +454,10 @@ CASES: list[CheckCase] = [
     CheckCase("ADO-032", "CICD-SEC-6", ("ESF-D-SECRETS",)),
     CheckCase("ADO-033", "CICD-SEC-4", ("ESF-D-INJECTION",)),
     CheckCase("ADO-034", "CICD-SEC-4", ("ESF-D-INJECTION",)),
+    CheckCase("ADO-035", "CICD-SEC-4", ("ESF-D-INJECTION",)),
+    CheckCase("ADO-036", "CICD-SEC-4", ("ESF-D-INJECTION",)),
+    CheckCase("ADO-037", "CICD-SEC-3", ("ESF-S-PIN-DEPS", "ESF-S-VERIFY-DEPS")),
+    CheckCase("ADO-038", "CICD-SEC-1", ("ESF-C-APPROVAL",)),
     # ── Jenkins backfill (JF-030..035) ───────────────────────────────
     CheckCase("JF-030", "CICD-SEC-4", ("ESF-D-INJECTION",)),
     CheckCase("JF-031", "CICD-SEC-3", ("ESF-S-PIN-DEPS", "ESF-S-VERIFY-DEPS")),
@@ -457,6 +466,8 @@ CASES: list[CheckCase] = [
     CheckCase("JF-034", "CICD-SEC-6"),
     CheckCase("JF-035", "CICD-SEC-3"),
     CheckCase("JF-036", "CICD-SEC-4", ("ESF-D-INJECTION",)),
+    CheckCase("JF-037", "CICD-SEC-4", ("ESF-D-INJECTION",)),
+    CheckCase("JF-038", "CICD-SEC-1", ("ESF-C-APPROVAL",)),
     # Category 3 — reusable-workflow / template pinning
     CheckCase("GHA-025", "CICD-SEC-3", ("ESF-S-PIN-DEPS", "ESF-S-VERIFY-DEPS")),
     CheckCase("ADO-025", "CICD-SEC-3", ("ESF-S-PIN-DEPS", "ESF-S-VERIFY-DEPS")),

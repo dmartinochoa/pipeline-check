@@ -22,8 +22,8 @@ hide:
 # Catch supply-chain risks <span class="accent">before they ship.</span>
 
 <p class="pg-hero__lede">
-A read-only scanner for 35 providers, graded against 18 compliance frameworks. 
-111 of the 1180+ checks also emit a one-shot patch you can apply with <code>--fix</code>.
+A read-only scanner for 39 providers, graded against 18 compliance frameworks. 
+120 of the 1220+ checks also emit a one-shot patch you can apply with <code>--fix</code>.
 </p>
 
 <div class="pg-hero__cta">
@@ -56,10 +56,10 @@ A read-only scanner for 35 providers, graded against 18 compliance frameworks.
 
 <section class="pg-stats" data-reveal>
 <div class="pg-stats__inner">
-  <div class="pg-stat"><div class="pg-stat__num" data-count-to="1180">1180+</div><div class="pg-stat__label">Checks</div></div>
-  <div class="pg-stat"><div class="pg-stat__num" data-count-to="35">35</div><div class="pg-stat__label">Providers</div></div>
+  <div class="pg-stat"><div class="pg-stat__num" data-count-to="1220">1220+</div><div class="pg-stat__label">Checks</div></div>
+  <div class="pg-stat"><div class="pg-stat__num" data-count-to="39">39</div><div class="pg-stat__label">Providers</div></div>
   <div class="pg-stat"><div class="pg-stat__num" data-count-to="18">18</div><div class="pg-stat__label">Compliance standards</div></div>
-  <div class="pg-stat"><div class="pg-stat__num" data-count-to="111">111</div><div class="pg-stat__label">Autofixers</div></div>
+  <div class="pg-stat"><div class="pg-stat__num" data-count-to="120">120</div><div class="pg-stat__label">Autofixers</div></div>
 </div>
 </section>
 
@@ -101,7 +101,7 @@ CloudFormation templates before provisioning. Same rule IDs, same severities.
 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>
 </div>
 ### Attack-chain correlation
-53 multi-finding chains mapped to MITRE ATT&CK, including the cross-provider
+56 multi-finding chains mapped to MITRE ATT&CK, including the cross-provider
 `XPC-NNN` family that fires when GitHub Actions, Dockerfile, Helm, and OCI
 findings line up in one scan. The `TAINT-NNN` dataflow engine follows
 attacker-controllable input across cross-step boundaries on five providers
@@ -141,7 +141,7 @@ regress between releases.
 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z"/></svg>
 </div>
 ### Findings that fix themselves
-111 of the checks ship a one-shot patch. `--fix` prints a unified diff you can
+120 of the checks ship a one-shot patch. `--fix` prints a unified diff you can
 pipe to `git apply`, `--apply` writes the edits in place, and the `fix-pr`
 subcommand commits them to a fresh branch and opens the pull request (or GitLab
 MR). Fixers carry a `safe` / `unsafe` tier, so the default pass only touches
@@ -178,10 +178,11 @@ graph (repos as nodes, cross-repo chains as edges) ships in `fleet.json`.
 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
 </div>
 ### Output that integrates
-Rich terminal table for humans, JSON for scripts, HTML report (with a
-per-resource blast-radius heatmap and an attack-chains panel) for sharing,
-SARIF 2.1.0 for GitHub code scanning and Defender for DevOps, plus
-markdown for PR comments and JUnit XML for test-runner UIs.
+Rich terminal table for humans, JSON / JSON Lines for scripts and log
+pipelines, HTML report (with a per-resource blast-radius heatmap and an
+attack-chains panel) for sharing, SARIF 2.1.0 for GitHub code scanning and
+Defender for DevOps, CycloneDX + SPDX SBOMs, plus markdown for PR comments,
+GitHub Actions annotations, CSV, and JUnit XML for test-runner UIs.
 <a class="pg-feature__link" href="output/">Output formats</a>
 </div>
 
@@ -309,7 +310,7 @@ to force one. Counts reflect the current rule catalog.
   <a class="pg-pipe" href="attack_chains/">
     <span class="pg-pipe__icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg></span>
     <span class="pg-pipe__label">Rule engine</span>
-    <span class="pg-pipe__desc">1180+ checks with severity and fix</span>
+    <span class="pg-pipe__desc">1220+ checks with severity and fix</span>
   </a>
   <a class="pg-pipe" href="standards/">
     <span class="pg-pipe__icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 7l9-4 9 4-9 4-9-4z"/><path d="M3 12l9 4 9-4"/><path d="M3 17l9 4 9-4"/></svg></span>

@@ -378,7 +378,19 @@ _DETECTOR_DESCRIPTIONS: dict[str, str] = {
     "postman_api_key":        "PMAK- + 24 hex + - + 34 hex",
     "tailscale_key":          "tskey-auth/api/client/webhook-<id>-<secret>",
     "sentry_auth_token":      "sntrys_ (org) / sntryu_ (user) + 40+ chars",
+    "groq_api_key":           "gsk_ + 52-char body (Groq)",
+    "xai_api_key":            "xai- + 80-char body (xAI / Grok)",
+    "perplexity_api_key":     "pplx- + 48-char body (Perplexity)",
+    "slack_webhook":          "hooks.slack.com/services/ incoming-webhook URL (Slack)",
+    "discord_webhook":        "discord.com/api/webhooks/ URL (Discord)",
+    "figma_token":            "figd_ + 40-char body (Figma)",
+    "notion_token":           "ntn_ + 40-char body (Notion)",
 }
+
+
+def detector_description(name: str) -> str:
+    """Return the human shape description for a secret detector *name*."""
+    return _DETECTOR_DESCRIPTIONS.get(name, "(see _patterns.py)")
 
 
 def _build_secrets() -> str:

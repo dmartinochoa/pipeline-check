@@ -226,7 +226,16 @@ STANDARD = Standard(
         "GHA-002":  ["Dangerous-Workflow"],
         "RUN-001":  ["Dangerous-Workflow"],
         "RUN-002":  ["Dangerous-Workflow"],
+        "GLRUN-001": ["Dangerous-Workflow"],  # gitlab forensics: merge-request pipeline executed
+        "GLRUN-002": ["Dangerous-Workflow"],  # gitlab forensics: fork merge-request pipeline executed
+        "GLRUN-003": ["Dangerous-Workflow"],  # gitlab forensics: secret leaked in fork pipeline trace
+        "GLRUN-004": ["Dangerous-Workflow"],  # gitlab forensics: fork pipeline minted a cloud OIDC token
+        "GLRUN-005": ["Dangerous-Workflow"],  # gitlab forensics: fork pipeline ran on a self-managed runner
         "RUN-003":  ["Dangerous-Workflow"],
+        "RUN-004":  ["Dangerous-Workflow"],
+        "RUN-005":  ["Dangerous-Workflow"],
+        "RUN-006":  ["Pinned-Dependencies"],
+        "RUN-007":  ["Pinned-Dependencies"],
         "GHA-003":  ["Dangerous-Workflow"],
         "GHA-119":  ["Dangerous-Workflow"],# untrusted context into an agentic AI CLI
         "GHA-120":  ["Dangerous-Workflow"],# trust_remote_code model load = code exec
@@ -260,12 +269,19 @@ STANDARD = Standard(
         "GL-035":   ["Pinned-Dependencies"],                           # pip install without --require-hashes
         "BB-002":   ["Dangerous-Workflow"],
         "BB-035":   ["Dangerous-Workflow"],   # trust_remote_code model load = code exec
+        "BB-036":   ["Dangerous-Workflow"],   # untrusted PR context into agentic CLI = prompt injection
+        "BB-037":   ["Dangerous-Workflow"],   # unsafe pickle deser of fetched artifact = code exec
+        "BB-039":   ["Code-Review"],   # agentic CLI output lands without review
+        "JF-038":   ["Code-Review"],   # agentic CLI output lands without review
         "BB-018":   ["Dangerous-Workflow"],
         "BB-023":   ["Dangerous-Workflow"],
         "BB-025":   ["Dangerous-Workflow"],                            # malicious activity
         "BB-026":   ["Dangerous-Workflow"],
         "ADO-002":  ["Dangerous-Workflow"],
         "ADO-034":  ["Dangerous-Workflow"],   # trust_remote_code model load = code exec
+        "ADO-035":  ["Dangerous-Workflow"],   # untrusted PR context into agentic CLI = prompt injection
+        "ADO-036":  ["Dangerous-Workflow"],   # unsafe pickle deser of fetched artifact = code exec
+        "ADO-038":  ["Code-Review"],   # agentic CLI output lands without review
         "ADO-011":  ["Dangerous-Workflow"],
         "ADO-012":  ["Dangerous-Workflow"],
         "ADO-019":  ["Dangerous-Workflow"],
@@ -273,6 +289,7 @@ STANDARD = Standard(
         "ADO-026":  ["Dangerous-Workflow"],                            # malicious activity
         "ADO-027":  ["Dangerous-Workflow"],
         "JF-002":   ["Dangerous-Workflow"],
+        "JF-037":   ["Dangerous-Workflow"],   # agentic CLI ingests untrusted context (prompt injection)
         "JF-012":   ["Dangerous-Workflow"],
         "JF-013":   ["Dangerous-Workflow"],
         "JF-019":   ["Dangerous-Workflow"],
@@ -365,6 +382,7 @@ STANDARD = Standard(
         "GL-031":   ["Token-Permissions"],                             # id_tokens missing audience
         "GL-040":   ["Token-Permissions"],                             # CI_JOB_TOKEN used for cross-project access
         "GL-041":   ["Dangerous-Workflow"],                            # IaC apply on an untrusted MR trigger
+        "GL-050":   ["Token-Permissions"],  # publish job long-lived registry token (GHA-050 analog)
         "GL-032":   ["Dangerous-Workflow"],                            # tags interpolates untrusted
         "JF-017":   ["Dangerous-Workflow"],                            # docker run privileged/host
         "JF-025":   ["Dangerous-Workflow"],                            # K8s agent privileged / hostPath
@@ -597,6 +615,17 @@ STANDARD = Standard(
         "ARGO-012": ["Vulnerabilities", "SAST"],                       # vuln scanning
         # ── Drone CI ─────────────────────────────────────────────────
         "DR-001":   ["Pinned-Dependencies"],                           # step image not digest-pinned
+        "HARNESS-001":   ["Pinned-Dependencies"],  # Harness step image not digest-pinned
+        "HARNESS-002":   ["Dangerous-Workflow"],  # Harness expression injection in step command
+        "HARNESS-003":   ["Dangerous-Workflow"],  # Harness privileged step
+        "HARNESS-004":   ["Token-Permissions"],  # Harness literal credential in variable
+        "HARNESS-005":   ["Pinned-Dependencies"],  # Harness pipe-to-shell
+        "HARNESS-006":   ["Dangerous-Workflow", "Pinned-Dependencies"],  # Harness TLS bypass in commands
+        "HARNESS-007":   ["Dangerous-Workflow"],  # Harness sensitive host-path mount
+        "HARNESS-008":   ["Dangerous-Workflow"],  # Harness agentic-CLI prompt injection
+        "HARNESS-010":   ["Dangerous-Workflow"],  # Harness model trust_remote_code (code exec)
+        "HARNESS-011":   ["Dangerous-Workflow"],  # Harness unsafe model deser (pickle RCE)
+        "HARNESS-009":   ["Code-Review"],  # Harness agentic-CLI output autolands without review
         "DR-002":   ["Dangerous-Workflow"],                            # privileged step
         "DR-003":   ["Dangerous-Workflow"],                            # ${DRONE_*} parameter injection
         "DR-005":   ["Pinned-Dependencies"],                           # plugin floating tag

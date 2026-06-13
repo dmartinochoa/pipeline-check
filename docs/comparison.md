@@ -30,12 +30,13 @@ missing major surfaces or requires extra config. No = not in scope.
 |---|---|---|---|---|---|---|
 | **CI/CD pipeline configs** | | | | | | |
 | GitHub Actions | Yes (114 rules) | Partial | Yes | Partial | No | No |
-| GitLab CI | Yes (51) | No | Partial | No | No | No |
-| Jenkins (Declarative + Scripted) | Yes (36) | No | No | Partial | No | No |
+| GitLab CI | Yes (52) | No | Partial | No | No | No |
+| Jenkins (Declarative + Scripted) | Yes (38) | No | No | Partial | No | No |
 | CircleCI | Yes (33) | No | Partial | No | No | No |
-| Azure DevOps | Yes (34) | No | Partial | No | No | No |
-| Bitbucket Pipelines | Yes (35) | No | No | No | No | No |
+| Azure DevOps | Yes (38) | No | Partial | No | No | No |
+| Bitbucket Pipelines | Yes (39) | No | No | No | No | No |
 | Google Cloud Build | Yes (27) | No | Partial | No | No | No |
+| Harness CI/CD | Yes (11) | No | No | No | No | No |
 | Buildkite | Yes (17) | No | No | No | No | No |
 | Drone CI | Yes (17) | No | No | No | No | No |
 | Tekton | Yes (17) | No | Partial | No | No | No |
@@ -59,10 +60,10 @@ missing major surfaces or requires extra config. No = not in scope.
 | Package registries (npm / PyPI / Maven / NuGet / Go / Cargo / Composer / RubyGems) | Yes (130 rules across 8 providers) | No | No | No | No | Partial |
 | **Analysis depth** | | | | | | |
 | Dataflow taint, multi-step / cross-job | Yes (TAINT-001..009 across 5 providers) | No | No | Rules-only | No | No |
-| Cross-provider attack chains (MITRE ATT&CK) | Yes (53 chains: 39 AC + 10 XPC + 4 CXPC cross-repo) | No | No | No | No | No |
+| Cross-provider attack chains (MITRE ATT&CK) | Yes (56 chains: 42 AC + 10 XPC + 4 CXPC cross-repo) | No | No | No | No | No |
 | Multi-scanner SARIF ingest + correlation | Yes (`--ingest`, `INGEST-<tool>-<rule>`, chain engine re-evaluates over the union) | No | No | No | No | No |
 | Vulnerable-by-design benchmark | Yes (synthetic `bench/cases` at 6/6 recall, plus pinned real-world goats; both CI-gated) | No | No | No | No | No |
-| Autofix patches (unified diff) | Yes (111 fixers) | Partial | No | Partial | No | No |
+| Autofix patches (unified diff) | Yes (120 fixers) | Partial | No | Partial | No | No |
 | Compliance frameworks (per-finding controls) | 18 (OWASP, SLSA, NIST SSDF, NIST 800-53, NIST 800-190, NIST CSF 2, CIS AWS, CIS Azure, CIS GCP, CIS GitHub, CIS Kubernetes, CIS Supply Chain, PCI DSS, SOC 2, ESF, OpenSSF, S2C2F, OSC&R) | Partial | Partial | Partial | No | Partial |
 | Custom rule DSL | Yes (YAML) | No | Yes (Rego/JSON) | Yes (YAML) | No | Partial |
 | Baseline / new-findings-only | Yes | Partial | No | Yes | No | No |
@@ -126,7 +127,7 @@ Trivy) are the right tool and lead.
   one scan satisfies SOC 2, PCI DSS, NIST SSDF, and SLSA evidence at
   once.
 - **You want autofix as code review, not just text.** `--fix` emits
-  unified-diff patches; `--fix --apply` writes in place. 111 fixers
+  unified-diff patches; `--fix --apply` writes in place. 120 fixers
   cover script injection, secret literals, pinning, securityContext,
   Cloud Build options, Helm chart-supply-chain TODOs, and more.
 

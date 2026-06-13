@@ -225,6 +225,9 @@ STANDARD = Standard(
         "ARGO-001": ["UPD-1"],
         # Drone pinning surface
         "DR-001":   ["UPD-1"],             # step image not digest-pinned
+        "HARNESS-001":   ["UPD-1"],  # Harness step image not digest-pinned
+        "HARNESS-006":   ["ING-1"],  # Harness TLS bypass in commands
+        "HARNESS-009":   ["ENF-1"],  # Harness agentic-CLI output autolands without review
         "DR-005":   ["UPD-1"],             # plugin floating tag
         "DR-008":   ["UPD-1"],             # pull: never (skips registry verification)
         # NPM / PyPI / Maven pinning
@@ -273,6 +276,9 @@ STANDARD = Standard(
         "GHA-014":  ["ENF-1"],
         "GHA-123":  ["ENF-1"],
         "GL-049":   ["ENF-1"],   # agentic CLI output lands without review
+        "BB-039":   ["ENF-1"],   # agentic CLI output lands without review
+        "JF-038":   ["ENF-1"],   # agentic CLI output lands without review
+        "ADO-038":  ["ENF-1"],   # agentic CLI output lands without review
         "GL-004":   ["ENF-1", "ENF-2"],
         "GL-029":   ["ENF-2"],
         "BB-004":   ["ENF-1"],

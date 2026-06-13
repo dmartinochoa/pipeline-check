@@ -161,6 +161,18 @@ STANDARD = Standard(
         "GHA-001":  ["1.4.1", "3.1.5"],                  # unpinned 3rd-party action
         "GHA-110": ["1.4.1"],  # CI env disables Go module verification
         "GHA-002":  ["2.1.3", "2.3.8"],                  # pull_request_target + PR head
+        "RUN-001":  ["2.1.3", "2.3.8"],                  # forensics: fork PR ran on privileged trigger
+        "RUN-002":  ["2.1.3", "2.3.8"],                  # forensics: privileged trigger fired
+        "GLRUN-001": ["2.1.3", "2.3.8"],  # gitlab forensics: merge-request pipeline executed
+        "GLRUN-002": ["2.1.3", "2.3.8"],  # gitlab forensics: fork merge-request pipeline executed
+        "GLRUN-003": ["2.1.3", "2.3.8"],  # gitlab forensics: secret leaked in fork pipeline trace
+        "GLRUN-004": ["2.1.3", "2.3.8"],  # gitlab forensics: fork pipeline minted a cloud OIDC token
+        "GLRUN-005": ["2.1.3", "2.3.8"],  # gitlab forensics: fork pipeline ran on a self-managed runner
+        "RUN-003":  ["2.1.3", "2.3.8"],                  # forensics: secret leaked in run logs
+        "RUN-004":  ["2.1.3", "2.3.8"],                  # forensics: fork run minted a cloud OIDC token
+        "RUN-005":  ["2.1.3", "2.3.8"],                  # forensics: fork run on a self-hosted runner
+        "RUN-006":  ["1.4.1", "3.1.3"],                  # forensics: known-compromised action executed
+        "RUN-007":  ["1.4.1", "3.1.3"],                  # forensics: unpinned third-party action ran with secrets
         "GHA-003":  ["2.1.3"],                           # script injection
         "GHA-119":  ["2.1.3"],                           # untrusted context into an agentic AI CLI
         "GHA-120":  ["2.1.3"],                           # trust_remote_code model load = code exec
@@ -304,6 +316,7 @@ STANDARD = Standard(
         "GL-031":   ["1.3.4", "2.4.3", "5.2.1"],         # id_tokens missing audience/env binding
         "GL-040":   ["1.3.4", "2.4.3", "5.2.1"],         # CI_JOB_TOKEN used for cross-project access
         "GL-041":   ["2.1.3"],                           # IaC apply on an untrusted MR trigger
+        "GL-050":   ["1.3.4", "2.4.2", "4.3.3"],  # publish job long-lived registry token (GHA-050 analog)
         "GL-032":   ["2.1.3"],                           # tags: interpolates untrusted variable
         "GL-033":   ["2.1.3", "2.3.8"],                  # global before_script taint
         "GL-034":   ["1.4.1", "3.1.3"],                  # npm install without audit signatures
@@ -312,6 +325,11 @@ STANDARD = Standard(
         "BB-001":   ["1.4.1", "3.1.5"],
         "BB-002":   ["2.1.3", "2.3.8"],
         "BB-035":   ["2.1.3"],   # trust_remote_code model load = code exec
+        "BB-036":   ["2.1.3", "2.3.8"],                  # untrusted PR context into agentic CLI
+        "BB-037":   ["2.1.3"],                           # unsafe pickle deser of fetched artifact
+        "BB-038":   ["1.4.1", "3.1.5"],                  # model pulled without a pinned revision
+        "BB-039":   ["5.1.4", "5.2.1"],                  # agentic CLI output lands without review
+        "JF-038":   ["5.1.4", "5.2.1"],                  # agentic CLI output lands without review
         "BB-003":   ["1.5.1", "2.3.4", "2.4.3"],
         "BB-004":   ["5.1.4", "5.2.1"],
         "BB-005":   ["2.2.2"],
@@ -345,6 +363,10 @@ STANDARD = Standard(
         "ADO-001":  ["1.4.1", "3.1.5"],
         "ADO-002":  ["2.1.3", "2.3.8"],
         "ADO-034":  ["2.1.3"],   # trust_remote_code model load = code exec
+        "ADO-035":  ["2.1.3", "2.3.8"],                  # untrusted PR context into agentic CLI
+        "ADO-036":  ["2.1.3"],                           # unsafe pickle deser of fetched artifact
+        "ADO-037":  ["1.4.1", "3.1.5"],                  # model pulled without a pinned revision
+        "ADO-038":  ["5.1.4", "5.2.1"],                  # agentic CLI output lands without review
         "ADO-003":  ["1.5.1", "2.3.4", "2.4.3"],
         "ADO-004":  ["5.1.4", "5.2.1"],
         "ADO-005":  ["1.4.1", "3.1.5"],
@@ -563,6 +585,7 @@ STANDARD = Standard(
         # ── Jenkins ───────────────────────────────────────────────
         "JF-001":   ["1.4.1", "3.1.3"],            # shared library not pinned
         "JF-002":   ["2.1.3", "2.3.8"],            # script step interpolates untrusted env
+        "JF-037":   ["2.1.3", "2.3.8"],            # agentic CLI ingests untrusted context (prompt injection)
         "JF-003":   ["2.4.3"],                     # agent any (no executor isolation)
         "JF-004":   ["1.3.4"],                     # AWS long-lived keys via withCredentials
         "JF-005":   ["5.1.4", "5.2.1"],            # deploy stage missing manual input
@@ -598,6 +621,17 @@ STANDARD = Standard(
         "JF-035":   ["1.4.1", "3.1.5"],            # httpRequest SSL verification off
         # ── Drone CI ──────────────────────────────────────────────
         "DR-001":   ["1.4.1", "3.1.3"],            # step image not digest-pinned
+        "HARNESS-001":   ["1.4.1", "3.1.3"],  # Harness step image not digest-pinned
+        "HARNESS-002":   ["2.1.3", "2.3.8"],  # Harness expression injection in step command
+        "HARNESS-003":   ["2.1.3"],  # Harness privileged step
+        "HARNESS-004":   ["1.5.1", "2.3.4"],  # Harness literal credential in variable
+        "HARNESS-005":   ["1.4.1"],  # Harness pipe-to-shell
+        "HARNESS-006":   ["3.1.5", "1.4.1"],  # Harness TLS bypass in commands
+        "HARNESS-007":   ["2.1.3"],  # Harness sensitive host-path mount
+        "HARNESS-008":   ["2.1.3", "2.3.8"],  # Harness agentic-CLI prompt injection
+        "HARNESS-010":   ["2.1.3"],  # Harness model trust_remote_code (code exec)
+        "HARNESS-011":   ["2.1.3"],  # Harness unsafe model deser (pickle RCE)
+        "HARNESS-009":   ["5.1.4", "5.2.1"],  # Harness agentic-CLI output autolands without review
         "DR-002":   ["2.1.3"],                     # step privileged
         "DR-003":   ["2.1.3", "2.3.8"],            # Drone variable injection in shell
         "DR-004":   ["1.5.1", "2.3.4"],            # literal credential in env
@@ -950,6 +984,23 @@ STANDARD = Standard(
         "CC-032":   ["1.5.1", "2.3.4"],                  # secret echoed to CircleCI log
         "SCM-048":  ["2.4.3"],                           # org codespace secrets scoped to all repos
         "SCM-049":  ["1.3.4"],                           # classic PAT where fine-grained suffices
+        "ORG-001":  ["1.3.4"],                           # org: 2FA not required org-wide
+        "ORG-002":  ["1.3.4"],                           # org: default member permission too broad
+        "ORG-003":  ["1.4.1", "3.1.5"],                  # org: no Actions allow-list (any action runs)
+        "ORG-004":  ["1.3.4"],                           # org: default workflow token is write
+        "ORG-005":  ["1.1.5"],                           # org: Actions can approve PRs (review bypass)
+        "ORG-006":  ["2.4.3"],                           # org: Actions secret scoped to all repos
+        "ORG-007":  ["1.3.4"],                           # org: private-repo forking allowed (code exfiltration)
+        "GLGRP-001":  ["1.3.4"],  # gitlab group: 2FA not required
+        "GLGRP-002":  ["1.3.4"],  # gitlab group: forking outside group allowed
+        "GLGRP-003":  ["1.3.4"],  # gitlab group: sharing projects outside the hierarchy
+        "GLGRP-004":  ["1.1.17"],  # gitlab group: default branch protection disabled for new projects
+        "ORG-008":  ["1.3.4"],                           # org: members can create public repos (code exposure)
+        "ORG-009":  ["2.2.2"],                           # org: self-hosted runner group exposed to public repos
+        "ORG-010":  ["1.5.1"],                           # org: new-repo secret-scanning push-protection default off
+        "ORG-011":  ["2.4.3"],                           # org: org webhook over insecure transport
+        "ORG-012":  ["1.1.8"],                           # org: new-repo Dependabot security-updates default off
+        "ORG-013":  ["1.1.17"],                          # org: org ruleset not enforced (evaluate/disabled)
         # GitLab-specific platform posture (SCM-050..053)
         "SCM-050":  ["1.5.1"],                           # GitLab push rules: prevent_secrets
         "SCM-051":  ["1.1.6"],                           # GitLab push rules: committer-email check

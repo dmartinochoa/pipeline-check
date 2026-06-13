@@ -92,15 +92,20 @@ STANDARD = Standard(
         "GL-026":   ["4.1.3"],
         "BB-002":   ["4.1.3"],
         "BB-035":   ["4.1.3"],   # trust_remote_code model load = code exec
+        "BB-036":   ["4.1.3"],   # untrusted PR context into agentic CLI = prompt injection
+        "BB-037":   ["4.1.3"],   # unsafe pickle deser of fetched artifact = code exec
         "BB-012":   ["4.1.3"],
         "BB-025":   ["4.1.3"],
         "BB-026":   ["4.1.3"],
         "ADO-002":  ["4.1.3"],
         "ADO-034":  ["4.1.3"],   # trust_remote_code model load = code exec
+        "ADO-035":  ["4.1.3"],   # untrusted PR context into agentic CLI = prompt injection
+        "ADO-036":  ["4.1.3"],   # unsafe pickle deser of fetched artifact = code exec
         "ADO-016":  ["4.1.3"],
         "ADO-026":  ["4.1.3"],
         "ADO-027":  ["4.1.3"],
         "JF-002":   ["4.1.3"],
+        "JF-037":   ["4.1.3"],   # agentic CLI ingests untrusted context (prompt injection)
         "JF-016":   ["4.1.3"],
         "JF-029":   ["4.1.3"],
         "JF-030":   ["4.1.3"],
@@ -581,6 +586,16 @@ STANDARD = Standard(
         "CC-022":  ["4.1.5"],                      # dep-update bypasses lockfile pins
         # ── Drone CI ─────────────────────────────────────────────
         "DR-001":  ["4.1.5"],                      # step image not digest-pinned
+        "HARNESS-001":   ["4.1.5"],  # Harness step image not digest-pinned
+        "HARNESS-002":   ["4.4.5"],  # Harness expression injection in step command
+        "HARNESS-003":   ["4.1.2", "4.4.4"],  # Harness privileged step
+        "HARNESS-004":   ["4.1.4"],  # Harness literal credential in variable
+        "HARNESS-005":   ["4.1.5", "4.4.5"],  # Harness pipe-to-shell
+        "HARNESS-006":   ["4.2.1"],  # Harness TLS bypass in commands
+        "HARNESS-007":   ["4.4.4"],  # Harness sensitive host-path mount
+        "HARNESS-008":   ["4.1.3"],  # Harness agentic-CLI prompt injection
+        "HARNESS-010":   ["4.1.3"],  # Harness model trust_remote_code (code exec)
+        "HARNESS-011":   ["4.1.3"],  # Harness unsafe model deser (pickle RCE)
         "DR-002":  ["4.1.2", "4.4.4"],             # privileged step
         "DR-003":  ["4.4.5"],                      # Drone variable injection
         "DR-004":  ["4.1.4"],                      # literal credential

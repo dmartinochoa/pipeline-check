@@ -1,0 +1,4 @@
+jobs:
+  - job: Triage
+    steps:
+      - script: claude -p "Summarize the test results in build.txt"

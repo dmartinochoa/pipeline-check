@@ -245,23 +245,6 @@ def find_run_command(
     return None
 
 
-def effective_permissions(
-    workflow: dict[str, Any],
-    inherited: dict[str, Any] | str | None = None,
-) -> dict[str, Any] | str | None:
-    """Return the permissions block that *runtime* sees for this workflow.
-
-    A workflow's own ``permissions:`` always wins; only when it's
-    absent does the caller's block apply (this matches GitHub's
-    runtime semantics for reusable workflows). For top-level scans
-    this is just the workflow's own ``permissions:``.
-    """
-    own = workflow.get("permissions")
-    if own is not None:
-        return own  # type: ignore[no-any-return]
-    return inherited
-
-
 def workflow_triggers(workflow: dict[str, Any]) -> list[str]:
     """Return the list of event names this workflow is triggered by.
 

@@ -141,7 +141,16 @@ STANDARD = Standard(
         "GHA-002":  ["CICD-SEC-4"],
         "RUN-001":  ["CICD-SEC-4"],
         "RUN-002":  ["CICD-SEC-4"],
+        "GLRUN-001": ["CICD-SEC-4"],  # gitlab forensics: merge-request pipeline executed
+        "GLRUN-002": ["CICD-SEC-4"],  # gitlab forensics: fork merge-request pipeline executed
+        "GLRUN-003": ["CICD-SEC-4"],  # gitlab forensics: secret leaked in fork pipeline trace
+        "GLRUN-004": ["CICD-SEC-4"],  # gitlab forensics: fork pipeline minted a cloud OIDC token
+        "GLRUN-005": ["CICD-SEC-4"],  # gitlab forensics: fork pipeline ran on a self-managed runner
         "RUN-003":  ["CICD-SEC-4"],
+        "RUN-004":  ["CICD-SEC-4"],
+        "RUN-005":  ["CICD-SEC-4"],
+        "RUN-006":  ["CICD-SEC-3", "CICD-SEC-4"],  # forensics: known-compromised action executed
+        "RUN-007":  ["CICD-SEC-3", "CICD-SEC-4"],  # forensics: unpinned third-party action ran with secrets
         "GHA-003":  ["CICD-SEC-4"],
         "GHA-119":  ["CICD-SEC-4"],# untrusted context into an agentic AI CLI
         "GHA-120":  ["CICD-SEC-4"],# trust_remote_code model load = code exec
@@ -286,6 +295,7 @@ STANDARD = Standard(
         "GL-031":   ["CICD-SEC-2"],   # id_tokens missing audience pin / env binding
         "GL-040":   ["CICD-SEC-2"],   # CI_JOB_TOKEN used for cross-project access
         "GL-041":   ["CICD-SEC-4"],   # IaC apply on an untrusted MR trigger
+        "GL-050":   ["CICD-SEC-2", "CICD-SEC-6"],  # publish job long-lived registry token (GHA-050 analog)
         "GL-043":   ["CICD-SEC-7"],   # native security scanner disabled
         "BB-033":   ["CICD-SEC-4"],   # IaC apply on a pull-request pipeline
         "BB-034":   ["CICD-SEC-1"],   # production deploy on a pull-request pipeline
@@ -297,6 +307,11 @@ STANDARD = Standard(
         "BB-001":   ["CICD-SEC-3", "CICD-SEC-8"],
         "BB-002":   ["CICD-SEC-4"],
         "BB-035":   ["CICD-SEC-4"],   # trust_remote_code model load = code exec
+        "BB-036":   ["CICD-SEC-4"],   # untrusted PR context into agentic CLI = prompt injection
+        "BB-037":   ["CICD-SEC-4"],   # unsafe pickle deser of fetched artifact = code exec
+        "BB-038":   ["CICD-SEC-3"],   # model pulled without a pinned revision
+        "BB-039":   ["CICD-SEC-1"],   # agentic CLI output lands without review
+        "JF-038":   ["CICD-SEC-1"],   # agentic CLI output lands without review
         "BB-003":   ["CICD-SEC-6"],
         "BB-004":   ["CICD-SEC-1"],
         "BB-005":   ["CICD-SEC-7"],
@@ -330,6 +345,10 @@ STANDARD = Standard(
         "ADO-001":  ["CICD-SEC-3", "CICD-SEC-8"],
         "ADO-002":  ["CICD-SEC-4"],
         "ADO-034":  ["CICD-SEC-4"],   # trust_remote_code model load = code exec
+        "ADO-035":  ["CICD-SEC-4"],   # untrusted PR context into agentic CLI = prompt injection
+        "ADO-036":  ["CICD-SEC-4"],   # unsafe pickle deser of fetched artifact = code exec
+        "ADO-037":  ["CICD-SEC-3"],   # model pulled without a pinned revision
+        "ADO-038":  ["CICD-SEC-1"],   # agentic CLI output lands without review
         "ADO-003":  ["CICD-SEC-6"],
         "ADO-004":  ["CICD-SEC-1"],
         "ADO-005":  ["CICD-SEC-3"],
@@ -361,6 +380,7 @@ STANDARD = Standard(
         # Jenkins
         "JF-001":   ["CICD-SEC-3"],
         "JF-002":   ["CICD-SEC-4"],
+        "JF-037":   ["CICD-SEC-4"],   # agentic CLI ingests untrusted context (prompt injection)
         "JF-003":   ["CICD-SEC-5"],
         "JF-004":   ["CICD-SEC-6"],
         "JF-005":   ["CICD-SEC-1"],
@@ -800,6 +820,17 @@ STANDARD = Standard(
         "TAINT-009": ["CICD-SEC-5", "CICD-SEC-2"],  # env-protected secret flows to unprotected job
         # Drone CI
         "DR-001":   ["CICD-SEC-3"],                 # step image not digest-pinned
+        "HARNESS-001":   ["CICD-SEC-3"],  # Harness step image not digest-pinned
+        "HARNESS-002":   ["CICD-SEC-4"],  # Harness expression injection in step command
+        "HARNESS-003":   ["CICD-SEC-5"],  # Harness privileged step
+        "HARNESS-004":   ["CICD-SEC-6", "CICD-SEC-7"],  # Harness literal credential in variable
+        "HARNESS-005":   ["CICD-SEC-3", "CICD-SEC-5"],  # Harness pipe-to-shell
+        "HARNESS-006":   ["CICD-SEC-3", "CICD-SEC-1"],  # Harness TLS bypass in commands
+        "HARNESS-007":   ["CICD-SEC-5"],  # Harness sensitive host-path mount
+        "HARNESS-008":   ["CICD-SEC-4"],  # Harness agentic-CLI prompt injection
+        "HARNESS-010":   ["CICD-SEC-4"],  # Harness model trust_remote_code (code exec)
+        "HARNESS-011":   ["CICD-SEC-4"],  # Harness unsafe model deser (pickle RCE)
+        "HARNESS-009":   ["CICD-SEC-1"],  # Harness agentic-CLI output autolands without review
         "DR-002":   ["CICD-SEC-5"],                 # step privileged
         "DR-003":   ["CICD-SEC-4", "CICD-SEC-1"],   # Drone variable injection
         "DR-004":   ["CICD-SEC-6", "CICD-SEC-7"],   # literal secret
@@ -884,6 +915,23 @@ STANDARD = Standard(
         "SCM-047":  ["CICD-SEC-10"],               # repo language not covered by default scanning
         "SCM-048":  ["CICD-SEC-2"],                # org codespace secret scoped to all repos
         "SCM-049":  ["CICD-SEC-2"],                # classic PAT used where fine-grained suffices
+        "ORG-001":  ["CICD-SEC-2"],                # org: 2FA not required org-wide
+        "ORG-002":  ["CICD-SEC-2"],                # org: default member permission too broad
+        "ORG-003":  ["CICD-SEC-3"],                # org: no Actions allow-list (any action runs)
+        "ORG-004":  ["CICD-SEC-2"],                # org: default workflow token is write
+        "ORG-005":  ["CICD-SEC-1"],                # org: Actions can approve PRs (review bypass)
+        "ORG-006":  ["CICD-SEC-2"],                # org: Actions secret scoped to all repos
+        "ORG-007":  ["CICD-SEC-2"],                # org: private-repo forking allowed (code exfiltration)
+        "GLGRP-001":  ["CICD-SEC-2"],  # gitlab group: 2FA not required
+        "GLGRP-002":  ["CICD-SEC-2"],  # gitlab group: forking outside group allowed
+        "GLGRP-003":  ["CICD-SEC-2"],  # gitlab group: sharing projects outside the hierarchy
+        "GLGRP-004":  ["CICD-SEC-1"],  # gitlab group: default branch protection disabled for new projects
+        "ORG-008":  ["CICD-SEC-2"],                # org: members can create public repos (code exposure)
+        "ORG-009":  ["CICD-SEC-4", "CICD-SEC-7"],   # org: self-hosted runner group exposed to public repos
+        "ORG-010":  ["CICD-SEC-6"],                # org: new-repo secret-scanning push-protection default off
+        "ORG-011":  ["CICD-SEC-6", "CICD-SEC-10"],  # org: org webhook over insecure transport
+        "ORG-012":  ["CICD-SEC-3", "CICD-SEC-10"],  # org: new-repo Dependabot security-updates default off
+        "ORG-013":  ["CICD-SEC-1", "CICD-SEC-5"],   # org: org ruleset not enforced (evaluate/disabled)
         # GitLab-specific platform posture (SCM-050..053)
         "SCM-050":  ["CICD-SEC-6"],                # GitLab push rules: prevent_secrets
         "SCM-051":  ["CICD-SEC-1", "CICD-SEC-6"],  # GitLab push rules: committer-email check

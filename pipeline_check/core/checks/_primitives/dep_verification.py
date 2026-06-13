@@ -161,11 +161,6 @@ def has_hash_pinning_manager(body: str) -> bool:
     return bool(_HASH_PINNING_MANAGER_RE.search(body))
 
 
-def has_pip_hash_verification(body: str) -> bool:
-    """``True`` if *body* enables pip hash verification by any mechanism."""
-    return has_require_hashes(body) or has_hash_pinning_manager(body)
-
-
 def is_real_pip_install_line(line: str) -> bool:
     """``True`` if *line* runs a non-tooling-only pip install.
 

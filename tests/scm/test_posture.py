@@ -4497,3 +4497,103 @@ class TestSCM055:
             },
         )
         assert _by_id(_findings(snap), "SCM-055").passed
+
+
+# ── Org-wide fan-out: SCMContext.for_org ────────────────────────────
+
+
+def _org_findings(ctx: SCMContext) -> list[Any]:
+    return SCMPostureChecks(ctx).run()
+
+
+class TestOrgFanout:
+    _REPOS_PAGE = "orgs/acme/repos?per_page=100&page=1&type=all"
+
+    def _fake(self) -> FakeSCMFetcher:
+        # Two live repos + one archived (must be skipped). Each live repo
+        # has metadata but no branch protection (404 -> None), so SCM-001
+        # fires for each.
+        return FakeSCMFetcher({
+            self._REPOS_PAGE: [
+                {"name": "alpha", "full_name": "acme/alpha", "archived": False},
+                {"name": "beta", "full_name": "acme/beta", "archived": False},
+                {"name": "old", "full_name": "acme/old", "archived": True},
+            ],
+            "repos/acme/alpha": {"default_branch": "main"},
+            "repos/acme/beta": {"default_branch": "main"},
+        })
+
+    def test_enumerates_all_non_archived_repos(self):
+        ctx = SCMContext.for_org("acme", self._fake())
+        names = {snap.name for snap in ctx.repos}
+        assert names == {"alpha", "beta"}  # archived "old" skipped
+        assert ctx.files_scanned == 2
+
+    def test_runs_per_repo_pack_across_org(self):
+        ctx = SCMContext.for_org("acme", self._fake())
+        findings = _org_findings(ctx)
+        scm001 = [f for f in findings if f.check_id == "SCM-001"]
+        # One SCM-001 finding per repo, both failing (no protection).
+        resources = {f.resource for f in scm001 if not f.passed}
+        assert resources == {"github:acme/alpha", "github:acme/beta"}
+
+    def test_empty_org_degrades_with_warning(self):
+        ctx = SCMContext.for_org("acme", FakeSCMFetcher({self._REPOS_PAGE: []}))
+        assert ctx.repos == []
+        assert ctx.files_skipped == 1
+        assert any("enumerated no repositories" in w for w in ctx.warnings)
+
+    def test_enumeration_unavailable_degrades(self):
+        # Token lacks scope -> the repos endpoint returns None, not a list.
+        ctx = SCMContext.for_org("acme", FakeSCMFetcher({}))
+        assert ctx.repos == []
+        assert ctx.warnings
+
+    def test_paginates_past_first_full_page(self):
+        page1 = [
+            {"name": f"r{i}", "full_name": f"acme/r{i}", "archived": False}
+            for i in range(100)
+        ]
+        mapping: dict[str, Any] = {
+            "orgs/acme/repos?per_page=100&page=1&type=all": page1,
+            "orgs/acme/repos?per_page=100&page=2&type=all": [
+                {"name": "last", "full_name": "acme/last", "archived": False},
+            ],
+        }
+        for i in range(100):
+            mapping[f"repos/acme/r{i}"] = {"default_branch": "main"}
+        mapping["repos/acme/last"] = {"default_branch": "main"}
+        ctx = SCMContext.for_org("acme", FakeSCMFetcher(mapping))
+        assert len(ctx.repos) == 101
+        assert any(snap.name == "last" for snap in ctx.repos)
+
+    def test_include_glob_filters_repos(self):
+        ctx = SCMContext.for_org(
+            "acme", self._fake(), include=("al*",),
+        )
+        assert {snap.name for snap in ctx.repos} == {"alpha"}
+
+    def test_exclude_glob_filters_repos(self):
+        ctx = SCMContext.for_org(
+            "acme", self._fake(), exclude=("beta",),
+        )
+        assert {snap.name for snap in ctx.repos} == {"alpha"}
+
+    def test_filters_to_empty_records_warning(self):
+        ctx = SCMContext.for_org(
+            "acme", self._fake(), include=("nomatch*",),
+        )
+        assert ctx.repos == []
+        assert any("filtered out" in w for w in ctx.warnings)
+
+    def test_max_repos_caps_and_warns(self):
+        ctx = SCMContext.for_org("acme", self._fake(), max_repos=1)
+        assert len(ctx.repos) == 1
+        assert any("capping the fan-out" in w for w in ctx.warnings)
+
+    def test_repo_order_is_deterministic_under_concurrency(self):
+        # Snapshots build concurrently, but executor.map preserves the
+        # enumeration order so the repos list is deterministic.
+        for _ in range(3):
+            ctx = SCMContext.for_org("acme", self._fake())
+            assert [snap.name for snap in ctx.repos] == ["alpha", "beta"]

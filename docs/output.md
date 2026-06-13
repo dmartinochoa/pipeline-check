@@ -7,11 +7,14 @@ format carries the same finding set, only the rendering differs.
 |------------|------------------------------|------------------------------------------------------|
 | `terminal` | stdout (rich-formatted)      | Human reading in a local shell / CI log              |
 | `json`     | stdout                       | Machine parsing (`jq`, artifact archival)            |
+| `jsonl`    | stdout or `--output-file`    | Newline-delimited JSON, one failing finding per line (same shape as the `json` `findings` entries). Streamed / appended into log pipelines (Splunk, ELK, Datadog) or processed line by line with `jq -c` without loading the whole report |
 | `html`     | `--output-file` (required)   | Emailed / attached reports, screenshots              |
 | `sarif`    | stdout or `--output-file`    | GitHub code scanning, GitLab SAST, any SARIF UI      |
 | `markdown` | stdout or `--output-file`    | PR comments / Slack-style consumers; Attack Chains H2 sits between summary and the Failures table |
 | `junit`    | stdout or `--output-file`    | Test-runner UIs (Jenkins, Bamboo, GitLab pipelines) that natively render JUnit XML |
 | `codequality` | stdout or `--output-file` | GitLab Code Quality JSON. Annotates Merge Request diffs natively via the `codequality` artifact report |
+| `csv`      | stdout or `--output-file`    | Flat, one-row-per-location export of the failing findings for spreadsheet triage: filter by severity, assign owners, track remediation. Columns: `check_id, severity, confidence, resource, file, line, title, description, recommendation, cwe` |
+| `annotations` | stdout (in a GitHub Actions job) | GitHub Actions workflow commands (`::error` / `::warning` / `::notice file=…,line=…::message`). Printed in a job, GitHub renders them as inline annotations on the changed lines and PR — no SARIF upload step or code-scanning / Advanced Security required, so any repo gets inline feedback. CRITICAL/HIGH → `::error`, MEDIUM → `::warning`, LOW/INFO → `::notice` |
 | `threatmodel` | stdout or `--output-file` | STRIDE-mapped Markdown threat-model document. Auto-runs `--inventory`. SOC 2 / PCI / NIST SSDF evidence packages, architecture-review docs |
 | `cyclonedx` | stdout or `--output-file`  | CycloneDX 1.6 JSON SBOM of build-time dependencies (actions, base images, packages). PURL identifiers on every component |
 | `spdx` | stdout or `--output-file`  | SPDX 2.3 JSON SBOM of the same build-time dependencies. Each package carries a PURL `externalRef`; the document `DESCRIBES` every package |

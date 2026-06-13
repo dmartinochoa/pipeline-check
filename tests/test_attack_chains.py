@@ -193,6 +193,7 @@ class TestEngine:
             "AC-025", "AC-026", "AC-027", "AC-028", "AC-029",
             "AC-030", "AC-031", "AC-032", "AC-033", "AC-034",
             "AC-035", "AC-036", "AC-037", "AC-038", "AC-039",
+            "AC-040", "AC-041", "AC-042",
             "XPC-001", "XPC-002", "XPC-003", "XPC-004", "XPC-005",
             "XPC-006", "XPC-007", "XPC-008", "XPC-009", "XPC-010",
             "CXPC-001", "CXPC-002", "CXPC-003", "CXPC-004",
@@ -3938,5 +3939,191 @@ class TestAC039UntrustedTriggerBulkSecrets:
         out = self._ac039([
             _f("GHA-002", self.WF),
             _f("GHA-116", self.WF, passed=True),
+        ])
+        assert out == []
+
+
+class TestChainAC040:
+    """AC-040: prompt-injected agent commits its output with no human
+    review (injection leg + autoland leg, per provider, same resource)."""
+
+    def _ac040(self, findings):
+        return [c for c in chains_pkg.evaluate(findings) if c.chain_id == "AC-040"]
+
+    def test_github_pair_fires_critical(self):
+        wf = ".github/workflows/ai.yml"
+        out = self._ac040([_f("GHA-119", wf), _f("GHA-123", wf)])
+        assert len(out) == 1
+        assert out[0].severity is Severity.CRITICAL
+        assert out[0].triggering_check_ids == ["GHA-119", "GHA-123"]
+        assert out[0].resources == [wf]
+
+    def test_gitlab_pair_fires(self):
+        f = ".gitlab-ci.yml"
+        out = self._ac040([_f("GL-048", f), _f("GL-049", f)])
+        assert len(out) == 1
+        assert out[0].triggering_check_ids == ["GL-048", "GL-049"]
+
+    def test_bitbucket_pair_fires(self):
+        f = "bitbucket-pipelines.yml"
+        out = self._ac040([_f("BB-036", f), _f("BB-039", f)])
+        assert len(out) == 1
+        assert out[0].triggering_check_ids == ["BB-036", "BB-039"]
+
+    def test_azure_pair_fires(self):
+        f = "azure-pipelines.yml"
+        out = self._ac040([_f("ADO-035", f), _f("ADO-038", f)])
+        assert len(out) == 1
+        assert out[0].triggering_check_ids == ["ADO-035", "ADO-038"]
+
+    def test_jenkins_pair_fires(self):
+        f = "Jenkinsfile"
+        out = self._ac040([_f("JF-037", f), _f("JF-038", f)])
+        assert len(out) == 1
+        assert out[0].triggering_check_ids == ["JF-037", "JF-038"]
+
+    def test_harness_pair_fires(self):
+        f = ".harness/build.yaml"
+        out = self._ac040([_f("HARNESS-008", f), _f("HARNESS-009", f)])
+        assert len(out) == 1
+        assert out[0].triggering_check_ids == ["HARNESS-008", "HARNESS-009"]
+
+    def test_no_chain_without_autoland_leg(self):
+        wf = ".github/workflows/ai.yml"
+        assert self._ac040([_f("GHA-119", wf)]) == []
+
+    def test_no_chain_without_injection_leg(self):
+        wf = ".github/workflows/ai.yml"
+        assert self._ac040([_f("GHA-123", wf)]) == []
+
+    def test_no_cross_provider_mix(self):
+        # An injection leg in one provider and an autoland leg in another
+        # never compose, even if (pathologically) on the same resource key.
+        f = "shared.yml"
+        assert self._ac040([_f("GHA-119", f), _f("GL-049", f)]) == []
+
+    def test_no_chain_across_different_resources(self):
+        out = self._ac040([
+            _f("GHA-119", ".github/workflows/a.yml"),
+            _f("GHA-123", ".github/workflows/b.yml"),
+        ])
+        assert out == []
+
+    def test_passed_finding_does_not_chain(self):
+        wf = ".github/workflows/ai.yml"
+        out = self._ac040([_f("GHA-119", wf), _f("GHA-123", wf, passed=True)])
+        assert out == []
+
+    def test_confidence_inherits_weakest_leg(self):
+        wf = ".github/workflows/ai.yml"
+        out = self._ac040([
+            _f("GHA-119", wf, confidence=Confidence.HIGH),
+            _f("GHA-123", wf, confidence=Confidence.MEDIUM),
+        ])
+        assert len(out) == 1
+        assert out[0].confidence is Confidence.MEDIUM
+
+
+class TestChainAC041:
+    """AC-041: compromised action executed AND a credential left the run,
+    both legs on the same run (RUN-006 + RUN-003 / RUN-004)."""
+
+    RUN = "github:owner/repo#run/42"
+
+    def _ac041(self, findings):
+        return [c for c in chains_pkg.evaluate(findings) if c.chain_id == "AC-041"]
+
+    def test_run006_plus_secret_leak_fires_critical(self):
+        out = self._ac041([_f("RUN-006", self.RUN), _f("RUN-003", self.RUN)])
+        assert len(out) == 1
+        assert out[0].severity is Severity.CRITICAL
+        assert out[0].triggering_check_ids == ["RUN-006", "RUN-003"]
+        assert out[0].confirmed_reachable is True
+        assert out[0].via_structural is True
+        assert "#run/42" in out[0].reachability_note
+
+    def test_run006_plus_oidc_mint_fires(self):
+        out = self._ac041([_f("RUN-006", self.RUN), _f("RUN-004", self.RUN)])
+        assert len(out) == 1
+        assert out[0].triggering_check_ids == ["RUN-006", "RUN-004"]
+
+    def test_both_exfil_legs_dedup_to_one(self):
+        out = self._ac041([
+            _f("RUN-006", self.RUN), _f("RUN-003", self.RUN),
+            _f("RUN-004", self.RUN),
+        ])
+        assert len(out) == 1
+        # Dedup keeps the RUN-003 leg per run.
+        assert out[0].triggering_check_ids == ["RUN-006", "RUN-003"]
+
+    def test_no_chain_without_compromised_action(self):
+        assert self._ac041([_f("RUN-003", self.RUN)]) == []
+
+    def test_no_chain_without_exfil_leg(self):
+        assert self._ac041([_f("RUN-006", self.RUN)]) == []
+
+    def test_no_chain_across_different_runs(self):
+        out = self._ac041([
+            _f("RUN-006", "github:owner/repo#run/1"),
+            _f("RUN-003", "github:owner/repo#run/2"),
+        ])
+        assert out == []
+
+    def test_passed_finding_does_not_chain(self):
+        out = self._ac041([
+            _f("RUN-006", self.RUN), _f("RUN-003", self.RUN, passed=True),
+        ])
+        assert out == []
+
+
+class TestChainAC042:
+    """AC-042: a fork pipeline executed AND a credential left it, both legs
+    on the same pipeline (GLRUN-002 + GLRUN-003 / GLRUN-004). The GitLab
+    analog of AC-041."""
+
+    PIPE = "gitlab:group/project#pipeline/42"
+
+    def _ac042(self, findings):
+        return [c for c in chains_pkg.evaluate(findings) if c.chain_id == "AC-042"]
+
+    def test_fork_plus_secret_leak_fires_critical(self):
+        out = self._ac042([_f("GLRUN-002", self.PIPE), _f("GLRUN-003", self.PIPE)])
+        assert len(out) == 1
+        assert out[0].severity is Severity.CRITICAL
+        assert out[0].triggering_check_ids == ["GLRUN-002", "GLRUN-003"]
+        assert out[0].confirmed_reachable is True
+        assert out[0].via_structural is True
+        assert "#pipeline/42" in out[0].reachability_note
+
+    def test_fork_plus_oidc_mint_fires(self):
+        out = self._ac042([_f("GLRUN-002", self.PIPE), _f("GLRUN-004", self.PIPE)])
+        assert len(out) == 1
+        assert out[0].triggering_check_ids == ["GLRUN-002", "GLRUN-004"]
+
+    def test_both_exfil_legs_dedup_to_one(self):
+        out = self._ac042([
+            _f("GLRUN-002", self.PIPE), _f("GLRUN-003", self.PIPE),
+            _f("GLRUN-004", self.PIPE),
+        ])
+        assert len(out) == 1
+        # Dedup keeps the GLRUN-003 leg per pipeline.
+        assert out[0].triggering_check_ids == ["GLRUN-002", "GLRUN-003"]
+
+    def test_no_chain_without_fork_pipeline_leg(self):
+        assert self._ac042([_f("GLRUN-003", self.PIPE)]) == []
+
+    def test_no_chain_without_exfil_leg(self):
+        assert self._ac042([_f("GLRUN-002", self.PIPE)]) == []
+
+    def test_no_chain_across_different_pipelines(self):
+        out = self._ac042([
+            _f("GLRUN-002", "gitlab:group/project#pipeline/1"),
+            _f("GLRUN-003", "gitlab:group/project#pipeline/2"),
+        ])
+        assert out == []
+
+    def test_passed_finding_does_not_chain(self):
+        out = self._ac042([
+            _f("GLRUN-002", self.PIPE), _f("GLRUN-003", self.PIPE, passed=True),
         ])
         assert out == []

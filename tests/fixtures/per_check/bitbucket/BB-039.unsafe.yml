@@ -1,0 +1,7 @@
+pipelines:
+  default:
+    - step:
+        name: ai-autofix
+        script:
+          - claude -p "Fix the failing test and commit the change"
+          - git push origin HEAD

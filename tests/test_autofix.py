@@ -62,6 +62,64 @@ def test_available_fixers_includes_gha004():
     assert "GHA-004" in autofix.available_fixers()
 
 
+class TestGHA037PersistCredentials:
+    """GHA-037 reuses the GHA-002 checkout fixer: adding
+    ``persist-credentials: false`` is its canonical fix."""
+
+    _WF = (
+        "on: push\n"
+        "jobs:\n"
+        "  b:\n"
+        "    runs-on: ubuntu-latest\n"
+        "    steps:\n"
+        "      - uses: actions/checkout@v4\n"
+        "      - run: ./build.sh\n"
+    )
+
+    def test_registered_as_a_safe_fixer(self):
+        assert "GHA-037" in autofix.available_fixers()
+        assert autofix.fixer_safety("GHA-037") == autofix.SAFE
+
+    def test_adds_persist_credentials_false_to_checkout(self):
+        after = autofix.generate_fix(_finding("GHA-037"), self._WF)
+        assert after is not None
+        assert "persist-credentials: false" in after
+        # The flag lands under a with: block on the checkout step.
+        assert "with:" in after
+
+    def test_idempotent_when_flag_present(self):
+        wf = (
+            "on: push\n"
+            "jobs:\n"
+            "  b:\n"
+            "    runs-on: ubuntu-latest\n"
+            "    steps:\n"
+            "      - uses: actions/checkout@v4\n"
+            "        with:\n"
+            "          persist-credentials: false\n"
+        )
+        assert autofix.generate_fix(_finding("GHA-037"), wf) is None
+
+    def test_gha054_ssh_key_shares_the_same_fix(self):
+        # GHA-054 (checkout ssh-key persisted into .git/config) is resolved
+        # by the same persist-credentials: false edit.
+        wf = (
+            "on: push\n"
+            "jobs:\n"
+            "  b:\n"
+            "    runs-on: ubuntu-latest\n"
+            "    steps:\n"
+            "      - uses: actions/checkout@v4\n"
+            "        with:\n"
+            "          ssh-key: ${{ secrets.DEPLOY_KEY }}\n"
+        )
+        assert "GHA-054" in autofix.available_fixers()
+        assert autofix.fixer_safety("GHA-054") == autofix.SAFE
+        after = autofix.generate_fix(_finding("GHA-054"), wf)
+        assert after is not None
+        assert "persist-credentials: false" in after
+
+
 # ── Timeout fixers ─────────────────────────────────────────────────────
 
 
@@ -152,6 +210,40 @@ class TestCurlPipeCommentOut:
     def test_cross_provider_jf(self):
         jf = '        sh "curl https://example.com | bash"\n'
         assert autofix.generate_fix(_finding("JF-016"), jf) is not None
+
+    def test_cross_provider_drone(self):
+        dr = "      - curl https://example.com/i.sh | sh\n"
+        after = autofix.generate_fix(_finding("DR-014"), dr)
+        assert after is not None and "TODO(pipeline-check)" in after
+        assert autofix.fixer_safety("DR-014") == autofix.SAFE
+
+    def test_cross_provider_harness(self):
+        hn = "                    command: curl https://example.com/i.sh | bash\n"
+        after = autofix.generate_fix(_finding("HARNESS-005"), hn)
+        assert after is not None and "TODO(pipeline-check)" in after
+        assert autofix.fixer_safety("HARNESS-005") == autofix.SAFE
+
+
+class TestGHA031DeprecatedCommandMigration:
+    def test_registered_as_safe(self):
+        assert "GHA-031" in autofix.available_fixers()
+        assert autofix.fixer_safety("GHA-031") == autofix.SAFE
+
+    def test_set_output_migrates_to_github_output(self):
+        wf = '      - run: echo "::set-output name=tag::$VERSION"\n'
+        after = autofix.generate_fix(_finding("GHA-031"), wf)
+        assert after is not None
+        assert after == '      - run: echo "tag=$VERSION" >> "$GITHUB_OUTPUT"\n'
+
+    def test_save_state_migrates_to_github_state(self):
+        wf = "      - run: echo '::save-state name=st::abc'\n"
+        after = autofix.generate_fix(_finding("GHA-031"), wf)
+        assert after is not None
+        assert 'echo "st=abc" >> "$GITHUB_STATE"' in after
+
+    def test_idempotent_after_migration(self):
+        wf = '      - run: echo "tag=$VERSION" >> "$GITHUB_OUTPUT"\n'
+        assert autofix.generate_fix(_finding("GHA-031"), wf) is None
 
 
 # ── Docker flag removal ────────────────────────────────────────────────
@@ -606,6 +698,28 @@ class TestGCB011TLSBypass:
         after = autofix.generate_fix(_finding("GCB-011"), cb)
         assert after is not None
         assert "TODO(pipeline-check): remove TLS/SSL verification bypass" in after
+
+
+class TestDroneHarnessTLSBypass:
+    # DR-006 / HARNESS-006 detect TLS bypass through the same
+    # _primitives.tls_bypass detector as every other provider, so they
+    # share _comment_tls_bypass (the analog of DR-014 / HARNESS-005 already
+    # sharing the curl-pipe fixer).
+    def test_dr006_comments_out_tls_bypass(self):
+        dr = "      - curl --insecure https://example.com/x.sh -o x.sh\n"
+        after = autofix.generate_fix(_finding("DR-006"), dr)
+        assert after is not None
+        assert "TODO(pipeline-check): remove TLS/SSL verification bypass" in after
+        assert autofix.fixer_safety("DR-006") == autofix.SAFE
+        # idempotent: the commented line isn't re-flagged
+        assert autofix.generate_fix(_finding("DR-006"), after) is None
+
+    def test_harness006_comments_out_tls_bypass(self):
+        hn = "                      npm config set strict-ssl false\n"
+        after = autofix.generate_fix(_finding("HARNESS-006"), hn)
+        assert after is not None
+        assert "TODO(pipeline-check): remove TLS/SSL verification bypass" in after
+        assert autofix.fixer_safety("HARNESS-006") == autofix.SAFE
 
 
 # ── Dockerfile comment-only TODO fixers ───────────────────────────────
@@ -1530,6 +1644,42 @@ class TestArgoFixers:
             "          npm ci && npm run build\n"
         )
         assert autofix.generate_fix(_finding("ARGO-008"), manifest) is None
+
+
+class TestCloudBuildHarnessSecretRedaction:
+    # GCB-012 (a literal in ``substitutions:``) and HARNESS-004 (a literal
+    # ``variables:`` value) detect purely by value shape, so they share the
+    # ``_fix_gha008`` redactor like the rest of the literal-secret family.
+    def test_gcb012_redacts_substitution_literal(self):
+        cb = (
+            "substitutions:\n"
+            "  _GH_TOKEN: ghp_aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa\n"
+            "steps:\n"
+            "  - name: gcr.io/cloud-builders/gcloud\n"
+            "    args: [echo]\n"
+        )
+        after = autofix.generate_fix(_finding("GCB-012"), cb)
+        assert after is not None
+        assert "ghp_aaaaaaaa" not in after
+        assert "<REDACTED>" in after
+        assert autofix.fixer_safety("GCB-012") == autofix.SAFE
+        # idempotent: the redacted placeholder isn't re-flagged
+        assert autofix.generate_fix(_finding("GCB-012"), after) is None
+
+    def test_harness004_redacts_variable_literal(self):
+        hn = (
+            "pipeline:\n"
+            "  identifier: build\n"
+            "  variables:\n"
+            "    - name: GH_TOKEN\n"
+            "      type: String\n"
+            "      value: ghp_aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa\n"
+        )
+        after = autofix.generate_fix(_finding("HARNESS-004"), hn)
+        assert after is not None
+        assert "ghp_aaaaaaaa" not in after
+        assert "<REDACTED>" in after
+        assert autofix.fixer_safety("HARNESS-004") == autofix.SAFE
 
 
 # ── Roundtrip safety net ──────────────────────────────────────────────

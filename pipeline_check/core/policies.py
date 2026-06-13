@@ -335,6 +335,7 @@ def _load_policy_url(url: str) -> Policy:
         hashlib.sha256(url.encode("utf-8")).hexdigest() + ".yml"
     )
     text: str | None = None
+    raw_bytes: bytes | None = None
     try:
         req = urllib.request.Request(
             url, headers={"User-Agent": "pipeline-check"}
@@ -347,13 +348,7 @@ def _load_policy_url(url: str) -> Policy:
             raise PolicyError(
                 f"remote policy is too large (> {_MAX_POLICY_BYTES} bytes): {url}"
             )
-        text = raw_bytes.decode("utf-8")
-        try:
-            cache.parent.mkdir(parents=True, exist_ok=True)
-            cache.write_text(text, encoding="utf-8")
-        except OSError:
-            pass  # caching is best-effort
-    except (urllib.error.URLError, OSError, UnicodeDecodeError) as exc:
+    except (urllib.error.URLError, OSError) as exc:
         # Network failure: fall back to the last good cached copy if any.
         if cache.is_file():
             text = cache.read_text(encoding="utf-8")
@@ -361,10 +356,35 @@ def _load_policy_url(url: str) -> Policy:
             raise PolicyError(
                 f"could not fetch remote policy {url}: {exc}"
             ) from exc
+
+    if raw_bytes is not None:
+        # A successful fetch that isn't valid UTF-8 is a bad response, not a
+        # network failure, so surface it rather than silently serving a stale
+        # cached copy (which could mask a changed or hijacked endpoint).
+        try:
+            text = raw_bytes.decode("utf-8")
+        except UnicodeDecodeError as exc:
+            raise PolicyError(
+                f"remote policy {url} is not valid UTF-8: {exc}"
+            ) from exc
+        try:
+            cache.parent.mkdir(parents=True, exist_ok=True)
+            cache.write_text(text, encoding="utf-8")
+        except OSError:
+            pass  # caching is best-effort
+    if text is None:
+        # Unreachable: a successful fetch decodes into text, a failed fetch
+        # either restored it from cache or raised. Guards the type narrowing.
+        raise PolicyError(f"could not resolve remote policy {url}")
     try:
         raw = _safe_load_strict(text)
     except yaml.YAMLError as exc:
         raise PolicyError(f"could not parse remote policy {url}: {exc}") from exc
+    except (RecursionError, MemoryError) as exc:
+        raise PolicyError(
+            f"could not parse remote policy {url}: document too deeply "
+            "nested or large to parse safely"
+        ) from exc
     if not isinstance(raw, dict):
         raise PolicyError(
             f"remote policy {url}: top-level value must be a mapping"
@@ -381,6 +401,11 @@ def _load_policy_file(path: Path) -> Policy:
         raw = _safe_load_strict(path.read_text(encoding="utf-8"))
     except (OSError, yaml.YAMLError) as exc:
         raise PolicyError(f"could not parse {path}: {exc}") from exc
+    except (RecursionError, MemoryError) as exc:
+        raise PolicyError(
+            f"could not parse {path}: document too deeply nested or "
+            "large to parse safely"
+        ) from exc
     if raw is None:
         raise PolicyError(f"{path}: file is empty")
     if not isinstance(raw, dict):

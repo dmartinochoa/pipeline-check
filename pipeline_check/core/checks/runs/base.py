@@ -14,7 +14,9 @@ crash (every rule then sees an empty run list and passes).
 from __future__ import annotations
 
 import io
+import re
 import zipfile
+from collections.abc import Callable
 from dataclasses import dataclass, field
 from typing import Any
 
@@ -33,6 +35,19 @@ DEFAULT_LOG_FETCH_LIMIT = 25
 _MAX_LOG_FILE_BYTES = 5 * 1024 * 1024
 _MAX_LOG_TOTAL_BYTES = 50 * 1024 * 1024
 
+#: Job-metadata fetch (for self-hosted-runner detection) downloads one
+#: ``.../jobs`` page per fork run, so it is bounded the same way.
+DEFAULT_JOBS_FETCH_LIMIT = 25
+
+#: Known-compromised-action forensics (RUN-006) is not trigger-specific:
+#: the tj-actions / Trivy / Checkmarx campaigns ran on ordinary push / PR
+#: runs, not just the privileged-trigger subset RUN-003 / RUN-004 scan. So
+#: a separate bounded pass downloads logs for the most recent runs of *any*
+#: trigger and scans them for the IOC match only (no secret detector). The
+#: privileged subset is already covered by the secrets pass, so this pass
+#: skips it to avoid re-downloading.
+DEFAULT_ACTION_LOG_FETCH_LIMIT = 25
+
 #: Triggers that execute in the *base* repository's privileged context
 #: (repo secrets + a write-scoped ``GITHUB_TOKEN``) while potentially
 #: handling PR-controlled content. A run that actually fired on one of
@@ -41,6 +56,101 @@ _MAX_LOG_TOTAL_BYTES = 50 * 1024 * 1024
 PRIVILEGED_TRIGGERS: frozenset[str] = frozenset({
     "pull_request_target", "workflow_run",
 })
+
+#: Markers that a run's logs exercised cloud OIDC token minting. Tight by
+#: design (near-zero false positive): these strings essentially only occur
+#: in an OIDC flow -- GitHub's OIDC issuer / token-request env, the AWS STS
+#: web-identity call, and GCP workload-identity federation. Recall is
+#: best-effort (log content varies and registered secrets are masked),
+#: matching the best-effort nature of run-log forensics.
+_OIDC_MARKERS_RE = re.compile(
+    r"token\.actions\.githubusercontent\.com"
+    r"|ACTIONS_ID_TOKEN_REQUEST_(?:URL|TOKEN)"
+    r"|AssumeRoleWithWebIdentity"
+    r"|workloadIdentityPools",
+)
+
+#: GitHub's "Set up job" step prints one line per resolved action,
+#: ``Download action repository 'owner/repo@ref' (SHA:<resolved-commit>)``.
+#: The line carries both the ref the workflow pinned *and* the commit it
+#: actually resolved to, so it is the runtime record that catches a
+#: tag-repoint (the workflow says ``@v44`` but the tag now points at a
+#: malicious SHA). The optional sub-path (``owner/repo/path@ref``) and a
+#: leading log timestamp are tolerated.
+_ACTION_DOWNLOAD_RE = re.compile(
+    r"Download action repository '"
+    r"([^/'@\s]+)/([^/'@\s]+)(?:/[^'@\s]*)?@([^'\s]+)'"
+    r"(?:\s*\(SHA:\s*([0-9a-fA-F]+)\))?",
+)
+
+
+def _scan_compromised_actions(text: str) -> dict[str, str]:
+    """Return ``{label: advisory}`` for known-compromised actions whose
+    download line appears in *text*, or an empty dict.
+
+    Each ``Download action repository`` line is matched against the
+    curated GHA-040 IOC registry on both the pinned ref and the resolved
+    commit SHA: a workflow pinned to ``@v44`` still trips the rule when
+    the log shows ``v44`` resolved to the registry's malicious commit
+    (the tag-repoint case). ``lookup`` is imported lazily so a
+    metadata-only scan never pays for the GitHub rule package import.
+    """
+    from ..github._compromised_actions import lookup
+    out: dict[str, str] = {}
+    for m in _ACTION_DOWNLOAD_RE.finditer(text):
+        owner, repo, ref, sha = m.group(1), m.group(2), m.group(3), m.group(4)
+        entry = lookup(owner, repo, ref)
+        if entry is None and sha:
+            entry = lookup(owner, repo, sha)
+        if entry is not None:
+            label = f"{owner}/{repo}@{ref}"
+            if sha and sha.lower() != ref.lower():
+                label += f" (resolved SHA {sha[:12]})"
+            out[label] = entry.advisory
+    return out
+
+
+#: Action owners treated as first-party and never flagged by RUN-007:
+#: GitHub's own namespaces. The scanned repo's own owner is excluded
+#: separately (an org pinning its own actions by tag is an internal-trust
+#: decision, not a third-party supply-chain exposure).
+_FIRST_PARTY_ACTION_OWNERS = frozenset({"actions", "github"})
+
+#: A 40-character hex string is an immutable Git commit SHA. Anything else
+#: in the ``@ref`` slot (a tag like ``v4`` / ``v1.2.3``, or a branch) is
+#: mutable and can be force-moved, the tj-actions/changed-files repoint
+#: vector.
+_FULL_SHA_RE = re.compile(r"\A[0-9a-fA-F]{40}\Z")
+
+
+def _scan_unpinned_actions(text: str, repo_owner: str) -> list[str]:
+    """Return sorted ``owner/repo@ref`` labels for third-party actions a run
+    resolved from a *mutable* ref (a tag or branch, not a 40-hex commit
+    SHA), or an empty list.
+
+    Mirrors :func:`_scan_compromised_actions` over the same
+    ``Download action repository`` lines, but instead of an IOC match it
+    flags pin hygiene: a third-party action pinned by a ref the upstream can
+    force-move (the tj-actions/changed-files repoint vector) that actually
+    executed. First-party (``actions`` / ``github``) and the repo's own
+    actions are excluded, since they are not a third-party supply-chain
+    exposure. Each label carries the resolved commit SHA (when the log
+    records one) so the evidence shows what the tag pointed at.
+    """
+    owner_lc = repo_owner.lower()
+    out: set[str] = set()
+    for m in _ACTION_DOWNLOAD_RE.finditer(text):
+        owner, repo, ref, sha = m.group(1), m.group(2), m.group(3), m.group(4)
+        lc = owner.lower()
+        if lc in _FIRST_PARTY_ACTION_OWNERS or lc == owner_lc:
+            continue
+        if _FULL_SHA_RE.match(ref):
+            continue  # already pinned by an immutable commit SHA
+        label = f"{owner}/{repo}@{ref}"
+        if sha:
+            label += f" (resolved SHA {sha[:12]})"
+        out.add(label)
+    return sorted(out)
 
 
 def _str(value: Any) -> str:
@@ -94,8 +204,23 @@ class RunsContext:
     #: run_id -> sorted, deduped "detector:redacted" labels for secrets
     #: found in that run's logs (only populated when ``scan_logs=True``).
     log_leaks: dict[int, list[str]] = field(default_factory=dict)
-    #: True once log scanning was requested + attempted, so RUN-003 can
-    #: tell "no leaks found" from "logs were never scanned".
+    #: run_ids whose logs show a cloud OIDC token was minted (only
+    #: populated when ``scan_logs=True``); RUN-004 escalates the fork subset.
+    oidc_mint_runs: set[int] = field(default_factory=set)
+    #: run_id -> the self-hosted runner's joined labels, for fork runs that
+    #: executed on a self-hosted runner (only populated when ``scan_logs=True``).
+    self_hosted_runs: dict[int, str] = field(default_factory=dict)
+    #: run_id -> {``owner/repo@ref`` label: advisory} for runs whose logs show
+    #: a known-compromised action (the GHA-040 IOC registry) actually
+    #: executed (only populated when ``scan_logs=True``); RUN-006 reports it.
+    compromised_action_runs: dict[int, dict[str, str]] = field(default_factory=dict)
+    #: run_id -> sorted ``owner/repo@ref`` labels for third-party actions a
+    #: privileged run resolved from a mutable tag/branch (not a commit SHA);
+    #: the preventive twin of ``compromised_action_runs`` (only populated when
+    #: ``scan_logs=True``, privileged-trigger runs only); RUN-007 reports it.
+    unpinned_action_runs: dict[int, list[str]] = field(default_factory=dict)
+    #: True once deep auditing (logs + job metadata) was requested + attempted,
+    #: so RUN-003 / RUN-004 / RUN-005 can tell "nothing found" from "never run".
     logs_scanned: bool = False
 
     @property
@@ -147,12 +272,21 @@ class RunsContext:
         if scan_logs:
             ctx.logs_scanned = True
             ctx._scan_logs(fetcher, log_fetch_limit)
+            ctx._scan_jobs(fetcher, DEFAULT_JOBS_FETCH_LIMIT)
         return ctx
 
-    def _scan_logs(self, fetcher: Any, fetch_limit: int) -> None:
+    def _scan_logs(
+        self, fetcher: Any, fetch_limit: int,
+        action_fetch_limit: int = DEFAULT_ACTION_LOG_FETCH_LIMIT,
+    ) -> None:
         """Download + scan logs for the privileged-trigger runs (the risk
         surface), bounded to *fetch_limit* runs. A leaked secret-shaped
         string in CI output is recorded under ``log_leaks[run_id]``.
+
+        After the privileged subset, a second bounded pass
+        (``_scan_action_logs``, ``action_fetch_limit`` runs) scans the most
+        recent *non-privileged* runs for known-compromised actions only, so
+        RUN-006's coverage is not limited to the privileged subset.
 
         Needs a fetcher exposing ``fetch_bytes`` (the live HTTP fetcher
         does; an offline fixture fetcher may not). Each log fetch can 404
@@ -169,16 +303,87 @@ class RunsContext:
         targets = [
             r for r in self.runs if r.event in PRIVILEGED_TRIGGERS
         ][:fetch_limit]
+        scanned_ids: set[int] = set()
         for run in targets:
+            raw = fetch_bytes(
+                f"repos/{self.owner}/{self.name}/actions/runs/"
+                f"{run.run_id}/logs"
+            )
+            scanned_ids.add(run.run_id)
+            if not raw:
+                continue
+            leaks, oidc_minted, compromised, unpinned = _scan_log_zip(
+                raw, repo_owner=self.owner,
+            )
+            if leaks:
+                self.log_leaks[run.run_id] = leaks
+            if oidc_minted:
+                self.oidc_mint_runs.add(run.run_id)
+            if compromised:
+                self.compromised_action_runs[run.run_id] = compromised
+            if unpinned:
+                self.unpinned_action_runs[run.run_id] = unpinned
+        self._scan_action_logs(fetch_bytes, scanned_ids, action_fetch_limit)
+
+    def _scan_action_logs(
+        self, fetch_bytes: Any, scanned_ids: set[int], fetch_limit: int,
+    ) -> None:
+        """Scan recent non-privileged run logs for known-compromised actions.
+
+        RUN-006 (a compromised action confirmed executing) is not
+        trigger-specific: the tj-actions / Trivy / Checkmarx campaigns ran
+        on ordinary ``push`` / ``pull_request`` runs, which the privileged
+        secrets pass above does not download. This pass fills that gap,
+        bounded to *fetch_limit* of the most recent runs not already
+        scanned, and runs only the cheap IOC-line scan (no secret
+        detector). Each 404 / expired-log archive degrades to a skip.
+        """
+        targets = [
+            r for r in self.runs if r.run_id not in scanned_ids
+        ]
+        for run in targets[:fetch_limit]:
             raw = fetch_bytes(
                 f"repos/{self.owner}/{self.name}/actions/runs/"
                 f"{run.run_id}/logs"
             )
             if not raw:
                 continue
-            leaks = _scan_log_zip(raw)
-            if leaks:
-                self.log_leaks[run.run_id] = leaks
+            _, _, compromised, _ = _scan_log_zip(raw, compromised_only=True)
+            if compromised:
+                self.compromised_action_runs[run.run_id] = compromised
+        if len(targets) > fetch_limit:
+            self.warnings.append(
+                f"[runs] {self.slug}: scanned the {fetch_limit} most recent "
+                f"non-privileged run(s) of {len(targets)} for "
+                "known-compromised actions; older runs were not fetched."
+            )
+
+    def _scan_jobs(self, fetcher: Any, fetch_limit: int) -> None:
+        """Fetch job metadata for fork runs to flag self-hosted-runner use.
+
+        A fork PR that ran on a self-hosted runner executed untrusted code
+        on infrastructure you own (RCE on the runner host, network pivot,
+        persistence) regardless of whether secrets were in scope, which is
+        GitHub's most-warned-about self-hosted-runner risk. The runner type
+        only appears per job (``.../jobs``), not in the run list, and GitHub
+        labels every self-hosted runner's jobs with ``self-hosted``. Bounded
+        to *fetch_limit* fork runs; a 404 / network error degrades to a skip.
+        """
+        targets = [r for r in self.runs if r.from_fork]
+        for run in targets[:fetch_limit]:
+            raw = fetcher.fetch(
+                f"repos/{self.owner}/{self.name}/actions/runs/"
+                f"{run.run_id}/jobs"
+            )
+            labels = _self_hosted_labels(raw)
+            if labels:
+                self.self_hosted_runs[run.run_id] = labels
+        if len(targets) > fetch_limit:
+            self.warnings.append(
+                f"[runs] {self.slug}: checked the {fetch_limit} most recent "
+                f"fork run(s) of {len(targets)} for self-hosted runners; "
+                "older fork runs were not fetched."
+            )
 
 
 def _to_record(entry: Any) -> RunRecord | None:
@@ -216,22 +421,72 @@ def _to_record(entry: Any) -> RunRecord | None:
     )
 
 
-def _scan_log_zip(raw: bytes) -> list[str]:
-    """Scan a run-logs ZIP for secret-shaped strings.
+def _self_hosted_labels(raw: Any) -> str:
+    """Return the joined labels of a self-hosted runner in a ``.../jobs``
+    payload, or ``""`` when every job ran on a GitHub-hosted runner.
 
-    GitHub masks registered secrets in logs, so a hit here is a secret
-    that leaked *past* masking (a credential a tool printed, a value
-    never registered as a secret, a base64/transformed token) -- exactly
-    the high-signal case. Bounded per-file and in total against a
-    pathological archive; ``find_secret_values`` is imported lazily so a
-    metadata-only scan never pays for the detector catalog.
+    GitHub automatically adds the ``self-hosted`` label to every
+    self-hosted runner, so a job whose ``labels`` contain it (case
+    insensitive) ran on infrastructure the repo owner controls. Defensive
+    against a missing / malformed payload (degrades to ``""``).
     """
-    from .._secrets import find_secret_values
+    if not isinstance(raw, dict):
+        return ""
+    jobs = raw.get("jobs")
+    if not isinstance(jobs, list):
+        return ""
+    for job in jobs:
+        if not isinstance(job, dict):
+            continue
+        labels = job.get("labels")
+        if not isinstance(labels, list):
+            continue
+        names = [str(label) for label in labels if isinstance(label, str)]
+        if any(name.lower() == "self-hosted" for name in names):
+            return ", ".join(names)
+    return ""
+
+
+def _scan_log_zip(
+    raw: bytes, *, compromised_only: bool = False, repo_owner: str = "",
+) -> tuple[list[str], bool, dict[str, str], list[str]]:
+    """Scan a run-logs ZIP for secret-shaped strings, OIDC-mint markers,
+    known-compromised action executions, and unpinned third-party actions.
+
+    GitHub masks registered secrets in logs, so a secret hit is one that
+    leaked *past* masking (a credential a tool printed, a value never
+    registered as a secret, a base64/transformed token) -- exactly the
+    high-signal case. The OIDC pass flags that the run exercised cloud
+    OIDC token minting (the fork subset is RUN-004). The compromised-action
+    pass matches each ``Download action repository`` line against the
+    GHA-040 IOC registry (the runtime confirmation behind RUN-006). All
+    three run on the same single decompress pass. Bounded per-file and in
+    total against a pathological archive; ``find_secret_values`` is
+    imported lazily so a metadata-only scan never pays for the detector
+    catalog.
+
+    With ``compromised_only=True`` the secret, OIDC, and unpinned-action
+    passes are skipped (those findings are scoped to privileged-trigger
+    runs), so a non-privileged run downloaded purely for RUN-006 pays only
+    for the cheap IOC-line scan. The unpinned-action pass needs
+    *repo_owner* to exclude the repo's own actions.
+
+    Returns ``(sorted_secret_labels, oidc_minted, compromised_actions,
+    unpinned_actions)``, where ``compromised_actions`` maps each offending
+    ``owner/repo@ref`` label to its advisory and ``unpinned_actions`` is the
+    sorted list of third-party actions resolved from a mutable ref.
+    """
     try:
         archive = zipfile.ZipFile(io.BytesIO(raw))
     except (zipfile.BadZipFile, OSError, EOFError):
-        return []
+        return [], False, {}, []
+    find_secret_values: Callable[[Any], list[str]] | None = None
+    if not compromised_only:
+        from .._secrets import find_secret_values
     leaks: set[str] = set()
+    oidc_minted = False
+    compromised: dict[str, str] = {}
+    unpinned: set[str] = set()
     consumed = 0
     with archive:
         for info in archive.infolist():
@@ -244,8 +499,13 @@ def _scan_log_zip(raw: bytes) -> list[str]:
                 text = archive.read(info).decode("utf-8", errors="replace")
             except (OSError, RuntimeError, zipfile.BadZipFile):
                 continue
-            leaks.update(find_secret_values([text]))
-    return sorted(leaks)
+            if find_secret_values is not None:
+                leaks.update(find_secret_values([text]))
+                if not oidc_minted and _OIDC_MARKERS_RE.search(text):
+                    oidc_minted = True
+                unpinned.update(_scan_unpinned_actions(text, repo_owner))
+            compromised.update(_scan_compromised_actions(text))
+    return sorted(leaks), oidc_minted, compromised, sorted(unpinned)
 
 
 def run_resource(ctx: RunsContext, run: RunRecord) -> str:

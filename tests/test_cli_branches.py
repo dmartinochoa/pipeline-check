@@ -333,3 +333,55 @@ class TestScanFailure:
             result = runner.invoke(scan, ["--output", "json"])
         assert result.exit_code == 2
         assert "boom" in result.output
+
+
+class TestGateTrailerAutofixTier:
+    """The gate "what next" trailer must point at the fixer tier that will
+    actually write changes: bare ``--fix`` is safe-only, so an unsafe-only
+    failing set needs ``--fix unsafe --apply`` (the terminal report footer
+    already does this; the gate trailer now matches)."""
+
+    def test_unsafe_only_trailer_suggests_unsafe_tier(self):
+        from types import SimpleNamespace
+
+        from pipeline_check.cli import _build_gate_trailer
+        from pipeline_check.core import autofix
+
+        assert autofix.fixer_safety("GHA-003") == "unsafe"  # precondition
+        gate = SimpleNamespace(effective=[_finding(check_id="GHA-003")])
+        trailer = _build_gate_trailer(
+            gate, baseline_path=None, baseline_from_git=None,
+        )
+        assert trailer is not None
+        assert "--fix unsafe --apply" in trailer
+
+    def test_safe_trailer_suggests_bare_fix(self):
+        from types import SimpleNamespace
+
+        from pipeline_check.cli import _build_gate_trailer
+        from pipeline_check.core import autofix
+
+        assert autofix.fixer_safety("GHA-001") == "safe"  # precondition
+        gate = SimpleNamespace(effective=[_finding(check_id="GHA-001")])
+        trailer = _build_gate_trailer(
+            gate, baseline_path=None, baseline_from_git=None,
+        )
+        assert trailer is not None
+        assert "--fix --apply" in trailer
+        assert "--fix unsafe --apply" not in trailer
+
+    def test_mixed_trailer_counts_safe_and_notes_unsafe(self):
+        from types import SimpleNamespace
+
+        from pipeline_check.cli import _build_gate_trailer
+
+        gate = SimpleNamespace(effective=[
+            _finding(check_id="GHA-001"),  # safe fixer
+            _finding(check_id="GHA-003"),  # unsafe fixer
+        ])
+        trailer = _build_gate_trailer(
+            gate, baseline_path=None, baseline_from_git=None,
+        )
+        assert trailer is not None
+        assert "1 of 2" in trailer  # only the safe one applies with bare --fix
+        assert "--fix unsafe --apply" in trailer

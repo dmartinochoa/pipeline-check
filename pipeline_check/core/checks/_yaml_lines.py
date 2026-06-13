@@ -207,22 +207,10 @@ def line_of(obj: Any) -> int | None:
     return getattr(obj, "_line", None)
 
 
-def col_of(obj: Any) -> int | None:
-    return getattr(obj, "_col", None)
-
-
 def line_of_item(seq: Any, idx: int) -> int | None:
     """Return the 1-based source line of ``seq[idx]``, or ``None``."""
     if not isinstance(seq, LineList):
         return None
     if 0 <= idx < len(seq._item_lines):
         return seq._item_lines[idx]
-    return None
-
-
-def col_of_item(seq: Any, idx: int) -> int | None:
-    if not isinstance(seq, LineList):
-        return None
-    if 0 <= idx < len(seq._item_cols):
-        return seq._item_cols[idx]
     return None

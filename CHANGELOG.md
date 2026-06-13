@@ -10,6 +10,733 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 PRs landing on `dev` between releases append entries below. The
 release commit collapses this section into `## [X.Y.Z] - <date>`.
 
+## [1.14.0] - 2026-06-13
+
+### Added
+
+- **GLGRP-004: GitLab group default branch protection disabled for new
+  projects.** Extends the `gitlab_group` pack. Reads
+  ``default_branch_protection`` from ``GET /groups/{group}`` and fires
+  (MEDIUM) when it is ``0`` (Not protected): every new project in the group
+  starts with a default branch any Developer can push to directly,
+  force-push, and delete, with no review gate. Levels ``1``-``4`` pass.
+  GitLab is migrating this integer to a
+  ``default_branch_protection_defaults`` object; when only the newer form is
+  returned the rule passes with an "unavailable" note rather than guessing
+  at its shape. The group-default analog of the repo-level SCM-001.
+- **GLGRP-003: GitLab group allows sharing projects outside the group
+  hierarchy.** Extends the `gitlab_group` pack. Reads
+  ``prevent_sharing_groups_outside_hierarchy`` from ``GET /groups/{group}``
+  and fires (MEDIUM) when it is ``false``: a member can share a private or
+  internal project with a group outside the current hierarchy, granting
+  that external group standing access outside the group's branch
+  protection, approval rules, and 2FA policy. A Premium / SAML setting, so
+  an absent field passes with an "unavailable" note (no free-tier false
+  positive). The group-level access-boundary sibling of GLGRP-002.
+- **New `gitlab_group` provider: GitLab group-level governance.** The
+  GitLab analog of the GitHub-only `scm_org` provider. Audits the
+  group-wide controls that govern every project in a GitLab group at once,
+  via `GET /groups/{group}` over the same GitLab REST v4 fetcher the `scm`
+  provider's GitLab path uses. Ships two flagship rules: **GLGRP-001**
+  (HIGH, group does not require two-factor authentication, the ORG-001
+  analog) and **GLGRP-002** (MEDIUM, group allows forking its projects
+  outside the group, the ORG-007 data-exfiltration analog). Invoked with
+  `--pipeline gitlab_group --scm-org GROUP` (a group / subgroup path);
+  token from `--gitlab-token` / `$GITLAB_TOKEN`, `--gitlab-url` for
+  self-managed. A missing token / 404 / Premium-gated field degrades to an
+  "unavailable" pass-with-note rather than a false finding. Provider count
+  38 -> 39.
+- **GL-050: GitLab package-publish job relies on a long-lived registry
+  token.** The GitLab analog of GHA-050, motivated by npm's September 2025
+  plan to disallow token-based publishing by default and expand OIDC
+  trusted publishing (GitLab is a named provider). Fires when a job's
+  ``script:`` runs a publish verb (``npm`` / ``pnpm`` / ``yarn publish``,
+  ``twine upload``, ``poetry`` / ``uv publish``, ``gem push``,
+  ``cargo publish``) and the job / its ``variables:`` / the top-level
+  ``variables:`` reference a long-lived external-registry token
+  (``NPM_TOKEN``, ``NODE_AUTH_TOKEN``, ``PYPI_TOKEN``, ``TWINE_PASSWORD``,
+  …). GitLab's built-in per-job ``CI_JOB_TOKEN`` is deliberately excluded
+  (it's the native, auto-expiring path to the project's own Package
+  Registry), and a job that publishes via OIDC (``id_tokens:``) with no
+  long-lived token does not fire. HIGH severity; the recommendation points
+  at GitLab OIDC trusted publishing. GitLab 51 -> 52 checks.
+- **Slack + Discord incoming-webhook live verifiers (``--verify-secrets``).**
+  The webhook-URL detectors shipped last cycle now have verifiers, so
+  ``--verify-secrets`` can confirm whether a leaked webhook is still live
+  (a webhook URL is itself a credential: anyone holding it can post to the
+  channel). Both probes are side-effect-free and never post a message.
+  Discord is a read-only ``GET`` on the webhook URL, which returns the
+  webhook's name / channel for a live URL and 401 / 404 once it is deleted
+  or its token is rotated. Slack has no read endpoint, so the probe
+  ``POST``s an empty JSON body (``{}``): a live webhook rejects it with HTTP
+  400 ``invalid_payload`` (nothing posts, because there is no ``text``) and
+  a deleted webhook answers 404 ``no_service``. New ``webhooks.py`` in the
+  verifier package; both appear in ``--list-verifiers``.
+- **Sentry + Pulumi + Render + Neon live secret verifiers
+  (``--verify-secrets``).** Four CI-relevant infrastructure tokens gain a
+  verifier: Sentry org auth tokens via ``GET /api/0/organizations/``
+  (Bearer, sentry.io SaaS), Pulumi access tokens via ``GET /api/user``
+  (the ``token`` auth scheme, not Bearer), Render via ``GET /v1/owners``
+  (Bearer), and Neon via ``GET /api/v2/users/me`` (Bearer). Standard
+  VERIFIED / UNVERIFIED / UNKNOWN outcomes; they appear in
+  ``--list-verifiers``.
+- **``--list-verifiers`` (secret-verifier discoverability).** Prints every
+  secret detector that ``--verify-secrets`` can probe against its issuing
+  API to confirm a credential is live (one per line: ``detector  shape``)
+  and exits, mirroring ``--list-fixers``. Pipes into ``grep`` and performs
+  no scan. Surfaces the growing verifier registry so users know which
+  detected secret types can actually be confirmed active. New
+  ``verifier_names()`` registry accessor + ``manual.detector_description``.
+- **Opt-in local-LLM finding triage (``--triage``, #167).** After the
+  report, ``--triage`` asks a LOCAL LLM (Ollama / llama.cpp / LM Studio,
+  via the Ollama-style ``/api/generate`` endpoint) whether each failing
+  finding is exploitable in this repo's context, given the finding plus a
+  source snippet, and labels it ``confirmed`` / ``needs_review`` /
+  ``likely_fp``. ``--triage-endpoint`` (loopback by default; a non-local
+  URL prints a one-line warning first) and ``--triage-model`` configure
+  it. The verdicts render in their own advisory section through a dedicated
+  reporter, never folded into severity / confidence, so a hallucinating
+  model can't change a HIGH into a LOW, change the grade, or move the gate.
+  An unreachable endpoint degrades to ``unavailable`` rather than failing
+  the scan, and the section is suppressed (with an stderr note) when a
+  machine-readable ``--output`` is already on stdout. New ``core/triage.py``
+  (transport + tolerant reply parsing + snippet extraction),
+  ``core/triage_prompts.py`` (the reviewable prompt), and
+  ``core/triage_reporter.py``.
+- **Groq + xAI + Postman + Doppler live secret verifiers
+  (``--verify-secrets``).** Four more detectors that had no verifier gain
+  one, each a single-token identity probe: Groq and xAI via the
+  OpenAI-compatible ``GET /v1/models`` (Bearer), Postman via ``GET /me``
+  (the ``X-Api-Key`` header) reporting the owning user, and Doppler via
+  ``GET /v3/me`` (Bearer) reporting the token name / workplace. Standard
+  VERIFIED / UNVERIFIED / UNKNOWN outcomes, no network surface beyond the
+  opt-in probe.
+- **Figma + Notion live secret verifiers (``--verify-secrets``).** The
+  Figma (``figd_``) and Notion (``ntn_``) detectors added last cycle now
+  have verifiers, so ``--verify-secrets`` can confirm whether a detected
+  token is live: Figma via ``GET /v1/me`` (the ``X-Figma-Token`` header,
+  not Bearer) and Notion via ``GET /v1/users/me`` (Bearer + the required
+  ``Notion-Version`` header). A valid token reports the owning handle /
+  integration name; an explicit auth failure reports UNVERIFIED; anything
+  else is UNKNOWN. No new network surface beyond the opt-in probe.
+- **JSON Lines output (``--output jsonl``).** Emits one failing finding
+  per line as compact, newline-delimited JSON, using the same per-finding
+  shape as the ``json`` output's ``findings`` entries. Unlike the single
+  ``json`` document, a JSONL stream has no wrapping array or score block,
+  so it is appended to and parsed line by line: the native ingest format
+  for log pipelines (Splunk / ELK / Datadog) and the shape ``jq -c`` or a
+  shell loop can process without loading the whole report. New
+  ``core/jsonl_reporter.py``.
+- **GCB-012 + HARNESS-004 literal-secret autofixers (``--fix``).** Cloud
+  Build (a credential literal in ``substitutions:``) and Harness (a literal
+  ``variables:`` value) detect purely by value shape, so they now share the
+  ``_fix_gha008`` redactor that the rest of the literal-secret family uses,
+  replacing the value with ``"<REDACTED>"`` + a rotate-and-wire-up TODO.
+  Safe-tier, idempotent, verified end-to-end (fires before / passes after).
+  Drone DR-004 was evaluated and deliberately left out: it also fires on a
+  credential-named key holding any literal, so a ``<REDACTED>`` placeholder
+  (still a literal) wouldn't clear it without a ``from_secret`` rewrite.
+  Autofixer count 118 -> 120.
+- **DR-006 + HARNESS-006 TLS-bypass autofixers (``--fix``).** Drone and
+  Harness detect a TLS / certificate-verification bypass (``curl -k``,
+  ``npm config set strict-ssl false``, ``NODE_TLS_REJECT_UNAUTHORIZED=0``,
+  …) through the same ``_primitives.tls_bypass`` detector as every other
+  provider, so they now share the existing ``_comment_tls_bypass`` fixer
+  that comments the offending line out with a TODO marker (the analog of
+  their curl-pipe siblings DR-014 / HARNESS-005 already sharing the
+  curl-pipe fixer). No new logic, safe-tier, idempotent. Autofixer count
+  116 -> 118.
+- **Figma + Notion token secret detectors.** The catalog now flags
+  hard-coded Figma personal access tokens (``figd_``) and Notion
+  internal-integration tokens (``ntn_``), both distinctive-prefix shapes
+  that ride the cross-provider ``*-008`` literal-secret rules. (A planned
+  Stripe / SendGrid / Vault / Doppler batch turned out to be already
+  covered under existing detector names, so only the two genuinely-new
+  shapes landed.) Detector catalog 54 -> 56.
+- **Incoming-webhook URL secret detectors (Slack + Discord).** A leaked
+  Slack (``hooks.slack.com/services/T…/B…/…``) or Discord
+  (``discord.com/api/webhooks/<id>/<token>``) incoming-webhook URL is a full
+  credential — anyone holding it can post into the channel — so the secret
+  catalog now flags hard-coded webhook URLs alongside API tokens. Both are
+  high-confidence shapes (distinctive host + path), so the cross-provider
+  literal-secret rules (``*-008`` family) pick them up wherever a value is
+  collected. Detector catalog 52 -> 54.
+- **GHA-031 autofixer: migrate retired ``::set-output`` / ``::save-state``
+  (``--fix``).** GitHub disabled the ``::set-output::`` / ``::save-state::``
+  stdout commands, so workflows using them are broken. The new safe-tier
+  fixer rewrites ``echo "::set-output name=X::V"`` to the documented,
+  behavior-equivalent (and injection-safe) file redirect ``echo "X=V" >>
+  "$GITHUB_OUTPUT"`` (``$GITHUB_STATE`` for save-state). Deterministic and
+  idempotent — the first new-logic fixer of this autofix batch (the others
+  reused existing functions). Autofixer count 115 -> 116.
+- **GitHub Actions annotations output (``--output annotations``).** Emits
+  one ``::error`` / ``::warning`` / ``::notice file=…,line=…::message``
+  workflow command per failing finding location. Printed inside a GitHub
+  Actions job, GitHub renders them as inline annotations on the changed
+  lines and the PR, with no SARIF upload step and no code-scanning /
+  Advanced Security requirement, so any repo gets inline feedback (the gap
+  the SARIF path leaves for repos without GHAS). CRITICAL/HIGH map to
+  ``::error``, MEDIUM to ``::warning``, LOW/INFO to ``::notice``; paths are
+  normalized repo-relative with forward slashes so GitHub maps them, and
+  message / property values are percent-encoded per the workflow-command
+  spec. Only failing findings are emitted. New
+  ``core/github_annotations_reporter.py``.
+- **GHA-054 autofixer (``--fix``).** GHA-054 (a checkout ``ssh-key``
+  persisted into the repo's ``.git/config``) now shares the
+  persist-credentials checkout fixer: ``persist-credentials: false`` is its
+  canonical fix too (verified fires-before / gone-after), so it's another
+  ``@register`` on the existing function — no new logic. Safe-tier,
+  idempotent. Autofixer count 114 -> 115.
+- **Curl-pipe autofixer extended to Drone + Harness (``--fix``).** The
+  provider-agnostic comment-out fixer (which neutralizes a ``curl … | sh``
+  / ``wget … | bash`` by commenting the line with a TODO marker) now also
+  covers DR-014 and HARNESS-005, the pipe-to-shell rules in the Drone and
+  Harness providers, completing its cross-provider coverage (it already
+  served GHA-016 / GL-016 / ADO-016 / BB-012 / JF-016 / CC-016 / BK-004).
+  Safe-tier, idempotent. Autofixer count 112 -> 114.
+- **GHA-037 autofixer (``--fix``).** ``actions/checkout`` persisting the
+  GITHUB_TOKEN into ``.git/config`` (GHA-037) now has a safe-tier fixer: it
+  adds ``persist-credentials: false`` under every checkout step, the rule's
+  canonical fix. It reuses the existing GHA-002 checkout fixer (the edit is
+  identical), so the same idempotent, format-preserving logic applies.
+  Autofixer count 111 -> 112.
+- **CSV output (``--output csv``).** A flat, one-row-per-location export of
+  the failing findings for spreadsheet triage: open in a sheet, filter by
+  severity, assign owners, track remediation. Columns: ``check_id``,
+  ``severity``, ``confidence``, ``resource``, ``file``, ``line``, ``title``,
+  ``description``, ``recommendation``, ``cwe``. Only failing findings are
+  emitted (mirroring the SARIF / Code Quality reporters); the stdlib ``csv``
+  writer handles quoting so a comma / quote / newline in a description can't
+  break the columns. ``--inline-explain`` appends the exploit example to the
+  description cell. New ``core/csv_reporter.py``; wired into the ``--output``
+  choice + the single-artifact reporter table.
+- **LLM-provider secret detectors (Groq / xAI / Perplexity).** Three new
+  high-confidence detectors in the shared secret catalog
+  (``_patterns.py``): Groq (``gsk_`` + body), xAI / Grok (``xai-`` + body),
+  and Perplexity (``pplx-`` + body). Each is prefix-anchored with a length
+  floor, so the unique provider prefix carries the precision and an
+  undersized near-miss never fires. They flow automatically through
+  ``find_secret_values`` to every consumer (GHA-008 and the cross-provider
+  literal-secret ``*-008`` rules), covering the unscoped-LLM-key-in-CI
+  surface as agentic pipelines proliferate. Detector count 49 -> 52.
+- **``scm_org`` provider: GitHub organization-wide governance (ORG-001 ..
+  ORG-008).** A new ``--pipeline scm_org --scm-org ORG`` audits the
+  org-admin settings that govern every repository at once, complementing
+  the per-repo ``scm`` provider, over the same GitHub REST fetcher (token
+  from ``--gh-token`` / ``$GITHUB_TOKEN``). **ORG-001** (HIGH) flags an org
+  that does not require two-factor authentication of all members, the
+  highest-leverage account-takeover control. **ORG-002** (HIGH) flags an org
+  whose default member permission is ``write`` or ``admin``, so every member
+  can push to (or reconfigure) every repository. **ORG-003** (HIGH) flags an
+  org whose Actions policy has no allow-list (``allowed_actions: all``), so
+  every workflow can pull in any third-party action by a mutable tag (the
+  tj-actions / reviewdog class) org-wide. **ORG-004** (HIGH) flags an org
+  whose default ``GITHUB_TOKEN`` is read-write, so every workflow gets a
+  write token unless it narrows the scope itself. **ORG-005** (HIGH) flags an
+  org that lets GitHub Actions approve pull requests, so a workflow can
+  self-approve a PR and satisfy a required-review gate with no human. **ORG-006**
+  (HIGH) flags an org Actions secret scoped to ``All repositories``, readable
+  by every workflow in every repo (the SCM-048 analog at org level). **ORG-007**
+  (MEDIUM) flags an org that allows forking of private repositories, so any
+  member can fork private or internal source code to a personal account
+  outside the org's branch protection, audit log, and secret scanning (a
+  data-exfiltration path that needs no exploit). **ORG-008** (MEDIUM) flags an
+  org that lets members create public repositories, so a member can publish
+  internal source code, secrets, or data to the internet with no review (the
+  Legitify ``non_admins_can_create_public_repositories`` policy). **ORG-009**
+  (HIGH) flags an org self-hosted runner group with ``allows_public_repositories:
+  true``, so a workflow in any public repo (including a fork pull request) can
+  run code on infrastructure the org operates (the org-governance analog of
+  GHA-105 / GLRUN-005, via ``GET /orgs/{org}/actions/runner-groups``). **ORG-010**
+  (MEDIUM) flags an org that enables secret scanning by default for new
+  repositories but not push protection, so every new repo catches credentials
+  only after they reach git history (the org-default analog of SCM-015; scoped
+  to the half-config, so an org without GitHub Advanced Security never false-
+  positives). **ORG-011** (HIGH) flags an org webhook delivering events over
+  insecure transport (``http://`` payload URL or ``insecure_ssl: "1"``), so the
+  org-wide event stream (PR diffs, push commits, security alerts for every repo)
+  is exposed to a network attacker (the org-level analog of SCM-026, via
+  ``GET /orgs/{org}/hooks``; scoped to transport security so it never
+  false-positives on the API's unreliable secret-presence reporting). **ORG-012**
+  (LOW) flags an org that enables Dependabot alerts by default for new
+  repositories but not Dependabot security updates, so every new repo surfaces a
+  vulnerable dependency but gets no automatic fix pull request (the org-default
+  analog of SCM-005; scoped to the half-config, so an org without Dependabot
+  never false-positives). **ORG-013** (MEDIUM) flags an organization ruleset
+  whose ``enforcement`` is ``evaluate`` (dry-run) or ``disabled`` rather than
+  ``active``, so the org-wide branch / tag / push governance it documents does
+  not actually block across the repos it targets (the org-level analog of
+  SCM-029, via ``GET /orgs/{org}/rulesets``). Each rule passes with an
+  "unavailable" note when the token lacks the scope to read the setting, so a
+  low-scope token never produces a false finding. The provider count is now 38.
+- **``scm`` provider: GitHub org-wide per-repo fan-out (``--scm-org``).** The
+  ``scm`` provider now accepts ``--scm-org ORG`` in place of ``--scm-repo`` to
+  enumerate every non-archived repository in a GitHub organization (paginated
+  ``GET /orgs/{org}/repos``) and run the full per-repo posture pack across all
+  of them, one finding per repo per rule. This is the per-repo complement to the
+  ``scm_org`` provider's org-level governance audit (the "run the per-repo pack
+  across every repo the org enumerates" half of the org-governance story). New
+  ``SCMContext.for_org`` classmethod builds the multi-repo context the existing
+  ``repos`` list shape was designed for; archived repos are skipped, and a
+  failed / empty enumeration degrades to an empty context with a warning rather
+  than crashing. ``--scm-include`` / ``--scm-exclude`` (repeatable ``fnmatch``
+  globs over the repo name) scope the fan-out, and ``--scm-max-repos N`` caps it
+  for very large orgs (0 = unlimited; truncation is reported as a scan warning,
+  never silent). Per-repo snapshots build concurrently over a small bounded
+  thread pool (each repo needs ~10 sequential API calls, so a large org would
+  crawl serially); ``executor.map`` preserves enumeration order, so the result
+  is deterministic. Works on all three SCM platforms: GitHub (``ORG`` is the
+  org login) runs the full pack, while GitLab (``ORG`` is a group path,
+  subgroups included) and Bitbucket (``ORG`` is a workspace) enumerate their
+  projects / repos and run the 7-rule universal subset. The shared
+  filter / cap / concurrency machinery lives in one ``_build_fan_out_context``
+  helper; only the per-platform enumeration and single-repo build differ.
+- **GLRUN-005: a fork pipeline ran on a self-managed runner (GitLab run
+  forensics).** The GitLab analog of the `runs` provider's RUN-005, behind
+  `--audit-runs-logs`. A fork merge-request pipeline executes untrusted
+  contributor code; when its jobs run on a self-managed (non-shared) runner
+  (`runner.is_shared == false`, i.e. a `project_type` / `group_type` runner
+  the owner operates), that code runs on infrastructure you control:
+  command execution on the runner host, a network-pivot foothold, and
+  (runners aren't ephemeral by default) persistence into later jobs.
+  Detection reads the `runner` embedded in each fork-pipeline job (the same
+  `/jobs` page GLRUN-003/004 already list, so no extra API calls) and works
+  even when the fetcher can't download traces, since it's metadata not log
+  content. GitLab.com `instance_type` shared runners are ephemeral and not
+  flagged. The `gitlab_runs` provider now ships 5 checks (GLRUN-001..005).
+- **``harness`` provider: Harness CI/CD pipeline scanning (HARNESS-001 ..
+  HARNESS-011).** A new ``--pipeline harness`` parses Harness pipeline YAML
+  (the Git Experience / pipeline-as-code form) and audits it like the other
+  CI providers, the first coverage of an enterprise CD platform that no
+  scanner touches today. Harness has no canonical filename, so the loader
+  globs ``*.yml`` / ``*.yaml`` and keeps the documents whose top-level key
+  is ``pipeline:``; it flattens the deep ``stages -> stage.spec.execution.
+  steps -> step / parallel / stepGroup`` nesting to scan every leaf step
+  across CI and CD stages. **HARNESS-001** (HIGH) flags a step ``spec.image``
+  pinned by a mutable tag instead of an ``@sha256:`` digest (reusing the
+  shared ``image_pinning`` classifier; the DR-001 / GL-001 family). **HARNESS-002**
+  (HIGH) is the Harness script-injection rule: a step ``command`` that
+  interpolates an attacker-controllable ``<+...>`` expression
+  (``<+codebase.prTitle>``, ``<+codebase.commitMessage>``, a branch / tag
+  name, or any ``<+trigger.*>`` / ``<+eventPayload.*>`` value) is a
+  command-injection sink, since Harness substitutes the expression's text
+  into the script before the shell runs it (the GHA-002 / DR-003 model).
+  ``<+codebase.commitSha>`` / ``<+codebase.repoUrl>`` are excluded as
+  non-injectable. **HARNESS-003** (HIGH) flags a step running with
+  ``spec.privileged: true`` (full host-kernel access; the DR-002 model).
+  **HARNESS-004** (CRITICAL) flags a literal credential pasted into a
+  ``type: String`` pipeline / stage ``variable`` instead of a
+  ``type: Secret`` + ``<+secrets.getValue(...)>`` reference (the shared
+  secret-shape catalog; the DR-004 family; the value is redacted in the
+  finding). **HARNESS-005** (HIGH) flags a step ``command`` that pipes a
+  remote download into a shell (``curl ... | sh`` / ``wget ... | bash``),
+  the Codecov-bash-uploader / install-script RCE class (the DR-014 /
+  GHA-016 family). **HARNESS-006** (HIGH) flags a step ``command`` that
+  disables TLS verification (``curl -k``, ``wget --no-check-certificate``,
+  ``npm config set strict-ssl false``, ``git -c http.sslVerify=false``, ...),
+  reusing the shared ``_primitives.tls_bypass`` detector (the DR-006 /
+  GHA-027 family). **HARNESS-007** (HIGH) flags a Kubernetes-infrastructure
+  ``HostPath`` volume (``stage.spec.infrastructure.spec.volumes``) bind-
+  mounting a sensitive node path (``/var/run/docker.sock``, ``/var/lib/
+  docker``, ``/etc``, ``/proc``, ``/sys``, ``/``) into the build pod, a
+  container-escape / node-takeover primitive (the DR-007 / K8S family;
+  ``EmptyDir`` / PVC volumes pass). **HARNESS-008** (HIGH) brings the
+  flagship AI prompt-injection rule (GHA-119 / GL-048 / BB-036 / ADO-035 /
+  JF-037) to Harness, making it the 6th provider in that matrix: a step
+  ``command`` that invokes an agentic CLI (``claude`` / ``gemini`` /
+  ``cursor-agent`` / ``aider`` / ``openhands`` / ``goose`` / ``q chat``)
+  AND feeds it an attacker-controllable ``<+...>`` expression
+  (``<+codebase.prTitle>``, ``<+trigger.*>``, ...) lets a pull request
+  smuggle instructions the agent then executes; it is separate from
+  HARNESS-002 because env-var binding does not sanitize an LLM prompt.
+  **HARNESS-009** (HIGH) is the autoland leg: one pipeline both invokes an
+  agentic CLI and lands the result with a ``git push`` straight to a branch
+  (no review gate), the analog of GHA-123 / GL-049 / BB-039 / ADO-038 /
+  JF-038. With HARNESS-008 it composes the **AC-040** injection -> autoland
+  chain, which now extends to Harness as its 6th provider (no new chain ID).
+  **HARNESS-010 / HARNESS-011** (HIGH) bring the model-supply-chain RCE
+  rules to Harness: HARNESS-010 flags a step ``command`` that loads an ML
+  model with ``trust_remote_code=True`` (the loader runs the model repo's
+  own Python, the GHA-120 / GL-045 family), and HARNESS-011 flags unsafe
+  pickle deserialization of a fetched artifact (``weights_only=False`` /
+  ``allow_pickle=True``, or a remote fetch plus ``torch.load`` /
+  ``pickle.load`` / ``joblib.load`` in one step, the GHA-122 / GL-047
+  family), both reusing the shared ``model_trust`` / ``unsafe_deser``
+  detectors. Auto-detected on a ``.harness/`` directory; ``--harness-path``
+  points at a file or directory explicitly. YAML-only, no Harness API token.
+  Every rule maps across the OWASP CI/CD Top 10 and the 12 other frameworks.
+  Provider count 36 -> 37.
+
+- **RUN-007: third-party action pinned by a mutable tag executed in a
+  privileged run.** The preventive twin of RUN-006. Where RUN-006 confirms
+  a *known-compromised* action ran (an IOC match), RUN-007 flags the
+  exposure before it becomes an incident: a third-party action that a
+  privileged-trigger run (``pull_request_target`` / ``workflow_run``)
+  resolved from a mutable ref (a tag like ``@v4`` or a branch, not a 40-hex
+  commit SHA) actually executed with the run's secrets and ``GITHUB_TOKEN``
+  in scope. If the upstream force-moves that tag, the next privileged run
+  silently pulls the attacker's code (the tj-actions/changed-files
+  CVE-2025-30066 vector). Reuses the privileged-run logs RUN-003 / RUN-004
+  already download and inspects GitHub's ``Download action repository
+  'owner/repo@ref' (SHA:...)`` lines, carrying the resolved SHA as the pin
+  to adopt. First-party (``actions`` / ``github``) and the repo's own
+  actions are excluded; only the secret-bearing privileged runs are scanned
+  (not the bounded non-privileged RUN-006 pass), so the signal stays high.
+  This is the run-forensics pin-hygiene check: the ``runs`` provider audits
+  a repo purely from run history (it never reads the workflow), so it also
+  catches transitively / dynamically resolved actions a static ``uses:``
+  scan cannot see. MEDIUM, only evaluated with ``--audit-runs-logs``.
+  ``runs`` provider 6 -> 7 checks.
+
+- **AC-042: fork pipeline executed and exfiltrated credentials in the
+  same pipeline (GitLab).** The GitLab analog of AC-041, built from the
+  ``gitlab_runs`` run-forensics legs. Fires when one fork merge-request
+  pipeline both executed in the project's CI (GLRUN-002, untrusted
+  contributor code ran) AND, in that same pipeline, a credential left it:
+  a secret-shaped string leaked in its job trace past GitLab's masking
+  (GLRUN-003) or it minted a cloud OIDC token (GLRUN-004). GitLab has no
+  "compromised action" IOC analog (so no RUN-006-style leg); the
+  untrusted-code leg is the fork pipeline itself. Both legs carry the same
+  ``gitlab:group/project#pipeline/<id>`` resource, so the pairing is
+  structural, not co-occurrence: it provably happened in one execution.
+  Emitted CRITICAL and ``confirmed_reachable`` (the GitLab twin of
+  AC-041's same-run pairing), so it survives
+  ``--chains-require-reachability``: poisoned pipeline execution confirmed
+  to have *succeeded*, not merely been possible. Chain count 55 -> 56.
+
+- **``gitlab_runs`` provider: GitLab pipeline run-history forensics
+  (GLRUN-001 .. GLRUN-004).** The GitLab analog of the ``runs`` provider,
+  and the first step of run-forensics beyond GitHub. ``--pipeline
+  gitlab_runs --scm-repo group/project`` pulls recent pipelines via the
+  GitLab REST API (``GET /projects/:id/pipelines``) and audits what
+  *actually executed*, not just what ``.gitlab-ci.yml`` could do. GLRUN-001
+  (MEDIUM) flags pipelines that ran on a merge-request event
+  (``source: merge_request_event`` / ``external_pull_request_event``),
+  metadata-only. GLRUN-002 (HIGH, the high-severity subset, under
+  ``--audit-runs-logs``) resolves which of those came from a *fork*: GitLab's
+  pipeline list doesn't carry the source/target project, so it lists merge
+  requests, keeps the ones whose ``source_project_id`` differs from the
+  ``target_project_id``, and pulls each such MR's pipelines, confirming that
+  untrusted fork code executed in the project's CI (the GitLab analog of
+  RUN-001). GLRUN-003 / GLRUN-004 (HIGH, also under ``--audit-runs-logs``)
+  go deeper: they download those fork pipelines' job traces
+  (``GET /jobs/:id/trace``) and scan them, GLRUN-003 for secret-shaped
+  strings that leaked past GitLab's variable masking (the RUN-003 analog),
+  GLRUN-004 for a cloud OIDC token mint (AWS ``AssumeRoleWithWebIdentity`` /
+  GCP ``workloadIdentityPools``, the RUN-004 analog, meaning untrusted fork
+  code reached cloud federation). Authenticated with ``--gitlab-token`` /
+  ``$GITLAB_TOKEN``;
+  ``--gitlab-url`` points it at a self-managed instance. A missing token /
+  404 / network error degrades to a warning rather than crashing. The deep
+  passes are bounded (most recent fork MRs / pipelines). Provider count
+  35 -> 36.
+- **JF-038: agentic-CLI output lands without human review (Jenkins).**
+  Completes Jenkins's AI flow-control coverage alongside JF-037, the
+  Jenkins analog of GHA-123 / GL-049 / BB-039 / ADO-038. Fires when one
+  Jenkinsfile both invokes an agentic CLI (``claude`` / ``gemini`` /
+  ``cursor-agent`` / ``aider`` / ``openhands`` / ``goose`` / ``q chat``) in
+  a ``sh`` / ``bat`` / ``powershell`` step and, in the same pipeline, lands
+  the result with a ``git push`` (the Jenkins commit-to-a-branch idiom).
+  Coupling is pipeline-level because the stages of one pipeline share a
+  checkout. A ``git push --dry-run`` is ignored, and an agent that only
+  opens a PR does not fire. HIGH. jenkins 37 -> 38.
+- **JF-037: untrusted PR/build context reaches an agentic AI CLI
+  (Jenkins).** Brings the flagship AI prompt-injection rule (GHA-119 /
+  GL-048 / BB-036 / ADO-035) to Jenkins, the largest CI install base and
+  the worst injection surface (Groovy interpolation). Fires when a ``sh`` /
+  ``bat`` / ``powershell`` step invokes an agentic CLI (``claude`` /
+  ``gemini`` / ``cursor-agent`` / ``aider`` / ``openhands`` / ``goose`` /
+  ``q chat``) AND attacker-controllable Jenkins context reaches it: an
+  SCM-event env var (``$BRANCH_NAME`` / ``$CHANGE_TITLE`` /
+  ``$CHANGE_BRANCH`` / ``$TAG_NAME`` / ``$GIT_*``) or a ``${params.X}``
+  build parameter (reusing the ``LABEL_TAINT_RE`` catalog JF-032 / JF-036
+  share). The AI face of JF-002: unlike command injection, Groovy
+  single-quoting does not defang this (the model ingests the value as
+  prompt text regardless of quote style), so both single- and
+  double-quoted step bodies are flagged. Reuses the shared
+  ``_primitives/agentic_cli`` catalog. HIGH. jenkins 36 -> 37.
+- **AC-041: a compromised action executed and exfiltrated credentials in
+  the same run (attack chain).** The first run-forensics attack chain, and
+  the strongest signal the tool produces, a supply-chain attack confirmed
+  to have *succeeded* rather than merely been possible. Fires when RUN-006
+  (a known-compromised action actually executed in a run) pairs on the
+  *same run* with RUN-003 (a secret-shaped string leaked in that run's
+  logs) or RUN-004 (that run minted a cloud OIDC token): the malicious
+  action ran and a credential left the run in one execution, the
+  tj-actions/changed-files (CVE-2025-30066) pattern of printing harvested
+  secrets into the log. Reachability is structural, not co-occurrence,
+  since both legs carry the same ``github:owner/repo#run/<id>`` resource,
+  so the chain is emitted ``confirmed_reachable`` at HIGH confidence (the
+  run-history analog of AC-005's shared-image-digest pairing) and survives
+  ``--chains-require-reachability``. CRITICAL. Maps to MITRE T1195.002 /
+  T1552 / T1567. Chain count 54 -> 55 (41 AC).
+- **RUN-006: a known-compromised action actually executed in run history
+  (run forensics).** The runtime confirmation behind GHA-040. Where the
+  static rule flags a known-compromised action *reference* in the current
+  workflow, RUN-006 reads the run logs and confirms the action's
+  ``Download action repository 'owner/repo@ref' (SHA:...)`` line is
+  present, so the compromised code provably ran. It matches both the
+  pinned ref and the resolved commit SHA against the curated IOC registry
+  (tj-actions/changed-files CVE-2025-30066, reviewdog/action-setup, the
+  2026 aquasecurity / checkmarx campaigns), which catches two things the
+  static scan cannot: a **tag-repoint** (the workflow pins ``@v44`` but the
+  log shows v44 resolved to the malicious commit, the exact tj-actions
+  vector) and a **since-reverted workflow** (the bad ref was removed after
+  the fact, so GHA-040 is now clean, yet run history still records the
+  compromised execution with secrets in scope). Reads the same
+  privileged-trigger run logs RUN-003 / RUN-004 already download under
+  ``--audit-runs-logs`` (no extra fetches), scoping it to the
+  highest-impact runs (repo secrets + write-scoped token in scope); the
+  IOC match is exact, recall bounded to the fetched runs. CRITICAL. runs
+  5 -> 6. Directly addresses the roadmap's "runtime-resolved third-party
+  actions (tag-repoint detection)" run-forensics item.
+- **AC-040: prompt-injected agent commits its output with no human review
+  (attack chain).** Correlates the two legs of the agentic-AI rule pack
+  into a CRITICAL kill chain, across all four script-based providers. Fires
+  when one pipeline file both feeds untrusted PR / branch / commit context
+  into an agentic CLI's prompt (the injection leg: GHA-119 / GL-048 /
+  BB-036 / ADO-035) AND lands that agent's output with no review gate (the
+  autoland leg: GHA-123 / GL-049 / BB-039 / ADO-038). Independently each
+  leg is a finding; together they close the loop with no human in it: a
+  prompt-injection line in the PR redirects the agent to write a malicious
+  change, and the autoland step (a `git push`, an auto-merge, or a
+  push-action) commits or merges it, so the attacker's injected instruction
+  becomes committed code that then runs on the next pipeline with the
+  repository's credentials. The cross-provider, content-injection sibling
+  of AC-035 (the GitHub reviewer-and-committer loop). Per-resource
+  co-occurrence within one provider; the legs never mix across providers.
+  Maps to MITRE T1195.002 / T1059 / T1078.004. Chain count 53 -> 54
+  (40 AC).
+- **BB-039 / ADO-038: agentic-CLI output lands without human review
+  (Bitbucket, Azure DevOps).** Completes the AI/LLM-pipeline rule pack's
+  flow-control leg across the script-based CI providers (GHA-123 / GL-049
+  already shipped), and with it the full agentic-AI matrix
+  (prompt-injection / trust_remote_code / model-pinning / unsafe-deser /
+  autoland) across GitHub, GitLab, Bitbucket, and Azure DevOps. Fires when
+  one execution unit both invokes an agentic CLI (``claude`` / ``gemini`` /
+  ``cursor-agent`` / ``aider`` / ``openhands`` / ``goose`` / ``q chat``)
+  and, with no review gate, lands the result: a ``git push`` straight to a
+  branch (both providers), or an ``az repos pr create`` / ``update`` set to
+  ``--auto-complete`` (Azure). AI-authored changes then reach a branch (or
+  a merge) with no human in the loop, and if the agent's prompt is at all
+  influenced by untrusted input (BB-036 / ADO-035) that is prompt-injection
+  straight to committed code. Coupling is scoped to a single Bitbucket
+  step (each step runs in its own container with a fresh clone) and to a
+  single Azure job (its steps share one checkout), mirroring each
+  provider's execution model. Reuses the shared ``_primitives/agentic_cli``
+  catalog; a ``git push --dry-run`` is ignored, and an agent that only
+  opens a PR for review does not fire. HIGH. bitbucket 38 -> 39, azure
+  37 -> 38.
+- **BB-038 / ADO-037: AI model pulled without a pinned revision
+  (Bitbucket, Azure DevOps).** Completes model-pinning coverage across the
+  script-based CI providers, bringing the rule to the two that lacked it
+  (GHA-121 / GL-046 already shipped). A step ``script`` fetches a model
+  from a registry (Hugging Face Hub and friends) by a *mutable* reference,
+  ``from_pretrained("org/model")``, ``hf_hub_download`` /
+  ``snapshot_download`` with a bare ``repo_id``, or
+  ``huggingface-cli download org/model`` with no ``--revision``. Without a
+  pinned revision the registry serves whatever the repo's default branch
+  points at now, so the model owner (or anyone who compromises the account
+  or the upstream repo) can swap the weights, the tokenizer, or the custom
+  loader code under a green build with no diff in your repo. It is the
+  model-registry analog of pinning a dependency to a lockfile, and the
+  prerequisite for the ``trust_remote_code`` execution path BB-035 /
+  ADO-034 flags: pinning the revision is the one control that makes a
+  poisoned-model swap detectable. Reuses the shared
+  ``_primitives/model_ref`` detection; scoped to org-namespaced ids
+  (``org/model``) so it targets third-party models, not the canonical
+  first-party hub names (``bert-base-uncased``). Does not fire on a pinned
+  ``revision`` / ``--revision``, a local path, or a variable
+  interpolation. MEDIUM. bitbucket 37 -> 38, azure 36 -> 37.
+- **BB-037 / ADO-036: unsafe deserialization of a fetched artifact
+  (pickle RCE) (Bitbucket, Azure DevOps).** Brings the model-deserialization
+  RCE rule (GHA-122 / GL-047) to the two remaining script-based providers.
+  Loading a model / artifact through a pickle-backed deserializer executes
+  arbitrary Python embedded in the file at load time, and in CI that file
+  is routinely downloaded, so it is remote code execution under the
+  pipeline's credentials. Two firing shapes (shared with GHA-122 / GL-047
+  via `_primitives/unsafe_deser`): an explicit unsafe opt-in
+  (`weights_only=False` / `allow_pickle=True`) always fires; or a remote
+  fetch (curl / wget / `hf_hub_download` / `snapshot_download` /
+  `huggingface-cli download` / `requests`) alongside a pickle-backed loader
+  (`torch.load` / `pickle.load(s)` / `joblib.load`) with no safe path
+  (`weights_only=True` or safetensors) in the same step. A bare local load
+  with no fetch does not fire. Pairs with the `trust_remote_code` rule
+  (BB-035 / ADO-034) as the second model-load RCE vector. HIGH. bitbucket
+  36 -> 37, azure 35 -> 36.
+- **BB-036 / ADO-035: untrusted PR context reaches an agentic AI CLI
+  (Bitbucket, Azure DevOps).** Brings the flagship AI prompt-injection
+  rule (GHA-119 / GL-048) to the two remaining script-based CI providers,
+  completing its cross-provider coverage. An agentic CLI (`claude` /
+  `gemini` / `cursor-agent` / `aider` / `openhands` / `goose` / `q chat`)
+  reads a prompt and then acts (runs shell, writes files, calls tools), so
+  when a step feeds attacker-controllable context into that prompt anyone
+  who can open a pull request can smuggle instructions the agent executes.
+  BB-036 fires on `$BITBUCKET_BRANCH` / `$BITBUCKET_TAG` / `$BITBUCKET_PR_*`
+  (directly or via an exported shell var); ADO-035 on
+  `$(Build.SourceVersionMessage)` / `$(Build.SourceBranch*)` /
+  `$(System.PullRequest.*)` (directly or via a `variables:` entry). As the
+  AI face of BB-002 / ADO-002, the shell-quoting / `env:` routing that
+  defangs command injection does not help, since the model ingests the
+  value as prompt text regardless. Reuses the shared
+  `_primitives/agentic_cli` catalog and each provider's existing
+  untrusted-context detection. HIGH. bitbucket 35 -> 36, azure 34 -> 35.
+- **RUN-005: a fork PR's run executed on a self-hosted runner (run
+  forensics).** GitHub's most-warned-about self-hosted-runner risk,
+  confirmed live: a fork PR runs attacker-controlled code, and on a
+  self-hosted runner that code executes on infrastructure the repo owner
+  controls (command execution on the runner host, a pivot into the
+  internal network, and persistence into later jobs since self-hosted
+  runners are not ephemeral by default). It holds even on an
+  unprivileged `pull_request` trigger with no secrets, so it is
+  independent of RUN-001. Under `--audit-runs-logs`, fetches job metadata
+  (the Actions REST API `.../jobs` endpoint) for recent fork runs and
+  flags any whose jobs ran on a self-hosted runner (GitHub adds the
+  `self-hosted` label to every such runner). Detection is exact; the
+  fork-run fetch is bounded to the most recent runs. HIGH. runs 4 -> 5.
+- **RUN-004: a fork PR's run minted a cloud OIDC token (run forensics).**
+  The sharpest live escalation of RUN-001 and the run-history confirmation
+  of the static CI->cloud OIDC-trust link (AC-016). When a run both
+  executed untrusted fork code on a privileged trigger and minted an OIDC
+  token, attacker-controlled code reached cloud federation: it could
+  exchange the GitHub OIDC token for the federated AWS / GCP / Azure role
+  and act as it. Reuses the privileged-trigger run logs RUN-003 already
+  downloads under `--audit-runs-logs` (no extra fetches), flagging the
+  OIDC-mint markers (`token.actions.githubusercontent.com`, the
+  `ACTIONS_ID_TOKEN_REQUEST_*` env, AWS `AssumeRoleWithWebIdentity`, GCP
+  `workloadIdentityPools`). Scoped to fork-originated runs, so a
+  trusted-branch deploy that uses OIDC normally does not fire; detection
+  is high-precision but best-effort on recall (log content varies). HIGH.
+  runs 3 -> 4.
+
+### Changed
+
+- **AC-040 (prompt-injected agent commits unreviewed) now covers Jenkins.**
+  With JF-037 + JF-038 shipped, the injection->autoland kill chain extends
+  to a fifth provider: the chain fires when a Jenkinsfile both feeds
+  untrusted context into an agentic CLI (JF-037) and pushes the agent's
+  output without review (JF-038). No chain-count change (AC-040 already
+  existed); ``providers`` gains ``jenkins`` and the ``JF-037`` / ``JF-038``
+  pair joins the per-provider match list.
+- **RUN-006 now scans ordinary `push` / `pull_request` runs, not just the
+  privileged-trigger subset.** The tj-actions / Trivy / Checkmarx
+  compromised-action campaigns ran on regular CI, so limiting RUN-006 to
+  the privileged-trigger logs RUN-003 / RUN-004 download missed its
+  headline case. A second bounded pass under `--audit-runs-logs`
+  (`DEFAULT_ACTION_LOG_FETCH_LIMIT`, 25 by default) downloads the most
+  recent non-privileged run logs and scans them for the compromised-action
+  IOC match only (the secret detector still runs only on privileged-trigger
+  runs, so RUN-003's scope is unchanged). A truncation warning prints when
+  older non-privileged runs go unscanned.
+
+### Fixed
+
+- **In-depth review pass: 13 verified bug fixes plus two red CI gates.**
+  A multi-dimension audit (engine correctness, ReDoS / input safety, rule
+  FP/FN, reporters / autofix, code quality) surfaced and fixed:
+  - **GHA-064 ReDoS (DoS).** A PR-controlled ``if: contains('a,a,a,…``
+    drove the unsound-contains haystack into O(n²) backtracking (~80s at
+    200 KB). The first segment now stops at the first comma; same
+    semantics, linear (4 ms).
+  - **ADO-002 / ADO-035 false negative: ``VAR="$(Build.SourceBranchName)"``
+    was treated as a safe shell capture.** Azure text-substitutes
+    ``$(macro)`` into the script before the shell parses it (like GitHub
+    ``${{ }}``), so a quote in the branch name breaks out. Added an
+    Azure-only ``paren_is_macro`` flag to the quoted-assignment carve-out.
+  - **ADO taint regexes were case-sensitive** but ADO macros aren't, so
+    ``$(build.sourcebranch)`` evaded ADO-002 / ADO-030 / ADO-012.
+  - **IaC-apply detection missed ``terraform -chdir=DIR apply``** (the
+    standard CI form), bypassing GHA-117 / GHA-111 / GL-041 / ADO-033 /
+    BB-033 (all CRITICAL).
+  - **Jenkins JF-002 / JF-032 missed the GitHub Pull Request Builder
+    (``ghprb*``) plugin vars**, the dominant attacker-controlled source on
+    classic Jenkins PR jobs (the rule's own exploit example names one).
+  - **HARNESS-003 used a strict ``is True``** and missed the quoted
+    ``privileged: "true"`` form the docs_note promises to catch.
+  - **Terraform PBAC-003 ignored IPv6 ``::/0`` egress** (the CloudFormation
+    analog already checked it).
+  - **CSV reporter formula injection.** A field beginning with ``= + - @``
+    (or tab / CR) is now prefixed with a quote so spreadsheets treat it as
+    text, not a formula.
+  - **Markdown reporter could split a ``\\`` escape** by truncating after
+    escaping, leaving a dangling backslash that escaped the cell
+    separator; it now truncates the raw text first.
+  - **Threat-model reporter didn't escape backticks**, unbalancing inline
+    code spans across table cells.
+  - **GHA-008 redaction autofixer swallowed the newline** on a
+    comment-less line, pushing its TODO marker onto a mis-indented line.
+  - **SARIF could emit ``message.text: null``** (schema-invalid) for an
+    empty description; falls back to the title like every sibling reporter.
+  - **Drone DR-014 / Harness HARNESS-005 pipe-to-shell detection had
+    drifted weaker** than every other provider (matched only ``sh`` /
+    ``bash``); both now share one ``SIMPLE_PIPE_TO_SHELL_RE`` that also
+    catches ``| python`` / ``| perl`` / ``| ruby`` and a ``sudo`` prefix.
+  - **Red CI gates:** restored ``ruff check`` (24 pre-existing E501
+    over-length lines in the ORG-* standards mappings) and ``mypy
+    --strict`` (a ``list[None]`` item-type error in the annotations
+    reporter), plus removed a dead ``known_categories()`` helper and three
+    unclosed file handles in ``cli.py``.
+- **maven: `pom.xml` parse caught only `ET.ParseError`, not
+  `RecursionError` / `MemoryError`.** `_parse_pom` now degrades on the
+  latter two as well, closing the same narrow-`except` gap class the
+  RecursionError hardening swept elsewhere (a pathological XML tree
+  returned `parsed_ok=False` instead of escaping as an uncaught crash).
+  `ET.fromstring` is iterative so deep nesting doesn't trigger it via
+  input today, but the defensive contract now matches the YAML / JSON
+  loaders. The standing loader-robustness gate
+  (`tests/test_loader_robustness.py`) was extended to lock this in: the
+  per-provider deeply-nested battery now covers the XML packs (maven /
+  nuget), a new per-provider non-UTF-8 battery covers the seven
+  distinct-parser providers (maven / nuget / gomod / rubygems / pypi /
+  dockerfile / modelfile) whose bespoke parsers each need their own
+  `UnicodeDecodeError` guard, and a unit test pins the maven
+  RecursionError degrade. All seven were already robust; the gate now
+  prevents regression. The differential battery was broadened past
+  GHA-002's `on:` shapes: GHA-003 (script injection) is asserted across
+  every `run:` scalar style (inline / literal / folded / single- and
+  double-quoted) and GHA-008 (hardcoded credential) across every value
+  scalar style, so a YAML representation quirk can't silently drop either
+  rule (both confirmed robust). A seeded, dependency-free generative fuzz
+  pass (400 random inputs: structured YAML documents + arbitrary byte
+  blobs through the shared loader, asserting graceful degradation) now
+  backs the curated battery; it surfaced no new crash class.
+- **modelfile: a hub model pulled by a file path (`FROM
+  hf.co/org/model.gguf`) was misclassified as a local weights file.** The
+  weights-extension check (`.gguf` / `.safetensors` / `.bin` / …) won over
+  the hub check, so a documented Ollama "pull this GGUF from Hugging Face"
+  line suppressed MODEL-001 (unpinned base model, a false negative) and
+  false-fired MODEL-003 (local weights blob). The hub classification now
+  wins: such a ref correctly fires MODEL-001 + MODEL-002 and not MODEL-003.
+  Genuine local files (`./model.gguf`, bare `model.gguf`, `/x/weights.bin`)
+  are unchanged.
+- **A remote policy pack that returns a non-UTF-8 body no longer silently
+  serves a stale cached copy.** `--policy <https-url>` folded a decode
+  failure into the network-failure path, so a 200 response with a
+  corrupt / changed / hijacked non-UTF-8 body would fall back to the last
+  good cache and mask the bad response. A decode failure on a successful
+  fetch now raises a clear error; the cache fallback fires only on an
+  actual network / IO failure.
+- **A deeply-nested YAML file no longer crashes the scan through the
+  auxiliary loaders the earlier hardening pass missed.** The previous
+  fix caught `RecursionError` / `MemoryError` (PyYAML's recursive parser
+  raises these builtins, not `yaml.YAMLError`, on a pathologically deep
+  document) at the shared provider parse boundaries, but the secondary
+  loaders that parse their own files still aborted the whole scan with a
+  raw traceback: the GitHub local-action and resolved-callee parsers
+  (PR-reachable through a planted `action.yml` or composite-action ref),
+  the ArgoCD inline repo-blob parser, and the custom-rule (`--custom-rules`)
+  and policy (`--policy`) loaders. The scan loaders now degrade the file
+  like a parse failure (skip + warning); the user-config loaders fail fast
+  with a clear `CustomRuleError` / `PolicyError` instead of a traceback.
+- **The failing-gate "what next" trailer no longer suggests a no-op fix
+  command for unsafe-only findings.** When every autofixer for the failing
+  set was unsafe-tier, the stderr gate trailer told the user to run
+  `pipeline_check --fix --apply`, which is safe-only and writes nothing.
+  It now suggests `--fix unsafe --apply` for an unsafe-only set, counts
+  only the safe fixers when bare `--fix` would apply some, and notes the
+  unsafe remainder. This matches the terminal report footer, which already
+  pointed at the tier that actually changes the tree.
+
 ## [1.13.0] - 2026-06-09
 
 ### Added

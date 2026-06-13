@@ -1,0 +1,10 @@
+pipeline {
+  agent any
+  stages {
+    stage('ai-triage') {
+      steps {
+        sh "claude -p 'Summarize the build log and suggest fixes'"
+      }
+    }
+  }
+}

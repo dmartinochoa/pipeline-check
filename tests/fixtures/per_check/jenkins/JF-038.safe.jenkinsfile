@@ -1,0 +1,10 @@
+pipeline {
+  agent any
+  stages {
+    stage('ai-suggest') {
+      steps {
+        sh "claude -p 'Suggest a fix and open a pull request for review'"
+      }
+    }
+  }
+}

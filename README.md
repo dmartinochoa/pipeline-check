@@ -23,9 +23,9 @@
 
 #### Full documentation: [https://dmartinochoa.github.io/pipeline-check/](https://dmartinochoa.github.io/pipeline-check/)
 
-Pipeline-Check is a security scanner for GitHub Actions, GitLab CI, Jenkins, CircleCI, Azure DevOps, Bitbucket Pipelines, Buildkite, Drone, Tekton, Argo Workflows, and Google Cloud Build, plus Terraform, CloudFormation, Kubernetes, Helm, Dockerfile, OCI image manifests, and live AWS, Azure, and GCP accounts. It maps every finding to the [OWASP Top 10 CI/CD Security Risks](https://owasp.org/www-project-top-10-ci-cd-security-risks/), SLSA, NIST SSDF, PCI DSS, SOC 2, the CIS GitHub Benchmark, and twelve other frameworks, and scores each scan A through D so you can gate merges on the result.
+Pipeline-Check is a security scanner for GitHub Actions, GitLab CI, Jenkins, CircleCI, Azure DevOps, Bitbucket Pipelines, Buildkite, Drone, Harness, Tekton, Argo Workflows, and Google Cloud Build, plus Terraform, CloudFormation, Kubernetes, Helm, Dockerfile, OCI image manifests, and live AWS, Azure, and GCP accounts. It maps every finding to the [OWASP Top 10 CI/CD Security Risks](https://owasp.org/www-project-top-10-ci-cd-security-risks/), SLSA, NIST SSDF, PCI DSS, SOC 2, the CIS GitHub Benchmark, and twelve other frameworks, and scores each scan A through D so you can gate merges on the result.
 
-**1180+ checks** across **35 providers**, mapped to **18 compliance standards**, with **111 autofixers**, plus **53 attack chains** correlating findings into MITRE ATT&CK-mapped kill chains. A dataflow taint engine catches multi-step and cross-job propagation that single-rule scanners miss.
+**1220+ checks** across **39 providers**, mapped to **18 compliance standards**, with **120 autofixers**, plus **56 attack chains** correlating findings into MITRE ATT&CK-mapped kill chains. A dataflow taint engine catches multi-step and cross-job propagation that single-rule scanners miss.
 
 [Quick start](#-quick-start) |
 [Usage guide](docs/usage.md) |
@@ -130,15 +130,17 @@ for inputs, idempotency, and fork-PR fallback behavior.
 | **Pulumi** | `Pulumi.yaml` + stack config + project source | `--pulumi-path` | 14 checks · `PULUMI-001..014` · plaintext secrets, wildcard IAM, public resources, insecure state backend, unpinned plugins, deploy-time exec (Python / TypeScript / Go / C#, no Pulumi CLI needed) |
 | **GitHub Actions** | `.github/workflows/*.yml` | `--gha-path` | 114 checks · `GHA-001..073`, `GHA-086..123` + `TAINT-001..003`/`009` · SHA pinning, script injection, OIDC trusted-publishing abuse, agentic-CLI / IaC-apply RCE, prompt injection, `trust_remote_code` model loads, unpinned model refs, unsafe pickle deserialization, unreviewed AI-generated changes, compromised-action and npm-worm IOCs, `$GITHUB_ENV` poisoning. [Full reference →](docs/providers/github.md) |
 | **Gitea / Forgejo Actions** | `.gitea/` or `.forgejo/workflows/*.yml` | `--gitea-path` | Reuses the full GitHub Actions rule pack; GitHub-only reputation rules pass silently without `--resolve-remote` metadata |
-| **GitHub Actions run forensics** | Live Actions REST API | `--pipeline runs` | 3 checks · `RUN-001..003` · audits run history for what actually executed (fork-originated runs, privileged-trigger runs that fired, secrets leaked in run logs via `--audit-runs-logs`) vs. what the static config could do |
-| **GitLab CI** | `.gitlab-ci.yml` | `--gitlab-path` | 51 checks · `GL-001..049` + `TAINT-004`/`008` · `CI_JOB_TOKEN` cross-project scope, DinD TLS bypass, debug-trace secret leaks, MR-pipeline IaC apply + prod deploy, disabled native scanners, `trust_remote_code` + unpinned + pickle model loads, agentic-CLI prompt injection + autoland, mutable `include: component:` |
-| **Bitbucket Pipelines** | `bitbucket-pipelines.yml` | `--bitbucket-path` | 35 checks · `BB-001..035` · PR-pipeline IaC apply + prod deploy, `trust_remote_code` model loads |
-| **Azure DevOps** | `azure-pipelines.yml` | `--azure-path` | 34 checks · `ADO-001..034` · incl. IaC apply on a PR-validated pipeline, `trust_remote_code` model loads |
-| **Jenkins** | `Jenkinsfile` (Declarative / Scripted) | `--jenkinsfile-path` | 36 checks · `JF-001..036` |
+| **GitHub Actions run forensics** | Live Actions REST API | `--pipeline runs` | 7 checks · `RUN-001..007` · audits run history for what actually executed (fork-originated runs, privileged-trigger runs that fired, and via `--audit-runs-logs` secrets leaked in run logs, fork runs that minted a cloud OIDC token, fork runs that executed on a self-hosted runner, a known-compromised action confirmed running incl. tag-repoint, and third-party actions pinned by a mutable tag that ran with secrets) vs. what the static config could do |
+| **GitLab pipeline run forensics** | Live GitLab REST API | `--pipeline gitlab_runs` | 5 checks · `GLRUN-001..005` · audits pipeline history for what actually executed (merge-request pipelines that fired, and via `--audit-runs-logs` fork merge-request pipelines that ran untrusted code, secrets leaked in fork job traces, fork pipelines that minted a cloud OIDC token, fork pipelines that ran on a self-managed runner) vs. what the static `.gitlab-ci.yml` could do |
+| **GitLab CI** | `.gitlab-ci.yml` | `--gitlab-path` | 52 checks · `GL-001..050` + `TAINT-004`/`008` · `CI_JOB_TOKEN` cross-project scope, DinD TLS bypass, debug-trace secret leaks, MR-pipeline IaC apply + prod deploy, disabled native scanners, `trust_remote_code` + unpinned + pickle model loads, agentic-CLI prompt injection + autoland, long-lived publish token vs OIDC trusted publishing, mutable `include: component:` |
+| **Bitbucket Pipelines** | `bitbucket-pipelines.yml` | `--bitbucket-path` | 39 checks · `BB-001..039` · PR-pipeline IaC apply + prod deploy, `trust_remote_code` model loads, untrusted PR context into an agentic AI CLI, unsafe pickle deserialization, unpinned model pulls, agentic-CLI output pushed without review |
+| **Azure DevOps** | `azure-pipelines.yml` | `--azure-path` | 38 checks · `ADO-001..038` · incl. IaC apply on a PR-validated pipeline, `trust_remote_code` model loads, untrusted PR context into an agentic AI CLI, unsafe pickle deserialization, unpinned model pulls, agentic-CLI output pushed without review |
+| **Jenkins** | `Jenkinsfile` (Declarative / Scripted) | `--jenkinsfile-path` | 38 checks · `JF-001..038` · incl. untrusted PR/build context into an agentic AI CLI, agentic-CLI output pushed without review |
 | **CircleCI** | `.circleci/config.yml` | `--circleci-path` | 33 checks · `CC-001..033` · incl. Go-module-verification bypass |
 | **Google Cloud Build** | `cloudbuild.yaml` | `--cloudbuild-path` | 27 checks · `GCB-001..027` |
 | **Buildkite** | `.buildkite/pipeline.yml` | `--buildkite-path` | 17 checks · `BK-001..016` + `TAINT-005` |
 | **Drone CI** | `.drone.yml` / `.drone.yaml` | `--drone-path` | 17 checks · `DR-001..017` · image / plugin pinning, privileged steps, `${DRONE_*}` injection, fork-PR exposure, pipe-to-shell, dangerous shell idioms, sensitive host-path mounts |
+| **Harness CI/CD** | Harness pipeline YAML (`.harness/`) | `--harness-path` | 11 checks · `HARNESS-001..011` · step image digest pinning, untrusted `<+codebase.*>` / `<+trigger.*>` expression injection into step commands, privileged steps, literal secrets in pipeline / stage variables, pipe-to-shell installs, TLS-verification bypass, sensitive host-path mounts, untrusted context into an agentic AI CLI, AI output autolanding without review, model `trust_remote_code` / unsafe-pickle deserialization (model-load RCE) |
 | **Tekton** | `Task` / `Pipeline` / `*Run` YAML | `--tekton-path` | 17 checks · `TKN-001..016` + `TAINT-006` |
 | **Argo Workflows** | `Workflow` / `WorkflowTemplate` YAML | `--argo-path` | 18 checks · `ARGO-001..017` + `TAINT-007` · over-privileged / default service account, untrusted-parameter manifest injection |
 | **Argo CD** | `Application` / `AppProject` YAML + `argocd-*` ConfigMaps | `--argocd-path` | 19 checks · `ARGOCD-001..019` · sourceRepo / destination wildcards, RBAC wildcards, mutable source refs, web terminal, drift-detection bypass. [Reference →](docs/providers/argocd.md) |
@@ -177,7 +179,7 @@ for the full per-check reference.
 
 ```
                  +-----------+
-  Config files   |  Scanner  |   1180+ checks across 35 providers
+  Config files   |  Scanner  |   1220+ checks across 39 providers
   or live APIs ---->         +---> Findings (check_id, severity, resource)
                  +-----------+
                        |
@@ -205,7 +207,7 @@ standards, so a single scan satisfies multiple audit frameworks.
 
 | Feature | Description |
 |---------|-------------|
-| **Autofix** | `--fix` emits unified-diff patches; `--fix --apply` writes in place. 111 fixers cover script injection, secrets, timeouts, pinning, Docker flags, TLS, Kubernetes securityContext, Cloud Build options, Helm chart-supply-chain TODOs, and more. |
+| **Autofix** | `--fix` emits unified-diff patches; `--fix --apply` writes in place. 120 fixers cover script injection, secrets, timeouts, pinning, Docker flags, TLS, Kubernetes securityContext, Cloud Build options, Helm chart-supply-chain TODOs, and more. |
 | **CI gate** | `--fail-on HIGH`, `--min-grade B`, `--max-failures 5`, `--fail-on-check GHA-002`. Any condition trips exit 1. |
 | **Baselines** | `--baseline prior.json` or `--baseline-from-git origin/main:report.json`. Only gate on *new* findings. |
 | **Diff-mode** | `--diff-base origin/main` scans only files changed by the branch. |
@@ -230,10 +232,13 @@ standards, so a single scan satisfies multiple audit frameworks.
 ```bash
 pipeline_check --output terminal            # rich table to stdout (default)
 pipeline_check --output json                # machine-readable JSON
+pipeline_check --output jsonl --output-file findings.log     # one finding per line (SIEM / jq streaming)
 pipeline_check --output html --output-file report.html       # self-contained HTML
 pipeline_check --output sarif --output-file scan.sarif       # SARIF 2.1.0 for GitHub/GitLab
 pipeline_check --output junit --output-file junit.xml        # JUnit XML for test-runner UIs
 pipeline_check --output codequality --output-file cq.json    # GitLab Code Quality (inline MR annotations)
+pipeline_check --output csv --output-file findings.csv       # flat findings export for spreadsheet triage
+pipeline_check --output annotations                          # GitHub Actions inline ::error annotations (no SARIF upload)
 pipeline_check --output cyclonedx --output-file sbom.cdx.json # CycloneDX 1.6 build-dependency SBOM
 pipeline_check --output spdx --output-file sbom.spdx.json    # SPDX 2.3 build-dependency SBOM
 pipeline_check --output markdown            # PR-comment shape (GFM)
@@ -402,9 +407,9 @@ See [docs/standards/](docs/standards/).
 
 | Flag | Default | Description |
 |------|---------|-------------|
-| `--pipeline` / `-p` | `auto` | `auto` (detect from cwd), `aws`, `azure_cloud`, `gcp`, `terraform`, `cloudformation`, `pulumi`, `github`, `gitea`, `gitlab`, `bitbucket`, `azure`, `jenkins`, `circleci`, `cloudbuild`, `buildkite`, `drone`, `tekton`, `argo`, `argocd`, `dockerfile`, `modelfile`, `kubernetes`, `helm`, `oci`, `scm`, `npm`, `pypi`, `maven`, `nuget`, `composer`, `cargo`, `gomod`, `rubygems`, `devenv`, `runs` |
+| `--pipeline` / `-p` | `auto` | `auto` (detect from cwd), `aws`, `azure_cloud`, `gcp`, `terraform`, `cloudformation`, `pulumi`, `github`, `gitea`, `gitlab`, `bitbucket`, `azure`, `jenkins`, `circleci`, `cloudbuild`, `buildkite`, `drone`, `harness`, `tekton`, `argo`, `argocd`, `dockerfile`, `modelfile`, `kubernetes`, `helm`, `oci`, `scm`, `scm_org`, `gitlab_group`, `npm`, `pypi`, `maven`, `nuget`, `composer`, `cargo`, `gomod`, `rubygems`, `devenv`, `runs`, `gitlab_runs` |
 | `--pipelines` | | Comma-separated multi-provider list (e.g. `--pipelines github,oci`). Mutually exclusive with `--pipeline`. Activates cross-provider attack chains (`XPC-NNN`) by evaluating the chain engine over the union of every sub-scan's findings. |
-| `--output` / `-o` | `terminal` | `terminal`, `json`, `html`, `sarif`, `junit`, `markdown`, `threatmodel`, `cyclonedx`, `spdx`, `codequality`, `both` |
+| `--output` / `-o` | `terminal` | `terminal`, `json`, `jsonl`, `html`, `sarif`, `junit`, `markdown`, `threatmodel`, `cyclonedx`, `spdx`, `codequality`, `csv`, `annotations`, `both` |
 | `--output-file` / `-O` | | Required with `html`; optional with `sarif` / `junit` / `markdown` / `threatmodel` / `cyclonedx` / `spdx` / `codequality` |
 | `--fail-on` / `-f` | | Fail if any finding >= severity (`CRITICAL`, `HIGH`, `MEDIUM`, `LOW`) |
 | `--min-grade` | | Fail if grade worse than `A`/`B`/`C`/`D` |
@@ -449,7 +454,7 @@ See [docs/standards/](docs/standards/).
 
 Provider-specific path flags (`--gha-path`, `--gitlab-path`, `--bitbucket-path`, `--cfn-template`,
 `--azure-path`, `--jenkinsfile-path`, `--circleci-path`, `--tf-plan`, `--tf-source`,
-`--cloudbuild-path`, `--buildkite-path`, `--drone-path`, `--tekton-path`, `--argo-path`,
+`--cloudbuild-path`, `--buildkite-path`, `--drone-path`, `--harness-path`, `--tekton-path`, `--argo-path`,
 `--dockerfile-path`, `--k8s-path`, `--helm-path`, `--oci-manifest`) are
 auto-detected from the working directory when omitted. The Helm provider also
 takes `--helm-values FILE` and `--helm-set KEY=VALUE` (both repeatable),
@@ -514,7 +519,7 @@ pipeline_check/
     ├── scanner.py             # Provider-agnostic orchestrator
     ├── scorer.py              # Severity-weighted scoring (A/B/C/D)
     ├── gate.py                # CI gate (pass/fail thresholds + baselines)
-    ├── autofix/               # 111 fixers (text-based, comment-preserving)
+    ├── autofix/               # 120 fixers (text-based, comment-preserving)
     ├── reporter.py            # Terminal + JSON
     ├── html_reporter.py       # Self-contained HTML
     ├── sarif_reporter.py      # SARIF 2.1.0
@@ -530,15 +535,17 @@ pipeline_check/
         ├── cloudformation/    # AWS-parity checks against CFN templates (YAML/JSON)
         ├── pulumi/rules/      # PULUMI-001 .. PULUMI-014 — Pulumi.yaml + stack config + project source IaC static analysis (plaintext secrets, wildcard IAM, public resources, unpinned plugins, deploy-time exec)
         ├── github/rules/      # GHA-001 .. GHA-073, GHA-086..123 + TAINT-001..003, TAINT-009
-        ├── runs/rules/        # RUN-001 .. RUN-003 — GitHub Actions run-history forensics via the live Actions REST API (fork-originated runs, privileged-trigger runs that fired, secrets leaked in run logs)
-        ├── gitlab/rules/      # GL-001 .. GL-049 + TAINT-004 / TAINT-008
-        ├── bitbucket/rules/   # BB-001 .. BB-035
-        ├── azure/rules/       # ADO-001 .. ADO-034
-        ├── jenkins/rules/     # JF-001 .. JF-036
+        ├── runs/rules/        # RUN-001 .. RUN-007 — GitHub Actions run-history forensics via the live Actions REST API (fork-originated runs, privileged-trigger runs that fired, secrets leaked in run logs, fork runs that minted a cloud OIDC token, fork runs on a self-hosted runner, known-compromised action confirmed executing, unpinned third-party action ran with secrets)
+        ├── gitlab_runs/rules/ # GLRUN-001 .. GLRUN-005 — GitLab pipeline run-history forensics via the live GitLab REST API (merge-request pipelines that fired, fork-MR pipelines that ran untrusted code, secrets leaked in fork job traces, fork pipelines that minted a cloud OIDC token, fork pipelines that ran on a self-managed runner)
+        ├── gitlab/rules/      # GL-001 .. GL-050 + TAINT-004 / TAINT-008
+        ├── bitbucket/rules/   # BB-001 .. BB-039
+        ├── azure/rules/       # ADO-001 .. ADO-038
+        ├── jenkins/rules/     # JF-001 .. JF-038
         ├── circleci/rules/    # CC-001 .. CC-033
         ├── cloudbuild/rules/  # GCB-001 .. GCB-027
         ├── buildkite/rules/   # BK-001 .. BK-016 + TAINT-005
         ├── drone/rules/       # DR-001 .. DR-017
+        ├── harness/rules/     # HARNESS-001 .. HARNESS-011 — Harness CI/CD pipeline YAML (image pinning, untrusted-expression command injection, privileged steps, literal secrets in variables, pipe-to-shell, TLS bypass, host-path mounts, AI prompt injection, AI autoland, model trust_remote_code / unsafe-pickle deser)
         ├── tekton/rules/      # TKN-001 .. TKN-016 + TAINT-006
         ├── argo/rules/        # ARGO-001 .. ARGO-017 + TAINT-007
         ├── argocd/rules/      # ARGOCD-001 .. ARGOCD-019
@@ -548,6 +555,8 @@ pipeline_check/
         ├── kubernetes/rules/  # K8S-001 .. K8S-044
         ├── helm/rules/        # HELM-001 .. HELM-017 + renders charts so the K8S rule pack also applies
         ├── scm/rules/         # SCM-001 .. SCM-055 — repo governance via the platform REST API (GitHub SCM-001..049 full pack: Actions governance + environment protection + deploy-keys + webhook security + outside-collaborator audit + private-repo fork policy + ruleset enforcement / always-bypass / PR-review / status-checks / force-push / deletion / signed-commits / stale-review dismissal / linear-history / required-workflows / code-scanning-gate / deployment-env-gate / merge-queue + auto-merge audit + tag-ruleset signing + admin-bypass-on-signing + default-scanning query-suite / paused / language-coverage; GitLab platform pack SCM-050..053: push-rule prevent_secrets / committer-check, MR discussions-resolved, MR author self-approval; Bitbucket platform pack SCM-054..055: private-repo fork policy, default-branch write-side restriction kinds; GitLab + Bitbucket universal subset SCM-001/002/006/007/008/009/017)
+        ├── scm_org/rules/     # ORG-001 .. ORG-013 — GitHub organization-wide governance via the REST API (org-wide 2FA requirement, default member repository permission, Actions allow-list, default workflow token permission, Actions-can-approve-PRs review bypass, org secret scoped to all repos, private-repo forking allowed, member public-repo creation, self-hosted runner group exposed to public repos, new-repo push-protection default, webhook insecure transport, new-repo Dependabot security-updates default, org ruleset not enforced); complements scm (one repo) with org-level posture
+        ├── gitlab_group/rules/ # GLGRP-001 .. GLGRP-004 — GitLab group-wide governance via the REST API (group-wide 2FA requirement, project forking outside the group allowed, project sharing outside the group hierarchy allowed, default branch protection disabled for new projects); the GitLab analog of scm_org
         ├── npm/rules/         # NPM-001 .. NPM-020 — package.json + package-lock.json + .npmrc supply-chain hygiene + curated compromised-package registry + files-field secret-leak detector + broad-files-field publish-blast-radius detector + cooldown gate + OSV advisory lookup + single-publisher / provenance / untrusted-ref / OpenSSF-Scorecard / new-publisher-takeover behavioral signals + overrides/resolutions source-redirect + .npmrc registry-repoint
         ├── pypi/rules/        # PYPI-001 .. PYPI-021 — requirements.txt + pyproject.toml supply-chain hygiene + curated compromised-package registry + cooldown gate + OSV advisory lookup + index-URL credentials + --trusted-host + build-system requires pinning + dynamic-dep deferral + custom-source HTTP + direct-artifact-URL / repointed-index / find-links / no-binary + PEP 740 provenance gap + provenance non-release ref + low upstream OpenSSF Scorecard
         ├── maven/rules/       # MVN-001 .. MVN-018 — pom.xml + settings.xml supply-chain hygiene + curated compromised-package registry (Log4Shell / Spring4Shell / Text4Shell) + cooldown gate + OSV advisory lookup + settings.xml plaintext server credentials + repo URL embedded credentials + build plugin / extension floating versions + Maven Wrapper distributionSha256Sum verification + lifecycle-bound command-running plugin (build-time RCE) + gradle allowInsecureProtocol + settings.xml private-key plaintext passphrase + distributionManagement release repo accepting SNAPSHOTs

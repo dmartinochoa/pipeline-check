@@ -717,69 +717,192 @@ product. Grouped by horizon; effort (S/M/L) and impact noted.
 
 **Quick wins (S, ship first):**
 
-- **Confidence-tier the hygiene-rule family (S, high).** On cicd-goat,
-  ~84% of firings are non-canonical "missing-control" noise (GHA-015
-  no-timeout, GHA-037 persist-credentials) because `Finding.confidence`
-  defaults to HIGH and only ~4 of ~1005 rules override it. Give the
-  hygiene / best-practice family a lower default confidence so
-  `--min-confidence MEDIUM` yields a high-signal view. Signal-to-noise
-  is the top reason scanners get ignored; cheapest precision win
-  available. (Also tracked under "Hygiene-rule confidence tiering".)
-- **RecursionError on deeply-nested YAML (S, med).** A YAML file with
-  >= 327 levels of nesting crashes the scan with an unhandled
-  `RecursionError` (PyYAML's recursive parser, during `Scanner.__init__`)
-  across every YAML-based provider; the loaders catch `yaml.YAMLError`
-  but not the builtin. A malicious PR can weaponize it. Catch
-  `RecursionError` / `MemoryError` at the YAML-load boundary and degrade
-  the file to `parsed_ok=False`, mirroring the malformed-input hardening
-  already shipped (the crashing-rule / non-UTF-8 batch). (JSON-based and
-  Dockerfile providers are immune.)
-- **Autofix hint for unsafe-only findings (S, low).** The terminal
-  footer suggests `pipeline_check --fix --apply` even when the only
-  available fixer is `unsafe` (bare `--fix` runs safe-only, so it
-  modifies nothing). Suggest `--fix unsafe --apply` when the finding's
-  only fixer is unsafe.
-- **Grade-vs-gate clarity (S, low).** A scan can print "Grade A" while
-  the gate fails (grade is overall posture %, the gate is the blocking
-  policy on CRITICAL). Add a one-line clarifier when the two disagree.
+- ~~**Confidence-tier the hygiene-rule family (S, high).**~~ Shipped in
+  v1.13.0 (`6516f365`). The `BEST_PRACTICE_IDS` family (no-timeout,
+  no-signing, no-SBOM, no-SLSA, no-scan-gate across every provider) now
+  demotes to LOW via `checks/_confidence.py::confidence_for`, applied by
+  the Scanner (`scanner.py:420`) unless a rule sets `confidence_locked`.
+  So `--min-confidence MEDIUM` yields the high-signal view while the
+  hygiene family stays visible at the default LOW threshold. The one
+  named noise source NOT tiered is GHA-037 persist-credentials, kept HIGH
+  by maintainer decision (2026-06-11) as an active misconfiguration (real
+  ArtiPACKED / ultralytics CVEs): demoting a confirmed-exploitable default
+  in a security tool would hide a real vulnerability from the high-signal
+  view. It still fires on repos that use `actions/checkout` without
+  `persist-credentials: false` (see "Hygiene-rule confidence tiering").
+- ~~**RecursionError on deeply-nested YAML (S, med).**~~ Shipped. The
+  shared provider parse boundaries were hardened first (`ca924d1b`:
+  `_yaml_files` + the kubernetes / cloudformation / helm inline loaders
+  catch `RecursionError` / `MemoryError` and degrade the file like a
+  parse failure). A follow-up then closed the auxiliary loaders that
+  parse their own files and were still crashing the whole scan: the
+  GitHub local-action / resolved-callee parsers (PR-reachable through a
+  planted `action.yml` / composite ref), the ArgoCD inline repo-blob
+  parser, and the `--custom-rules` / `--policy` loaders (the last two
+  fail fast with a clean `CustomRuleError` / `PolicyError`). JSON-based
+  and Dockerfile providers are immune.
+- ~~**Autofix hint for unsafe-only findings (S, low).**~~ Shipped. The
+  terminal report footer (`_build_fix_tip`) was already unsafe-aware; the
+  follow-up brought the failing-gate trailer (`_build_gate_trailer`) to
+  match, so neither surface suggests a no-op `--fix --apply` when the only
+  available fixer is unsafe-tier. Both now point at `--fix unsafe --apply`
+  for an unsafe-only set and count only the safe fixers otherwise.
+- ~~**Grade-vs-gate clarity (S, low).**~~ Shipped in v1.13.0 (`48ee63e3`).
+  When the gate fails with a strong grade (A or B), the stderr gate
+  summary now adds a one-line note that the grade is overall posture
+  (checks weighted by severity) while the gate is a separate blocking
+  policy. A low grade failing the gate is unsurprising, so the note is
+  suppressed there. (`_emit_gate_summary`, covered by
+  `test_cli_branches.py::TestGateSummary`.)
 
 **Sharpen the existing edge (M-L):**
 
-- **Runtime / run-log forensics (`--audit-runs`) (L, very high).** Pull
+- **Runtime / run-log forensics (`--audit-runs`) (mostly shipped).** Pull
   recent Actions / GitLab pipeline run logs + metadata via API and check
-  what actually executed, not just what the config could: workflows that
-  ran on `pull_request_target`, jobs that minted OIDC tokens,
-  secret-shaped strings echoed in logs, runtime-resolved third-party
-  actions. The 2025 tj-actions/changed-files (CVE-2025-30066) and
-  GhostAction incidents were visible in run history first. Every
-  competitor (and the tool today) is purely static; this is the biggest
-  true capability gap and the most defensible differentiation. Builds on
-  the SCM REST fetchers + `_primitives/log_leak.py`.
-- **Live org-wide SCM governance (`--scm-org ORG`) (M, high).** The
-  55-rule SCM pack runs one repo at a time today; fleet clones configs.
-  Enumerate every repo + org-level settings (org-secret scoping, Actions
-  allow-lists, org-wide branch-protection defaults, member 2FA / SSO) in
-  one pass. The Legitify / Allstar buyer; rule pack and fetchers exist,
-  needs org enumeration + ~10 org-level rules.
-- **Provenance verification as a gate (`verify-artifact <ref>`) (M, high).**
-  The tool detects missing signing (GHA-100) and reads attestation
-  content, but never verifies a real artifact. Run the slsa-verifier /
-  cosign flow against an OCI ref or release and report pass/fail. Closes
-  "you should sign" -> "this artifact is verifiably built by who it
-  claims". Reuses the `opa`/`helm` shell-out pattern.
+  what actually executed, not just what the config could. GitHub `runs`
+  provider: workflows that ran on `pull_request_target` (RUN-001/002), jobs
+  that minted OIDC tokens (RUN-004), secret-shaped strings echoed in logs
+  (RUN-003), fork code on a self-hosted runner (RUN-005), a compromised
+  action executed via tag-repoint (RUN-006), an unpinned third-party action
+  that ran with secrets (RUN-007). **GitLab pipeline run logs SHIPPED**
+  (v1.13.0): the `gitlab_runs` provider mirrors RUN-001..004 as
+  GLRUN-001..004 (MR pipeline / fork-MR pipeline / secret-in-trace /
+  OIDC-mint-in-trace, the deep passes behind `--audit-runs-logs`) plus the
+  AC-042 fork-pipeline-exfil chain. The 2025 tj-actions/changed-files
+  (CVE-2025-30066) and GhostAction incidents were visible in run history
+  first. Builds on the SCM REST fetchers + the `runs` provider's bounded
+  log-download path.
+
+  **GLRUN-005 SHIPPED (2026-06-11): fork pipeline ran on a self-managed
+  runner** (the RUN-005 analog; HIGH, behind `--audit-runs-logs`). Reads
+  the `runner` embedded in each fork-pipeline job (the same `/jobs` page
+  GLRUN-003/004 list, so no extra API calls) and flags a fork pipeline
+  whose jobs ran on a non-shared runner (`runner.is_shared == false`, i.e.
+  a `project_type` / `group_type` runner the owner operates): untrusted
+  fork code executing on infrastructure the project owner controls, the
+  GitLab equivalent of RUN-005's self-hosted-runner risk. Detection is
+  metadata not trace content, so it runs even when the fetcher can't
+  download traces. `gitlab_runs` 4->5.
+  **Deferred (bigger / lower value):** a RUN-006/007 analog (unpinned remote
+  `include:` / CI-component ran in a pipeline). GitLab has no compromised-code
+  IOC registry (no RUN-006 analog), and the RUN-007 analog needs a new fetch
+  of the pipeline's resolved config + parse, overlapping the static GitLab
+  provider's include-pinning checks; defer unless demand appears.
+- **Live org-wide SCM governance (`--scm-org ORG`) (M, high).** Started
+  2026-06-11: the new `scm_org` provider (`--pipeline scm_org --scm-org ORG`,
+  GitHub-first, prefix ORG-) ships **ORG-001** (org-wide 2FA not required),
+  **ORG-002** (default member permission write/admin), **ORG-003** (no
+  Actions allow-list, `allowed_actions: all`), **ORG-004** (default workflow
+  `GITHUB_TOKEN` is read-write), **ORG-005** (Actions can approve PRs, a
+  required-review bypass), **ORG-006** (org Actions secret scoped to all
+  repositories, the SCM-048 analog), and **ORG-007** (MEDIUM, private-repo
+  forking allowed: `members_can_fork_private_repositories`, so a member can
+  fork private/internal source to a personal account outside the org's branch
+  protection / audit log / secret scanning, a no-exploit data-exfiltration
+  path), and **ORG-008** (MEDIUM, member public-repo creation:
+  `members_can_create_public_repositories`, so a member can publish internal
+  source/secrets to the internet with no review, the Legitify
+  `non_admins_can_create_public_repositories` policy; guarded to pass when
+  `members_can_create_repositories` is false), and **ORG-009** (HIGH, a
+  self-hosted runner group with `allows_public_repositories: true`, so a public
+  repo / fork PR can run code on org infrastructure; the org-governance analog
+  of GHA-105 / GLRUN-005, via a new `GET /orgs/{org}/actions/runner-groups`
+  fetch + `actions_runner_groups` context slot), and **ORG-010** (MEDIUM, new
+  repos default to secret scanning without push protection:
+  `secret_scanning_enabled_for_new_repositories` true but
+  `secret_scanning_push_protection_enabled_for_new_repositories` not, the
+  org-default analog of SCM-015; scoped to the half-config so a non-GHAS org
+  never false-positives), and **ORG-011** (HIGH, an org webhook delivering
+  events over insecure transport: `config.url` is `http://` or
+  `insecure_ssl: "1"`, so the org-wide event stream is exposed to a network
+  attacker; the org-level analog of SCM-026 via a new `GET /orgs/{org}/hooks`
+  fetch + `org_hooks` context slot, scoped to transport security since the API
+  does not reliably report webhook secret presence), and **ORG-012** (LOW, new
+  repos get Dependabot alerts but not security updates:
+  `dependabot_alerts_enabled_for_new_repositories` true but
+  `dependabot_security_updates_enabled_for_new_repositories` not, the
+  org-default analog of SCM-005; gated like ORG-010 so a no-Dependabot org never
+  false-positives), and **ORG-013** (MEDIUM, an org ruleset whose `enforcement`
+  is `evaluate` / `disabled` rather than `active`, so org-wide branch / tag /
+  push governance is documented but not blocking; the org-level analog of
+  SCM-029 via a new `GET /orgs/{org}/rulesets` fetch + `org_rulesets` context
+  slot, with a `known_fp` for the legitimate short evaluate window). Reads
+  `GET /orgs/{org}`
+  (ORG-001/002/007/008/010/012) + `/actions/permissions` +
+  `/actions/permissions/workflow` + `/actions/secrets` + `/actions/runner-groups`
+  + `/hooks` + `/rulesets` over the existing SCM REST fetcher. Provider count
+  37 -> 38. **Remaining:** more org-level rules (member SSO / outside-collaborator
+  policy; org-wide branch-protection defaults now partly covered by ORG-013's
+  ruleset-enforcement check). The **per-repo fan-out first increment SHIPPED**:
+  the `scm` provider now accepts `--scm-org ORG` (GitHub) to enumerate every
+  non-archived org repo (paginated `GET /orgs/{org}/repos`) and run the full
+  per-repo posture pack across all of them, one finding per repo per rule, via a
+  new `SCMContext.for_org` classmethod (reuses the multi-repo `repos` list shape
+  `SCMContext` already had + the existing `for_repo` snapshot builder, so the
+  whole SCM rule pack runs unchanged). Fan-out **ergonomics SHIPPED**:
+  `--scm-include` / `--scm-exclude` (repeatable fnmatch globs over the repo name)
+  scope the fan-out and `--scm-max-repos N` caps it for very large orgs (0 =
+  unlimited, truncation reported as a warning), all applied inside
+  `SCMContext.for_org`. Per-repo snapshots now build **concurrently** over a
+  bounded thread pool (`_FAN_OUT_WORKERS=8`, order-preserving via
+  `executor.map`; the stateless `HttpSCMFetcher` makes it safe). **GitLab +
+  Bitbucket org fan-out SHIPPED**: `--scm-org` now works on all three platforms
+  (GitLab `ORG` is a group path with subgroups, Bitbucket `ORG` is a workspace);
+  both enumerate their projects / repos and run the 7-rule universal subset, via
+  `gitlab_context_for_org` / `bitbucket_context_for_org` reusing the shared
+  `_build_fan_out_context` helper (filter / cap / concurrency factored out of
+  `for_org`). **Remaining:** member SSO / outside-collaborator policy (org-level
+  rules). The Legitify / Allstar buyer.
+- ~~**Provenance verification as a gate (`verify-artifact <ref>`) (M, high).**~~
+  Shipped (`b9c33a00`). `pipeline_check verify-artifact REF` shells out to
+  `cosign` / `slsa-verifier` / `gh attestation` on PATH (`core/provenance.py`),
+  builds an injection-safe argv per tool, folds the outcomes into one verdict
+  (PASS / FAIL / INCONCLUSIVE) on the canonical exit-code contract (0/1/3),
+  and supports OCI + file artifacts, keyless + keyed cosign, `--json`, and a
+  per-tool timeout. A missing binary degrades to INCONCLUSIVE, never a crash,
+  mirroring the `opa`/`helm` pattern. Closed "you should sign" (GHA-100) into
+  "this artifact is verifiably built by who it claims". Covered by
+  `tests/test_provenance.py` + `tests/test_provenance_ref.py` (43 tests).
 - **Robustness / quality hardening sweep (M, med-high).** Audit every
   loader for the exception-class gap the RecursionError exposed
   (`RecursionError` / `MemoryError` / encoding cases slipping past
   `except yaml.YAMLError` / `except OSError`). Add a fuzz harness
   (Hypothesis) and differential testing (the same logical pipeline in
   different syntaxes must yield the same findings) as standing quality
-  gates beyond the goat bench.
+  gates beyond the goat bench. **Progress:** the standing
+  `tests/test_loader_robustness.py` gate (deep-nest + alias-bomb +
+  non-UTF-8 + differential, no Hypothesis dep) was extended to the XML
+  packs (maven / nuget) and a per-provider non-UTF-8 battery over the
+  seven distinct-parser providers; an empirical sweep confirmed all
+  degrade gracefully, and the one narrow-`except` gap found (maven
+  `_parse_pom` caught only `ET.ParseError`) was hardened to also catch
+  `RecursionError` / `MemoryError`. Differential coverage broadened past
+  GHA-002's `on:` shapes: GHA-003 (script injection) is now asserted
+  across every `run:` scalar style (inline / literal / folded / quoted)
+  and GHA-008 (hardcoded credential) across every value scalar style —
+  both confirmed representation-robust. A seeded, dependency-free
+  generative fuzz pass (random structured YAML + arbitrary byte blobs ->
+  shared loader -> no-crash, 400 inputs) now backs the curated battery;
+  it found no new crash class. Remaining: swapping the seeded generator
+  for Hypothesis proper (deferred — the dev deps are hash-locked, so
+  adding the library is a separate `requirements-dev.txt` regen step).
 - **Reduce new-rule wiring friction (M, med).** A new rule touches ~16
   files. Derive the standards-mapping and doc-count surfaces from a
   single source rather than hand-maintaining across `owasp_cicd_top_10`
   / `esf_supply_chain` / `nist_ssdf` / `nist_800_53` / `nist_csf_2` /
   `soc2` / `pci_dss_v4` + the per-provider counts + docs. Continue the
-  `cli.py` decomposition (~5,400 lines).
+  `cli.py` decomposition (6068 -> 4989 lines so far): five cohesive blocks
+  extracted to self-contained modules, all re-imported so call sites /
+  `shell_complete=` references / test-suite imports are unchanged (pure
+  refactors, suite green at each step): `cli_hints.py` (post-scan UX
+  hints), `cli_scan_output.py` (scan-status + scan/gate summary
+  renderers), `cli_completion.py` (shell-completion callbacks + check-ID
+  enumerators), `cli_info_commands.py` (the `--list-checks` /
+  `--list-chains` / `--explain-chain` / `--standard-report` informational
+  handlers), and `cli_paths.py` (the ~320-line provider-path
+  auto-detect/validate cluster: `_resolve_provider_path` / `_ScanPaths` /
+  `_resolve_provider_paths`). Next candidate: the larger `scan()` body
+  itself (already partly phased in an earlier pass).
 
 **New frontier / big bets (M-L):**
 
@@ -805,11 +928,13 @@ product. Grouped by horizon; effort (S/M/L) and impact noted.
   permissions (IAM simulator) and report "a fork PR on repo X can assume
   role Y that can delete prod". Turns a misconfig list into an
   executive-legible risk story no CI scanner tells.
-- **Shareable policy packs (`--policy-pack URL`) (M, med-high).** Ship
-  curated packs ("PCI-baseline", "SLSA-L3-gate", "fintech-strict") plus
-  a community registry. Turns the 18-framework compliance mapping into
-  distributable, sticky gates. Builds on `--policy` profiles + the Rego
-  / YAML loaders.
+- **Shareable policy packs (`--policy-pack URL`) (M, med-high).** Mostly
+  shipped: `policies.BUILTIN_PACKS` ships curated packs by name
+  (`--policy pr-gate` / `release-gate` / `slsa-l3` / `pci-dss` /
+  `supply-chain-strict`), and `--policy <https-url>` fetches a remote pack
+  through the same validated loader. Remaining: a discoverable community
+  registry (an index of third-party packs) rather than a single URL.
+  Turns the 18-framework compliance mapping into distributable, sticky gates.
 - **New providers (M each, med).** A HuggingFace / model-registry
   provider (ties to the AI pack), the enterprise CD systems with no
   scanner coverage (Harness / Spinnaker / Octopus), and a Backstage /
@@ -1161,9 +1286,12 @@ queued here.**
   secret-exfil direction, and TAINT/GHA-003 only model
   ``${{ }}`` + ``$GITHUB_OUTPUT``.
 
-**Tier 2 (queued, strong + clean):**
+**Tier 2 (ALL SHIPPED on ``dev``, 2026-06-04):** the OIDC-trust-in-IaC
+batch (IAM-008 widened + IAM-009 Azure WIF + IAM-010 GCP WIF), K8S-044,
+ARGOCD-019, DF-031, GL-042, DEV-006 all landed. Descriptions kept below
+for provenance; struck through.
 
-- **OIDC-trust-in-IaC batch** (HIGH). The CI-to-cloud OIDC trust surface is
+- ~~**OIDC-trust-in-IaC batch** (HIGH).~~ The CI-to-cloud OIDC trust surface is
   uncovered when an infra repo is scanned directly (GHA-062 lives in the
   github provider, needs a sibling workflow, and covers only the AWS
   org-segment ``repo:org/*`` + GCP org-prefix ``startsWith``). Three new
@@ -1175,28 +1303,28 @@ queued here.**
   OIDC trust whose ``sub`` ref-segment is ``:*`` / ``:pull_request`` (today
   ``oidc_subject_pinned`` treats any non-bare-``*`` sub as pinned, so a fork
   PR mints the prod-role token). Sharpen the shared ``_iam_policy`` helper.
-- **K8S-044: admission webhook fail-open / unscoped mutating webhook**
-  (HIGH). ``failurePolicy: Ignore`` lets an attacker DoS a security webhook
+- ~~**K8S-044: admission webhook fail-open / unscoped mutating webhook**
+  (HIGH).~~ ``failurePolicy: Ignore`` lets an attacker DoS a security webhook
   cluster-wide; a ``MutatingWebhookConfiguration`` with no
   ``namespaceSelector`` matching pods is a tenant-escape primitive. Novel:
   no rule reads ``admissionregistration.k8s.io`` objects.
-- **ARGOCD-019: ``ignoreDifferences`` / ``syncOptions: Validate=false``**
-  (HIGH). Tells Argo CD to stop reconciling a field; an attacker mutates the
+- ~~**ARGOCD-019: ``ignoreDifferences`` / ``syncOptions: Validate=false``**
+  (HIGH).~~ Tells Argo CD to stop reconciling a field; an attacker mutates the
   live image / RBAC out-of-band while the dashboard stays "Synced/Healthy"
   (stealth persistence). Novel: ARGOCD-003 only covers prune/selfHeal; the
   per-Application ``spec.ignoreDifferences`` is unread (ARGOCD-018's comment
   only refers to the ``argocd-cm`` key).
-- **DF-031: ``COPY --from=<external image>`` not digest-pinned** (HIGH).
+- ~~**DF-031: ``COPY --from=<external image>`` not digest-pinned** (HIGH).~~
   Pulls an external image at build time, fully sidestepping DF-001's
   ``FROM``-only digest check (DF-008's safe example even uses the named-stage
   form). Resolve ``--from`` against earlier ``FROM ... AS <stage>`` names;
   flag the image-ref case via the existing ``image_pinning`` classifier.
-- **GL-042: ``include: component:`` without a pinned version** (HIGH). A
+- ~~**GL-042: ``include: component:`` without a pinned version** (HIGH).~~ A
   mutable ``@~latest`` / ``@main`` component re-points to attacker pipeline
   code run with ``CI_JOB_TOKEN``. Novel: GL-005 walks only ``project:`` /
   ``remote:`` (GL-041 is the apply-RCE rule already on a branch).
-- **DEV-006: ``.vscode/settings.json`` exec-path key points at a repo-local
-  binary** (HIGH). ``git.path`` / ``python.defaultInterpreterPath`` /
+- ~~**DEV-006: ``.vscode/settings.json`` exec-path key points at a repo-local
+  binary** (HIGH).~~ ``git.path`` / ``python.defaultInterpreterPath`` /
   ``*.path`` set to an in-repo binary is RCE the moment a dev opens the
   clone. Novel: the devenv loader reads ``tasks.json`` but never
   ``settings.json``.
@@ -1538,18 +1666,29 @@ top-level-image fix releases). That lifts the published GHA total from
 
 ### Hygiene-rule confidence tiering (precision)
 
-On the cicd-goat GitHub corpus, 84% of all (scenario, rule) firings are
-non-canonical: the one intended bug is buried under ~6 findings per
-file, dominated by the "missing-control" family (GHA-015 no-timeout on
-90% of files, GHA-037 persist-credentials 73%, plus SBOM / SLSA /
-scan-gate rules). The root cause is that ``Finding.confidence`` defaults
-to ``HIGH`` and only 4 of ~1005 rule modules override it, so a
-best-practice nit and a ``pull_request_target`` RCE land at the same
-confidence and ``--min-confidence`` can't separate them. Give the
-hygiene / missing-control family a lower default confidence (or a
-distinct "best-practice" class) so ``--min-confidence MEDIUM`` yields a
-high-signal view. These findings stay valid on real repos; the point is
-to tier them, not drop them.
+**Mostly shipped (v1.13.0, `6516f365`).** The missing-control family
+(`BEST_PRACTICE_IDS`: no-timeout, no-signing, no-SBOM, no-SLSA,
+no-scan-gate across every provider) now demotes to LOW through
+`checks/_confidence.py`, so `--min-confidence MEDIUM` separates a
+hygiene nit from a `pull_request_target` RCE. The findings stay valid
+and visible at the default LOW threshold; they just drop out of the
+high-signal view.
+
+**GHA-037 trade-off, resolved (2026-06-11): keep HIGH.** GHA-037
+persist-credentials (73% of cicd-goat firings) was left at HIGH and out
+of `BEST_PRACTICE_IDS` on the grounds that the unsafe `actions/checkout`
+default is an active, CVE-backed misconfiguration (ArtiPACKED,
+ultralytics) rather than a missing control. The maintainer decision is
+to keep it HIGH: demoting a confirmed-exploitable default in a security
+tool would hide a real vulnerability from the `--min-confidence MEDIUM`
+view, which is the wrong failure mode for this tool. The rule has no
+context guard (it fires on every checkout that omits
+`persist-credentials: false`, regardless of whether a later step can
+read the token), so it still dominates the high-signal view; that's the
+accepted cost of not under-reporting. If the noise becomes a problem,
+the principled next step is context-awareness (HIGH only when a later
+`run:` step or untrusted trigger can actually exfiltrate the persisted
+token, else lower) rather than a blanket demotion.
 
 ### ~~Live Azure + GCP cloud-posture parity~~ shipped
 

@@ -53,6 +53,11 @@ requires editing `Scanner`, `Reporter`, or the CLI.
     <p>Parses <code>.drone.yml</code> / <code>.drone.yaml</code>. Image and plugin pinning, privileged steps, template-variable injection, literal secrets, TLS bypass.</p>
     <span class="pg-doc-card__meta">{{ providers.drone.checks }}</span>
   </a>
+  <a class="pg-doc-card" href="harness/">
+    <h3>Harness CI/CD</h3>
+    <p>Parses Harness pipeline YAML (stages / steps / stepGroups). Image digest pinning, <code>&lt;+codebase.*&gt;</code> / <code>&lt;+trigger.*&gt;</code> expression injection, privileged steps, literal secrets, pipe-to-shell, TLS bypass, host-path mounts, agentic-CLI prompt injection + autoland, model-load RCE.</p>
+    <span class="pg-doc-card__meta">{{ providers.harness.checks }}</span>
+  </a>
   <a class="pg-doc-card" href="tekton/">
     <h3>Tekton</h3>
     <p>Parses <code>Task</code>, <code>Pipeline</code>, and <code>*Run</code> CRDs. Step image pinning, parameter injection, workspace hygiene.</p>
@@ -113,6 +118,11 @@ requires editing `Scanner`, `Reporter`, or the CLI.
     <p>Parses <code>Dockerfile</code> / <code>Containerfile</code>. Image pinning, USER hygiene, secret-in-env, RUN posture.</p>
     <span class="pg-doc-card__meta">{{ providers.dockerfile.checks }}</span>
   </a>
+  <a class="pg-doc-card" href="modelfile/">
+    <h3>Modelfile</h3>
+    <p>Parses Ollama <code>Modelfile</code>s. Unpinned and HuggingFace base-model refs, local weight blobs, remote adapters, and custom-code model configs.</p>
+    <span class="pg-doc-card__meta">{{ providers.modelfile.checks }}</span>
+  </a>
   <a class="pg-doc-card" href="kubernetes/">
     <h3>Kubernetes</h3>
     <p>Parses manifest YAML (Deployment, Pod, Job, …). securityContext, hostPath, RBAC blast radius, Secret hygiene.</p>
@@ -133,6 +143,11 @@ requires editing `Scanner`, `Reporter`, or the CLI.
     <p>Parses <code>docker buildx imagetools inspect --raw</code> JSON. Provenance annotations, build attestations (SLSA / SBOM), <code>image.created</code> timestamp.</p>
     <span class="pg-doc-card__meta">{{ providers.oci.checks }}</span>
   </a>
+  <a class="pg-doc-card" href="devenv/">
+    <h3>Developer environment</h3>
+    <p>Scans committed developer-environment config (<code>.vscode/</code>, <code>.devcontainer/</code>, <code>.claude/</code>) for checkout-time auto-exec, fetch-and-run hooks, MCP command servers, and literal secrets.</p>
+    <span class="pg-doc-card__meta">{{ providers.devenv.checks }}</span>
+  </a>
 </div>
 
 ### SCM posture
@@ -140,7 +155,7 @@ requires editing `Scanner`, `Reporter`, or the CLI.
 <div class="pg-doc-cards">
   <a class="pg-doc-card" href="scm_github/">
     <h3>GitHub</h3>
-    <p>Full 49-rule pack via REST API. Branch protection, rulesets, security features, environments, deploy keys, webhooks, outside collaborators, Actions permissions.</p>
+    <p>Full repo-governance pack via REST API. Branch protection, rulesets, security features, environments, deploy keys, webhooks, outside collaborators, Actions permissions.</p>
     <span class="pg-doc-card__meta">{{ providers.scm.checks }}</span>
   </a>
   <a class="pg-doc-card" href="scm_gitlab/">
@@ -152,6 +167,21 @@ requires editing `Scanner`, `Reporter`, or the CLI.
     <h3>Bitbucket Cloud</h3>
     <p>Seven universal rules via REST API: branch restrictions, required approvals, force-push, passing builds, branch deletion, CODEOWNERS.</p>
     <span class="pg-doc-card__meta">7 checks (universal subset)</span>
+  </a>
+  <a class="pg-doc-card" href="scm_org/">
+    <h3>GitHub org governance</h3>
+    <p>Org-wide controls via REST API: 2FA requirement, default member permission, Actions allow-list + workflow-token defaults, org secret scope, runner-group exposure, webhooks, rulesets. Fans the per-repo pack out across a whole org with <code>--scm-org</code>.</p>
+    <span class="pg-doc-card__meta">{{ providers.scm_org.checks }}</span>
+  </a>
+  <a class="pg-doc-card" href="runs/">
+    <h3>Actions run history</h3>
+    <p>Audits recent GitHub Actions runs via API (<code>--audit-runs</code>): <code>pull_request_target</code> runs, secret-shaped log strings, OIDC minted in fork runs, fork code on self-hosted runners, compromised / unpinned actions that actually executed.</p>
+    <span class="pg-doc-card__meta">{{ providers.runs.checks }}</span>
+  </a>
+  <a class="pg-doc-card" href="gitlab_runs/">
+    <h3>GitLab pipeline run history</h3>
+    <p>Audits recent GitLab pipeline runs via API (<code>--audit-runs-logs</code>): MR and fork-MR pipelines, secrets in job traces, OIDC minted in fork pipelines, fork code on self-managed runners.</p>
+    <span class="pg-doc-card__meta">{{ providers.gitlab_runs.checks }}</span>
   </a>
 </div>
 
@@ -172,6 +202,16 @@ requires editing `Scanner`, `Reporter`, or the CLI.
     <h3>Cargo (Rust)</h3>
     <p>Parses <code>Cargo.toml</code> via the TOML stdlib parser. Floating version specs, git deps without <code>rev</code>, missing <code>Cargo.lock</code>, path dependencies, alternate-registry sources, and a curated known-compromised crate registry.</p>
     <span class="pg-doc-card__meta">{{ providers.cargo.checks }}</span>
+  </a>
+  <a class="pg-doc-card" href="composer/">
+    <h3>Composer (PHP)</h3>
+    <p>Parses <code>composer.json</code> / <code>composer.lock</code>. Floating constraints, missing lock, plaintext-HTTP repositories, dependency-confusion sourcing, and a curated known-compromised package registry.</p>
+    <span class="pg-doc-card__meta">{{ providers.composer.checks }}</span>
+  </a>
+  <a class="pg-doc-card" href="rubygems/">
+    <h3>RubyGems (Ruby)</h3>
+    <p>Parses <code>Gemfile</code> / <code>Gemfile.lock</code>. Floating version specs, git / path sources, missing lock, insecure gem sources, and a curated known-compromised gem registry.</p>
+    <span class="pg-doc-card__meta">{{ providers.rubygems.checks }}</span>
   </a>
 </div>
 

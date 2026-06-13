@@ -100,6 +100,7 @@ STANDARD = Standard(
         "GHA-011":  ["Build.L3.Isolated"],                         # cache key tainting
         "GHA-012":  ["Build.L2.Hosted", "Build.L3.Ephemeral"],     # self-hosted runner
         "GHA-105":  ["Build.L2.Hosted", "Build.L3.Ephemeral"],     # self-hosted runner on PR trigger
+        "ORG-009":  ["Build.L2.Hosted", "Build.L3.Ephemeral"],     # org self-hosted runner group, public repos
         "GHA-013":  ["Build.L3.Isolated"],                         # issue_comment without guard
         "GHA-015":  ["Build.L3.Ephemeral"],                        # unbounded build
         "GHA-016":  ["Build.L3.Isolated"],                         # curl | bash → RCE
@@ -214,6 +215,7 @@ STANDARD = Standard(
         "GL-031":   ["Build.L3.NonFalsifiable"],                   # id_tokens missing audience pin
         "GL-040":   ["Build.L3.NonFalsifiable"],                   # CI_JOB_TOKEN used for cross-project access
         "GL-041":   ["Build.L3.Isolated"],                         # IaC apply on an untrusted MR trigger
+        "GL-050":   ["Build.L2.Signed"],  # publish job long-lived registry token (GHA-050 analog)
         "GL-032":   ["Build.L3.Isolated"],                         # tags interpolates untrusted variable
         "GL-033":   ["Build.L3.Isolated"],                         # global before_script taint
         "GL-034":   ["Build.L3.NonFalsifiable"],                   # npm install without audit signatures
@@ -222,6 +224,10 @@ STANDARD = Standard(
         "BB-001":   ["Build.L3.NonFalsifiable"],                   # unpinned pipe
         "BB-002":   ["Build.L3.Isolated"],                         # script injection
         "BB-035":   ["Build.L3.Isolated"],                         # trust_remote_code model load = code exec
+        "BB-036":   ["Build.L3.Isolated"],                         # untrusted PR context into agentic CLI
+        "BB-037":   ["Build.L3.Isolated"],                         # unsafe pickle deser of fetched artifact
+        "BB-039":   ["Build.L3.NonFalsifiable"],                         # agentic CLI output lands without review
+        "JF-038":   ["Build.L3.NonFalsifiable"],                         # agentic CLI output lands without review
         "BB-005":   ["Build.L3.Ephemeral"],                        # unbounded runtime
         "BB-006":   ["Build.L2.Signed"],
         "BB-007":   ["Build.L1.Provenance"],
@@ -254,6 +260,9 @@ STANDARD = Standard(
         "ADO-001":  ["Build.L3.NonFalsifiable"],                   # unpinned task
         "ADO-002":  ["Build.L3.Isolated"],                         # script injection
         "ADO-034":  ["Build.L3.Isolated"],                         # trust_remote_code model load = code exec
+        "ADO-035":  ["Build.L3.Isolated"],                         # untrusted PR context into agentic CLI
+        "ADO-036":  ["Build.L3.Isolated"],                         # unsafe pickle deser of fetched artifact
+        "ADO-038":  ["Build.L3.NonFalsifiable"],                         # agentic CLI output lands without review
         "ADO-005":  ["Build.L3.NonFalsifiable"],                   # unpinned container
         "ADO-006":  ["Build.L2.Signed"],
         "ADO-007":  ["Build.L1.Provenance"],
@@ -285,6 +294,7 @@ STANDARD = Standard(
         # ── Jenkins ───────────────────────────────────────────────
         "JF-001":   ["Build.L3.NonFalsifiable"],                   # unpinned shared library
         "JF-002":   ["Build.L3.Isolated"],                         # script injection
+        "JF-037":   ["Build.L3.Isolated"],                         # agentic CLI prompt injection
         "JF-003":   ["Build.L3.Isolated"],                         # agent any, no isolation
         "JF-006":   ["Build.L2.Signed"],                           # unsigned artifacts
         "JF-007":   ["Build.L1.Provenance"],                       # no SBOM
@@ -404,6 +414,17 @@ STANDARD = Standard(
                      "Build.L3.NonFalsifiable"],                   # insecure (non-HTTPS) artifact URL
         # ── Drone CI ─────────────────────────────────────────────
         "DR-001":   ["Build.L3.NonFalsifiable"],                   # step image not digest-pinned
+        "HARNESS-001":   ["Build.L3.NonFalsifiable"],  # Harness step image not digest-pinned
+        "HARNESS-002":   ["Build.L3.Isolated"],  # Harness expression injection in step command
+        "HARNESS-003":   ["Build.L3.Isolated"],  # Harness privileged step
+        "HARNESS-004":   ["Build.L3.NonFalsifiable"],  # Harness literal credential in variable
+        "HARNESS-005":   ["Build.L3.NonFalsifiable"],  # Harness pipe-to-shell
+        "HARNESS-006":   ["Build.L3.Isolated", "Build.L3.NonFalsifiable"],  # Harness TLS bypass in commands
+        "HARNESS-007":   ["Build.L3.Isolated"],  # Harness sensitive host-path mount
+        "HARNESS-008":   ["Build.L3.Isolated"],  # Harness agentic-CLI prompt injection
+        "HARNESS-010":   ["Build.L3.Isolated"],  # Harness model trust_remote_code (code exec)
+        "HARNESS-011":   ["Build.L3.Isolated"],  # Harness unsafe model deser (pickle RCE)
+        "HARNESS-009":   ["Build.L3.NonFalsifiable"],  # Harness agentic-CLI output autolands without review
         "DR-002":   ["Build.L3.Isolated"],                         # privileged step
         "DR-003":   ["Build.L3.Isolated"],                         # Drone variable injection
         "DR-004":   ["Build.L3.NonFalsifiable"],                   # literal credential
@@ -669,6 +690,7 @@ STANDARD = Standard(
         "SCM-022":  ["Build.L3.Isolated",
                      "Build.L3.NonFalsifiable"],    # allowed_actions unrestricted (untrusted 3rd-party in build)
         "SCM-029":  ["Build.L3.NonFalsifiable"],    # ruleset not enforced (governance silently disabled)
+        "ORG-013":  ["Build.L3.NonFalsifiable"],    # org ruleset not enforced (org-wide governance silently disabled)
         "SCM-030":  ["Build.L3.NonFalsifiable"],    # ruleset always-bypass (governance bypassed silently)
         "SCM-034":  ["Build.L3.NonFalsifiable"],    # ruleset allows force_push
         "SCM-035":  ["Build.L3.NonFalsifiable"],    # ruleset allows deletion

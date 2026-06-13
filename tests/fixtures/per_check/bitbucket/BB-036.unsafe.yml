@@ -1,0 +1,7 @@
+pipelines:
+  pull-requests:
+    '**':
+      - step:
+          name: triage
+          script:
+            - claude -p "Triage this pull request from branch $BITBUCKET_BRANCH"

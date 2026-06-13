@@ -1,5 +1,5 @@
 name: 'pipeline-check'
-description: 'CI/CD pipeline security scanner. 1180+ checks across 35 providers, 18 compliance standards. SARIF output for code scanning.'
+description: 'CI/CD pipeline security scanner. 1220+ checks across 39 providers, 18 compliance standards. SARIF output for code scanning.'
 author: 'Pipeline-Check'
 branding:
   icon: 'shield'
@@ -80,8 +80,11 @@ inputs:
     description: >
       Output format. ``sarif`` is the default so findings flow into
       the GitHub Security tab via the upload-sarif step. Other
-      options: ``terminal``, ``json``, ``html``, ``junit``,
-      ``markdown``, ``codequality``, ``cyclonedx``, ``spdx``, ``both``.
+      options: ``terminal``, ``json``, ``jsonl`` (newline-delimited
+      JSON, one finding per line for log / SIEM ingestion), ``html``,
+      ``junit``, ``markdown``, ``codequality``, ``csv``, ``annotations``
+      (GitHub Actions inline ``::error`` annotations), ``cyclonedx``,
+      ``spdx``, ``both``.
     required: false
     default: 'sarif'
   output-file:

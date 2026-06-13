@@ -184,6 +184,11 @@ STANDARD = Standard(
         "BB-001":   ["ESF-S-PIN-DEPS", "ESF-S-VERIFY-DEPS"],
         "BB-002":   ["ESF-D-INJECTION"],
         "BB-035":   ["ESF-D-INJECTION"],   # trust_remote_code model load = code exec
+        "BB-036":   ["ESF-D-INJECTION"],   # untrusted PR context into agentic CLI = prompt injection
+        "BB-037":   ["ESF-D-INJECTION"],   # unsafe pickle deser of fetched artifact = code exec
+        "BB-038":   ["ESF-S-PIN-DEPS", "ESF-S-VERIFY-DEPS"],   # unpinned model registry ref
+        "BB-039":   ["ESF-C-APPROVAL"],   # agentic CLI output lands without review
+        "JF-038":   ["ESF-C-APPROVAL"],   # agentic CLI output lands without review
         "BB-003":   ["ESF-D-SECRETS"],
         "BB-004":   ["ESF-C-APPROVAL", "ESF-C-ENV-SEP"],
         "BB-005":   ["ESF-D-BUILD-TIMEOUT"],
@@ -213,6 +218,10 @@ STANDARD = Standard(
         "ADO-001":  ["ESF-S-PIN-DEPS", "ESF-S-VERIFY-DEPS"],
         "ADO-002":  ["ESF-D-INJECTION"],
         "ADO-034":  ["ESF-D-INJECTION"],   # trust_remote_code model load = code exec
+        "ADO-035":  ["ESF-D-INJECTION"],   # untrusted PR context into agentic CLI = prompt injection
+        "ADO-036":  ["ESF-D-INJECTION"],   # unsafe pickle deser of fetched artifact = code exec
+        "ADO-037":  ["ESF-S-PIN-DEPS", "ESF-S-VERIFY-DEPS"],   # unpinned model registry ref
+        "ADO-038":  ["ESF-C-APPROVAL"],   # agentic CLI output lands without review
         "ADO-003":  ["ESF-D-SECRETS"],
         "ADO-004":  ["ESF-C-APPROVAL", "ESF-C-ENV-SEP"],
         "ADO-005":  ["ESF-S-PIN-DEPS", "ESF-S-TRUSTED-REG"],
@@ -242,6 +251,7 @@ STANDARD = Standard(
         # ── Jenkins ────────────────────────────────────────────────
         "JF-001":   ["ESF-S-PIN-DEPS", "ESF-S-VERIFY-DEPS"],
         "JF-002":   ["ESF-D-INJECTION"],
+        "JF-037":   ["ESF-D-INJECTION"],   # agentic CLI ingests untrusted context (prompt injection)
         "JF-003":   ["ESF-D-BUILD-ENV", "ESF-D-PRIV-BUILD"],
         "JF-004":   ["ESF-D-TOKEN-HYGIENE"],
         "JF-005":   ["ESF-C-APPROVAL"],
@@ -426,6 +436,23 @@ STANDARD = Standard(
         # rules, the Supplier guide for actions-as-dependencies, and
         # the Customer guide for environment / deployment governance.
         "SCM-001":  ["ESF-D-CODE-REVIEW"],          # default branch unprotected
+        "ORG-001":  ["ESF-C-LEAST-PRIV"],           # org: 2FA not required org-wide
+        "ORG-002":  ["ESF-C-LEAST-PRIV"],           # org: default member permission too broad
+        "ORG-003":  ["ESF-S-VERIFY-DEPS"],          # org: no Actions allow-list (any action runs)
+        "ORG-004":  ["ESF-C-LEAST-PRIV", "ESF-D-TOKEN-HYGIENE"],  # org: default workflow token is write
+        "ORG-005":  ["ESF-D-CODE-REVIEW"],          # org: Actions can approve PRs (review bypass)
+        "ORG-006":  ["ESF-D-SECRETS"],              # org: Actions secret scoped to all repos
+        "ORG-007":  ["ESF-C-LEAST-PRIV"],           # org: private-repo forking allowed (code exfiltration)
+        "GLGRP-001":  ["ESF-C-LEAST-PRIV"],  # gitlab group: 2FA not required
+        "GLGRP-002":  ["ESF-C-LEAST-PRIV"],  # gitlab group: forking outside group allowed
+        "GLGRP-003":  ["ESF-C-LEAST-PRIV"],  # gitlab group: sharing projects outside the hierarchy
+        "GLGRP-004":  ["ESF-D-CODE-REVIEW"],  # gitlab group: default branch protection disabled for new projects
+        "ORG-008":  ["ESF-C-LEAST-PRIV"],           # org: members can create public repos (code exposure)
+        "ORG-009":  ["ESF-D-BUILD-ENV", "ESF-D-PRIV-BUILD"],  # org: self-hosted runner group exposed to public repos
+        "ORG-010":  ["ESF-D-SECRETS"],              # org: new-repo secret-scanning push-protection default off
+        "ORG-011":  ["ESF-D-SECRETS"],              # org: org webhook over insecure transport
+        "ORG-012":  ["ESF-S-VULN-MGMT"],            # org: new-repo Dependabot security-updates default off
+        "ORG-013":  ["ESF-D-CODE-REVIEW"],          # org: org ruleset not enforced (evaluate/disabled)
         "SCM-002":  ["ESF-D-CODE-REVIEW"],          # required reviews missing
         "SCM-004":  ["ESF-D-SECRETS"],              # secret scanning disabled
         "SCM-005":  ["ESF-S-VULN-MGMT"],            # Dependabot security updates off
@@ -602,6 +629,7 @@ STANDARD = Standard(
         "GL-031":   ["ESF-D-TOKEN-HYGIENE", "ESF-C-APPROVAL"],  # id_tokens missing audience pin
         "GL-040":   ["ESF-D-TOKEN-HYGIENE", "ESF-C-APPROVAL"],  # CI_JOB_TOKEN used for cross-project access
         "GL-041":   ["ESF-D-INJECTION"],  # IaC apply on an untrusted MR trigger
+        "GL-050":   ["ESF-D-TOKEN-HYGIENE"],  # publish job long-lived registry token (GHA-050 analog)
         "BB-033":   ["ESF-D-INJECTION"],  # IaC apply on a pull-request pipeline
         "BB-034":   ["ESF-C-APPROVAL", "ESF-C-ENV-SEP"],  # production deploy on a pull-request pipeline
         "GL-032":   ["ESF-D-INJECTION"],            # tags interpolates untrusted
@@ -657,6 +685,17 @@ STANDARD = Standard(
         "ARGOCD-013": ["ESF-C-AUDIT"],
         # ── Drone CI ─────────────────────────────────────────────
         "DR-001":   ["ESF-S-PIN-DEPS", "ESF-S-IMMUTABLE"],     # step image not digest-pinned
+        "HARNESS-001":   ["ESF-S-PIN-DEPS", "ESF-S-IMMUTABLE"],  # Harness step image not digest-pinned
+        "HARNESS-002":   ["ESF-D-INJECTION"],  # Harness expression injection in step command
+        "HARNESS-003":   ["ESF-D-PRIV-BUILD"],  # Harness privileged step
+        "HARNESS-004":   ["ESF-D-SECRETS"],  # Harness literal credential in variable
+        "HARNESS-005":   ["ESF-S-VERIFY-DEPS"],  # Harness pipe-to-shell
+        "HARNESS-006":   ["ESF-S-TRUSTED-REG"],  # Harness TLS bypass in commands
+        "HARNESS-007":   ["ESF-D-PRIV-BUILD", "ESF-D-BUILD-ENV"],  # Harness sensitive host-path mount
+        "HARNESS-008":   ["ESF-D-INJECTION"],  # Harness agentic-CLI prompt injection
+        "HARNESS-010":   ["ESF-D-INJECTION"],  # Harness model trust_remote_code (code exec)
+        "HARNESS-011":   ["ESF-D-INJECTION"],  # Harness unsafe model deser (pickle RCE)
+        "HARNESS-009":   ["ESF-C-APPROVAL"],  # Harness agentic-CLI output autolands without review
         "DR-002":   ["ESF-D-PRIV-BUILD"],           # privileged step
         "DR-003":   ["ESF-D-INJECTION"],            # Drone variable injection
         "DR-004":   ["ESF-D-SECRETS"],              # literal credential
