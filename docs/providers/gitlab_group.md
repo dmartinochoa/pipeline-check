@@ -24,13 +24,14 @@ pipeline_check --pipeline gitlab_group --scm-org my-group \
 
 ## What it covers
 
-3 checks · 0 have an autofix patch (``--fix``).
+4 checks · 0 have an autofix patch (``--fix``).
 
 | Check | Title | Severity | Fix |
 |-------|-------|----------|-----|
 | [GLGRP-001](#glgrp-001) | GitLab group does not require two-factor authentication | <span class="pg-sev pg-sev--high">HIGH</span> |  |
 | [GLGRP-002](#glgrp-002) | GitLab group allows forking projects outside the group | <span class="pg-sev pg-sev--medium">MEDIUM</span> |  |
 | [GLGRP-003](#glgrp-003) | GitLab group allows sharing projects outside the group hierarchy | <span class="pg-sev pg-sev--medium">MEDIUM</span> |  |
+| [GLGRP-004](#glgrp-004) | GitLab group default branch protection is disabled for new projects | <span class="pg-sev pg-sev--medium">MEDIUM</span> |  |
 
 ---
 
@@ -89,6 +90,26 @@ Reads ``prevent_sharing_groups_outside_hierarchy`` from ``GET /groups/{group}`` 
 **Recommended action**
 
 Turn on ``Prevent members from sharing projects in this group with groups outside the hierarchy`` (Group Settings -> General -> Permissions and group features). When it is off, a member can share a private or internal project with a group outside the current hierarchy, granting that external group's members standing access to the project, outside the controls (branch protection, approval rules, 2FA policy, audit log) that govern this group. Restrict sharing to the hierarchy and grant external access only through reviewed, time-bound membership. The GitHub-org analog is ORG-007 (forking) / outside-collaborator policy.
+
+</div>
+
+</div>
+
+<div class="pg-rule pg-rule--medium" markdown>
+
+## GLGRP-004: GitLab group default branch protection is disabled for new projects { #glgrp-004 }
+
+<div class="pg-rule__tags">
+<span class="pg-sev pg-sev--medium">MEDIUM</span> <span class="pg-tag pg-tag--owasp">CICD-SEC-1</span> <span class="pg-tag pg-tag--cwe">CWE-284</span>
+</div>
+
+Reads ``default_branch_protection`` from ``GET /groups/{group}`` and fires when it is ``0`` (Not protected). ``1``-``4`` (partial / full / protected-against-push / full-after-initial-push) pass. GitLab is migrating this integer to a ``default_branch_protection_defaults`` object; when only that newer form is returned (the integer absent) the rule passes with an 'unavailable' note rather than guessing at the object's shape, so it never produces a false finding. This is the group-wide default for new projects; SCM-001 audits a specific repository's branch protection.
+
+<div class="pg-rule__rec" markdown>
+
+**Recommended action**
+
+Raise the group's ``Default branch protection`` above ``Not protected`` (Group Settings -> General -> Permissions and group features). At ``0`` (Not protected), every new project created in the group starts with a default branch any Developer can push to directly, force-push, and delete, with no review gate, so a single compromised or careless member can rewrite history or ship unreviewed code on day one. Set it to at least ``Partially protected`` (no force-push) and prefer ``Fully protected`` so new projects inherit a safe default; individual projects can still tighten it further. The repo-level analog is SCM-001.
 
 </div>
 

@@ -948,6 +948,7 @@ STANDARD = Standard(
         "GLGRP-001":  ["CC6.1", "CC6.3"],  # gitlab group: 2FA not required
         "GLGRP-002":  ["CC6.1"],  # gitlab group: forking outside group allowed
         "GLGRP-003":  ["CC6.1"],  # gitlab group: sharing projects outside the hierarchy
+        "GLGRP-004":  ["CC8.1"],  # gitlab group: default branch protection disabled for new projects
         "ORG-008":  ["CC6.1"],                   # org governance: members can create public repos (code exposure)
         "ORG-009":  ["CC6.6"],                   # org governance: self-hosted runner group exposed to public repos
         "ORG-010":  ["CC6.1"],                   # org governance: new-repo secret-scanning push-protection default off
