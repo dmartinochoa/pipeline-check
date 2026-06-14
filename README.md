@@ -136,7 +136,7 @@ for inputs, idempotency, and fork-PR fallback behavior.
 | **Bitbucket Pipelines** | `bitbucket-pipelines.yml` | `--bitbucket-path` | 39 checks · `BB-001..039` · PR-pipeline IaC apply + prod deploy, `trust_remote_code` model loads, untrusted PR context into an agentic AI CLI, unsafe pickle deserialization, unpinned model pulls, agentic-CLI output pushed without review |
 | **Azure DevOps** | `azure-pipelines.yml` | `--azure-path` | 38 checks · `ADO-001..038` · incl. IaC apply on a PR-validated pipeline, `trust_remote_code` model loads, untrusted PR context into an agentic AI CLI, unsafe pickle deserialization, unpinned model pulls, agentic-CLI output pushed without review |
 | **Jenkins** | `Jenkinsfile` (Declarative / Scripted) | `--jenkinsfile-path` | 41 checks · `JF-001..041` · incl. untrusted PR/build context into an agentic AI CLI, agentic-CLI output pushed without review, the model-load supply-chain triad (`trust_remote_code`, unpinned model revision, unsafe pickle deserialization) |
-| **CircleCI** | `.circleci/config.yml` | `--circleci-path` | 34 checks · `CC-001..034` · incl. Go-module-verification bypass, ML model loaded with `trust_remote_code` |
+| **CircleCI** | `.circleci/config.yml` | `--circleci-path` | 36 checks · `CC-001..036` · incl. Go-module-verification bypass, the model-load triad (`trust_remote_code`, unpinned model revision, unsafe pickle deserialization) |
 | **Google Cloud Build** | `cloudbuild.yaml` | `--cloudbuild-path` | 27 checks · `GCB-001..027` |
 | **Buildkite** | `.buildkite/pipeline.yml` | `--buildkite-path` | 17 checks · `BK-001..016` + `TAINT-005` |
 | **Drone CI** | `.drone.yml` / `.drone.yaml` | `--drone-path` | 17 checks · `DR-001..017` · image / plugin pinning, privileged steps, `${DRONE_*}` injection, fork-PR exposure, pipe-to-shell, dangerous shell idioms, sensitive host-path mounts |
@@ -541,7 +541,7 @@ pipeline_check/
         ├── bitbucket/rules/   # BB-001 .. BB-039
         ├── azure/rules/       # ADO-001 .. ADO-038
         ├── jenkins/rules/     # JF-001 .. JF-041
-        ├── circleci/rules/    # CC-001 .. CC-034
+        ├── circleci/rules/    # CC-001 .. CC-036
         ├── cloudbuild/rules/  # GCB-001 .. GCB-027
         ├── buildkite/rules/   # BK-001 .. BK-016 + TAINT-005
         ├── drone/rules/       # DR-001 .. DR-017

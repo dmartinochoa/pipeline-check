@@ -32,7 +32,7 @@ missing major surfaces or requires extra config. No = not in scope.
 | GitHub Actions | Yes (114 rules) | Partial | Yes | Partial | No | No |
 | GitLab CI | Yes (52) | No | Partial | No | No | No |
 | Jenkins (Declarative + Scripted) | Yes (41) | No | No | Partial | No | No |
-| CircleCI | Yes (34) | No | Partial | No | No | No |
+| CircleCI | Yes (36) | No | Partial | No | No | No |
 | Azure DevOps | Yes (38) | No | Partial | No | No | No |
 | Bitbucket Pipelines | Yes (39) | No | No | No | No | No |
 | Google Cloud Build | Yes (27) | No | Partial | No | No | No |

@@ -44,6 +44,24 @@ release commit collapses this section into `## [X.Y.Z] - <date>`.
 
 ### Added
 
+- **CC-035 + CC-036: CircleCI model-load triad completed (MEDIUM + HIGH).**
+  With CC-034 (`trust_remote_code`), these bring CircleCI to full parity
+  with the GHA / GitLab / Bitbucket / Azure DevOps / Harness / Jenkins
+  model-load rule family. **CC-035** (MEDIUM) flags a `run:` command that
+  fetches a model by a mutable registry reference
+  (`from_pretrained("org/model")`, `hf_hub_download` / `snapshot_download`
+  with a bare repo id, `huggingface-cli download org/model`) with no
+  revision pin, so the registry can serve swapped weights or loader code
+  on the next build (the analog of GHA-121 / BB-038 / JF-040; reuses
+  `_primitives/model_ref`). **CC-036** (HIGH) flags unsafe deserialization
+  of a fetched artifact: an explicit `weights_only=False` / `allow_pickle=
+  True` opt-in, or a remote fetch plus a pickle-backed loader
+  (`torch.load` / `pickle.load` / `joblib.load`) in the same command with
+  no safe path, which is code execution on the runner (the analog of
+  GHA-122 / BB-037 / JF-041; reuses `_primitives/unsafe_deser`). Both scan
+  `iter_run_commands` across all jobs. CC-035 mapped across the 8 standards
+  the model-pinning family uses, CC-036 across the 12 the RCE family uses.
+  `circleci` 34 -> 36.
 - **CC-034: CircleCI ML model loaded with `trust_remote_code` (HIGH).**
   Brings the first AI / model-load coverage to CircleCI, a mainstream CI
   provider that previously had none of the model-load family the other six
