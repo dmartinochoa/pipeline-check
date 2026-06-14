@@ -189,6 +189,7 @@ STANDARD = Standard(
         "BB-038":   ["ESF-S-PIN-DEPS", "ESF-S-VERIFY-DEPS"],   # unpinned model registry ref
         "BB-039":   ["ESF-C-APPROVAL"],   # agentic CLI output lands without review
         "JF-038":   ["ESF-C-APPROVAL"],   # agentic CLI output lands without review
+        "JF-039":   ["ESF-D-INJECTION"],   # trust_remote_code model load = code exec
         "BB-003":   ["ESF-D-SECRETS"],
         "BB-004":   ["ESF-C-APPROVAL", "ESF-C-ENV-SEP"],
         "BB-005":   ["ESF-D-BUILD-TIMEOUT"],

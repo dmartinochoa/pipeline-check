@@ -34,6 +34,20 @@ release commit collapses this section into `## [X.Y.Z] - <date>`.
 
 ### Added
 
+- **JF-039: Jenkins ML model loaded with `trust_remote_code` (HIGH).**
+  Brings the model-load supply-chain coverage the other CI providers carry
+  (GHA-120 / GL-045 / BB-035 / ADO-034 / HARNESS-010) to the Jenkinsfile,
+  and adds the model-load leg to a provider that previously only had the
+  agentic-CLI AI rules (JF-037 prompt-injection, JF-038 autoland). Fires
+  when a `sh` / `bat` / `powershell` step loads a model with
+  `trust_remote_code=True` (or `--trust-remote-code`), so the transformers
+  / huggingface_hub loader executes the model repo's own `modeling_*.py`
+  at load time: a poisoned, typosquatted, or unpinned model is then
+  arbitrary code execution on the Jenkins agent with the build's
+  credentials in reach. Reuses the shared `_primitives/model_trust`
+  detector; both single- and double-quoted step bodies are flagged
+  (Groovy quoting does not defang an in-process model load). Mapped across
+  the 12 standards the `trust_remote_code` family uses. `jenkins` 38 -> 39.
 - **`scripts/sync_doc_claims.py`: registry-derived doc-claim writer.**
   `tests/test_doc_claims.py` already *checks* that headline counts ("39
   providers", "120 autofixers", "1220+ checks", the per-provider "N

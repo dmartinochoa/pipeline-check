@@ -321,6 +321,7 @@ STANDARD = Standard(
         "BB-038":   ["PW.4.1", "PW.4.4"],   # model pulled without a pinned revision
         "BB-039":   ["PO.5.1"],   # agentic CLI output lands without review
         "JF-038":   ["PO.5.1"],   # agentic CLI output lands without review
+        "JF-039":   ["PW.6.1", "PW.9.1"],   # trust_remote_code model load = code exec
         "BB-003":   ["PS.1.1"],
         "BB-004":   ["PO.5.1"],
         "BB-005":   ["PO.5.2", "PW.9.1"],
