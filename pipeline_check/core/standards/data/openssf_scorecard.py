@@ -594,9 +594,13 @@ STANDARD = Standard(
         "BK-007":   ["Code-Review"],                                   # deploy not gated
         "BK-008":   ["Pinned-Dependencies"],                           # TLS bypass
         "BK-009":   ["Signed-Releases"],                               # artifact signing
+        "DR-019":  ["Signed-Releases"],  # Drone artifacts not signed
         "BK-010":   ["SBOM"],                                          # SBOM
+        "DR-020":  ["SBOM"],  # Drone no SBOM
         "BK-011":   ["Signed-Releases", "SBOM"],                       # SLSA provenance
+        "DR-021":  ["Signed-Releases", "SBOM"],  # Drone no SLSA provenance
         "BK-012":   ["Vulnerabilities", "SAST"],                       # vuln scanning
+        "DR-022":  ["Vulnerabilities", "SAST"],  # Drone no vuln scan
         # ── Tekton ───────────────────────────────────────────────────
         "TKN-001":  ["Pinned-Dependencies"],                           # step image not digest-pinned
         "TKN-016": ["Pinned-Dependencies"],  # remote resolver / bundle task body not pinned

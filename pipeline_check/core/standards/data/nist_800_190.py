@@ -503,6 +503,7 @@ STANDARD = Standard(
         "BK-005": ["4.1.2", "4.4.4"],              # privileged container
         "BK-008": ["4.2.1"],                       # TLS bypass
         "BK-012": ["4.1.1"],                       # no vuln scan
+        "DR-022":  ["4.1.1"],  # Drone no vuln scan
         "BK-006": ["4.4.5"],                       # no timeout = unbounded build exec
         "BK-014": ["4.1.5"],                       # unpinned package install
         "BK-015": ["4.4.5"],                       # agents map untrusted interpolation

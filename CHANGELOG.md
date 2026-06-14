@@ -66,6 +66,22 @@ release commit collapses this section into `## [X.Y.Z] - <date>`.
 
 ### Added
 
+- **DR-019..022: supply-chain hygiene gates brought to Drone (MEDIUM).**
+  Drone lacked the artifact-signing / SBOM / SLSA-provenance / vuln-scan
+  gate family that the other ten CI providers carry. DR-019 (no
+  cosign/sigstore signing step), DR-020 (no syft/cyclonedx SBOM), DR-021
+  (no SLSA provenance attestation), and DR-022 (no trivy/grype/snyk
+  scanner) reuse the shared `tokens.py` detectors (`produces_artifacts` /
+  `has_signing` / `has_sbom` / `has_provenance` / `has_vuln_scanning`), so
+  detection matches GHA-006/007/024/020 and the BK / TKN analogs exactly.
+  Signing / SBOM / provenance only fire on artifact-producing pipelines
+  (a `docker build` / `push` / `buildah` / `kaniko` step), so lint /
+  test-only pipelines don't trip them; the vuln-scan gate fires on any
+  pipeline with no scanner. All four are registered in `BEST_PRACTICE_IDS`,
+  so the confidence-tiering demotes them to LOW (visible at the default
+  threshold, hidden at `--min-confidence MEDIUM`). Standards cloned from
+  the Buildkite analogs with `scripts/clone_standards_mapping.py`. `drone`
+  18 -> 22.
 - **HARNESS-014 + TKN-018 + ARGO-019: dangerous-shell-idiom rule extended
   to Harness, Tekton, and Argo (HIGH).** The `eval "$VAR"` / `sh -c "$VAR"`
   / backtick-exec family (GHA-028 / GL-026 / BB-026 / ADO-027 / CC-027 /

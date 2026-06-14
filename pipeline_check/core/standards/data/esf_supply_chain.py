@@ -328,9 +328,13 @@ STANDARD = Standard(
         "BK-007":   ["ESF-C-APPROVAL"],                            # deploy not gated
         "BK-008":   ["ESF-S-TRUSTED-REG"],                         # TLS bypass
         "BK-009":   ["ESF-D-SIGN-ARTIFACTS"],                      # artifact signing
+        "DR-019":  ["ESF-D-SIGN-ARTIFACTS"],  # Drone artifacts not signed
         "BK-010":   ["ESF-D-SBOM"],                                # SBOM
+        "DR-020":  ["ESF-D-SBOM"],  # Drone no SBOM
         "BK-011":   ["ESF-S-PROVENANCE", "ESF-D-SIGN-ARTIFACTS"],  # SLSA provenance
+        "DR-021":  ["ESF-S-PROVENANCE", "ESF-D-SIGN-ARTIFACTS"],  # Drone no SLSA provenance
         "BK-012":   ["ESF-S-VULN-MGMT"],                           # vuln scanning
+        "DR-022":  ["ESF-S-VULN-MGMT"],  # Drone no vuln scan
         "BK-013":   ["ESF-C-ENV-SEP"],                             # deploy without branch filter
         # ── Tekton ────────────────────────────────────────────────
         "TKN-001":  ["ESF-S-PIN-DEPS", "ESF-S-IMMUTABLE"],         # step image not digest-pinned

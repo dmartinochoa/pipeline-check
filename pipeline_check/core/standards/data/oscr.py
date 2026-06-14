@@ -337,6 +337,7 @@ STANDARD = Standard(
         "ECR-001":  ["IA-13"],
         "ECR-007":  ["IA-13"],
         "BK-012":   ["IA-13"],
+        "DR-022":  ["IA-13"],  # Drone no vuln scan
         "TKN-012":  ["IA-13"],
         "ARGO-012": ["IA-13"],
         "GHA-059":  ["IA-13"],
@@ -763,6 +764,7 @@ STANDARD = Standard(
         "JF-006":   ["DE-4"],
         "CC-006":   ["DE-4"],
         "BK-009":   ["DE-4"],
+        "DR-019":  ["DE-4"],  # Drone artifacts not signed
         "TKN-009":  ["DE-4"],
         "ARGO-009": ["DE-4"],
         "GCB-009":  ["DE-4"],
@@ -773,6 +775,7 @@ STANDARD = Standard(
         "JF-007":   ["DE-4"],
         "CC-007":   ["DE-4"],
         "BK-010":   ["DE-4"],
+        "DR-020":  ["DE-4"],  # Drone no SBOM
         "TKN-010":  ["DE-4"],
         "ARGO-010": ["DE-4"],
         "GHA-024":  ["DE-4"],
@@ -782,6 +785,7 @@ STANDARD = Standard(
         "JF-028":   ["DE-4"],
         "CC-024":   ["DE-4"],
         "BK-011":   ["DE-4"],
+        "DR-021":  ["DE-4"],  # Drone no SLSA provenance
         "TKN-011":  ["DE-4"],
         "ARGO-011": ["DE-4"],
         "GCB-015":  ["DE-4"],

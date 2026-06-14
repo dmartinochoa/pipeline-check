@@ -50,7 +50,7 @@ All other flags (`--output`, `--severity-threshold`, `--checks`,
 
 ## What it covers
 
-18 checks · 2 have an autofix patch (``--fix``).
+22 checks · 2 have an autofix patch (``--fix``).
 
 | Check | Title | Severity | Fix |
 |-------|-------|----------|-----|
@@ -72,6 +72,10 @@ All other flags (`--output`, `--severity-threshold`, `--checks`,
 | [DR-016](#dr-016) | Step image: field carries a Drone template substitution | <span class="pg-sev pg-sev--high">HIGH</span> |  |
 | [DR-017](#dr-017) | Dangerous shell idiom (eval, sh -c variable, backtick exec) | <span class="pg-sev pg-sev--high">HIGH</span> |  |
 | [DR-018](#dr-018) | Secret-named variable echoed / printed in a step command | <span class="pg-sev pg-sev--high">HIGH</span> |  |
+| [DR-019](#dr-019) | Artifacts not signed (no cosign/sigstore step) | <span class="pg-sev pg-sev--medium">MEDIUM</span> |  |
+| [DR-020](#dr-020) | No SBOM produced (no syft / cyclonedx step) | <span class="pg-sev pg-sev--medium">MEDIUM</span> |  |
+| [DR-021](#dr-021) | No SLSA provenance attestation produced | <span class="pg-sev pg-sev--medium">MEDIUM</span> |  |
+| [DR-022](#dr-022) | No vulnerability-scan step (trivy / grype / snyk) | <span class="pg-sev pg-sev--medium">MEDIUM</span> |  |
 
 ---
 
@@ -594,6 +598,86 @@ Scans every ``commands:`` entry on every step for a secret-named variable handed
 **Recommended action**
 
 Don't print secret values in step commands. Drone masks the values of named secrets in the log, but only the exact string. Encoded, truncated, or derived forms bypass the mask, and ``set -x`` / ``env`` / ``printenv`` dump the raw value before masking can catch it. Log a boolean instead (``[ -n "$TOKEN" ] && echo set || echo unset``), and avoid ``set -x`` while a credential variable is in scope.
+
+</div>
+
+</div>
+
+<div class="pg-rule pg-rule--medium" markdown>
+
+## DR-019: Artifacts not signed (no cosign/sigstore step) { #dr-019 }
+
+<div class="pg-rule__tags">
+<span class="pg-sev pg-sev--medium">MEDIUM</span> <span class="pg-tag pg-tag--owasp">CICD-SEC-9</span> <span class="pg-tag pg-tag--esf">ESF-D-SIGN-ARTIFACTS</span> <span class="pg-tag pg-tag--cwe">CWE-345</span>
+</div>
+
+Detection mirrors GHA-006 / BK-009 / CC-006 / TKN-009, the shared signing-token catalog (cosign, sigstore, slsa-github-generator, slsa-framework, notation-sign) is searched across every string in the pipeline document. The rule only fires on artifact-producing pipelines (those that invoke ``docker build`` / ``docker push`` / ``buildah`` / ``kaniko`` / etc.) so lint / test-only pipelines don't trip it. The Drone analog of BK-009 / TKN-009.
+
+<div class="pg-rule__rec" markdown>
+
+**Recommended action**
+
+Add a signing step after the build: install cosign in the step image and call ``cosign sign --yes <repo>@sha256:<digest>`` so a re-pushed tag can't bypass the signature. Publish the signature alongside the artifact and verify it at consumption time.
+
+</div>
+
+</div>
+
+<div class="pg-rule pg-rule--medium" markdown>
+
+## DR-020: No SBOM produced (no syft / cyclonedx step) { #dr-020 }
+
+<div class="pg-rule__tags">
+<span class="pg-sev pg-sev--medium">MEDIUM</span> <span class="pg-tag pg-tag--owasp">CICD-SEC-9</span> <span class="pg-tag pg-tag--esf">ESF-S-SBOM</span> <span class="pg-tag pg-tag--cwe">CWE-1357</span>
+</div>
+
+Detection mirrors GHA-007 / BK-010 / CC-007 / TKN-010, the shared SBOM-token catalog (syft, cyclonedx, spdx, bom, trivy sbom) is searched across every string in the pipeline document. The rule only fires on artifact-producing pipelines (``docker build`` / ``docker push`` / ``buildah`` / ``kaniko`` / etc.) so lint / test-only pipelines don't trip it. The Drone analog of BK-010 / TKN-010.
+
+<div class="pg-rule__rec" markdown>
+
+**Recommended action**
+
+Generate a Software Bill of Materials as part of the build: run ``syft <image> -o cyclonedx-json`` (or ``cyclonedx`` / ``spdx`` tooling) and publish it alongside the artifact, so consumers can audit the components and respond to new CVEs without rebuilding.
+
+</div>
+
+</div>
+
+<div class="pg-rule pg-rule--medium" markdown>
+
+## DR-021: No SLSA provenance attestation produced { #dr-021 }
+
+<div class="pg-rule__tags">
+<span class="pg-sev pg-sev--medium">MEDIUM</span> <span class="pg-tag pg-tag--owasp">CICD-SEC-9</span> <span class="pg-tag pg-tag--esf">ESF-S-PROVENANCE</span> <span class="pg-tag pg-tag--cwe">CWE-345</span>
+</div>
+
+Detection mirrors GHA-024 / BK-011 / CC-024 / TKN-011, the shared provenance-token catalog (slsa, provenance, in-toto, attestation, cosign attest) is searched across every string in the pipeline document. The rule only fires on artifact-producing pipelines (``docker build`` / ``docker push`` / ``buildah`` / etc.) so lint / test-only pipelines don't trip it. The Drone analog of BK-011 / TKN-011.
+
+<div class="pg-rule__rec" markdown>
+
+**Recommended action**
+
+Emit a signed SLSA provenance attestation for the build: use ``cosign attest --predicate`` with an in-toto / SLSA predicate, or a provenance generator, so a verifier can confirm which pipeline and source revision produced the artifact.
+
+</div>
+
+</div>
+
+<div class="pg-rule pg-rule--medium" markdown>
+
+## DR-022: No vulnerability-scan step (trivy / grype / snyk) { #dr-022 }
+
+<div class="pg-rule__tags">
+<span class="pg-sev pg-sev--medium">MEDIUM</span> <span class="pg-tag pg-tag--owasp">CICD-SEC-9</span> <span class="pg-tag pg-tag--esf">ESF-D-VULN-SCAN</span> <span class="pg-tag pg-tag--cwe">CWE-1104</span>
+</div>
+
+Detection mirrors GHA-020 / BK-012 / CC-020 / TKN-012, the shared scanner-token catalog (trivy, grype, snyk, clair, npm audit, pip-audit, etc.) is searched across every string in the pipeline document. Fires on any pipeline that runs no scanner (the build ships without a CVE signal). The Drone analog of BK-012 / TKN-012.
+
+<div class="pg-rule__rec" markdown>
+
+**Recommended action**
+
+Add a vulnerability-scan step to the build: ``trivy``, ``grype``, ``snyk``, ``npm audit``, or ``pip-audit`` over the image or dependency tree, and fail the build on findings above your threshold so known CVEs don't ship to production silently.
 
 </div>
 

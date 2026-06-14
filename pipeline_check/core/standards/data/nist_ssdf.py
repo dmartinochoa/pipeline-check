@@ -439,9 +439,13 @@ STANDARD = Standard(
         "BK-007":   ["PO.5.1"],                        # no manual deploy gate
         "BK-008":   ["PW.4.4"],                        # TLS bypass
         "BK-009":   ["PS.2.1", "PS.3.2"],              # no signing
+        "DR-019":  ["PS.2.1", "PS.3.2"],  # Drone artifacts not signed
         "BK-010":   ["PS.3.2"],                        # no SBOM
+        "DR-020":  ["PS.3.2"],  # Drone no SBOM
         "BK-011":   ["PS.3.2"],                        # no SLSA provenance
+        "DR-021":  ["PS.3.2"],  # Drone no SLSA provenance
         "BK-012":   ["RV.1.1"],                        # no vuln scan
+        "DR-022":  ["RV.1.1"],  # Drone no vuln scan
         "BK-013":   ["PO.5.1"],                        # no branches filter
         "BK-014":   ["PW.4.1", "PW.4.4"],              # unpinned package install
         "BK-015":   ["PW.6.1", "PW.9.1"],              # agents map untrusted interpolation

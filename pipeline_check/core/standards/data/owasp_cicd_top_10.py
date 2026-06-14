@@ -751,9 +751,13 @@ STANDARD = Standard(
         "BK-007":   ["CICD-SEC-2", "CICD-SEC-7"],  # deploy step not gated
         "BK-008":   ["CICD-SEC-3"],   # TLS verification disabled
         "BK-009":   ["CICD-SEC-9"],   # artifacts not signed
+        "DR-019":  ["CICD-SEC-9"],  # Drone artifacts not signed
         "BK-010":   ["CICD-SEC-9"],   # SBOM not generated
+        "DR-020":  ["CICD-SEC-9"],  # Drone no SBOM
         "BK-011":   ["CICD-SEC-9"],   # SLSA provenance not produced
+        "DR-021":  ["CICD-SEC-9"],  # Drone no SLSA provenance
         "BK-012":   ["CICD-SEC-9"],   # no vulnerability scanning
+        "DR-022":  ["CICD-SEC-9"],  # Drone no vuln scan
         "BK-013":   ["CICD-SEC-1"],   # deploy step has no branches filter
         "BK-014":   ["CICD-SEC-3"],   # unpinned package install
         "BK-015":   ["CICD-SEC-7", "CICD-SEC-1"],  # agents map interpolation

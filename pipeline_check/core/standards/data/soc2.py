@@ -389,9 +389,13 @@ STANDARD = Standard(
         "BK-007": ["CC8.1"],                # no manual deploy gate
         "BK-008": ["CC6.7"],                # TLS bypass
         "BK-009": ["CC8.1"],                # no signing
+        "DR-019":  ["CC8.1"],  # Drone artifacts not signed
         "BK-010": ["CC8.1"],                # no SBOM
+        "DR-020":  ["CC8.1"],  # Drone no SBOM
         "BK-011": ["CC8.1"],                # no SLSA provenance
+        "DR-021":  ["CC8.1"],  # Drone no SLSA provenance
         "BK-012": ["CC7.1"],                # no vuln scan
+        "DR-022":  ["CC7.1"],  # Drone no vuln scan
         "BK-013": ["CC8.1"],                # no branches filter
         "BK-014": ["CC8.1"],                # unpinned package install
         "BK-015": ["CC6.8"],                # agents map untrusted interpolation
