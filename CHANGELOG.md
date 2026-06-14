@@ -34,6 +34,22 @@ release commit collapses this section into `## [X.Y.Z] - <date>`.
 
 ### Added
 
+- **GLGRP-006: GitLab group CI/CD variable exposes a secret with a weak
+  control (HIGH).** The `gitlab_group` provider now also fetches
+  `GET /groups/{group}/variables` and fires on a group-level CI/CD
+  variable whose value matches a known credential shape (the shared
+  `find_secret_values` catalog: PATs, cloud keys, provider tokens, PEM
+  blocks) AND that is `protected: false` (handed to pipelines on every
+  branch / MR, including feature branches and fork MRs where fork
+  pipelines run) or `masked: false` (printed in cleartext in job logs). A
+  group variable is inherited by every project in the group, so the blast
+  radius is the whole group. The value-shape gate keeps it low-FP: an
+  ordinary unprotected config variable (a URL, a region, a flag) is not
+  flagged, only an actual secret with a weakened control; the token body
+  is never echoed, only its detector label. This is the group-API surface
+  the static `.gitlab-ci.yml` rules (GL-003 / GL-008) structurally can't
+  see. Fetched independently, so a token that can read the group but not
+  its variables degrades to a pass-with-note. `gitlab_group` 5 -> 6.
 - **GLGRP-005: GitLab group webhook over insecure transport (HIGH).** The
   GitLab-group twin of the shipped ORG-011 (and the per-project SCM-026).
   The `gitlab_group` provider now also fetches `GET /groups/{group}/hooks`

@@ -24,7 +24,7 @@ pipeline_check --pipeline gitlab_group --scm-org my-group \
 
 ## What it covers
 
-5 checks · 0 have an autofix patch (``--fix``).
+6 checks · 0 have an autofix patch (``--fix``).
 
 | Check | Title | Severity | Fix |
 |-------|-------|----------|-----|
@@ -33,6 +33,7 @@ pipeline_check --pipeline gitlab_group --scm-org my-group \
 | [GLGRP-003](#glgrp-003) | GitLab group allows sharing projects outside the group hierarchy | <span class="pg-sev pg-sev--medium">MEDIUM</span> |  |
 | [GLGRP-004](#glgrp-004) | GitLab group default branch protection is disabled for new projects | <span class="pg-sev pg-sev--medium">MEDIUM</span> |  |
 | [GLGRP-005](#glgrp-005) | GitLab group webhook delivers events over insecure transport | <span class="pg-sev pg-sev--high">HIGH</span> |  |
+| [GLGRP-006](#glgrp-006) | GitLab group CI/CD variable exposes a secret with a weak control | <span class="pg-sev pg-sev--high">HIGH</span> |  |
 
 ---
 
@@ -131,6 +132,26 @@ Reads ``GET /groups/{group}/hooks`` and fires on any webhook whose ``url`` start
 **Recommended action**
 
 For each flagged group webhook (Group Settings -> Webhooks -> edit), switch the URL to ``https://`` and enable ``SSL verification``. A group webhook fires on events across every project in the group, so its payloads carry merge-request diffs, push commits, and pipeline / security content for the whole group. Over plain HTTP (or HTTPS with verification disabled) a network attacker between GitLab and the receiver reads all of it and can tamper with deliveries. Also set a ``Secret token`` and validate the ``X-Gitlab-Token`` header on the receiver. The GitHub-org analog is ORG-011; the per-project analog is SCM-026.
+
+</div>
+
+</div>
+
+<div class="pg-rule pg-rule--high" markdown>
+
+## GLGRP-006: GitLab group CI/CD variable exposes a secret with a weak control { #glgrp-006 }
+
+<div class="pg-rule__tags">
+<span class="pg-sev pg-sev--high">HIGH</span> <span class="pg-tag pg-tag--owasp">CICD-SEC-6</span> <span class="pg-tag pg-tag--cwe">CWE-522</span>
+</div>
+
+Reads ``GET /groups/{group}/variables`` and fires on a variable whose value matches a known credential shape (the shared ``find_secret_values`` catalog: PATs, cloud keys, provider tokens, PEM blocks) AND that is ``protected: false`` or ``masked: false``. The value-shape gate is what keeps this low-FP: an ordinary unprotected config variable (a URL, a flag, a region) is not flagged, only an actual secret with a weakened control. The token body is never echoed, only its detector label. A fully protected and masked secret passes. This is the group-API surface the static ``.gitlab-ci.yml`` rules (GL-003 / GL-008) cannot see; needs a token with ``read_api`` and Owner / Maintainer access, and passes with a note when the endpoint is unavailable.
+
+<div class="pg-rule__rec" markdown>
+
+**Recommended action**
+
+For each flagged group CI/CD variable (Group Settings -> CI/CD -> Variables), turn on both ``Protect variable`` and ``Mask variable`` (or ``Masked and hidden`` on newer GitLab). A group variable is inherited by every project in the group, so its blast radius is the whole group, not one project. Without ``Protected`` it is handed to pipelines on every branch and merge request, so a feature-branch push (or a fork MR where fork pipelines run) can print or use the credential; without ``Masked`` it appears in cleartext in any job log. Prefer scoping a real secret to the single project that needs it, or to a protected environment, and rotate any credential that has been exposed this way. The per-project / in-YAML analogs are GL-003 and GL-008.
 
 </div>
 
