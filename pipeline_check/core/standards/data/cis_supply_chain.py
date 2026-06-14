@@ -447,9 +447,13 @@ STANDARD = Standard(
         "BK-007":   ["2.3.8", "5.1.4"],            # deploy not gated
         "BK-008":   ["3.1.3"],                     # TLS bypass
         "BK-009":   ["4.1.1"],                     # artifact signing
+        "DR-019":  ["4.1.1"],  # Drone artifacts not signed
         "BK-010":   ["4.4.1"],                     # SBOM
+        "DR-020":  ["4.4.1"],  # Drone no SBOM
         "BK-011":   ["4.1.1", "4.4.1"],            # SLSA provenance
+        "DR-021":  ["4.1.1", "4.4.1"],  # Drone no SLSA provenance
         "BK-012":   ["1.1.8", "1.4.1", "3.1.3"],   # vuln scanning
+        "DR-022":  ["1.1.8", "1.4.1", "3.1.3"],  # Drone no vuln scan
         "BK-013":   ["5.1.4", "5.2.1"],            # deploy step no branches: filter
         "BK-014":   ["1.4.1", "3.1.5"],            # unpinned package install
         "BK-015":   ["2.1.3"],                     # agents map interpolates untrusted variable

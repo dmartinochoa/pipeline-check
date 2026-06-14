@@ -213,9 +213,13 @@ STANDARD = Standard(
         "BK-007":   ["6.4.3"],                           # deploy step not gated
         "BK-008":   ["6.5.1"],                           # TLS verification bypass
         "BK-009":   ["6.5.1", "10.3.2"],                 # artifacts not signed
+        "DR-019":  ["6.5.1", "10.3.2"],  # Drone artifacts not signed
         "BK-010":   ["6.5.1"],                           # no SBOM
+        "DR-020":  ["6.5.1"],  # Drone no SBOM
         "BK-011":   ["6.5.1", "10.3.2"],                 # SLSA provenance
+        "DR-021":  ["6.5.1", "10.3.2"],  # Drone no SLSA provenance
         "BK-012":   ["6.3.1", "6.3.3"],                  # no vuln scanning
+        "DR-022":  ["6.3.1", "6.3.3"],  # Drone no vuln scan
         "BK-013":   ["6.4.3"],                           # deploy w/o branches filter
         # Tekton. Kubernetes-native pipeline kinds.
         "TKN-001":  ["6.3.3"],                           # step image not digest-pinned

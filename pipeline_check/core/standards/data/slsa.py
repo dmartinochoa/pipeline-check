@@ -378,7 +378,9 @@ STANDARD = Standard(
         "BK-007":   ["Build.L3.NonFalsifiable"],                   # deploy not gated
         "BK-008":   ["Build.L3.Isolated"],                         # TLS bypass
         "BK-009":   ["Build.L2.Signed"],                           # artifact signing
+        "DR-019":  ["Build.L2.Signed"],  # Drone artifacts not signed
         "BK-010":   ["Build.L1.Provenance"],                       # SBOM
+        "DR-020":  ["Build.L1.Provenance"],  # Drone no SBOM
         "BK-011":   ["Build.L1.Provenance", "Build.L2.Signed",
                      "Build.L3.NonFalsifiable"],                   # SLSA provenance
         "BK-013":   ["Build.L3.NonFalsifiable"],                   # deploy step no branches filter
