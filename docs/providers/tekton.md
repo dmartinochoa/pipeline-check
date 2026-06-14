@@ -32,7 +32,7 @@ All other flags (`--output`, `--severity-threshold`, `--checks`,
 
 ## What it covers
 
-18 checks · 2 have an autofix patch (``--fix``).
+19 checks · 2 have an autofix patch (``--fix``).
 
 | Check | Title | Severity | Fix |
 |-------|-------|----------|-----|
@@ -54,6 +54,7 @@ All other flags (`--output`, `--severity-threshold`, `--checks`,
 | [TKN-015](#tkn-015) | Workspace subPath interpolates a Task parameter (path traversal) | <span class="pg-sev pg-sev--high">HIGH</span> |  |
 | [TKN-016](#tkn-016) | Remote resolver taskRef / pipelineRef not pinned to an immutable revision | <span class="pg-sev pg-sev--high">HIGH</span> |  |
 | [TKN-017](#tkn-017) | Secret-named variable echoed / printed in a step script | <span class="pg-sev pg-sev--high">HIGH</span> |  |
+| [TKN-018](#tkn-018) | Dangerous shell idiom (eval, sh -c variable, backtick exec) | <span class="pg-sev pg-sev--high">HIGH</span> |  |
 
 ---
 
@@ -436,6 +437,30 @@ Scans every Task / ClusterTask step ``script`` for a secret-named variable hande
 **Recommended action**
 
 Don't print secret values in step scripts. A secret mounted from a Kubernetes ``Secret`` (via ``secret.secretName`` or a workspace) is plaintext in the pod, and ``echo`` / ``set -x`` / ``env`` / ``printenv`` write it straight to the TaskRun log, which anyone with read access to the cluster or its log sink can see. Log a boolean instead (``[ -n "$TOKEN" ] && echo set || echo unset``), and avoid ``set -x`` while a credential variable is in scope.
+
+</div>
+
+</div>
+
+<div class="pg-rule pg-rule--high" markdown>
+
+## TKN-018: Dangerous shell idiom (eval, sh -c variable, backtick exec) { #tkn-018 }
+
+<div class="pg-rule__tags">
+<span class="pg-sev pg-sev--high">HIGH</span> <span class="pg-tag pg-tag--owasp">CICD-SEC-4</span> <span class="pg-tag pg-tag--esf">ESF-D-INJECTION</span> <span class="pg-tag pg-tag--cwe">CWE-95</span>
+</div>
+
+Complements TKN-003 (untrusted ``$(params.*)`` interpolated into a step script). This rule fires on intrinsically risky idioms, ``eval``, ``sh -c "$X"``, backtick exec, regardless of whether the input source is currently trusted, because the idiom hands a value full shell-grammar reach. Uses the shared ``_primitives.shell_eval`` detector over each Task / ClusterTask step ``script``. The Tekton analog of GHA-028 / GL-026 / BB-026 / ADO-027 / CC-027 / BK-016 / DR-017.
+
+**Known false-positive modes**
+
+- ``eval "$(ssh-agent -s)"`` and similar ``eval "$(<literal-tool>)"`` bootstrap idioms are intentionally NOT flagged, the substituted command is literal, only its output is eval'd.
+
+<div class="pg-rule__rec" markdown>
+
+**Recommended action**
+
+Replace ``eval "$VAR"`` / ``sh -c "$VAR"`` / backtick exec with direct command invocation. Validate or allow-list any value that must feed a dynamic command at the boundary.
 
 </div>
 

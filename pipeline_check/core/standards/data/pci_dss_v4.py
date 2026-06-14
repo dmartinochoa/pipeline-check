@@ -565,6 +565,9 @@ STANDARD = Standard(
         "CC-025":   ["6.4.1", "6.5.1"],                  # cache key tainted
         "CC-026":   ["6.3.1", "6.5.1"],                  # malicious-activity indicators
         "CC-027":   ["6.5.1"],                           # dangerous shell idiom
+        "ARGO-019":  ["6.5.1"],  # Argo dangerous shell idiom
+        "TKN-018":  ["6.5.1"],  # Tekton dangerous shell idiom
+        "HARNESS-014":  ["6.5.1"],  # Harness dangerous shell idiom
         "CC-028":   ["6.3.3", "6.5.1"],                  # install bypasses registry integrity
         "CC-029":   ["6.3.3", "6.5.1"],                  # machine executor image not pinned
         "CC-030":   ["6.4.3"],                           # job w/o branch filter / approval gate

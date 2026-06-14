@@ -419,6 +419,9 @@ STANDARD = Standard(
         "CC-025":   ["PO.5.1", "PW.9.1"],              # cache key tainted
         "CC-026":   ["PW.4.4", "RV.1.1"],              # malicious-activity indicators
         "CC-027":   ["PW.6.1", "PW.9.1"],              # dangerous shell idiom
+        "ARGO-019":  ["PW.6.1", "PW.9.1"],  # Argo dangerous shell idiom
+        "TKN-018":  ["PW.6.1", "PW.9.1"],  # Tekton dangerous shell idiom
+        "HARNESS-014":  ["PW.6.1", "PW.9.1"],  # Harness dangerous shell idiom
         "CC-028":   ["PW.4.1", "PW.4.4"],              # install bypasses registry integrity
         "CC-029":   ["PW.4.1", "PW.4.4"],              # machine executor image not pinned
         "CC-030":   ["PO.5.1"],                        # job w/o branch filter / approval gate

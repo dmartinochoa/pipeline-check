@@ -55,6 +55,20 @@ release commit collapses this section into `## [X.Y.Z] - <date>`.
 
 ### Added
 
+- **HARNESS-014 + TKN-018 + ARGO-019: dangerous-shell-idiom rule extended
+  to Harness, Tekton, and Argo (HIGH).** The `eval "$VAR"` / `sh -c "$VAR"`
+  / backtick-exec family (GHA-028 / GL-026 / BB-026 / ADO-027 / CC-027 /
+  BK-016 / DR-017) now covers the three remaining shell-surface providers
+  that lacked it. Each fires on intrinsically risky idioms that hand a
+  value full shell-grammar reach, regardless of whether the input is
+  currently trusted (complementing the per-provider untrusted-input rules
+  HARNESS-002 / TKN-003 / ARGO-005), via the shared `_primitives.shell_eval`
+  detector over the provider's shell surface (Harness step `command`,
+  Tekton step `script`, Argo `script.source` / `container.args`). The
+  `eval "$(ssh-agent -s)"` bootstrap idiom is intentionally not flagged.
+  Standards cloned from CC-027 (the correctly-mapped family member, 12
+  standards) with `scripts/clone_standards_mapping.py`. `harness` 13 -> 14,
+  `tekton` 18 -> 19, `argo` 19 -> 20.
 - **TKN-017 + ARGO-018 + GCB-028: log-leak rule completed across the
   remaining shell providers (HIGH).** Finishes the log-leak family
   (GHA-033 / GL-036 / BB-032 / ADO-031 / CC-032 / JF-042 / HARNESS-013 /

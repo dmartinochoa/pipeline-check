@@ -352,6 +352,9 @@ STANDARD = Standard(
                      "Build.L3.NonFalsifiable"],
         "CC-025":   ["Build.L3.Isolated"],                         # cache poisoning
         "CC-027":   ["Build.L3.Isolated"],                         # eval / shell re-invocation
+        "ARGO-019":  ["Build.L3.Isolated"],  # Argo dangerous shell idiom
+        "TKN-018":  ["Build.L3.Isolated"],  # Tekton dangerous shell idiom
+        "HARNESS-014":  ["Build.L3.Isolated"],  # Harness dangerous shell idiom
         "CC-028":   ["Build.L3.Isolated"],                         # package source bypasses lockfile
         "CC-005":   ["Build.L3.NonFalsifiable"],                   # leaked credentials
         "CC-009":   ["Build.L3.NonFalsifiable"],                   # job missing approval gate

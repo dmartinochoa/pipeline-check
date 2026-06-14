@@ -118,6 +118,9 @@ STANDARD = Standard(
         "CC-016":   ["4.1.3"],
         "CC-026":   ["4.1.3"],
         "CC-027":   ["4.1.3"],
+        "ARGO-019":  ["4.1.3"],  # Argo dangerous shell idiom
+        "TKN-018":  ["4.1.3"],  # Tekton dangerous shell idiom
+        "HARNESS-014":  ["4.1.3"],  # Harness dangerous shell idiom
         "GCB-004":  ["4.1.3"],
         "GCB-006":  ["4.1.3"],
 

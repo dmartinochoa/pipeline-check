@@ -202,6 +202,9 @@ STANDARD = Standard(
         "CC-020":   ["CC6.8"],
         "CC-026":   ["CC6.8"],
         "CC-027":   ["CC6.8"],
+        "ARGO-019":  ["CC6.8"],  # Argo dangerous shell idiom
+        "TKN-018":  ["CC6.8"],  # Tekton dangerous shell idiom
+        "HARNESS-014":  ["CC6.8"],  # Harness dangerous shell idiom
         "GCB-006":  ["CC6.8"],
         "GCB-008":  ["CC6.8"],
         "ECR-001":  ["CC6.8"],

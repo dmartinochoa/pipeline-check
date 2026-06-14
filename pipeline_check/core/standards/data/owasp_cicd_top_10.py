@@ -448,6 +448,9 @@ STANDARD = Standard(
         "CC-025":   ["CICD-SEC-4"],
         "CC-026":   ["CICD-SEC-4", "CICD-SEC-7"],
         "CC-027":   ["CICD-SEC-4"],
+        "ARGO-019":  ["CICD-SEC-4"],  # Argo dangerous shell idiom
+        "TKN-018":  ["CICD-SEC-4"],  # Tekton dangerous shell idiom
+        "HARNESS-014":  ["CICD-SEC-4"],  # Harness dangerous shell idiom
         "CC-028":   ["CICD-SEC-3"],
         "CC-029":   ["CICD-SEC-3"],
         "CC-030":   ["CICD-SEC-6"],

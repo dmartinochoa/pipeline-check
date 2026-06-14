@@ -305,6 +305,9 @@ STANDARD = Standard(
         "CC-025":   ["Dangerous-Workflow"],
         "CC-026":   ["Dangerous-Workflow"],                            # malicious activity
         "CC-027":   ["Dangerous-Workflow"],
+        "ARGO-019":  ["Dangerous-Workflow"],  # Argo dangerous shell idiom
+        "TKN-018":  ["Dangerous-Workflow"],  # Tekton dangerous shell idiom
+        "HARNESS-014":  ["Dangerous-Workflow"],  # Harness dangerous shell idiom
         "GCB-004":  ["Dangerous-Workflow"],
         "GCB-006":  ["Dangerous-Workflow"],
         # curl|bash is classic Dangerous-Workflow territory
