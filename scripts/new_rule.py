@@ -281,7 +281,11 @@ def _checklist(provider: str, rule_id: str, count: int, rule_path: Path, test_pa
         "     pipeline_check/core/standards/data/owasp_cicd_top_10.py "
         "(MANDATORY -- every rule must be mapped). To hold the broad "
         "per-framework floors, mirror a sibling rule's controls in the "
-        "other framework files the floor test flags.",
+        "other framework files the floor test flags. If this rule mirrors "
+        "an existing one (a parity / family rule), clone the sibling's "
+        "whole mapping set at once:",
+        f"     python scripts/clone_standards_mapping.py <ANALOG-ID> {rule_id} "
+        '--comment "..." --apply',
         "  6. Regenerate docs:",
         f"     python scripts/gen_provider_docs.py {provider}",
         "     python scripts/gen_standards_docs.py",

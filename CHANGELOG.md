@@ -53,6 +53,22 @@ release commit collapses this section into `## [X.Y.Z] - <date>`.
 
 ### Added
 
+- **`scripts/clone_standards_mapping.py`: clone a rule's standards
+  mappings onto a new rule.** Adding a parity / family rule (a
+  cross-provider sibling, a new member of an established family) means
+  giving it the *same* control IDs in every standard the analog is mapped
+  to, which until now meant opening each
+  `pipeline_check/core/standards/data/*.py`, finding the analog's line,
+  reading off that standard's controls, and inserting a matching line by
+  hand (~10-12 files per rule). This tool does it in one shot: it touches
+  only the standards the analog is already in (preserving the deliberate
+  "which standards does this kind of rule belong in" decision the analog
+  encodes) and copies each standard's control set verbatim. `--apply`
+  inserts each entry right after the analog's line so it stays grouped
+  with its provider block; the default is a dry-run preview. Referenced
+  from `new_rule.py`'s next-steps. Covered by
+  `tests/test_clone_standards_mapping.py` (synthetic data dir + a
+  self-consistency check against the live mappings).
 - **HARNESS-013: Harness secret echoed to the step log (HIGH).** Continues
   the log-leak family (GHA-033 / GL-036 / BB-032 / ADO-031 / CC-032 /
   JF-042) into the Harness CD provider. Scans every step `command` for a
