@@ -731,6 +731,7 @@ STANDARD = Standard(
         "CC-032":   ["Build.L3.NonFalsifiable"],                   # secret echoed to CircleCI log
         "CC-034":   ["Build.L3.Isolated"],                   # trust_remote_code model load = code exec
         "CC-036":   ["Build.L3.Isolated"],                   # unsafe pickle deser of fetched artifact = code exec
+        "CC-037":   ["Build.L3.Isolated"],                   # agentic CLI prompt injection
         "SCM-048":  ["Build.L3.NonFalsifiable"],                   # org codespace secrets scoped to all repos
         "SCM-049":  ["Build.L3.NonFalsifiable"],                   # classic PAT where fine-grained suffices
         "NPM-012":  ["Build.L2.Signed"],                           # publish token missing restrictions

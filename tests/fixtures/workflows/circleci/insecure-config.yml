@@ -148,6 +148,10 @@ jobs:
           command: |
             curl -fsSL -o m.pt https://models.example.com/m.pt
             python -c "import torch; torch.load('m.pt')"
+      # CC-037: untrusted PR context fed into an agentic AI CLI prompt.
+      - run:
+          name: AI triage
+          command: claude -p "Triage this PR on branch $CIRCLE_BRANCH"
 
 # CC-006: No signing tool (cosign/sigstore) present anywhere.
 # CC-007: No SBOM tool (syft/cyclonedx) present anywhere.

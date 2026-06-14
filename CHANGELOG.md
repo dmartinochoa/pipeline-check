@@ -44,6 +44,20 @@ release commit collapses this section into `## [X.Y.Z] - <date>`.
 
 ### Added
 
+- **CC-037: CircleCI untrusted PR/build context reaches an agentic AI CLI
+  (HIGH).** The AI face of CC-002 (script injection) and the CircleCI
+  analog of GHA-119 / GL-048 / BB-036 / ADO-035 / JF-037. Fires when a
+  `run:` command invokes an agentic CLI (claude / gemini / cursor-agent /
+  aider / openhands / goose / `q chat`) AND attacker-controllable CircleCI
+  context reaches it: an event-source env var (`$CIRCLE_BRANCH` /
+  `$CIRCLE_TAG` / `$CIRCLE_PR_*`) or a `<< pipeline.git.branch >>` /
+  `<< pipeline.git.tag >>` interpolation. A PR author or branch namer can
+  then smuggle instructions the agent executes. Unlike CC-002 the value is
+  flagged in any quote style (an LLM reads it as prompt text regardless of
+  shell quoting); `<< pipeline.parameters.* >>` stays safe. Reuses the
+  shared `_primitives/agentic_cli` detector + CircleCI's `UNTRUSTED_ENV_RE`,
+  mapped across the 12 standards the prompt-injection family uses.
+  `circleci` 36 -> 37.
 - **CC-035 + CC-036: CircleCI model-load triad completed (MEDIUM + HIGH).**
   With CC-034 (`trust_remote_code`), these bring CircleCI to full parity
   with the GHA / GitLab / Bitbucket / Azure DevOps / Harness / Jenkins

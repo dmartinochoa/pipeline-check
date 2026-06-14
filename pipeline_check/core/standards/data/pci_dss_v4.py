@@ -972,6 +972,7 @@ STANDARD = Standard(
         "CC-034":   ["6.5.1"],                  # trust_remote_code model load = code exec
         "CC-035":   ["6.3.3", "6.5.1"],                  # model pulled without a pinned revision
         "CC-036":   ["6.5.1"],                  # unsafe pickle deser of fetched artifact = code exec
+        "CC-037":   ["6.5.1"],                  # agentic CLI ingests untrusted context (prompt injection)
         "SCM-048":  ["7.2.5", "8.2.1"],                   # org codespace secrets scoped to all repos
         "SCM-049":  ["7.2.5", "8.2.1"],                   # classic PAT used where fine-grained suffices
         "ORG-001":  ["8.2.1", "7.2.5"],                   # org: 2FA not required org-wide

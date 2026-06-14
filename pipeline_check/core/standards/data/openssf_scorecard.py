@@ -460,6 +460,7 @@ STANDARD = Standard(
         "CC-030":   ["Token-Permissions"],
         "CC-034":   ["Dangerous-Workflow"],   # trust_remote_code model load = code exec
         "CC-036":   ["Dangerous-Workflow"],   # unsafe pickle deser of fetched artifact = code exec
+        "CC-037":   ["Dangerous-Workflow"],   # agentic CLI ingests untrusted context (prompt injection)
         "GCB-002":  ["Token-Permissions"],
         "GCB-003":  ["Token-Permissions"],
         "GCB-007":  ["Token-Permissions"],

@@ -965,6 +965,7 @@ STANDARD = Standard(
         "CC-034":   ["CICD-SEC-4"],               # trust_remote_code model load = code exec
         "CC-035":   ["CICD-SEC-3"],               # model pulled without a pinned revision
         "CC-036":   ["CICD-SEC-4"],               # unsafe pickle deser of fetched artifact = code exec
+        "CC-037":   ["CICD-SEC-4"],               # agentic CLI ingests untrusted context (prompt injection)
         # npm supply-chain posture
         "NPM-012":  ["CICD-SEC-3", "CICD-SEC-6"],  # publish token missing restrictions
         "NPM-013":  ["CICD-SEC-6", "CICD-SEC-3"],  # broad files-field publishes everything
