@@ -35,7 +35,7 @@ analogue in other providers:
 
 ## What it covers
 
-27 checks · 8 have an autofix patch (``--fix``).
+28 checks · 8 have an autofix patch (``--fix``).
 
 | Check | Title | Severity | Fix |
 |-------|-------|----------|-----|
@@ -66,6 +66,7 @@ analogue in other providers:
 | [GCB-025](#gcb-025) | Build has no tags for audit / discoverability | <span class="pg-sev pg-sev--low">LOW</span> |  |
 | [GCB-026](#gcb-026) | Step waitFor: references an unknown step id | <span class="pg-sev pg-sev--medium">MEDIUM</span> |  |
 | [GCB-027](#gcb-027) | Config contains indicators of malicious activity | <span class="pg-sev pg-sev--critical">CRITICAL</span> |  |
+| [GCB-028](#gcb-028) | Secret-named variable echoed / printed in a build step | <span class="pg-sev pg-sev--high">HIGH</span> |  |
 
 ---
 
@@ -653,6 +654,26 @@ Specific indicators only (reverse shells, base64-decoded execution, miner binari
 **Recommended action**
 
 Treat as a potential compromise. Identify the change that added the matching step(s), rotate any Secret Manager secrets the build can reach, and audit recent builds in Cloud Build history.
+
+</div>
+
+</div>
+
+<div class="pg-rule pg-rule--high" markdown>
+
+## GCB-028: Secret-named variable echoed / printed in a build step { #gcb-028 }
+
+<div class="pg-rule__tags">
+<span class="pg-sev pg-sev--high">HIGH</span> <span class="pg-tag pg-tag--owasp">CICD-SEC-6</span> <span class="pg-tag pg-tag--esf">ESF-D-SECRETS</span> <span class="pg-tag pg-tag--cwe">CWE-532</span> <span class="pg-tag pg-tag--cwe">CWE-200</span>
+</div>
+
+Scans every step's ``entrypoint`` + ``args`` for a secret-named variable handed to ``echo`` / ``printf`` / ``cat`` / ``tee``, for an ``env`` / ``printenv`` dump, and for ``set -x`` with a secret-named variable in scope (the shared ``log_leak`` detector, with GHA-033 / GL-036 / BB-032 / ADO-031 / CC-032 / JF-042 / HARNESS-013 / BK-017 / DR-018). Variable names matching common secret patterns (PASSWORD / TOKEN / SECRET / API_KEY / CREDENTIAL) trigger the rule (the ``$$VAR`` Cloud Build escaping is matched alongside ``$VAR``). The Cloud Build analog of GL-036 / CC-032.
+
+<div class="pg-rule__rec" markdown>
+
+**Recommended action**
+
+Don't print secret values in build steps. A value pulled from Secret Manager into ``secretEnv`` is plaintext in the step's environment, and ``echo`` / ``set -x`` / ``env`` / ``printenv`` write it straight to the Cloud Build log, which anyone with ``cloudbuild.builds.get`` (or read on the log bucket) can see. Log a boolean instead (``[ -n "$$TOKEN" ] && echo set || echo unset``), and avoid ``set -x`` while a credential variable is in scope.
 
 </div>
 

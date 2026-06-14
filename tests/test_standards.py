@@ -400,7 +400,7 @@ class TestPerFrameworkCoverageFloor:
         "nist_ssdf":              97,   # current 99%, OCI-006 carve-out
         "openssf_scorecard":      71,   # current ~72%, GitHub-scoped; non-GitHub rule packs (devenv, registries, GitLab group governance GLGRP-*) grow the denominator without expected new coverage
         "slsa":                   66,   # current 66%; build-provenance-scoped, org-governance rules (ORG-*) grow the denominator without provenance-level coverage
-        "nist_800_190":           53,   # current 53%, container-scoped; GitHub-Actions run-forensics rules (RUN-*) grow the denominator without container-security coverage
+        "nist_800_190":           52,   # current ~52-53%, container-scoped; CI / run-forensics / secret-hygiene rules grow the denominator without container-security coverage
         "s2c2f":                  31,   # current 33%, OSS-consumption-scoped
         "cis_aws_foundations":    11,   # current ~11-12%, AWS-pack-only (CI / registry rule packs grow the denominator without expected new coverage)
         "cis_github":             12,   # current 12-13%, GitHub-platform-scoped; non-GitHub rule packs grow the denominator without expected new coverage

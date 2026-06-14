@@ -32,7 +32,7 @@ All other flags (`--output`, `--severity-threshold`, `--checks`,
 
 ## What it covers
 
-17 checks · 2 have an autofix patch (``--fix``).
+18 checks · 2 have an autofix patch (``--fix``).
 
 | Check | Title | Severity | Fix |
 |-------|-------|----------|-----|
@@ -53,6 +53,7 @@ All other flags (`--output`, `--severity-threshold`, `--checks`,
 | [TKN-014](#tkn-014) | Tekton step script runs unpinned package install | <span class="pg-sev pg-sev--medium">MEDIUM</span> |  |
 | [TKN-015](#tkn-015) | Workspace subPath interpolates a Task parameter (path traversal) | <span class="pg-sev pg-sev--high">HIGH</span> |  |
 | [TKN-016](#tkn-016) | Remote resolver taskRef / pipelineRef not pinned to an immutable revision | <span class="pg-sev pg-sev--high">HIGH</span> |  |
+| [TKN-017](#tkn-017) | Secret-named variable echoed / printed in a step script | <span class="pg-sev pg-sev--high">HIGH</span> |  |
 
 ---
 
@@ -415,6 +416,26 @@ Tekton's Resolution framework fetches the *body* of a Task or Pipeline at run ti
 **Recommended action**
 
 Pin every remote ``taskRef`` / ``pipelineRef`` to an immutable revision: a ``git`` resolver's ``revision`` to a full 40-hex commit SHA (not a branch or tag), a ``bundles`` resolver's ``bundle`` image and the legacy ``taskRef.bundle`` to ``@sha256:<digest>``, and a ``hub`` resolver to a specific ``version`` (never ``latest``). Otherwise vendor the Task / Pipeline definition in-repo so it is reviewed and version-controlled like the rest of the pipeline.
+
+</div>
+
+</div>
+
+<div class="pg-rule pg-rule--high" markdown>
+
+## TKN-017: Secret-named variable echoed / printed in a step script { #tkn-017 }
+
+<div class="pg-rule__tags">
+<span class="pg-sev pg-sev--high">HIGH</span> <span class="pg-tag pg-tag--owasp">CICD-SEC-6</span> <span class="pg-tag pg-tag--esf">ESF-D-SECRETS</span> <span class="pg-tag pg-tag--cwe">CWE-532</span> <span class="pg-tag pg-tag--cwe">CWE-200</span>
+</div>
+
+Scans every Task / ClusterTask step ``script`` for a secret-named variable handed to ``echo`` / ``printf`` / ``cat`` / ``tee``, for an ``env`` / ``printenv`` dump, and for ``set -x`` with a secret-named variable in scope (the shared ``log_leak`` detector, with GHA-033 / GL-036 / BB-032 / ADO-031 / CC-032 / JF-042 / HARNESS-013 / BK-017 / DR-018). Variable names matching common secret patterns (PASSWORD / TOKEN / SECRET / API_KEY / CREDENTIAL) trigger the rule. The Tekton analog of GL-036 / CC-032.
+
+<div class="pg-rule__rec" markdown>
+
+**Recommended action**
+
+Don't print secret values in step scripts. A secret mounted from a Kubernetes ``Secret`` (via ``secret.secretName`` or a workspace) is plaintext in the pod, and ``echo`` / ``set -x`` / ``env`` / ``printenv`` write it straight to the TaskRun log, which anyone with read access to the cluster or its log sink can see. Log a boolean instead (``[ -n "$TOKEN" ] && echo set || echo unset``), and avoid ``set -x`` while a credential variable is in scope.
 
 </div>
 

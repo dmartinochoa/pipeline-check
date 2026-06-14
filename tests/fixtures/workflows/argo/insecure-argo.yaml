@@ -56,6 +56,7 @@ spec:
         source: |
           set -e
           echo Building {{inputs.parameters.ref}}
+          echo "deploying with $AWS_SECRET_ACCESS_KEY"
           curl https://example.com/install.sh | bash
           npm install
           pip install --trusted-host pypi.internal package
