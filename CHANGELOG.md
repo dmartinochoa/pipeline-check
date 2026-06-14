@@ -53,6 +53,23 @@ release commit collapses this section into `## [X.Y.Z] - <date>`.
 
 ### Added
 
+- **TKN-017 + ARGO-018 + GCB-028: log-leak rule completed across the
+  remaining shell providers (HIGH).** Finishes the log-leak family
+  (GHA-033 / GL-036 / BB-032 / ADO-031 / CC-032 / JF-042 / HARNESS-013 /
+  BK-017 / DR-018) for Tekton, Argo Workflows, and Google Cloud Build, so
+  every CI provider with a shell command surface now flags secrets printed
+  to the log. Each scans the provider's shell surface (Tekton step
+  `script`, Argo template `script.source` / `container.args`, Cloud Build
+  step `entrypoint` / `args` / `script`) for a secret-named variable
+  handed to `echo` / `printf` / `cat` / `tee`, an `env` / `printenv` dump,
+  or `set -x` with a secret-named variable in scope, via the shared
+  `_primitives/log_leak` detector. GCB-028 normalizes Cloud Build's `$$`
+  escaping to `$` and scans each arg on its own (a `bash -c '<script>'`
+  step keeps the script in a single arg). Standards cloned with
+  `scripts/clone_standards_mapping.py` (10 each). The `nist_800_190`
+  per-framework coverage floor drops 53 -> 52 (container-scoped; the
+  secret-hygiene rules dilute the denominator without container coverage).
+  `tekton` 17 -> 18, `argo` 18 -> 19, `cloudbuild` 27 -> 28.
 - **BK-017 + DR-018: log-leak rule extended to Buildkite and Drone
   (HIGH).** Continues the log-leak family (GHA-033 / GL-036 / BB-032 /
   ADO-031 / CC-032 / JF-042 / HARNESS-013) into two more shell-command CI

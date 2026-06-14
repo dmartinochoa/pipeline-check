@@ -637,6 +637,9 @@ STANDARD = Standard(
         "HARNESS-011":   ["PR.PS-05"],  # Harness unsafe model deser (pickle RCE)
         "HARNESS-012":   ["GV.SC-05"],  # Harness model pulled without a pinned revision
         "HARNESS-013":   ["PR.AA-01", "PR.DS-01"],  # Harness secret echoed to step log
+        "GCB-028":  ["PR.AA-01", "PR.DS-01"],  # Cloud Build secret echoed to build log
+        "ARGO-018":  ["PR.AA-01", "PR.DS-01"],  # Argo secret echoed to template log
+        "TKN-017":  ["PR.AA-01", "PR.DS-01"],  # Tekton secret echoed to step log
         "DR-018":  ["PR.AA-01", "PR.DS-01"],  # Drone secret echoed to step log
         "BK-017":  ["PR.AA-01", "PR.DS-01"],  # Buildkite secret echoed to step log
         "HARNESS-009":   ["PR.PS-06"],  # Harness agentic-CLI output autolands without review

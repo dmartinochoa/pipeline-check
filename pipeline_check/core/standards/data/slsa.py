@@ -428,6 +428,9 @@ STANDARD = Standard(
         "HARNESS-010":   ["Build.L3.Isolated"],  # Harness model trust_remote_code (code exec)
         "HARNESS-011":   ["Build.L3.Isolated"],  # Harness unsafe model deser (pickle RCE)
         "HARNESS-013":   ["Build.L3.NonFalsifiable"],  # Harness secret echoed to step log
+        "GCB-028":  ["Build.L3.NonFalsifiable"],  # Cloud Build secret echoed to build log
+        "ARGO-018":  ["Build.L3.NonFalsifiable"],  # Argo secret echoed to template log
+        "TKN-017":  ["Build.L3.NonFalsifiable"],  # Tekton secret echoed to step log
         "DR-018":  ["Build.L3.NonFalsifiable"],  # Drone secret echoed to step log
         "BK-017":  ["Build.L3.NonFalsifiable"],  # Buildkite secret echoed to step log
         "HARNESS-009":   ["Build.L3.NonFalsifiable"],  # Harness agentic-CLI output autolands without review

@@ -313,7 +313,7 @@ class TestCircleCIFixtures:
 
 
 class TestCloudBuildFixtures:
-    EXPECTED_IDS = {f"GCB-{i:03d}" for i in range(1, 28)}
+    EXPECTED_IDS = {f"GCB-{i:03d}" for i in range(1, 29)}
     # GCB-002 (``serviceAccount`` unset) and GCB-020 (``serviceAccount``
     # points at the default Cloud Build SA email) are mutually-exclusive
     # triggers — a single document satisfies one or the other, never
@@ -448,7 +448,7 @@ class TestKubernetesFixtures:
 
 
 class TestTektonFixtures:
-    EXPECTED_IDS = {f"TKN-{i:03d}" for i in range(1, 17)} | {"TAINT-006"}
+    EXPECTED_IDS = {f"TKN-{i:03d}" for i in range(1, 18)} | {"TAINT-006"}
 
     def _scan(self, filename: str):
         ctx = TektonContext.from_path(FIXTURES / "tekton" / filename)
@@ -480,7 +480,7 @@ class TestTektonFixtures:
 
 
 class TestArgoFixtures:
-    EXPECTED_IDS = {f"ARGO-{i:03d}" for i in range(1, 18)} | {"TAINT-007"}
+    EXPECTED_IDS = {f"ARGO-{i:03d}" for i in range(1, 19)} | {"TAINT-007"}
 
     def _scan(self, filename: str):
         ctx = ArgoContext.from_path(FIXTURES / "argo" / filename)

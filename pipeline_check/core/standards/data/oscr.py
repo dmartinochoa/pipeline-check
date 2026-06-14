@@ -302,6 +302,9 @@ STANDARD = Standard(
         "HARNESS-010":   ["EX-6"],  # Harness model trust_remote_code (code exec)
         "HARNESS-011":   ["EX-6"],  # Harness unsafe model deser (pickle RCE)
         "HARNESS-013":   ["CA-5", "CA-6"],  # Harness secret echoed to step log
+        "GCB-028":  ["CA-5", "CA-6"],  # Cloud Build secret echoed to build log
+        "ARGO-018":  ["CA-5", "CA-6"],  # Argo secret echoed to template log
+        "TKN-017":  ["CA-5", "CA-6"],  # Tekton secret echoed to step log
         "DR-018":  ["CA-5", "CA-6"],  # Drone secret echoed to step log
         "BK-017":  ["CA-5", "CA-6"],  # Buildkite secret echoed to step log
         "HARNESS-009":   ["DE-1"],  # Harness agentic-CLI output autolands without review
