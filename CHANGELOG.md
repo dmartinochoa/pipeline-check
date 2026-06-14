@@ -12,6 +12,15 @@ release commit collapses this section into `## [X.Y.Z] - <date>`.
 
 ### Changed
 
+- **AC-040 (prompt-injected agent auto-lands its output) extended to
+  CircleCI.** The injection->autoland kill chain now correlates the
+  CircleCI agentic-AI pair (CC-037 injection + CC-038 autoland) on the
+  same `.circleci/config.yml`, alongside the GitHub / GitLab / Bitbucket /
+  Azure DevOps / Jenkins / Harness pairs it already covered. With the
+  CircleCI AI rules now landed, this closes the gap where CC-037 + CC-038
+  on one config would not compose into the CRITICAL chain. The chain count
+  is unchanged (the legs widened, not a new chain); AC-040 now spans all
+  seven script-based providers that carry the agentic-AI rule pack.
 - **Loader robustness fuzzing moved to Hypothesis.** The generative pass
   in `tests/test_loader_robustness.py` that throws arbitrary inputs at the
   shared YAML loader was a hand-seeded `random` battery (the dev deps were

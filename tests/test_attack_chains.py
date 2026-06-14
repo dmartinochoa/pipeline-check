@@ -3988,6 +3988,20 @@ class TestChainAC040:
         assert len(out) == 1
         assert out[0].triggering_check_ids == ["HARNESS-008", "HARNESS-009"]
 
+    def test_circleci_pair_fires(self):
+        f = ".circleci/config.yml"
+        out = self._ac040([_f("CC-037", f), _f("CC-038", f)])
+        assert len(out) == 1
+        assert out[0].severity is Severity.CRITICAL
+        assert out[0].triggering_check_ids == ["CC-037", "CC-038"]
+        assert out[0].resources == [f]
+
+    def test_circleci_injection_alone_does_not_fire(self):
+        # Only the injection leg, no autoland: the chain must not fire.
+        f = ".circleci/config.yml"
+        out = self._ac040([_f("CC-037", f)])
+        assert out == []
+
     def test_no_chain_without_autoland_leg(self):
         wf = ".github/workflows/ai.yml"
         assert self._ac040([_f("GHA-119", wf)]) == []
