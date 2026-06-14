@@ -305,6 +305,8 @@ STANDARD = Standard(
         "CC-025":   ["Dangerous-Workflow"],
         "CC-026":   ["Dangerous-Workflow"],                            # malicious activity
         "CC-027":   ["Dangerous-Workflow"],
+        "DR-017":  ["Dangerous-Workflow"],  # Drone dangerous shell idiom
+        "BK-016":  ["Dangerous-Workflow"],  # Buildkite dangerous shell idiom
         "ARGO-019":  ["Dangerous-Workflow"],  # Argo dangerous shell idiom
         "TKN-018":  ["Dangerous-Workflow"],  # Tekton dangerous shell idiom
         "HARNESS-014":  ["Dangerous-Workflow"],  # Harness dangerous shell idiom

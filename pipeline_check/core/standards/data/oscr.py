@@ -459,6 +459,8 @@ STANDARD = Standard(
         "ADO-027":  ["EX-6"],
         "JF-030":   ["EX-6"],
         "CC-027":   ["EX-6"],
+        "DR-017":  ["EX-6"],  # Drone dangerous shell idiom
+        "BK-016":  ["EX-6"],  # Buildkite dangerous shell idiom
         "ARGO-019":  ["EX-6"],  # Argo dangerous shell idiom
         "TKN-018":  ["EX-6"],  # Tekton dangerous shell idiom
         "HARNESS-014":  ["EX-6"],  # Harness dangerous shell idiom
