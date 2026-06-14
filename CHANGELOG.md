@@ -20,6 +20,27 @@ release commit collapses this section into `## [X.Y.Z] - <date>`.
   the last cross-provider gap in the build-time-timeout hygiene family
   (the Harness analog of TKN-006 / GHA-015 / GCB-005).
 
+### Fixed
+
+- **Script-injection detection no longer treats a `${{ }}` expression as
+  safe when an ordinary shell variable shares the line.** The safe-idiom
+  recognizer (`is_quoted_assignment`) whitelisted `VAR="...$X..."` captures
+  but had no guard for GitHub `${{ }}`, which is substituted into the script
+  before the shell runs. A value like `VAR="$HOME/${{ github.event.issue.title }}"`
+  slipped past GHA-003 and GHA-119; it is now flagged.
+- **GHA injection taint set widened: `github.event.inputs.*`, case-insensitive
+  function names, and `format()` second arguments.** The shared
+  `UNTRUSTED_CONTEXT_RE` missed the `github.event.inputs.<name>`
+  workflow_dispatch form, matched function names case-sensitively (GitHub
+  expressions are case-insensitive, so `fromjson(...)` bypassed it), and never
+  matched `format('template', github.event.issue.title)` because the untrusted
+  value is the second argument. All three are now caught across GHA-003 /
+  GHA-011 / GHA-035 / GHA-036 / GHA-119.
+- **Compromised-action check no longer flags the remediated trivy-action
+  release.** The `aquasecurity/trivy-action` entry matched any `v0.x.y` tag,
+  so the fixed `v0.35.0` (the compromise covered 0.0.1 through 0.34.2) was
+  reported as compromised. The range is now capped at 0.34.x.
+
 ## [1.15.0] - 2026-06-14
 
 ### Changed
