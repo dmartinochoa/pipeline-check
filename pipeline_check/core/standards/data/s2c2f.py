@@ -350,6 +350,7 @@ STANDARD = Standard(
         "ADO-024":  ["REB-4"],
         "JF-028":   ["REB-4"],
         "CC-024":   ["REB-4"],
+        "CC-038":   ["ENF-1"],   # agentic CLI output lands without review
         "BK-011":   ["REB-4"],
         "TKN-011":  ["REB-4"],
         "ARGO-011": ["REB-4"],

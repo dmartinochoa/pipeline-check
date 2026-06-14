@@ -28,7 +28,7 @@ in other providers:
 
 ## What it covers
 
-37 checks · 10 have an autofix patch (``--fix``).
+38 checks · 10 have an autofix patch (``--fix``).
 
 | Check | Title | Severity | Fix |
 |-------|-------|----------|-----|
@@ -69,6 +69,7 @@ in other providers:
 | [CC-035](#cc-035) | AI model pulled without a pinned revision | <span class="pg-sev pg-sev--medium">MEDIUM</span> |  |
 | [CC-036](#cc-036) | Unsafe deserialization of a fetched artifact (pickle RCE) | <span class="pg-sev pg-sev--high">HIGH</span> |  |
 | [CC-037](#cc-037) | Untrusted PR/build context reaches an agentic AI CLI (prompt injection) | <span class="pg-sev pg-sev--high">HIGH</span> |  |
+| [CC-038](#cc-038) | Agentic CLI output lands without human review | <span class="pg-sev pg-sev--high">HIGH</span> |  |
 
 ---
 
@@ -844,6 +845,28 @@ The AI analog of CC-002 (script injection). Fires when a ``run:`` command invoke
 **Recommended action**
 
 Do not place attacker-controllable context (a PR's branch / tag, `$CIRCLE_BRANCH` / `$CIRCLE_TAG` / `$CIRCLE_PR_*`, or a `<< pipeline.git.* >>` interpolation) in an agentic CLI's prompt. Quoting does NOT sanitize a prompt the way it does a shell command, the model still reads the value. If the agent must see PR content, run it in a job with no context / credentials bound and no tool / shell access, and treat its output as untrusted. Pass trusted inputs through typed `<< pipeline.parameters.* >>` instead.
+
+</div>
+
+</div>
+
+<div class="pg-rule pg-rule--high" markdown>
+
+## CC-038: Agentic CLI output lands without human review { #cc-038 }
+
+<div class="pg-rule__tags">
+<span class="pg-sev pg-sev--high">HIGH</span> <span class="pg-tag pg-tag--owasp">CICD-SEC-1</span> <span class="pg-tag pg-tag--esf">ESF-C-APPROVAL</span> <span class="pg-tag pg-tag--cwe">CWE-94</span> <span class="pg-tag pg-tag--cwe">CWE-693</span>
+</div>
+
+Fires when one CircleCI job both invokes an agentic CLI (``claude`` / ``gemini`` / ``cursor-agent`` / ``aider`` / ``openhands`` / ``goose`` / ``q chat``) in a ``run:`` command and, in the same job, lands the result with a ``git push`` (committing straight to a branch). Coupling is per-job because a CircleCI job has its own executor / checkout; the run steps of one job share a workspace, separate jobs do not.
+
+Does NOT fire when the agent only opens a pull request for review, nor on a push step that does not run an agent (ordinary formatting / generated-file jobs), nor when the agent and the push are in different jobs. A ``git push --dry-run`` is ignored.
+
+<div class="pg-rule__rec" markdown>
+
+**Recommended action**
+
+Don't let an agentic CLI's output reach a branch without a human review gate. Have the agent open a normal pull request (no auto-merge) so a person reviews the diff before it lands, and don't pair the agent with a ``git push`` straight to a branch in the same job. If the agent's prompt can be influenced by untrusted input (a PR title / branch, a pipeline parameter), treat the committed result as attacker-controlled.
 
 </div>
 

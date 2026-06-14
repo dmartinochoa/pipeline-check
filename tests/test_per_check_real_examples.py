@@ -336,6 +336,7 @@ CASES: list[CheckCase] = [
     CheckCase("CC-035", "CICD-SEC-3", ("ESF-S-PIN-DEPS", "ESF-S-VERIFY-DEPS")),
     CheckCase("CC-036", "CICD-SEC-4", ("ESF-D-INJECTION",)),
     CheckCase("CC-037", "CICD-SEC-4", ("ESF-D-INJECTION",)),
+    CheckCase("CC-038", "CICD-SEC-1", ("ESF-C-APPROVAL",)),
     # ── GitHub Actions backfill (GHA-028..055) ───────────────────────
     # GHA-041 / 042 / 043 / 047 are network-dependent (need
     # ``--resolve-remote`` to populate ``ctx.action_metadata``); the

@@ -152,6 +152,11 @@ jobs:
       - run:
           name: AI triage
           command: claude -p "Triage this PR on branch $CIRCLE_BRANCH"
+      # CC-038: the agent's output (claude above) is pushed straight to a
+      # branch in the same job, with no review gate.
+      - run:
+          name: Land the fix
+          command: git push origin HEAD
 
 # CC-006: No signing tool (cosign/sigstore) present anywhere.
 # CC-007: No SBOM tool (syft/cyclonedx) present anywhere.
