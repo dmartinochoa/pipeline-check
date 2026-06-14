@@ -53,6 +53,20 @@ release commit collapses this section into `## [X.Y.Z] - <date>`.
 
 ### Added
 
+- **BK-017 + DR-018: log-leak rule extended to Buildkite and Drone
+  (HIGH).** Continues the log-leak family (GHA-033 / GL-036 / BB-032 /
+  ADO-031 / CC-032 / JF-042 / HARNESS-013) into two more shell-command CI
+  providers. Each scans every step command (`command` / `commands`) for a
+  secret-named variable handed to `echo` / `printf` / `cat` / `tee`, an
+  `env` / `printenv` dump, or `set -x` with a secret-named variable in
+  scope, via the shared `_primitives/log_leak` detector. DR-018 only
+  scans container-flavored Drone pipelines (the ones with a shell command
+  surface). Mapped across the 10 standards the log-leak family uses (the
+  per-standard mappings were cloned with the new
+  `scripts/clone_standards_mapping.py`). The `cis_aws_foundations`
+  per-framework coverage floor drops 12 -> 11 (the expected denominator
+  dilution as non-AWS rule packs grow). `buildkite` 17 -> 18, `drone`
+  17 -> 18.
 - **`scripts/clone_standards_mapping.py`: clone a rule's standards
   mappings onto a new rule.** Adding a parity / family rule (a
   cross-provider sibling, a new member of an established family) means

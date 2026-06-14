@@ -3,6 +3,7 @@ from __future__ import annotations
 
 from typing import Any
 
+from pipeline_check.core.checks.base import Severity
 from pipeline_check.core.checks.drone.base import Pipeline
 from pipeline_check.core.checks.drone.rules import (
     dr012_service_image_pinning as r12,
@@ -21,6 +22,9 @@ from pipeline_check.core.checks.drone.rules import (
 )
 from pipeline_check.core.checks.drone.rules import (
     dr017_shell_eval as r17,
+)
+from pipeline_check.core.checks.drone.rules import (
+    dr018_log_leak as r18,
 )
 
 _DIGEST = "@sha256:" + "0" * 64
@@ -235,3 +239,38 @@ class TestDR017ShellEval:
             {"name": "x", "commands": ['eval "$CMD"']},
         ])
         assert r17.check(p).passed
+
+
+# ── DR-018 ──────────────────────────────────────────────────────
+
+
+class TestDR018LogLeak:
+    def test_fails_on_echo_secret_named_var(self):
+        p = _pipeline(steps=[
+            {"name": "deploy", "image": f"alpine:3.19{_DIGEST}",
+             "commands": ['echo "token is $DEPLOY_TOKEN"']},
+        ])
+        f = r18.check(p)
+        assert not f.passed
+        assert f.severity is Severity.HIGH
+        assert "deploy" in f.description
+
+    def test_fails_on_printenv_dump(self):
+        p = _pipeline(steps=[
+            {"name": "debug", "image": f"alpine:3.19{_DIGEST}",
+             "commands": ["printenv"]},
+        ])
+        assert not r18.check(p).passed
+
+    def test_passes_on_safe_existence_check(self):
+        p = _pipeline(steps=[
+            {"name": "deploy", "image": f"alpine:3.19{_DIGEST}",
+             "commands": ['[ -n "$TOKEN" ] && echo set || echo unset']},
+        ])
+        assert r18.check(p).passed
+
+    def test_passes_on_non_container_pipeline(self):
+        p = _pipeline(type="exec", steps=[
+            {"name": "x", "commands": ['echo "$AWS_SECRET_ACCESS_KEY"']},
+        ])
+        assert r18.check(p).passed

@@ -1,6 +1,8 @@
 """Per-rule tests for every BK-* check."""
 from __future__ import annotations
 
+from pipeline_check.core.checks.base import Severity
+
 from .conftest import run_check
 
 # ── BK-001 plugin pinning ──────────────────────────────────────────────
@@ -748,4 +750,39 @@ class TestBK016ShellEval:
           - command: eval "$(ssh-agent -s)"
         """
         f = run_check(cfg, "BK-016")
+        assert f.passed
+
+
+class TestBK017LogLeak:
+    def test_fails_on_echo_secret_named_var(self):
+        cfg = """
+        steps:
+          - command: echo "token is $DEPLOY_TOKEN"
+        """
+        f = run_check(cfg, "BK-017")
+        assert not f.passed
+        assert f.severity is Severity.HIGH
+
+    def test_fails_on_printenv_dump(self):
+        cfg = """
+        steps:
+          - command: printenv
+        """
+        f = run_check(cfg, "BK-017")
+        assert not f.passed
+
+    def test_passes_on_safe_existence_check(self):
+        cfg = """
+        steps:
+          - command: '[ -n "$TOKEN" ] && echo set || echo unset'
+        """
+        f = run_check(cfg, "BK-017")
+        assert f.passed
+
+    def test_passes_on_plain_build(self):
+        cfg = """
+        steps:
+          - command: make build
+        """
+        f = run_check(cfg, "BK-017")
         assert f.passed
