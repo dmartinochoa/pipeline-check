@@ -27,17 +27,23 @@ from __future__ import annotations
 import re
 from enum import Enum
 
-from .image_ref import parse_image_ref
+from .image_ref import _FLOATING_WORDS, parse_image_ref
 
 #: Trailing ``@sha256:<64 hex>`` digest pin. Kept as a public regex
 #: so the four provider ``_helpers.py`` modules can re-export the
 #: identical object. New code should call :func:`classify` directly.
 DIGEST_RE = re.compile(r"@sha256:[0-9a-f]{64}$")
 
-#: Final ``:tag`` segment that contains at least one digit. Used to
-#: distinguish version-shaped tags (``:3.12.1``) from floating ones
-#: (``:latest``, ``:stable``).
-VERSION_TAG_RE = re.compile(r":[^:]*\d[^:]*$")
+#: Final ``:tag`` segment that contains at least one digit and is not a
+#: named rolling channel. Distinguishes version-shaped tags (``:3.12.1``)
+#: from floating ones (``:latest``, ``:stable``, and digit-bearing
+#: channels like ``:nightly-2024``, which the negative lookahead drops).
+#: The lookahead is scoped to the final tag (``[^:]*`` can't cross a
+#: ``:``) so a registry host named ``nightly.example.com`` is unaffected.
+VERSION_TAG_RE = re.compile(
+    r":(?![^:]*\b(?:" + "|".join(_FLOATING_WORDS) + r")\b)[^:]*\d[^:]*$",
+    re.IGNORECASE,
+)
 
 
 class PinKind(str, Enum):

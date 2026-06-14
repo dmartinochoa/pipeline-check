@@ -229,11 +229,14 @@ class TestCompromisedActionsRegistry:
         assert entry is not None
 
     def test_trivy_action_safe_tag_does_not_match(self):
-        """v0.35.0 was the only safe tag. The ref_pattern still
-        matches it (tag-level detection is a coarse signal); the GHSA
-        advisory notes v0.35.0 as safe for human triage."""
-        entry = lookup("aquasecurity", "trivy-action", "v0.35.0")
-        assert entry is not None
+        """v0.35.0 was the remediated release (the compromise covered
+        0.0.1 through 0.34.2). A correctly upgraded pin must not be
+        flagged as compromised, otherwise the scanner penalizes the fix.
+        Later v0.x.y releases are likewise outside the affected range."""
+        assert lookup("aquasecurity", "trivy-action", "v0.35.0") is None
+        assert lookup("aquasecurity", "trivy-action", "v0.36.0") is None
+        # Regression: the upper bound of the affected range still matches.
+        assert lookup("aquasecurity", "trivy-action", "v0.34.2") is not None
 
     def test_setup_trivy_matches(self):
         entry = lookup(

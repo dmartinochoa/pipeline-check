@@ -45,8 +45,11 @@ UNTRUSTED_CONTEXT_RE = re.compile(
     # Optional function wrappers around the untrusted context. Common
     # shapes: ``toJSON(...)``, ``fromJSON(...)``, ``format(...)``.
     # Nested calls (``fromJSON(toJSON(...))``) are matched up to two
-    # levels deep, which covers every shape seen in the wild.
-    r"(?:(?:toJSON|fromJSON|format)\s*\(\s*){0,2}"
+    # levels deep, which covers every shape seen in the wild. The
+    # ``(?:[^,()]*,\s*)*?`` after each ``(`` skips any leading arguments
+    # so ``format('PR {0}', github.event.issue.title)`` is caught (the
+    # untrusted value is the second argument, not the literal template).
+    r"(?:(?:toJSON|fromJSON|format)\s*\(\s*(?:[^,()]*,\s*)*?){0,2}"
     r"(?:"
     r"github\.event\.(?:"
     r"issue\.(?:title|body)"
@@ -79,11 +82,18 @@ UNTRUSTED_CONTEXT_RE = re.compile(
     r"|github\.(?:head_ref|ref_name|actor)\b"
     r"|github\.event\.pull_request\.base\.ref"
     r"|github\.event\.client_payload\.[^\})]*"
+    # ``github.event.inputs.<name>`` is the original workflow_dispatch
+    # input syntax (still valid and common); ``inputs.<name>`` is the
+    # newer shorthand. Both are caller-controlled and must be caught.
+    r"|github\.event\.inputs\.[A-Za-z_][A-Za-z0-9_]*"
     r"|inputs\.[A-Za-z_][A-Za-z0-9_]*"
     r")"
     # Closing parens for any function wrappers, then optional
     # ``,<anything>`` for the format() second argument.
-    r"(?:[^\}]*)?\s*\}\}"
+    r"(?:[^\}]*)?\s*\}\}",
+    # GitHub expression function names and context paths are
+    # case-insensitive (``fromJSON`` == ``fromjson``), so match both.
+    re.IGNORECASE,
 )
 
 # A ``ref:`` value pointing at the PR head, used by GHA-002.
@@ -114,7 +124,7 @@ PR_HEAD_REF_RE = re.compile(
 CACHE_TAINT_RE = re.compile(
     r"\$\{\{\s*(?:"
     r"github\.event\.(?:pull_request|issue|comment|release|deployment|"
-    r"head_commit|workflow_run|discussion|review|pages)\."
+    r"head_commit|workflow_run|discussion|review|pages|inputs)\."
     r"|github\.head_ref"
     r"|inputs\."
     r")[^\}]*\}\}"
