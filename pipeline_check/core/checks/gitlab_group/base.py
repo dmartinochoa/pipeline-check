@@ -40,6 +40,9 @@ class GitLabGroupContext:
     #: enable_ssl_verification, ...}``), or ``None`` when unavailable.
     #: GLGRP-005.
     group_hooks: list[Any] | None = None
+    #: ``GET /groups/{group}/variables`` body (a list of ``{key, value,
+    #: protected, masked, ...}``), or ``None`` when unavailable. GLGRP-006.
+    group_variables: list[Any] | None = None
     warnings: list[str] = field(default_factory=list)
     files_scanned: int = 0   # repurposed: 1 when any group endpoint was fetched
     files_skipped: int = 0
@@ -76,7 +79,17 @@ class GitLabGroupContext:
         hooks = fetcher.fetch(f"groups/{encoded}/hooks")
         if isinstance(hooks, list):
             ctx.group_hooks = hooks
-        fetched_any = ctx.group_meta is not None or ctx.group_hooks is not None
+        # Group-level CI/CD variables also return a bare JSON array and
+        # need Owner / Maintainer access. The API returns each variable's
+        # value (even masked ones), so GLGRP-006 can shape-match it.
+        variables = fetcher.fetch(f"groups/{encoded}/variables")
+        if isinstance(variables, list):
+            ctx.group_variables = variables
+        fetched_any = (
+            ctx.group_meta is not None
+            or ctx.group_hooks is not None
+            or ctx.group_variables is not None
+        )
         ctx.files_scanned = 1 if fetched_any else 0
         ctx.files_skipped = 0 if fetched_any else 1
         return ctx

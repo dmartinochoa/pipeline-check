@@ -1039,6 +1039,7 @@ STANDARD = Standard(
         "GLGRP-003":  ["PR.AA-05"],  # gitlab group: sharing projects outside the hierarchy
         "GLGRP-004":  ["PR.PS-06", "PR.AA-05"],  # gitlab group: default branch protection disabled for new projects
         "GLGRP-005":  ["PR.DS-02"],  # gitlab group: group webhook over insecure transport
+        "GLGRP-006":  ["PR.AA-01"],  # gitlab group: group CI/CD variable holds a secret with a weak control
         "ORG-008":  ["PR.AA-05"],                # org governance: members can create public repos (code exposure)
         "ORG-009":  ["PR.PS-01"],                # org governance: self-hosted runner group exposed to public repos
         "ORG-010":  ["PR.DS-01", "DE.CM-09"],    # org governance: new-repo secret-scanning push-protection default off

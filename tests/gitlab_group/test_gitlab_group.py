@@ -25,14 +25,24 @@ class FakeFetcher:
 
 
 _HOOKS_PATH = f"{_GROUP_PATH}/hooks"
+_VARS_PATH = f"{_GROUP_PATH}/variables"
+
+# A fake but catalog-matching GitLab PAT shape (gitlab_pat detector).
+_SECRET = "glpat-ABCDEFGHIJ1234567890"
 
 
-def _ctx(group_meta: dict | None, hooks: list | None = None) -> GitLabGroupContext:
+def _ctx(
+    group_meta: dict | None,
+    hooks: list | None = None,
+    variables: list | None = None,
+) -> GitLabGroupContext:
     mapping: dict[str, Any] = {}
     if group_meta is not None:
         mapping[_GROUP_PATH] = group_meta
     if hooks is not None:
         mapping[_HOOKS_PATH] = hooks
+    if variables is not None:
+        mapping[_VARS_PATH] = variables
     return GitLabGroupContext.for_group(_GROUP, FakeFetcher(mapping))
 
 
@@ -231,4 +241,79 @@ class TestGLGRP005WebhookTransport:
         ctx = GitLabGroupContext.for_group(_GROUP, fetcher)
         assert ctx.group_hooks == []
         assert _HOOKS_PATH in fetcher.calls
+        assert ctx.files_scanned == 1
+
+
+class TestGLGRP006SecretVariableWeakProtection:
+    def _var(self, **kw):
+        base = {"key": "DEPLOY_TOKEN", "value": _SECRET,
+                "protected": True, "masked": True}
+        base.update(kw)
+        return base
+
+    def test_metadata(self):
+        f = _for(_findings(_ctx({}, variables=[])), "GLGRP-006")[0]
+        assert f.check_id == "GLGRP-006"
+        assert f.severity == Severity.HIGH
+
+    def test_fails_secret_not_protected(self):
+        f = _for(_findings(_ctx({}, variables=[self._var(protected=False)])),
+                 "GLGRP-006")[0]
+        assert not f.passed
+        assert "DEPLOY_TOKEN" in f.description
+        assert "not protected" in f.description
+        # the detector label, never the raw value, is surfaced
+        assert "gitlab_pat" in f.description
+        assert _SECRET not in f.description
+
+    def test_fails_secret_not_masked(self):
+        f = _for(_findings(_ctx({}, variables=[self._var(masked=False)])),
+                 "GLGRP-006")[0]
+        assert not f.passed
+        assert "not masked" in f.description
+
+    def test_passes_secret_protected_and_masked(self):
+        f = _for(_findings(_ctx({}, variables=[self._var()])), "GLGRP-006")[0]
+        assert f.passed
+
+    def test_passes_non_secret_value_even_if_unprotected(self):
+        # An ordinary unprotected config var must not be flagged: the
+        # value-shape gate is what keeps this rule low-FP.
+        var = {"key": "REGISTRY_URL", "value": "https://reg.example.com",
+               "protected": False, "masked": False}
+        f = _for(_findings(_ctx({}, variables=[var])), "GLGRP-006")[0]
+        assert f.passed
+
+    def test_passes_when_flags_absent(self):
+        # Neither protected nor masked present -> can't assess -> no FP.
+        var = {"key": "TOK", "value": _SECRET}
+        f = _for(_findings(_ctx({}, variables=[var])), "GLGRP-006")[0]
+        assert f.passed
+
+    def test_passes_when_no_variables(self):
+        f = _for(_findings(_ctx({}, variables=[])), "GLGRP-006")[0]
+        assert f.passed
+
+    def test_passes_when_variables_unavailable(self):
+        f = _for(_findings(_ctx({"id": 1})), "GLGRP-006")[0]
+        assert f.passed
+        assert "not evaluated" in f.description
+
+    def test_counts_multiple_offenders(self):
+        variables = [
+            self._var(key="A", protected=False),
+            self._var(key="B", masked=False),
+            self._var(key="C"),  # protected + masked -> safe
+            {"key": "D", "value": "plain-text", "protected": False,
+             "masked": False},  # not a secret -> safe
+        ]
+        f = _for(_findings(_ctx({}, variables=variables)), "GLGRP-006")[0]
+        assert not f.passed
+        assert "2 CI/CD variable(s)" in f.description
+
+    def test_variables_endpoint_fetched(self):
+        fetcher = FakeFetcher({_GROUP_PATH: {"id": 1}, _VARS_PATH: []})
+        ctx = GitLabGroupContext.for_group(_GROUP, fetcher)
+        assert ctx.group_variables == []
+        assert _VARS_PATH in fetcher.calls
         assert ctx.files_scanned == 1

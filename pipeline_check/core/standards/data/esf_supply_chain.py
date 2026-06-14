@@ -449,6 +449,7 @@ STANDARD = Standard(
         "GLGRP-003":  ["ESF-C-LEAST-PRIV"],  # gitlab group: sharing projects outside the hierarchy
         "GLGRP-004":  ["ESF-D-CODE-REVIEW"],  # gitlab group: default branch protection disabled for new projects
         "GLGRP-005":  ["ESF-D-SECRETS"],  # gitlab group: group webhook over insecure transport
+        "GLGRP-006":  ["ESF-D-SECRETS"],  # gitlab group: group CI/CD variable holds a secret with a weak control
         "ORG-008":  ["ESF-C-LEAST-PRIV"],           # org: members can create public repos (code exposure)
         "ORG-009":  ["ESF-D-BUILD-ENV", "ESF-D-PRIV-BUILD"],  # org: self-hosted runner group exposed to public repos
         "ORG-010":  ["ESF-D-SECRETS"],              # org: new-repo secret-scanning push-protection default off
