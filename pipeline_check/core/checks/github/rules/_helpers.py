@@ -46,10 +46,13 @@ UNTRUSTED_CONTEXT_RE = re.compile(
     # shapes: ``toJSON(...)``, ``fromJSON(...)``, ``format(...)``.
     # Nested calls (``fromJSON(toJSON(...))``) are matched up to two
     # levels deep, which covers every shape seen in the wild. The
-    # ``(?:[^,()]*,\s*)*?`` after each ``(`` skips any leading arguments
-    # so ``format('PR {0}', github.event.issue.title)`` is caught (the
+    # ``(?:[^,()]*,)*?`` after each ``(`` skips any leading arguments so
+    # ``format('PR {0}', github.event.issue.title)`` is caught (the
     # untrusted value is the second argument, not the literal template).
-    r"(?:(?:toJSON|fromJSON|format)\s*\(\s*(?:[^,()]*,\s*)*?){0,2}"
+    # ``,`` is a hard delimiter outside ``[^,()]`` and the only ``\s*``
+    # sits after the repeat, so there is no overlapping quantifier (no
+    # catastrophic backtracking).
+    r"(?:(?:toJSON|fromJSON|format)\s*\((?:[^,()]*,)*?\s*){0,2}"
     r"(?:"
     r"github\.event\.(?:"
     r"issue\.(?:title|body)"
