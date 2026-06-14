@@ -1,0 +1,12 @@
+pipeline {
+  agent any
+  stages {
+    stage('deploy') {
+      steps {
+        withCredentials([string(credentialsId: 'prod-token', variable: 'DEPLOY_TOKEN')]) {
+          sh 'echo "Deploying with token $DEPLOY_TOKEN"'
+        }
+      }
+    }
+  }
+}

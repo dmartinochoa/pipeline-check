@@ -418,6 +418,7 @@ STANDARD = Standard(
         "JF-038":   ["DE-1"],   # agentic CLI output lands without review
         "JF-039":   ["EX-6"],   # trust_remote_code model load = code exec
         "JF-041":   ["EX-6"],   # unsafe pickle deser of fetched artifact = code exec
+        "JF-042":   ["CA-5", "CA-6"],   # secret echoed to Jenkins build log
         "ADO-002":  ["EX-6"],
         "ADO-034":  ["EX-6"],   # trust_remote_code model load = code exec
         "ADO-035":  ["EX-6"],   # untrusted PR context into agentic CLI = prompt injection

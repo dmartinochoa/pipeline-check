@@ -249,7 +249,7 @@ class TestAzureFixtures:
 
 
 class TestJenkinsFixtures:
-    EXPECTED_IDS = {f"JF-{i:03d}" for i in range(1, 42)}
+    EXPECTED_IDS = {f"JF-{i:03d}" for i in range(1, 43)}
 
     def _scan(self, filename: str):
         ctx = JenkinsContext.from_path(FIXTURES / "jenkins" / filename)

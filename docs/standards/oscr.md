@@ -25,7 +25,7 @@ axis.
 
 - **Controls in this standard:** 86
 - **Controls evidenced by at least one check:** 61 / 86
-- **Distinct checks evidencing this standard:** 704
+- **Distinct checks evidencing this standard:** 705
 - **Of those, autofixable with `--fix`:** 112
 
 _Severity levels (`CRITICAL` / `HIGH` / `MEDIUM` / `LOW` / `INFO`) follow the same scale across every provider and standard. See [How to read severity](README.md#how-to-read-severity) on the standards overview for the definitions._
@@ -108,8 +108,8 @@ Click a control ID to jump to the per-control section with the full check list. 
 | [`CA-2`](#ctrl-ca-2) | Dumping credentials from files | 15 | 6C · 6H · 3M |
 | [`CA-3`](#ctrl-ca-3) | Harvest secrets from logs | 2 | 1C · 1H |
 | [`CA-4`](#ctrl-ca-4) | Dumping short-lived token | 2 | 2M |
-| [`CA-5`](#ctrl-ca-5) | Dump tokens from environment variable | 18 | 4C · 13H · 1M |
-| [`CA-6`](#ctrl-ca-6) | Passwords in CI/CD logs | 35 | 19C · 12H · 4M |
+| [`CA-5`](#ctrl-ca-5) | Dump tokens from environment variable | 19 | 4C · 14H · 1M |
+| [`CA-6`](#ctrl-ca-6) | Passwords in CI/CD logs | 36 | 19C · 13H · 4M |
 | [`CA-7`](#ctrl-ca-7) | Runtime leakage of password | 0 | — |
 | [`CA-8`](#ctrl-ca-8) | Steal credentials in container artifacts | 12 | 4C · 7H · 1M |
 | [`LM-1`](#ctrl-lm-1) | Push implants across repositories | 1 | 1H |
@@ -1242,7 +1242,7 @@ _No checks in this scanner currently evidence this control. Open an issue if you
 
 ### CA-5: Dump tokens from environment variable { #ctrl-ca-5 }
 
-**Evidenced by 18 checks** across 6 providers (Azure DevOps, Bitbucket, CircleCI, GitHub Actions, GitLab CI, SCM).
+**Evidenced by 19 checks** across 7 providers (Azure DevOps, Bitbucket, CircleCI, GitHub Actions, GitLab CI, Jenkins, SCM).
 
 | Check | Title | Severity | Provider | Fix |
 |-------|-------|----------|----------|-----|
@@ -1262,12 +1262,13 @@ _No checks in this scanner currently evidence this control. Open an issue if you
 | [`GL-020`](../providers/gitlab.md#gl-020) | CI_JOB_TOKEN written to persistent storage | <span class="pg-sev pg-sev--critical">CRITICAL</span> | [GitLab CI](../providers/gitlab.md) | <span class="pg-fix" title="`--fix` will patch this rule">🔧 fix</span> |
 | [`GL-036`](../providers/gitlab.md#gl-036) | Secret-named variable echoed / printed in a script block | <span class="pg-sev pg-sev--high">HIGH</span> | [GitLab CI](../providers/gitlab.md) |  |
 | [`GL-038`](../providers/gitlab.md#gl-038) | CI_DEBUG_TRACE / debug logging dumps secrets to the job log | <span class="pg-sev pg-sev--high">HIGH</span> | [GitLab CI](../providers/gitlab.md) |  |
+| [`JF-042`](../providers/jenkins.md#jf-042) | Secret-named variable echoed / printed in a build step | <span class="pg-sev pg-sev--high">HIGH</span> | [Jenkins](../providers/jenkins.md) |  |
 | [`SCM-048`](../providers/scm_github.md#scm-048) | Org codespace secret scoped to all repos | <span class="pg-sev pg-sev--high">HIGH</span> | [SCM](../providers/scm_github.md) |  |
 | [`TAINT-009`](../providers/github.md#taint-009) | Environment-protected secret flows to unprotected job | <span class="pg-sev pg-sev--high">HIGH</span> | [GitHub Actions](../providers/github.md) |  |
 
 ### CA-6: Passwords in CI/CD logs { #ctrl-ca-6 }
 
-**Evidenced by 35 checks** across 14 providers (Argo Workflows, Azure DevOps, Bitbucket, Buildkite, CircleCI, Cloud Build, Developer environment, Drone CI, GitHub Actions, GitLab CI, Harness CI/CD, Jenkins, SCM, Tekton).
+**Evidenced by 36 checks** across 14 providers (Argo Workflows, Azure DevOps, Bitbucket, Buildkite, CircleCI, Cloud Build, Developer environment, Drone CI, GitHub Actions, GitLab CI, Harness CI/CD, Jenkins, SCM, Tekton).
 
 | Check | Title | Severity | Provider | Fix |
 |-------|-------|----------|----------|-----|
@@ -1303,6 +1304,7 @@ _No checks in this scanner currently evidence this control. Open an issue if you
 | [`HARNESS-004`](../providers/harness.md#harness-004) | Literal credential in a pipeline / stage variable | <span class="pg-sev pg-sev--critical">CRITICAL</span> | [Harness CI/CD](../providers/harness.md) | <span class="pg-fix" title="`--fix` will patch this rule">🔧 fix</span> |
 | [`JF-004`](../providers/jenkins.md#jf-004) | AWS auth uses long-lived access keys via withCredentials | <span class="pg-sev pg-sev--medium">MEDIUM</span> | [Jenkins](../providers/jenkins.md) | <span class="pg-fix" title="`--fix` will patch this rule">🔧 fix</span> |
 | [`JF-008`](../providers/jenkins.md#jf-008) | Credential-shaped literal in pipeline body | <span class="pg-sev pg-sev--critical">CRITICAL</span> | [Jenkins](../providers/jenkins.md) | <span class="pg-fix" title="`--fix` will patch this rule">🔧 fix</span> |
+| [`JF-042`](../providers/jenkins.md#jf-042) | Secret-named variable echoed / printed in a build step | <span class="pg-sev pg-sev--high">HIGH</span> | [Jenkins](../providers/jenkins.md) |  |
 | [`SCM-004`](../providers/scm_github.md#scm-004) | GitHub secret scanning is not enabled | <span class="pg-sev pg-sev--high">HIGH</span> | [SCM](../providers/scm_github.md) |  |
 | [`SCM-015`](../providers/scm_github.md#scm-015) | Secret scanning push protection is not enabled | <span class="pg-sev pg-sev--high">HIGH</span> | [SCM](../providers/scm_github.md) |  |
 | [`TKN-005`](../providers/tekton.md#tkn-005) | Literal secret value in Tekton step env or param default | <span class="pg-sev pg-sev--critical">CRITICAL</span> | [Tekton](../providers/tekton.md) | <span class="pg-fix" title="`--fix` will patch this rule">🔧 fix</span> |

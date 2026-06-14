@@ -230,6 +230,7 @@ STANDARD = Standard(
         "JF-038":   ["Build.L3.NonFalsifiable"],                         # agentic CLI output lands without review
         "JF-039":   ["Build.L3.Isolated"],                         # trust_remote_code model load = code exec
         "JF-041":   ["Build.L3.Isolated"],                         # unsafe pickle deser of fetched artifact = code exec
+        "JF-042":   ["Build.L3.NonFalsifiable"],                         # secret echoed to Jenkins build log
         "BB-005":   ["Build.L3.Ephemeral"],                        # unbounded runtime
         "BB-006":   ["Build.L2.Signed"],
         "BB-007":   ["Build.L1.Provenance"],
