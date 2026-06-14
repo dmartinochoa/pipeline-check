@@ -50,10 +50,24 @@ _DIGEST_BOUNDARY_RE = re.compile(
 # (sha256 → 64, sha512 → 128).
 _VALID_DIGEST_WIDTHS: dict[str, int] = {"sha256": 64, "sha512": 128}
 
+# Tag *names* that mark a rolling channel even when they carry an
+# incidental digit (a date stamp like ``nightly-2024`` or a channel
+# sequence number). These take precedence over the digit heuristic
+# below so a channel tag isn't mistaken for a pinned version. Prerelease
+# words (alpha / beta / rc) are deliberately absent: they appear in
+# legitimate version tags (``v1.2.3-rc.1``).
+_FLOATING_WORDS = (
+    "latest", "nightly", "edge", "stable", "canary",
+    "rolling", "snapshot", "unstable", "dev",
+)
+_FLOATING_TAG_RE = re.compile(
+    r"\b(?:" + "|".join(_FLOATING_WORDS) + r")\b", re.IGNORECASE
+)
+
 # A version-shaped tag contains at least one digit somewhere. ``:3``,
-# ``:3.12.1-slim``, ``:v1.2.3-rc.1`` all match. ``:latest``,
-# ``:stable``, ``:edge`` do not, so :attr:`ImageRef.is_floating_tag`
-# can flag them.
+# ``:3.12.1-slim``, ``:v1.2.3-rc.1``, ``:20-bookworm`` all match.
+# ``:latest``, ``:stable``, ``:edge`` do not, so
+# :attr:`ImageRef.is_floating_tag` can flag them.
 _VERSION_TAG_RE = re.compile(r"\d")
 
 # Hostname heuristic: the first ``/``-separated component is treated
@@ -106,15 +120,18 @@ class ImageRef:
 
     @property
     def is_floating_tag(self) -> bool:
-        """True iff the ref has a mutable tag (``latest`` / no digit).
+        """True iff the ref has a mutable tag.
 
-        Used by the strict pin-tightness classifier. A bare ref
-        (no tag) is not floating — it's a separate state. A
-        digit-bearing tag (``:3.12.1``) is not floating either.
+        Used by the strict pin-tightness classifier. Floating when the
+        tag is a named rolling channel (``latest``, ``stable``, and the
+        digit-bearing forms like ``nightly-2024``) or carries no version
+        digit at all. A bare ref (no tag) is not floating — it's a
+        separate state. A digit-bearing version tag (``:3.12.1``,
+        ``:20-bookworm``) is not floating.
         """
         if not self.tag:
             return False
-        if self.tag == "latest":
+        if _FLOATING_TAG_RE.search(self.tag):
             return True
         return not _VERSION_TAG_RE.search(self.tag)
 

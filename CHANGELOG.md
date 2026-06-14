@@ -20,6 +20,21 @@ release commit collapses this section into `## [X.Y.Z] - <date>`.
   the last cross-provider gap in the build-time-timeout hygiene family
   (the Harness analog of TKN-006 / GHA-015 / GCB-005).
 
+### Fixed
+
+- **Floating-tag classification catches digit-bearing rolling channels.**
+  A tag was treated as a pinned version if it contained a digit anywhere, so
+  `:nightly-2024` / `:stable-3` were misread as pinned. Named rolling channels
+  (`latest`, `nightly`, `edge`, `stable`, ...) are now floating regardless of
+  an incidental date or sequence digit, while real version tags (`:20-bookworm`,
+  `:3.11`) stay pinned. Fixes a false negative in the image-pinning family
+  (DR-005 plugin tags, GL-001 / GL-028 / JF-009, K8S / Dockerfile pinning).
+- **Unpinned-model check treats `revision=None` as unpinned.** `from_pretrained(
+  ..., revision=None)` is the explicit mutable-default-branch value, but was read
+  as a pin. Affects GHA-121 / GL-046.
+- **Slack secret detection recognizes `xapp-` (app-level) and `xoxe-` (rotation
+  refresh) token prefixes**, which the older `xox[abprs]-` charset missed.
+
 ## [1.15.0] - 2026-06-14
 
 ### Changed
