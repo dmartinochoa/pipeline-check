@@ -465,6 +465,45 @@ def test_slack_app_level_and_refresh_token_prefixes():
     assert pat.search("xoxp-2222222222-abcdefghij")
 
 
+def test_vuln_scan_recognizes_action_and_native_step_forms():
+    # The space-delimited CLI tokens (``trivy ``) miss the way scanners
+    # are usually wired: a pinned ``uses:`` action, a scanner image, or a
+    # Harness STO ``type:``. Each of these is a real scan and must pass.
+    from pipeline_check.core.checks.base import has_vuln_scanning
+    from pipeline_check.core.checks.blob import clear_blob_cache
+    # Held in a list so every doc stays alive at once; the blob cache is
+    # keyed on ``id(doc)`` and would otherwise collide across these
+    # short-lived literals (real scans keep all docs alive together).
+    positives = [
+        {"x": "uses: aquasecurity/trivy-action@0.20.0"},
+        {"x": "uses: anchore/scan-action@v3"},
+        {"x": "uses: snyk/actions/node@master"},
+        {"type": "AquaTrivy"},                # Harness STO step
+        {"image": "aquasec/trivy"},           # Drone/k8s image
+        {"run": "trivy image ghcr.io/x:1"},   # regression: CLI form
+    ]
+    for doc in positives:
+        assert has_vuln_scanning(doc), doc
+    # Regression: bare prose must not match.
+    clear_blob_cache()
+    assert not has_vuln_scanning({"x": "we should add a scanner someday"})
+
+
+def test_harness_step_command_text_covers_all_shell_phases():
+    # RunTests preCommand/postCommand and Background entrypoint/args are
+    # user-authored shell; the injection / leak rules must see them.
+    from pipeline_check.core.checks.harness.base import step_command_text
+    step = {"spec": {
+        "command": "echo cmd",
+        "preCommand": "echo pre <+codebase.prTitle>",
+        "postCommand": "echo $API_TOKEN",
+        "args": ["echo", "from-args"],
+    }}
+    text = step_command_text(step)
+    for fragment in ("echo cmd", "<+codebase.prTitle>", "$API_TOKEN", "from-args"):
+        assert fragment in text, fragment
+
+
 # ────────────────────────────────────────────────────────────────────────
 # Bug F — a single crashing rule must not abort the whole scan.
 #   A scanner runs over config it didn't author; one rule tripping over

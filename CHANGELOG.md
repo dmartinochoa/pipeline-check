@@ -71,6 +71,21 @@ release commit collapses this section into `## [X.Y.Z] - <date>`.
   as a pin. Affects GHA-121 / GL-046.
 - **Slack secret detection recognizes `xapp-` (app-level) and `xoxe-` (rotation
   refresh) token prefixes**, which the older `xox[abprs]-` charset missed.
+- **Vulnerability-scan detection now recognizes the reusable-action,
+  container-image, and native-step forms of the scanners.** `VULN_SCAN_TOKENS`
+  carried only space-delimited CLI tokens (`trivy `, `grype `, `snyk `), so
+  the most common wiring (a pinned `uses: aquasecurity/trivy-action`,
+  `anchore/scan-action`, or `snyk/actions`; a scanner image like
+  `aquasec/trivy`; a Harness STO `type: AquaTrivy` step) was missed and the
+  build was falsely flagged "No vulnerability scanning step." GHA-098 / GHA-004
+  already treated these refs as scanners, so GHA-020 disagreed with them on
+  the same workflow. Fixes a false positive shared by GHA-020 / GL-019 /
+  BK-012 / TKN-012 / CC-020 / ARGO-012 / DR-022 / HARNESS-018.
+- **Harness command rules now scan every shell phase, not just `spec.command`.**
+  `RunTests` `preCommand` / `postCommand` and `Background` `entrypoint` / `args`
+  carry user-authored shell, but were invisible to the scanner, so an injection
+  or secret-leak idiom there passed silently. `step_command_text` now joins all
+  of them, closing the blind spot across HARNESS-002 / 005 / 008..014.
 
 ## [1.15.0] - 2026-06-14
 
