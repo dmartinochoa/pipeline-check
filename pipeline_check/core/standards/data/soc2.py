@@ -604,6 +604,7 @@ STANDARD = Standard(
         "HARNESS-008":   ["CC6.8"],  # Harness agentic-CLI prompt injection
         "HARNESS-010":   ["CC6.8"],  # Harness model trust_remote_code (code exec)
         "HARNESS-011":   ["CC6.8"],  # Harness unsafe model deser (pickle RCE)
+        "HARNESS-012":   ["CC8.1"],  # Harness model pulled without a pinned revision
         "HARNESS-009":   ["CC8.1"],  # Harness agentic-CLI output autolands without review
         "DR-002":   ["CC6.1", "CC6.8"],     # privileged step
         "DR-003":   ["CC6.8"],              # Drone variable injection
@@ -950,6 +951,7 @@ STANDARD = Standard(
         "GLGRP-002":  ["CC6.1"],  # gitlab group: forking outside group allowed
         "GLGRP-003":  ["CC6.1"],  # gitlab group: sharing projects outside the hierarchy
         "GLGRP-004":  ["CC8.1"],  # gitlab group: default branch protection disabled for new projects
+        "GLGRP-005":  ["CC6.7"],  # gitlab group: group webhook over insecure transport
         "ORG-008":  ["CC6.1"],                   # org governance: members can create public repos (code exposure)
         "ORG-009":  ["CC6.6"],                   # org governance: self-hosted runner group exposed to public repos
         "ORG-010":  ["CC6.1"],                   # org governance: new-repo secret-scanning push-protection default off

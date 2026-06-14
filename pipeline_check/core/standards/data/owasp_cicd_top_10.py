@@ -831,6 +831,7 @@ STANDARD = Standard(
         "HARNESS-008":   ["CICD-SEC-4"],  # Harness agentic-CLI prompt injection
         "HARNESS-010":   ["CICD-SEC-4"],  # Harness model trust_remote_code (code exec)
         "HARNESS-011":   ["CICD-SEC-4"],  # Harness unsafe model deser (pickle RCE)
+        "HARNESS-012":   ["CICD-SEC-3"],  # Harness model pulled without a pinned revision
         "HARNESS-009":   ["CICD-SEC-1"],  # Harness agentic-CLI output autolands without review
         "DR-002":   ["CICD-SEC-5"],                 # step privileged
         "DR-003":   ["CICD-SEC-4", "CICD-SEC-1"],   # Drone variable injection
@@ -927,6 +928,7 @@ STANDARD = Standard(
         "GLGRP-002":  ["CICD-SEC-2"],  # gitlab group: forking outside group allowed
         "GLGRP-003":  ["CICD-SEC-2"],  # gitlab group: sharing projects outside the hierarchy
         "GLGRP-004":  ["CICD-SEC-1"],  # gitlab group: default branch protection disabled for new projects
+        "GLGRP-005":  ["CICD-SEC-6", "CICD-SEC-10"],  # gitlab group: group webhook over insecure transport
         "ORG-008":  ["CICD-SEC-2"],                # org: members can create public repos (code exposure)
         "ORG-009":  ["CICD-SEC-4", "CICD-SEC-7"],   # org: self-hosted runner group exposed to public repos
         "ORG-010":  ["CICD-SEC-6"],                # org: new-repo secret-scanning push-protection default off
