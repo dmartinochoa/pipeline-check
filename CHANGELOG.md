@@ -44,6 +44,21 @@ release commit collapses this section into `## [X.Y.Z] - <date>`.
 
 ### Added
 
+- **HARNESS-012: AI model pulled without a pinned revision (MEDIUM).**
+  Completes the Harness agentic-AI rule row to parity with GitHub Actions
+  / GitLab / Bitbucket / Azure DevOps (the matrix already covered Harness
+  for prompt-injection, autoland, `trust_remote_code`, and unsafe-pickle
+  deserialization; model-pinning was the last gap). Fires on a Harness
+  step `command` that fetches a model from a registry by a mutable
+  reference (`from_pretrained("org/model")`, `hf_hub_download` /
+  `snapshot_download` with a bare repo id, `huggingface-cli download
+  org/model`) and supplies no revision pin, so the registry can serve
+  swapped weights or loader code on the next build with no diff in the
+  repo. Reuses the shared `_primitives/model_ref` detector (with GHA-121 /
+  GL-046 / BB-038 / ADO-037): pinned revisions, local paths, `<+...>`
+  expressions, and bare first-party hub names all pass. The model-registry
+  analog of HARNESS-001 (step image digest pinning) and the prerequisite
+  control for HARNESS-010's `trust_remote_code` path. `harness` 11 -> 12.
 - **GLGRP-005: GitLab group webhook over insecure transport (HIGH).** The
   GitLab-group twin of the shipped ORG-011 (and the per-project SCM-026).
   The `gitlab_group` provider now also fetches `GET /groups/{group}/hooks`
