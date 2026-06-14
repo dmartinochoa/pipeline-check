@@ -419,6 +419,52 @@ def test_lockfile_pinned_dep_does_not_mask_unpinned_sibling():
     assert lf.scan(f"pip install git+https://github.com/foo/bar.git@{sha}") == []
 
 
+def test_floating_tag_recognizes_digit_bearing_channels():
+    # A rolling channel name (``nightly-2024``, ``stable-3``) carries an
+    # incidental digit but is still floating; a real version tag
+    # (``20-bookworm``, ``3.11``) is not.
+    from pipeline_check.core.checks._primitives.image_pinning import (
+        VERSION_TAG_RE,
+        PinKind,
+        classify,
+    )
+    assert classify("foo:nightly-2024") is PinKind.FLOATING
+    assert classify("foo:stable-3") is PinKind.FLOATING
+    # Regression: digit-shaped version tags stay PINNED_TAG.
+    assert classify("node:20-bookworm") is PinKind.PINNED_TAG
+    assert classify("python:3.11") is PinKind.PINNED_TAG
+    # The exported regex (used directly by GL-001 / GL-028 / JF-009)
+    # agrees, and a registry host named "nightly" is not a false signal.
+    assert not VERSION_TAG_RE.search("redis:nightly-2024")
+    assert VERSION_TAG_RE.search("redis:3")
+    assert VERSION_TAG_RE.search("myreg-nightly.io/app:3.11")
+
+
+def test_model_revision_none_is_not_a_pin():
+    # ``revision=None`` is the explicit mutable-default-branch value, not
+    # a pin, so the fetch must still be flagged.
+    from pipeline_check.core.checks._primitives import model_ref
+    assert model_ref.unpinned_model_id(
+        'AutoModel.from_pretrained("org/model", revision=None)'
+    ) == "org/model"
+    # Regression: a real revision pin still suppresses the finding.
+    assert model_ref.unpinned_model_id(
+        'AutoModel.from_pretrained("org/model", revision="abc1234")'
+    ) is None
+
+
+def test_slack_app_level_and_refresh_token_prefixes():
+    import re
+
+    from pipeline_check.core.checks._patterns import _BUILTIN_PATTERNS
+    pat = re.compile(_BUILTIN_PATTERNS["slack_token"])
+    assert pat.search("xapp-1-A000-000-" + "a" * 30)   # app-level
+    assert pat.search("xoxe-1-" + "a" * 40)            # rotation refresh
+    # Regression: the classic bot/user prefixes still match.
+    assert pat.search("xoxb-1111111111-abcdefghij")
+    assert pat.search("xoxp-2222222222-abcdefghij")
+
+
 # ────────────────────────────────────────────────────────────────────────
 # Bug F — a single crashing rule must not abort the whole scan.
 #   A scanner runs over config it didn't author; one rule tripping over
