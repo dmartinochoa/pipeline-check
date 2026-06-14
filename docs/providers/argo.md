@@ -31,7 +31,7 @@ All other flags (`--output`, `--severity-threshold`, `--checks`,
 
 ## What it covers
 
-19 checks · 2 have an autofix patch (``--fix``).
+20 checks · 2 have an autofix patch (``--fix``).
 
 | Check | Title | Severity | Fix |
 |-------|-------|----------|-----|
@@ -53,6 +53,7 @@ All other flags (`--output`, `--severity-threshold`, `--checks`,
 | [ARGO-016](#argo-016) | Workflow bound to a cluster-admin / over-privileged ServiceAccount | <span class="pg-sev pg-sev--critical">CRITICAL</span> |  |
 | [ARGO-017](#argo-017) | Argo resource template applies a manifest built from an untrusted parameter | <span class="pg-sev pg-sev--critical">CRITICAL</span> |  |
 | [ARGO-018](#argo-018) | Secret-named variable echoed / printed in a template script | <span class="pg-sev pg-sev--high">HIGH</span> |  |
+| [ARGO-019](#argo-019) | Dangerous shell idiom (eval, sh -c variable, backtick exec) | <span class="pg-sev pg-sev--high">HIGH</span> |  |
 | [TAINT-007](#taint-007) | Untrusted input flows across templates via Argo ``outputs.parameters`` | <span class="pg-sev pg-sev--high">HIGH</span> |  |
 
 ---
@@ -436,6 +437,30 @@ Scans every template ``script.source`` and ``container.args`` for a secret-named
 **Recommended action**
 
 Don't print secret values in template scripts. A secret mounted from a Kubernetes ``Secret`` (via ``valueFrom.secretKeyRef`` or an artifact) is plaintext in the pod, and ``echo`` / ``set -x`` / ``env`` / ``printenv`` write it straight to the workflow-pod log, which anyone with read access to the cluster or its log sink can see. Log a boolean instead (``[ -n "$TOKEN" ] && echo set || echo unset``), and avoid ``set -x`` while a credential variable is in scope.
+
+</div>
+
+</div>
+
+<div class="pg-rule pg-rule--high" markdown>
+
+## ARGO-019: Dangerous shell idiom (eval, sh -c variable, backtick exec) { #argo-019 }
+
+<div class="pg-rule__tags">
+<span class="pg-sev pg-sev--high">HIGH</span> <span class="pg-tag pg-tag--owasp">CICD-SEC-4</span> <span class="pg-tag pg-tag--esf">ESF-D-INJECTION</span> <span class="pg-tag pg-tag--cwe">CWE-95</span>
+</div>
+
+Complements ARGO-005 (untrusted ``inputs.parameters.*`` interpolated into a template script / args). This rule fires on intrinsically risky idioms, ``eval``, ``sh -c "$X"``, backtick exec, regardless of whether the input source is currently trusted, because the idiom hands a value full shell-grammar reach. Uses the shared ``_primitives.shell_eval`` detector over each template ``script.source`` and ``container.args``. The Argo analog of GHA-028 / GL-026 / BB-026 / ADO-027 / CC-027 / BK-016 / DR-017.
+
+**Known false-positive modes**
+
+- ``eval "$(ssh-agent -s)"`` and similar ``eval "$(<literal-tool>)"`` bootstrap idioms are intentionally NOT flagged, the substituted command is literal, only its output is eval'd.
+
+<div class="pg-rule__rec" markdown>
+
+**Recommended action**
+
+Replace ``eval "$VAR"`` / ``sh -c "$VAR"`` / backtick exec with direct command invocation. Validate or allow-list any value that must feed a dynamic command at the boundary.
 
 </div>
 

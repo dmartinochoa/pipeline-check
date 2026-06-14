@@ -581,3 +581,23 @@ class TestHarness013LogLeak:
     def test_passes_clean_pipeline(self, tmp_path):
         out = _for(_findings(_ctx(tmp_path, _CLEAN)), "HARNESS-013")
         assert out and all(f.passed for f in out)
+
+
+class TestHarness014ShellEval:
+    def test_flags_eval_variable(self, tmp_path):
+        text = _model_pipeline('eval "$BUILD_CMD"')
+        out = [f for f in _for(_findings(_ctx(tmp_path, text)), "HARNESS-014")
+               if not f.passed]
+        assert len(out) == 1
+        assert out[0].severity is Severity.HIGH
+        assert "ci/load" in out[0].description
+
+    def test_passes_on_ssh_agent_bootstrap(self, tmp_path):
+        text = _model_pipeline('eval "$(ssh-agent -s)"')
+        out = [f for f in _for(_findings(_ctx(tmp_path, text)), "HARNESS-014")
+               if not f.passed]
+        assert out == []
+
+    def test_passes_clean_pipeline(self, tmp_path):
+        out = _for(_findings(_ctx(tmp_path, _CLEAN)), "HARNESS-014")
+        assert out and all(f.passed for f in out)

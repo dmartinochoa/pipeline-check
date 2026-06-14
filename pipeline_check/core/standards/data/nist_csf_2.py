@@ -307,6 +307,9 @@ STANDARD = Standard(
         "CC-016":   ["PR.PS-05"],
         "CC-026":   ["PR.PS-05"],
         "CC-027":   ["PR.PS-05"],
+        "ARGO-019":  ["PR.PS-05"],  # Argo dangerous shell idiom
+        "TKN-018":  ["PR.PS-05"],  # Tekton dangerous shell idiom
+        "HARNESS-014":  ["PR.PS-05"],  # Harness dangerous shell idiom
         "GCB-004":  ["PR.PS-05"],
         "GCB-006":  ["PR.PS-05"],
         # PS-06: secure software development practices

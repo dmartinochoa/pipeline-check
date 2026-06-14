@@ -314,6 +314,9 @@ STANDARD = Standard(
         "CC-025":   ["ESF-D-INJECTION", "ESF-S-VERIFY-DEPS"],
         "CC-026":   ["ESF-D-INJECTION", "ESF-S-VERIFY-DEPS"],
         "CC-027":   ["ESF-D-INJECTION"],
+        "ARGO-019":  ["ESF-D-INJECTION"],  # Argo dangerous shell idiom
+        "TKN-018":  ["ESF-D-INJECTION"],  # Tekton dangerous shell idiom
+        "HARNESS-014":  ["ESF-D-INJECTION"],  # Harness dangerous shell idiom
         "CC-028":   ["ESF-S-PIN-DEPS", "ESF-S-VERIFY-DEPS"],
         # ── Buildkite ─────────────────────────────────────────────
         "BK-001":   ["ESF-S-PIN-DEPS"],                            # plugin not pinned
