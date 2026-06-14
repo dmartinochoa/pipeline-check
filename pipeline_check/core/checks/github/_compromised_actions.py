@@ -196,8 +196,11 @@ _REGISTRY: tuple[CompromisedAction, ...] = (
             "a9bc513ea7989e3234b395cafb8ed5ccc3755636",  # 0.34.1
             "ddb9da4475c1cef7d5389062bdfdfbdbd1394648",  # 0.34.2
         ),
+        # The compromise covered tags 0.0.1 through 0.34.2; v0.35.0 was
+        # the remediated release. Cap the minor at 34 so a correctly
+        # upgraded pin (v0.35.0+) is not flagged as compromised.
         ref_pattern=re.compile(
-            r"^v?0\.\d+\.\d+$",
+            r"^v?0\.(?:[0-9]|[12][0-9]|3[0-4])\.\d+$",
         ),
         advisory=(
             "CVE-2026-33634 / GHSA-69fq-xp46-6x23 (CVSS 9.4): "
