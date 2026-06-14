@@ -1,0 +1,10 @@
+pipeline {
+  agent any
+  stages {
+    stage('load-model') {
+      steps {
+        sh "python -c 'from transformers import AutoModel; AutoModel.from_pretrained(\"acme/llm\", trust_remote_code=True)'"
+      }
+    }
+  }
+}

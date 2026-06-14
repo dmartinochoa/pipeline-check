@@ -1,0 +1,10 @@
+pipeline {
+  agent any
+  stages {
+    stage('load-model') {
+      steps {
+        sh "python -c 'from transformers import AutoModel; AutoModel.from_pretrained(\"acme/llm\", revision=\"0123456789abcdef0123456789abcdef01234567\")'"
+      }
+    }
+  }
+}

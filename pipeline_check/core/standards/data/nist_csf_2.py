@@ -278,6 +278,7 @@ STANDARD = Standard(
         "BB-037":   ["PR.PS-05"],   # unsafe pickle deser of fetched artifact = code exec
         "BB-039":   ["PR.PS-06"],   # agentic CLI output lands without review
         "JF-038":   ["PR.PS-06"],   # agentic CLI output lands without review
+        "JF-039":   ["PR.PS-05"],   # trust_remote_code model load = code exec
         "BB-012":   ["PR.PS-05"],
         "BB-025":   ["PR.PS-05"],
         "BB-026":   ["PR.PS-05"],

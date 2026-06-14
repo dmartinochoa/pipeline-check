@@ -330,6 +330,7 @@ STANDARD = Standard(
         "BB-038":   ["1.4.1", "3.1.5"],                  # model pulled without a pinned revision
         "BB-039":   ["5.1.4", "5.2.1"],                  # agentic CLI output lands without review
         "JF-038":   ["5.1.4", "5.2.1"],                  # agentic CLI output lands without review
+        "JF-039":   ["2.1.3"],                  # trust_remote_code model load = code exec
         "BB-003":   ["1.5.1", "2.3.4", "2.4.3"],
         "BB-004":   ["5.1.4", "5.2.1"],
         "BB-005":   ["2.2.2"],

@@ -306,6 +306,7 @@ STANDARD = Standard(
         "BB-038":   ["SR-3", "SR-11", "SI-2"],   # model pulled without a pinned revision
         "BB-039":   ["SA-10", "AC-3"],   # agentic CLI output lands without review
         "JF-038":   ["SA-10", "AC-3"],   # agentic CLI output lands without review
+        "JF-039":   ["SI-7", "SA-11", "CM-6"],   # trust_remote_code model load = code exec
         "BB-003":   ["IA-5"],
         "BB-004":   ["SA-10", "AC-3"],
         "BB-034":   ["SA-10", "AC-3"],                   # prod deploy on a PR pipeline
