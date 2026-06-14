@@ -428,6 +428,8 @@ STANDARD = Standard(
         "CC-025":   ["2.1.3", "2.3.8"],            # cache key tainted by attacker input
         "CC-026":   ["1.4.1", "2.1.3"],            # malicious-activity indicators
         "CC-027":   ["2.1.3"],                     # dangerous shell idiom
+        "DR-017":  ["2.1.3"],  # Drone dangerous shell idiom
+        "BK-016":  ["2.1.3"],  # Buildkite dangerous shell idiom
         "ARGO-019":  ["2.1.3"],  # Argo dangerous shell idiom
         "TKN-018":  ["2.1.3"],  # Tekton dangerous shell idiom
         "HARNESS-014":  ["2.1.3"],  # Harness dangerous shell idiom

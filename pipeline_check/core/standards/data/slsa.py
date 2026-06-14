@@ -352,6 +352,8 @@ STANDARD = Standard(
                      "Build.L3.NonFalsifiable"],
         "CC-025":   ["Build.L3.Isolated"],                         # cache poisoning
         "CC-027":   ["Build.L3.Isolated"],                         # eval / shell re-invocation
+        "DR-017":  ["Build.L3.Isolated"],  # Drone dangerous shell idiom
+        "BK-016":  ["Build.L3.Isolated"],  # Buildkite dangerous shell idiom
         "ARGO-019":  ["Build.L3.Isolated"],  # Argo dangerous shell idiom
         "TKN-018":  ["Build.L3.Isolated"],  # Tekton dangerous shell idiom
         "HARNESS-014":  ["Build.L3.Isolated"],  # Harness dangerous shell idiom

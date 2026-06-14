@@ -14,6 +14,17 @@ release commit collapses this section into `## [X.Y.Z] - <date>`.
 
 ### Changed
 
+- **BK-016 / DR-017 standards mappings harmonized with the
+  dangerous-shell-idiom family.** The Buildkite and Drone members of the
+  `eval` / `sh -c` family were under-mapped to 7 standards while the other
+  eight members (GHA-028 / GL-026 / BB-026 / ADO-027 / CC-027 / HARNESS-014
+  / TKN-018 / ARGO-019) carry the full 12-standard code-execution mapping.
+  Backfilled both into the five missing standards (cis_supply_chain,
+  nist_800_190, openssf_scorecard, oscr, slsa) with
+  `scripts/clone_standards_mapping.py` (its skip-already-mapped behavior
+  makes it a clean backfill tool, not just a new-rule cloner), so a
+  Buildkite / Drone `eval` finding now evidences the same controls as
+  every other provider's. No rule or behavior change.
 - **AC-040 (prompt-injected agent auto-lands its output) extended to
   CircleCI.** The injection->autoland kill chain now correlates the
   CircleCI agentic-AI pair (CC-037 injection + CC-038 autoland) on the
