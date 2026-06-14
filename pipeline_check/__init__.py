@@ -26,7 +26,7 @@ those drive the same :class:`Scanner` you see above.
 # installed dist-info goes stale on editable installs whenever
 # someone bumps the version without re-running ``pip install -e .``,
 # producing a misleading ``--version`` for contributors.
-__version__ = "1.15.0"
+__version__ = "1.16.0"
 
 # ── Public API surface ─────────────────────────────────────────────
 #
