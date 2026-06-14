@@ -458,6 +458,7 @@ STANDARD = Standard(
         "CC-008":   ["Token-Permissions"],
         "CC-019":   ["Token-Permissions"],
         "CC-030":   ["Token-Permissions"],
+        "CC-034":   ["Dangerous-Workflow"],   # trust_remote_code model load = code exec
         "GCB-002":  ["Token-Permissions"],
         "GCB-003":  ["Token-Permissions"],
         "GCB-007":  ["Token-Permissions"],

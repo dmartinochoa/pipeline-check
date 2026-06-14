@@ -1,0 +1,13 @@
+version: 2.1
+jobs:
+  train:
+    docker:
+      - image: cimg/python:3.12
+    steps:
+      - run:
+          name: Load model
+          command: python -c "from transformers import AutoModel; AutoModel.from_pretrained('acme/llm', revision='0123456789abcdef0123456789abcdef01234567')"
+workflows:
+  build:
+    jobs:
+      - train

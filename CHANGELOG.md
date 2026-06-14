@@ -44,6 +44,18 @@ release commit collapses this section into `## [X.Y.Z] - <date>`.
 
 ### Added
 
+- **CC-034: CircleCI ML model loaded with `trust_remote_code` (HIGH).**
+  Brings the first AI / model-load coverage to CircleCI, a mainstream CI
+  provider that previously had none of the model-load family the other six
+  providers carry (GHA-120 / GL-045 / BB-035 / ADO-034 / HARNESS-010 /
+  JF-039). Scans every `run:` command across all jobs for
+  `trust_remote_code=True` (or `--trust-remote-code`): the transformers /
+  huggingface_hub loader executes the model repo's own `modeling_*.py` at
+  load time, so an untrusted or unpinned model is arbitrary code execution
+  on the runner with the job's context secrets and OIDC in scope. Reuses
+  the shared `_primitives/model_trust` detector over `iter_run_commands`,
+  and is mapped across the 12 standards the `trust_remote_code` family
+  uses. `circleci` 33 -> 34.
 - **JF-040 + JF-041: Jenkins model-load triad completed (MEDIUM + HIGH).**
   With JF-039 (`trust_remote_code`), these bring Jenkins to full parity
   with the GHA / GitLab / Bitbucket / Azure DevOps / Harness model-load
