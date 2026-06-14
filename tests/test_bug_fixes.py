@@ -303,6 +303,64 @@ def test_vuln_scan_tokens_new_entries():
         assert token in VULN_SCAN_TOKENS, f"{token!r} missing from VULN_SCAN_TOKENS"
 
 
+def test_quoted_assignment_does_not_whitelist_github_expression():
+    # A benign shell var co-occurring with a ${{ }} expression must not
+    # flip the line to the "safe assignment" idiom: GitHub substitutes
+    # ${{ }} into the script text before the shell runs, so a `"` in the
+    # expanded value still breaks out (GHA-003 / GHA-119 bypass).
+    from pipeline_check.core.checks.base import is_quoted_assignment
+    assert not is_quoted_assignment(
+        'VAR="$HOME/${{ github.event.issue.title }}"'
+    )
+    assert not is_quoted_assignment(
+        'VAR="${HOME}${{ github.event.pull_request.title }}"'
+    )
+    # Regression: a pure shell-var capture is still the safe idiom.
+    assert is_quoted_assignment('VAR="$HOME/build"')
+    assert is_quoted_assignment('NAME="prefix-$BRANCH"')
+
+
+def test_gha_injection_taint_set_new_shapes():
+    from pipeline_check.core.checks.github.rules._helpers import (
+        CACHE_TAINT_RE,
+        UNTRUSTED_CONTEXT_RE,
+    )
+    s = UNTRUSTED_CONTEXT_RE.search
+    # github.event.inputs.* (the original workflow_dispatch input syntax)
+    assert s("${{ github.event.inputs.version }}")
+    assert CACHE_TAINT_RE.search("${{ github.event.inputs.version }}")
+    # Expression function names are case-insensitive on GitHub.
+    assert s("${{ fromjson(github.event.issue.body) }}")
+    assert s("${{ TOJSON(github.event.issue.title) }}")
+    # format(template, <untrusted>) puts the literal template first.
+    assert s("${{ format('PR {0}', github.event.issue.title) }}")
+    # Regression: genuinely-safe expressions stay unflagged.
+    assert not s("${{ github.event.issue.number }}")
+    assert not s("${{ steps.build.outputs.digest }}")
+
+
+def test_gha003_catches_new_injection_shapes_end_to_end():
+    from pipeline_check.core.checks.github.rules import (
+        gha003_script_injection as g3,
+    )
+
+    def wf(run):
+        return {
+            "on": {"issues": {}, "workflow_dispatch": {"inputs": {"version": {}}}},
+            "jobs": {"j": {"runs-on": "ubuntu-latest",
+                           "permissions": {"contents": "read"},
+                           "steps": [{"run": run}]}},
+        }
+
+    for run in [
+        'echo "${{ github.event.inputs.version }}"',
+        'echo "${{ fromjson(github.event.issue.body) }}"',
+        "echo \"${{ format('PR {0}', github.event.issue.title) }}\"",
+        'VAR="$HOME/${{ github.event.issue.title }}"',
+    ]:
+        assert not g3.check("wf.yml", wf(run)).passed, run
+
+
 def test_log_leak_set_plus_x_not_flagged_as_trace_leak():
     # ``set +x`` DISABLES xtrace (the secure idiom placed before handling
     # a secret); only ``set -x`` enables it. The disabling form must not
