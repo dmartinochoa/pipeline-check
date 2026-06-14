@@ -24,8 +24,15 @@ class FakeFetcher:
         return self.mapping.get(path)
 
 
-def _ctx(group_meta: dict | None) -> GitLabGroupContext:
-    mapping = {_GROUP_PATH: group_meta} if group_meta is not None else {}
+_HOOKS_PATH = f"{_GROUP_PATH}/hooks"
+
+
+def _ctx(group_meta: dict | None, hooks: list | None = None) -> GitLabGroupContext:
+    mapping: dict[str, Any] = {}
+    if group_meta is not None:
+        mapping[_GROUP_PATH] = group_meta
+    if hooks is not None:
+        mapping[_HOOKS_PATH] = hooks
     return GitLabGroupContext.for_group(_GROUP, FakeFetcher(mapping))
 
 
@@ -159,3 +166,69 @@ class TestGLGRP004DefaultBranchProtection:
     def test_passes_when_group_unavailable(self):
         f = _for(_findings(_ctx(None)), "GLGRP-004")[0]
         assert f.passed
+
+
+class TestGLGRP005WebhookTransport:
+    def test_metadata(self):
+        f = _for(_findings(_ctx({}, hooks=[])), "GLGRP-005")[0]
+        assert f.check_id == "GLGRP-005"
+        assert f.severity == Severity.HIGH
+
+    def test_fails_on_http_url(self):
+        hooks = [{"id": 7, "url": "http://hooks.example.com/gl"}]
+        f = _for(_findings(_ctx({}, hooks=hooks)), "GLGRP-005")[0]
+        assert not f.passed
+        assert "http://hooks.example.com/gl" in f.description
+
+    def test_fails_on_https_with_ssl_verification_off(self):
+        hooks = [{"id": 8, "url": "https://hooks.example.com/gl",
+                  "enable_ssl_verification": False}]
+        f = _for(_findings(_ctx({}, hooks=hooks)), "GLGRP-005")[0]
+        assert not f.passed
+        assert "SSL verification disabled" in f.description
+
+    def test_passes_on_https_with_ssl_verification_on(self):
+        hooks = [{"id": 9, "url": "https://hooks.example.com/gl",
+                  "enable_ssl_verification": True}]
+        f = _for(_findings(_ctx({}, hooks=hooks)), "GLGRP-005")[0]
+        assert f.passed
+
+    def test_http_url_does_not_double_report_ssl(self):
+        # An http:// endpoint has no TLS to verify; only the plain-HTTP
+        # label should appear, not an SSL-verification one.
+        hooks = [{"id": 10, "url": "http://hooks.example.com/gl",
+                  "enable_ssl_verification": False}]
+        f = _for(_findings(_ctx({}, hooks=hooks)), "GLGRP-005")[0]
+        assert not f.passed
+        assert "plain-HTTP URL" in f.description
+        assert "SSL verification disabled" not in f.description
+
+    def test_passes_when_no_hooks(self):
+        f = _for(_findings(_ctx({}, hooks=[])), "GLGRP-005")[0]
+        assert f.passed
+
+    def test_passes_when_hooks_unavailable(self):
+        # No hooks endpoint in the fetcher map -> slot is None -> not
+        # evaluated (pass with a note), no false finding on absence.
+        f = _for(_findings(_ctx({"id": 1})), "GLGRP-005")[0]
+        assert f.passed
+        assert "not evaluated" in f.description
+
+    def test_counts_multiple_offenders(self):
+        hooks = [
+            {"id": 1, "url": "http://a.example.com/x"},
+            {"id": 2, "url": "https://b.example.com/x",
+             "enable_ssl_verification": False},
+            {"id": 3, "url": "https://c.example.com/x",
+             "enable_ssl_verification": True},
+        ]
+        f = _for(_findings(_ctx({}, hooks=hooks)), "GLGRP-005")[0]
+        assert not f.passed
+        assert "2 webhook(s)" in f.description
+
+    def test_hooks_endpoint_fetched(self):
+        fetcher = FakeFetcher({_GROUP_PATH: {"id": 1}, _HOOKS_PATH: []})
+        ctx = GitLabGroupContext.for_group(_GROUP, fetcher)
+        assert ctx.group_hooks == []
+        assert _HOOKS_PATH in fetcher.calls
+        assert ctx.files_scanned == 1

@@ -978,6 +978,7 @@ STANDARD = Standard(
         "GLGRP-002":  ["7.2.5"],  # gitlab group: forking outside group allowed
         "GLGRP-003":  ["7.2.5"],  # gitlab group: sharing projects outside the hierarchy
         "GLGRP-004":  ["6.4.3", "6.5.1"],  # gitlab group: default branch protection disabled for new projects
+        "GLGRP-005":  ["6.4.1"],  # gitlab group: group webhook over insecure transport
         "ORG-008":  ["7.2.5"],                            # org: members can create public repos (code exposure)
         "ORG-009":  ["6.4.1"],                            # org: self-hosted runner group exposed to public repos
         "ORG-010":  ["6.5.1"],                            # org: new-repo secret-scanning push-protection default off
