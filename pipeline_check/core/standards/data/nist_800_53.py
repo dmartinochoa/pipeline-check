@@ -984,6 +984,7 @@ STANDARD = Standard(
         "CC-035":   ["SR-3", "SR-11", "SI-2"],             # model pulled without a pinned revision
         "CC-036":   ["CM-6", "SA-11", "SA-15"],            # unsafe pickle deser of fetched artifact = code exec
         "CC-037":   ["CM-6", "SA-11"],            # agentic CLI ingests untrusted context (prompt injection)
+        "CC-038":   ["SA-10", "AC-3"],            # agentic CLI output lands without review
         "SCM-048":  ["AC-6", "IA-5"],                      # org codespace secrets scoped to all repos
         "SCM-049":  ["AC-6", "IA-5"],                      # classic PAT used where fine-grained suffices
         "ORG-001":  ["AC-6", "IA-5"],                      # org: 2FA not required org-wide

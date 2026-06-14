@@ -1,0 +1,17 @@
+version: 2.1
+jobs:
+  ai-autofix:
+    docker:
+      - image: cimg/base:current
+    steps:
+      - checkout
+      - run:
+          name: Auto-fix with agent
+          command: aider --message "fix the failing tests"
+      - run:
+          name: Open a PR for review
+          command: gh pr create --fill
+workflows:
+  autofix:
+    jobs:
+      - ai-autofix

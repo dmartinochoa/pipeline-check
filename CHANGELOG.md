@@ -44,6 +44,22 @@ release commit collapses this section into `## [X.Y.Z] - <date>`.
 
 ### Added
 
+- **CC-038: CircleCI agentic-CLI output lands without human review
+  (HIGH).** Completes the CircleCI agentic-AI matrix to 5/5 (prompt-
+  injection, trust_remote_code, model-pinning, unsafe-deser, autoland),
+  bringing it to parity with the other providers. The flow-control leg
+  alongside CC-037, and the analog of GHA-123 / GL-049 / BB-039 / ADO-038
+  / JF-038. Fires when one CircleCI job both invokes an agentic CLI
+  (claude / gemini / cursor-agent / aider / openhands / goose / `q chat`)
+  in a `run:` command and, in the same job, lands the result with a
+  `git push` straight to a branch (no review gate). Coupling is **per
+  job** (more precise than the Jenkins pipeline-level model): a CircleCI
+  job has its own executor / checkout, so the run steps of one job share a
+  workspace while separate jobs do not. Passes when the agent only opens a
+  PR, on a push with no agent, when the two sit in different jobs, or on
+  `git push --dry-run`. Reuses the shared `_primitives/agentic_cli`
+  detector; mapped across the 12 standards the autoland family uses
+  (mirrors JF-038). `circleci` 37 -> 38.
 - **CC-037: CircleCI untrusted PR/build context reaches an agentic AI CLI
   (HIGH).** The AI face of CC-002 (script injection) and the CircleCI
   analog of GHA-119 / GL-048 / BB-036 / ADO-035 / JF-037. Fires when a

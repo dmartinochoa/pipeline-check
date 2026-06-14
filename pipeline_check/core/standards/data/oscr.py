@@ -1004,6 +1004,7 @@ STANDARD = Standard(
         "CC-034":   ["EX-6"],              # trust_remote_code model load = code exec
         "CC-036":   ["EX-6"],              # unsafe pickle deser of fetched artifact = code exec
         "CC-037":   ["EX-6"],              # agentic CLI ingests untrusted context (prompt injection)
+        "CC-038":   ["DE-1"],              # agentic CLI output lands without review
         "SCM-048":  ["CA-5"],                      # org codespace secrets scoped to all repos
         "SCM-049":  ["IA-9"],                      # classic PAT where fine-grained suffices
         "NPM-012":  ["IA-9"],                      # publish token lacking restrictions

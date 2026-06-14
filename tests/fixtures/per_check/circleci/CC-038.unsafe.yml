@@ -1,0 +1,17 @@
+version: 2.1
+jobs:
+  ai-autofix:
+    docker:
+      - image: cimg/base:current
+    steps:
+      - checkout
+      - run:
+          name: Auto-fix with agent
+          command: aider --message "fix the failing tests" --yes
+      - run:
+          name: Land the fix
+          command: git push origin HEAD
+workflows:
+  autofix:
+    jobs:
+      - ai-autofix
