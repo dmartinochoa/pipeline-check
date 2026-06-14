@@ -25,6 +25,7 @@ BEST_PRACTICE_IDS: frozenset[str] = frozenset({
     # Build-time hygiene: timeout / deadline / retention / resource.
     "GHA-015", "GL-015", "JF-015", "JF-011", "BB-005", "CC-011",
     "CC-014", "CC-015", "TKN-006", "GCB-005", "CB-004", "ARGO-007",
+    "HARNESS-019",
     # Artifact signing absent (no cosign / sigstore step).
     "GHA-006", "GL-006", "BB-006", "JF-006", "ADO-006", "CC-006",
     "GCB-009", "ARGO-009", "BK-009", "TKN-009", "DR-019", "HARNESS-015",

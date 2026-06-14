@@ -642,3 +642,93 @@ class TestHarness015to018SupplyChainGates:
         assert self._failing(tmp_path, self._build(), "HARNESS-018")
         text = self._build("trivy image app")
         assert self._failing(tmp_path, text, "HARNESS-018") == []
+
+
+class TestHarness019NoTimeout:
+    _UNBOUNDED = """\
+pipeline:
+  identifier: build
+  stages:
+    - stage:
+        identifier: ci
+        type: CI
+        spec:
+          execution:
+            steps:
+              - step:
+                  type: Run
+                  identifier: test
+                  spec:
+                    command: make test
+"""
+    _STEP_BOUNDED = """\
+pipeline:
+  identifier: build
+  stages:
+    - stage:
+        identifier: ci
+        type: CI
+        spec:
+          execution:
+            steps:
+              - step:
+                  type: Run
+                  identifier: test
+                  timeout: 10m
+                  spec:
+                    command: make test
+"""
+    _STAGE_BOUNDED = """\
+pipeline:
+  identifier: build
+  stages:
+    - stage:
+        identifier: ci
+        type: CI
+        timeout: 1h
+        spec:
+          execution:
+            steps:
+              - step:
+                  type: Run
+                  identifier: test
+                  spec:
+                    command: make test
+"""
+    _EMPTY_TIMEOUT = """\
+pipeline:
+  identifier: build
+  stages:
+    - stage:
+        identifier: ci
+        type: CI
+        spec:
+          execution:
+            steps:
+              - step:
+                  type: Run
+                  identifier: test
+                  timeout: ""
+                  spec:
+                    command: make test
+"""
+
+    def _failing(self, tmp_path, text):
+        return [f for f in _for(_findings(_ctx(tmp_path, text)), "HARNESS-019")
+                if not f.passed]
+
+    def test_flags_step_without_timeout(self, tmp_path):
+        out = self._failing(tmp_path, self._UNBOUNDED)
+        assert len(out) == 1
+        assert out[0].severity is Severity.LOW
+        assert "ci/test" in out[0].description
+
+    def test_passes_with_step_timeout(self, tmp_path):
+        assert self._failing(tmp_path, self._STEP_BOUNDED) == []
+
+    def test_stage_timeout_bounds_all_steps(self, tmp_path):
+        assert self._failing(tmp_path, self._STAGE_BOUNDED) == []
+
+    def test_empty_timeout_string_still_flags(self, tmp_path):
+        # timeout: "" is the key present but value unset -> Harness default.
+        assert self._failing(tmp_path, self._EMPTY_TIMEOUT)

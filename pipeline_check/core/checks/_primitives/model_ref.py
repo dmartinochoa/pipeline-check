@@ -37,9 +37,11 @@ _REPO_ID_RE = re.compile(
 )
 
 # A pinned revision anywhere in the window: the ``revision`` kwarg, the
-# ``--revision`` flag, or an ``@<commit-ish>`` suffix.
+# ``--revision`` flag, or an ``@<commit-ish>`` suffix. ``revision=None``
+# / ``null`` is the explicit "use the mutable default branch" value, so
+# it is excluded — it is not a pin (the negative lookahead rejects it).
 _REVISION_RE = re.compile(
-    r"\brevision\s*[=:]\s*['\"]?[\w.\-]+"
+    r"\brevision\s*[=:]\s*['\"]?(?!(?:none|null)\b)[\w.\-]+"
     r"|--revision[=\s]"
     r"|@[0-9a-fA-F]{7,40}\b",
     re.IGNORECASE,

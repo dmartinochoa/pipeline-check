@@ -10,6 +10,85 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 PRs landing on `dev` between releases append entries below. The
 release commit collapses this section into `## [X.Y.Z] - <date>`.
 
+## [1.16.0] - 2026-06-14
+
+### Added
+
+- **HARNESS-019: Harness pipeline step lacks an explicit timeout.** A
+  best-practice / missing-control rule (LOW, dropped by
+  `--no-best-practice`) that flags a step carrying no `timeout` of its own
+  whose enclosing stage carries none either; a stage-level timeout bounds
+  all of its steps, and a runtime input (`<+input>`) counts as set. Closes
+  the last cross-provider gap in the build-time-timeout hygiene family
+  (the Harness analog of TKN-006 / GHA-015 / GCB-005).
+
+### Fixed
+
+- **Script-injection detection no longer treats a `${{ }}` expression as
+  safe when an ordinary shell variable shares the line.** The safe-idiom
+  recognizer (`is_quoted_assignment`) whitelisted `VAR="...$X..."` captures
+  but had no guard for GitHub `${{ }}`, which is substituted into the script
+  before the shell runs. A value like `VAR="$HOME/${{ github.event.issue.title }}"`
+  slipped past GHA-003 and GHA-119; it is now flagged.
+- **GHA injection taint set widened: `github.event.inputs.*`, case-insensitive
+  function names, and `format()` second arguments.** The shared
+  `UNTRUSTED_CONTEXT_RE` missed the `github.event.inputs.<name>`
+  workflow_dispatch form, matched function names case-sensitively (GitHub
+  expressions are case-insensitive, so `fromjson(...)` bypassed it), and never
+  matched `format('template', github.event.issue.title)` because the untrusted
+  value is the second argument. All three are now caught across GHA-003 /
+  GHA-011 / GHA-035 / GHA-036 / GHA-119.
+- **Compromised-action check no longer flags the remediated trivy-action
+  release.** The `aquasecurity/trivy-action` entry matched any `v0.x.y` tag,
+  so the fixed `v0.35.0` (the compromise covered 0.0.1 through 0.34.2) was
+  reported as compromised. The range is now capped at 0.34.x.
+- **`set +x` no longer reported as a secret trace-log leak.** The shell-trace
+  detector matched both `set -x` (which enables xtrace) and `set +x` (which
+  disables it, the secure idiom used right before handling a secret). The
+  leading sign is now `-` only, matching the long-form behavior that already
+  ignored `set +o xtrace`. Removes a false positive in the log-leak family
+  (GL-036 / BB-032 / ADO-031 / CC-032 / HARNESS-013).
+- **`curl` insecure flag detected inside bundled short-flag clusters.** The
+  TLS-bypass detector only matched a standalone `-k`, missing the dominant
+  real-world forms `curl -sk` / `curl -ks` / `curl -fsSLk` / `curl -kL`. It
+  now matches a lowercase `k` anywhere in a single-dash flag cluster while
+  still ignoring the uppercase `-K` (`--config`) flag. Closes a false
+  negative for every provider's TLS-bypass rule.
+- **`go env -w GOSUMDB=off` (the persistent form) is now flagged.** The Go
+  module-integrity check only matched `export` / inline assignments and missed
+  the canonical persistent-config form. Affects GHA-110 / GL-037 / CC-033.
+- **Lockfile-integrity check no longer lets a pinned git dep mask an unpinned
+  sibling.** A pinned `git+...@<sha>` earlier on a `pip install` / `npm install`
+  line suppressed the finding for an unpinned dep later on the same line; each
+  git dependency is now evaluated on its own.
+- **Floating-tag classification catches digit-bearing rolling channels.**
+  A tag was treated as a pinned version if it contained a digit anywhere, so
+  `:nightly-2024` / `:stable-3` were misread as pinned. Named rolling channels
+  (`latest`, `nightly`, `edge`, `stable`, ...) are now floating regardless of
+  an incidental date or sequence digit, while real version tags (`:20-bookworm`,
+  `:3.11`) stay pinned. Fixes a false negative in the image-pinning family
+  (DR-005 plugin tags, GL-001 / GL-028 / JF-009, K8S / Dockerfile pinning).
+- **Unpinned-model check treats `revision=None` as unpinned.** `from_pretrained(
+  ..., revision=None)` is the explicit mutable-default-branch value, but was read
+  as a pin. Affects GHA-121 / GL-046.
+- **Slack secret detection recognizes `xapp-` (app-level) and `xoxe-` (rotation
+  refresh) token prefixes**, which the older `xox[abprs]-` charset missed.
+- **Vulnerability-scan detection now recognizes the reusable-action,
+  container-image, and native-step forms of the scanners.** `VULN_SCAN_TOKENS`
+  carried only space-delimited CLI tokens (`trivy `, `grype `, `snyk `), so
+  the most common wiring (a pinned `uses: aquasecurity/trivy-action`,
+  `anchore/scan-action`, or `snyk/actions`; a scanner image like
+  `aquasec/trivy`; a Harness STO `type: AquaTrivy` step) was missed and the
+  build was falsely flagged "No vulnerability scanning step." GHA-098 / GHA-004
+  already treated these refs as scanners, so GHA-020 disagreed with them on
+  the same workflow. Fixes a false positive shared by GHA-020 / GL-019 /
+  BK-012 / TKN-012 / CC-020 / ARGO-012 / DR-022 / HARNESS-018.
+- **Harness command rules now scan every shell phase, not just `spec.command`.**
+  `RunTests` `preCommand` / `postCommand` and `Background` `entrypoint` / `args`
+  carry user-authored shell, but were invisible to the scanner, so an injection
+  or secret-leak idiom there passed silently. `step_command_text` now joins all
+  of them, closing the blind spot across HARNESS-002 / 005 / 008..014.
+
 ## [1.15.0] - 2026-06-14
 
 ### Changed

@@ -348,6 +348,7 @@ STANDARD = Standard(
         "TKN-004":  ["ESF-D-PRIV-BUILD", "ESF-D-BUILD-ENV"],       # hostPath / namespaces
         "TKN-005":  ["ESF-D-SECRETS"],                             # leaked creds
         "TKN-006":  ["ESF-D-BUILD-TIMEOUT"],                       # no timeout
+        "HARNESS-019":  ["ESF-D-BUILD-TIMEOUT"],  # Harness pipeline lacks an explicit timeout
         "TKN-007":  ["ESF-C-LEAST-PRIV"],                          # default SA
         "TKN-008":  ["ESF-S-VERIFY-DEPS", "ESF-S-TRUSTED-REG"],    # remote install / TLS
         "TKN-009":  ["ESF-D-SIGN-ARTIFACTS"],                      # artifact signing

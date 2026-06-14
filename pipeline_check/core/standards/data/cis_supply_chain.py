@@ -469,6 +469,7 @@ STANDARD = Standard(
         "TKN-004":  ["2.1.3"],                     # hostPath / host namespaces
         "TKN-005":  ["1.5.1", "2.3.4"],            # leaked creds
         "TKN-006":  ["2.2.2"],                     # no timeout
+        "HARNESS-019":  ["2.2.2"],  # Harness pipeline lacks an explicit timeout
         "TKN-007":  ["2.4.3"],                     # default SA
         "TKN-008":  ["1.4.1", "3.1.5"],            # remote install / TLS
         "TKN-009":  ["4.1.1"],                     # artifact signing

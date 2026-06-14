@@ -47,7 +47,11 @@ _BUILTIN_PATTERNS: dict[str, str] = {
     "github_token":           r"(?:gh[pousr]_[A-Za-z0-9]{36,}"
                               r"|github_pat_[A-Za-z0-9_]{82,})",
     # Slack workspace, bot, app-level, refresh, and granular tokens.
-    "slack_token":            r"xox[abprs]-[A-Za-z0-9-]{10,}",
+    # ``xox[abprs]-`` covers workspace/bot/user/refresh-legacy/granular;
+    # ``xoxe-`` is the rotation refresh token and ``xapp-`` the
+    # app-level token (both real credential prefixes the older charset
+    # missed).
+    "slack_token":            r"(?:xox[abeprs]|xapp)-[A-Za-z0-9-]{10,}",
     # Generic JWT (header.payload.signature, all base64url).
     "jwt":                    r"eyJ[A-Za-z0-9_\-]{10,}\.[A-Za-z0-9_\-]{10,}\.[A-Za-z0-9_\-]{10,}",
     # Stripe secret / restricted / publishable keys; live and test.

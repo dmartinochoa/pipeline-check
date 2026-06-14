@@ -774,6 +774,7 @@ STANDARD = Standard(
         "TKN-004":  ["CICD-SEC-5"],   # hostPath / host namespaces
         "TKN-005":  ["CICD-SEC-6", "CICD-SEC-7"],  # literal secret in env / param
         "TKN-006":  ["CICD-SEC-9"],   # no explicit timeout
+        "HARNESS-019":  ["CICD-SEC-9"],  # Harness pipeline lacks an explicit timeout
         "TKN-007":  ["CICD-SEC-2"],   # default ServiceAccount
         "TKN-008":  ["CICD-SEC-3"],   # remote install / TLS bypass
         "TKN-009":  ["CICD-SEC-9"],   # artifacts not signed

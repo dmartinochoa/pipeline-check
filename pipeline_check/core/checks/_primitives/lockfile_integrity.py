@@ -42,24 +42,28 @@ from dataclasses import dataclass
 # git-URL ecosystems to decide whether a git dep is pinned.
 _SHA_RE = re.compile(r"\b[0-9a-f]{40}\b")
 
-# pip / pip3: ``pip install git+<scheme>://…``, without ``@<sha>``
-# suffix the install follows the remote HEAD. pip also supports
-# ``#egg=…`` but that's orthogonal; we only care about whether a
-# commit is pinned.
-_PIP_GIT_RE = re.compile(
-    r"\bpip3?\s+install\s+[^\n;&|]*\bgit\+[^\s;&|]+",
+# pip / npm / yarn install verbs. Git dependencies are evaluated per
+# token (in ``scan``) rather than per command line, so a pinned dep
+# early on a line can't mask an unpinned sibling later on the same line.
+_PIP_INSTALL_RE = re.compile(r"\bpip3?\s+install\b")
+_NPM_INSTALL_RE = re.compile(r"\b(?:npm\s+install|yarn\s+add)\b")
+
+# A single ``git+<scheme>://…`` dependency token. Without a 40-hex
+# commit somewhere in the token the install follows the remote HEAD.
+_GIT_URL_RE = re.compile(r"\bgit\+[^\s;&|]+")
+
+# npm ``<user>/<repo>`` shorthand as a bare install argument. Must start
+# with a non-path char (not ``/`` or ``.``) and hold exactly one slash
+# so ``/opt/shared/pkg`` falls through to the local-path matcher.
+# Shorthand resolves to the GitHub default branch, the same TOFU risk
+# as an un-pinned git URL.
+_NPM_SHORTHAND_RE = re.compile(
+    r"(?:^|\s)([a-zA-Z0-9_-][a-zA-Z0-9_-]*/[a-zA-Z0-9_.-]+)(?=\s|$)"
 )
 
-# npm / yarn: ``npm install git+…`` or shorthand ``npm install user/repo``.
-# Shorthand must start with a non-path char (not ``/`` or ``.``) and
-# is limited to one slash so ``/opt/shared/pkg`` falls through to the
-# local-path matcher. ``<user>/<repo>`` shorthand resolves to the
-# GitHub default branch, same TOFU risk as an un-pinned git URL.
-_NPM_GIT_RE = re.compile(
-    r"\b(?:npm\s+install|yarn\s+add)\s+"
-    r"(?:git\+[^\s;&|]+"
-    r"|[a-zA-Z0-9_-][a-zA-Z0-9_-]*/[a-zA-Z0-9_.-]+(?:\s|$))",
-)
+# Shell statement boundary, so each git dep is scoped to its own
+# install command.
+_STMT_SPLIT_RE = re.compile(r"[;\n]|&&|\|\|")
 
 # cargo: ``cargo install --git <url>``, accepted as pinned only
 # when ``--rev <40-hex>`` follows on the same statement. ``--tag``
@@ -107,12 +111,19 @@ def scan(text: str) -> list[LockfileIssue]:
     """
     out: list[LockfileIssue] = []
 
-    for rex in (_PIP_GIT_RE, _NPM_GIT_RE):
-        for m in rex.finditer(text):
-            match = m.group(0)
-            if _SHA_RE.search(match):
-                continue
-            out.append(LockfileIssue("git", _trim(match)))
+    # Git deps: scan each install statement and evaluate every git+ token
+    # (and npm shorthand) on its own, so a pinned dep doesn't suppress an
+    # unpinned one earlier or later in the same command.
+    for stmt in _STMT_SPLIT_RE.split(text):
+        npm_match = _NPM_INSTALL_RE.search(stmt)
+        if not (_PIP_INSTALL_RE.search(stmt) or npm_match):
+            continue
+        for m in _GIT_URL_RE.finditer(stmt):
+            if not _SHA_RE.search(m.group(0)):
+                out.append(LockfileIssue("git", _trim(m.group(0))))
+        if npm_match:
+            for m in _NPM_SHORTHAND_RE.finditer(stmt[npm_match.end():]):
+                out.append(LockfileIssue("git", _trim(m.group(1))))
 
     for m in _CARGO_GIT_RE.finditer(text):
         match = m.group(0)

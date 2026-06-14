@@ -303,6 +303,207 @@ def test_vuln_scan_tokens_new_entries():
         assert token in VULN_SCAN_TOKENS, f"{token!r} missing from VULN_SCAN_TOKENS"
 
 
+def test_quoted_assignment_does_not_whitelist_github_expression():
+    # A benign shell var co-occurring with a ${{ }} expression must not
+    # flip the line to the "safe assignment" idiom: GitHub substitutes
+    # ${{ }} into the script text before the shell runs, so a `"` in the
+    # expanded value still breaks out (GHA-003 / GHA-119 bypass).
+    from pipeline_check.core.checks.base import is_quoted_assignment
+    assert not is_quoted_assignment(
+        'VAR="$HOME/${{ github.event.issue.title }}"'
+    )
+    assert not is_quoted_assignment(
+        'VAR="${HOME}${{ github.event.pull_request.title }}"'
+    )
+    # Regression: a pure shell-var capture is still the safe idiom.
+    assert is_quoted_assignment('VAR="$HOME/build"')
+    assert is_quoted_assignment('NAME="prefix-$BRANCH"')
+
+
+def test_gha_injection_taint_set_new_shapes():
+    from pipeline_check.core.checks.github.rules._helpers import (
+        CACHE_TAINT_RE,
+        UNTRUSTED_CONTEXT_RE,
+    )
+    s = UNTRUSTED_CONTEXT_RE.search
+    # github.event.inputs.* (the original workflow_dispatch input syntax)
+    assert s("${{ github.event.inputs.version }}")
+    assert CACHE_TAINT_RE.search("${{ github.event.inputs.version }}")
+    # Expression function names are case-insensitive on GitHub.
+    assert s("${{ fromjson(github.event.issue.body) }}")
+    assert s("${{ TOJSON(github.event.issue.title) }}")
+    # format(template, <untrusted>) puts the literal template first.
+    assert s("${{ format('PR {0}', github.event.issue.title) }}")
+    # Regression: genuinely-safe expressions stay unflagged.
+    assert not s("${{ github.event.issue.number }}")
+    assert not s("${{ steps.build.outputs.digest }}")
+
+
+def test_gha003_catches_new_injection_shapes_end_to_end():
+    from pipeline_check.core.checks.github.rules import (
+        gha003_script_injection as g3,
+    )
+
+    def wf(run):
+        return {
+            "on": {"issues": {}, "workflow_dispatch": {"inputs": {"version": {}}}},
+            "jobs": {"j": {"runs-on": "ubuntu-latest",
+                           "permissions": {"contents": "read"},
+                           "steps": [{"run": run}]}},
+        }
+
+    for run in [
+        'echo "${{ github.event.inputs.version }}"',
+        'echo "${{ fromjson(github.event.issue.body) }}"',
+        "echo \"${{ format('PR {0}', github.event.issue.title) }}\"",
+        'VAR="$HOME/${{ github.event.issue.title }}"',
+    ]:
+        assert not g3.check("wf.yml", wf(run)).passed, run
+
+
+def test_log_leak_set_plus_x_not_flagged_as_trace_leak():
+    # ``set +x`` DISABLES xtrace (the secure idiom placed before handling
+    # a secret); only ``set -x`` enables it. The disabling form must not
+    # be reported as a leak.
+    from pipeline_check.core.checks._primitives.log_leak import (
+        scan_script_for_leaked_secrets,
+    )
+    assert scan_script_for_leaked_secrets("set +x\nrun_with $PASSWORD") == []
+    # Regression: enabling xtrace with a secret-named var still fires,
+    # including the bundled ``set -euxo`` form.
+    assert scan_script_for_leaked_secrets("set -x\nrun_with $PASSWORD")
+    assert scan_script_for_leaked_secrets("set -euxo pipefail\nrun_with $PASSWORD")
+
+
+def test_curl_insecure_bundled_short_flags_flagged():
+    # ``-k`` is rarely written standalone; it rides inside a short-flag
+    # cluster (``curl -sk``, ``curl -fsSLk``, ``curl -kL``). All must flag.
+    from pipeline_check.core.checks._primitives import tls_bypass
+
+    def kinds(text):
+        return [f.kind for f in tls_bypass.scan(text)]
+
+    for text in ("curl -k https://x", "curl -sk https://x",
+                 "curl -ks https://x", "curl -fsSLk https://x",
+                 "curl -kL https://x"):
+        assert "curl-insecure" in kinds(text), text
+    # Must NOT flag uppercase ``-K`` (curl --config) or a cluster whose
+    # only ``k`` is uppercase, nor a ``k``-prefixed filename argument.
+    for text in ("curl -K config.txt https://x", "curl -sK https://x",
+                 "curl --cacert key.pem https://x"):
+        assert "curl-insecure" not in kinds(text), text
+
+
+def test_go_env_w_persistent_form_flagged():
+    # ``go env -w GOSUMDB=off`` writes the setting persistently and is the
+    # canonical disable; it was missed because only export/inline forms
+    # were matched.
+    from pipeline_check.core.checks._primitives import go_insecure_env
+    assert go_insecure_env.insecure_settings_in_script("go env -w GOSUMDB=off")
+    assert go_insecure_env.insecure_settings_in_script(
+        "go env -w GOFLAGS=-insecure"
+    )
+    # Regression: the export form still fires; an unrelated read does not.
+    assert go_insecure_env.insecure_settings_in_script("export GOSUMDB=off")
+    assert not go_insecure_env.insecure_settings_in_script("go env GOSUMDB")
+
+
+def test_lockfile_pinned_dep_does_not_mask_unpinned_sibling():
+    # A pinned git dep earlier on the same install line must not suppress
+    # an unpinned one later.
+    from pipeline_check.core.checks._primitives import lockfile_integrity as lf
+    sha = "a" * 40
+    assert lf.scan(f"pip install git+https://x/a.git@{sha} git+https://x/b.git")
+    assert lf.scan(f"npm install git+https://x/a.git#{sha} git+https://x/b.git")
+    # Regression: a single pinned dep is still safe.
+    assert lf.scan(f"pip install git+https://github.com/foo/bar.git@{sha}") == []
+
+
+def test_floating_tag_recognizes_digit_bearing_channels():
+    # A rolling channel name (``nightly-2024``, ``stable-3``) carries an
+    # incidental digit but is still floating; a real version tag
+    # (``20-bookworm``, ``3.11``) is not.
+    from pipeline_check.core.checks._primitives.image_pinning import (
+        VERSION_TAG_RE,
+        PinKind,
+        classify,
+    )
+    assert classify("foo:nightly-2024") is PinKind.FLOATING
+    assert classify("foo:stable-3") is PinKind.FLOATING
+    # Regression: digit-shaped version tags stay PINNED_TAG.
+    assert classify("node:20-bookworm") is PinKind.PINNED_TAG
+    assert classify("python:3.11") is PinKind.PINNED_TAG
+    # The exported regex (used directly by GL-001 / GL-028 / JF-009)
+    # agrees, and a registry host named "nightly" is not a false signal.
+    assert not VERSION_TAG_RE.search("redis:nightly-2024")
+    assert VERSION_TAG_RE.search("redis:3")
+    assert VERSION_TAG_RE.search("myreg-nightly.io/app:3.11")
+
+
+def test_model_revision_none_is_not_a_pin():
+    # ``revision=None`` is the explicit mutable-default-branch value, not
+    # a pin, so the fetch must still be flagged.
+    from pipeline_check.core.checks._primitives import model_ref
+    assert model_ref.unpinned_model_id(
+        'AutoModel.from_pretrained("org/model", revision=None)'
+    ) == "org/model"
+    # Regression: a real revision pin still suppresses the finding.
+    assert model_ref.unpinned_model_id(
+        'AutoModel.from_pretrained("org/model", revision="abc1234")'
+    ) is None
+
+
+def test_slack_app_level_and_refresh_token_prefixes():
+    import re
+
+    from pipeline_check.core.checks._patterns import _BUILTIN_PATTERNS
+    pat = re.compile(_BUILTIN_PATTERNS["slack_token"])
+    assert pat.search("xapp-1-A000-000-" + "a" * 30)   # app-level
+    assert pat.search("xoxe-1-" + "a" * 40)            # rotation refresh
+    # Regression: the classic bot/user prefixes still match.
+    assert pat.search("xoxb-1111111111-abcdefghij")
+    assert pat.search("xoxp-2222222222-abcdefghij")
+
+
+def test_vuln_scan_recognizes_action_and_native_step_forms():
+    # The space-delimited CLI tokens (``trivy ``) miss the way scanners
+    # are usually wired: a pinned ``uses:`` action, a scanner image, or a
+    # Harness STO ``type:``. Each of these is a real scan and must pass.
+    from pipeline_check.core.checks.base import has_vuln_scanning
+    from pipeline_check.core.checks.blob import clear_blob_cache
+    # Held in a list so every doc stays alive at once; the blob cache is
+    # keyed on ``id(doc)`` and would otherwise collide across these
+    # short-lived literals (real scans keep all docs alive together).
+    positives = [
+        {"x": "uses: aquasecurity/trivy-action@0.20.0"},
+        {"x": "uses: anchore/scan-action@v3"},
+        {"x": "uses: snyk/actions/node@master"},
+        {"type": "AquaTrivy"},                # Harness STO step
+        {"image": "aquasec/trivy"},           # Drone/k8s image
+        {"run": "trivy image ghcr.io/x:1"},   # regression: CLI form
+    ]
+    for doc in positives:
+        assert has_vuln_scanning(doc), doc
+    # Regression: bare prose must not match.
+    clear_blob_cache()
+    assert not has_vuln_scanning({"x": "we should add a scanner someday"})
+
+
+def test_harness_step_command_text_covers_all_shell_phases():
+    # RunTests preCommand/postCommand and Background entrypoint/args are
+    # user-authored shell; the injection / leak rules must see them.
+    from pipeline_check.core.checks.harness.base import step_command_text
+    step = {"spec": {
+        "command": "echo cmd",
+        "preCommand": "echo pre <+codebase.prTitle>",
+        "postCommand": "echo $API_TOKEN",
+        "args": ["echo", "from-args"],
+    }}
+    text = step_command_text(step)
+    for fragment in ("echo cmd", "<+codebase.prTitle>", "$API_TOKEN", "from-args"):
+        assert fragment in text, fragment
+
+
 # ────────────────────────────────────────────────────────────────────────
 # Bug F — a single crashing rule must not abort the whole scan.
 #   A scanner runs over config it didn't author; one rule tripping over

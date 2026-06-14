@@ -227,6 +227,7 @@ STANDARD = Standard(
         "CC-015":   ["IA-5"],
         "BK-006":   ["IA-5"],
         "TKN-006":  ["IA-5"],
+        "HARNESS-019":  ["IA-5"],  # Harness pipeline lacks an explicit timeout
         "ARGO-007": ["IA-5"],
         # IA-6: Exposed storage
         "S3-001":   ["IA-6", "COL-2"],
