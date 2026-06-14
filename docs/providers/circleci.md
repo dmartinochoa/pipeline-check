@@ -28,7 +28,7 @@ in other providers:
 
 ## What it covers
 
-36 checks · 10 have an autofix patch (``--fix``).
+37 checks · 10 have an autofix patch (``--fix``).
 
 | Check | Title | Severity | Fix |
 |-------|-------|----------|-----|
@@ -68,6 +68,7 @@ in other providers:
 | [CC-034](#cc-034) | ML model loaded with trust_remote_code (code execution) | <span class="pg-sev pg-sev--high">HIGH</span> |  |
 | [CC-035](#cc-035) | AI model pulled without a pinned revision | <span class="pg-sev pg-sev--medium">MEDIUM</span> |  |
 | [CC-036](#cc-036) | Unsafe deserialization of a fetched artifact (pickle RCE) | <span class="pg-sev pg-sev--high">HIGH</span> |  |
+| [CC-037](#cc-037) | Untrusted PR/build context reaches an agentic AI CLI (prompt injection) | <span class="pg-sev pg-sev--high">HIGH</span> |  |
 
 ---
 
@@ -823,6 +824,26 @@ Reuses the shared ``unsafe_deser`` detector (with GHA-122 / GL-047 / BB-037 / AD
 **Recommended action**
 
 Don't deserialize a downloaded artifact through pickle. Load weights with safetensors, or pass ``weights_only=True`` to ``torch.load`` (the PyTorch 2.6+ default) so only tensors, not arbitrary Python, are unpickled. Drop ``allow_pickle=True`` from ``numpy.load``. If a pickle / joblib artifact is unavoidable, pin and verify its source (a pinned revision, a checksum, a signature) and load it in a job with no production context bound.
+
+</div>
+
+</div>
+
+<div class="pg-rule pg-rule--high" markdown>
+
+## CC-037: Untrusted PR/build context reaches an agentic AI CLI (prompt injection) { #cc-037 }
+
+<div class="pg-rule__tags">
+<span class="pg-sev pg-sev--high">HIGH</span> <span class="pg-tag pg-tag--owasp">CICD-SEC-4</span> <span class="pg-tag pg-tag--esf">ESF-D-INJECTION</span> <span class="pg-tag pg-tag--cwe">CWE-94</span> <span class="pg-tag pg-tag--cwe">CWE-77</span>
+</div>
+
+The AI analog of CC-002 (script injection). Fires when a ``run:`` command invokes an agentic CLI (claude / gemini / cursor-agent / aider / openhands / goose / ``q chat``) AND attacker-controllable CircleCI context reaches it: an event-source env var (`$CIRCLE_BRANCH` / `$CIRCLE_TAG` / `$CIRCLE_PR_NUMBER` / `$CIRCLE_PULL_REQUEST`) or a `<< pipeline.git.branch >>` / `<< pipeline.git.tag >>` interpolation. Unlike CC-002 the value is flagged in any quote style: an LLM ingests it as prompt text regardless of shell quoting, so the CC-002 mitigation does not apply. `<< pipeline.parameters.* >>` is the safe alternative.
+
+<div class="pg-rule__rec" markdown>
+
+**Recommended action**
+
+Do not place attacker-controllable context (a PR's branch / tag, `$CIRCLE_BRANCH` / `$CIRCLE_TAG` / `$CIRCLE_PR_*`, or a `<< pipeline.git.* >>` interpolation) in an agentic CLI's prompt. Quoting does NOT sanitize a prompt the way it does a shell command, the model still reads the value. If the agent must see PR content, run it in a job with no context / credentials bound and no tool / shell access, and treat its output as untrusted. Pass trusted inputs through typed `<< pipeline.parameters.* >>` instead.
 
 </div>
 

@@ -1,0 +1,13 @@
+version: 2.1
+jobs:
+  ai-triage:
+    docker:
+      - image: cimg/base:current
+    steps:
+      - run:
+          name: Triage build log with agent
+          command: claude -p "Summarize the build log and suggest fixes"
+workflows:
+  triage:
+    jobs:
+      - ai-triage

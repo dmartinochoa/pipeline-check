@@ -1,0 +1,13 @@
+version: 2.1
+jobs:
+  ai-triage:
+    docker:
+      - image: cimg/base:current
+    steps:
+      - run:
+          name: Triage PR with agent
+          command: claude -p "Triage this PR on branch $CIRCLE_BRANCH and apply fixes"
+workflows:
+  triage:
+    jobs:
+      - ai-triage

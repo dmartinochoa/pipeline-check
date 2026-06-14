@@ -1014,6 +1014,7 @@ STANDARD = Standard(
         "CC-034":   ["ESF-D-INJECTION"],           # trust_remote_code model load = code exec
         "CC-035":   ["ESF-S-PIN-DEPS", "ESF-S-VERIFY-DEPS"],   # unpinned model registry ref
         "CC-036":   ["ESF-D-INJECTION"],           # unsafe pickle deser of fetched artifact = code exec
+        "CC-037":   ["ESF-D-INJECTION"],           # agentic CLI ingests untrusted context (prompt injection)
         "SCM-048":  ["ESF-D-SECRETS"],             # org codespace secret scoped to all repos
         "SCM-049":  ["ESF-D-SECRETS"],             # classic PAT where fine-grained suffices
         "NPM-012":  ["ESF-D-SECRETS", "ESF-S-VERIFY-DEPS"],  # publish token lacking restrictions
