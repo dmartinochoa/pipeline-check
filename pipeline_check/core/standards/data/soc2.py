@@ -177,6 +177,7 @@ STANDARD = Standard(
         "JF-039":   ["CC6.8"],   # trust_remote_code model load = code exec
         "JF-040":   ["CC8.1"],   # model pulled without a pinned revision
         "JF-041":   ["CC6.8"],   # unsafe pickle deser of fetched artifact = code exec
+        "JF-042":   ["CC6.1"],   # secret echoed to Jenkins build log
         "BB-012":   ["CC6.8"],
         "BB-015":   ["CC6.8"],
         "BB-025":   ["CC6.8"],

@@ -143,6 +143,8 @@ spec:
                 sh "python -c 'from transformers import AutoModel; AutoModel.from_pretrained(\"acme/llm\")'"
                 // JF-041: fetch + pickle-backed load of a model checkpoint (RCE).
                 sh 'curl -fsSL -o m.pt https://models.example.com/m.pt && python -c "import torch; torch.load(1)"'
+                // JF-042: a secret-named variable echoed to the build log.
+                sh 'echo "deploying with $AWS_SECRET_ACCESS_KEY"'
                 script {
                     def proc = Runtime.getRuntime().exec("id")
                 }

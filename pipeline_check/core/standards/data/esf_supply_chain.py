@@ -192,6 +192,7 @@ STANDARD = Standard(
         "JF-039":   ["ESF-D-INJECTION"],   # trust_remote_code model load = code exec
         "JF-040":   ["ESF-S-PIN-DEPS", "ESF-S-VERIFY-DEPS"],   # unpinned model registry ref
         "JF-041":   ["ESF-D-INJECTION"],   # unsafe pickle deser of fetched artifact = code exec
+        "JF-042":   ["ESF-D-SECRETS"],   # secret echoed to Jenkins build log
         "BB-003":   ["ESF-D-SECRETS"],
         "BB-004":   ["ESF-C-APPROVAL", "ESF-C-ENV-SEP"],
         "BB-005":   ["ESF-D-BUILD-TIMEOUT"],

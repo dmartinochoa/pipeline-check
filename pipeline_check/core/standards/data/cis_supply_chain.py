@@ -333,6 +333,7 @@ STANDARD = Standard(
         "JF-039":   ["2.1.3"],                  # trust_remote_code model load = code exec
         "JF-040":   ["1.4.1", "3.1.5"],                  # model pulled without a pinned revision
         "JF-041":   ["2.1.3"],                  # unsafe pickle deser of fetched artifact = code exec
+        "JF-042":   ["1.5.1", "2.3.4"],                  # secret echoed to Jenkins build log
         "BB-003":   ["1.5.1", "2.3.4", "2.4.3"],
         "BB-004":   ["5.1.4", "5.2.1"],
         "BB-005":   ["2.2.2"],

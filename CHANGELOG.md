@@ -53,6 +53,20 @@ release commit collapses this section into `## [X.Y.Z] - <date>`.
 
 ### Added
 
+- **JF-042: Jenkins secret echoed to the build log (HIGH).** Brings the
+  log-leak rule (GHA-033 / GL-036 / BB-032 / ADO-031 / CC-032) to Jenkins,
+  the mainstream provider that lacked it. Scans every `sh` / `bat` /
+  `powershell` step body for a credential variable handed to `echo` /
+  `printf` / `cat` / `tee`, an `env` / `printenv` dump, or `set -x` with a
+  secret-named variable in scope. The credential set is the union of
+  name-pattern matches (PASSWORD / TOKEN / SECRET / API_KEY / CREDENTIAL)
+  and the variable names bound by `withCredentials([... variable: 'X'])`
+  anywhere in the Jenkinsfile, so a non-obviously-named bound credential
+  (`variable: 'GH'`) is still caught when echoed (Jenkins masks bound
+  credentials in the console, but only the exact string: `set -x`,
+  encoded, or derived forms slip past). Reuses the shared
+  `_primitives/log_leak` detector; mapped across the 10 standards the
+  log-leak family uses. `jenkins` 41 -> 42.
 - **CC-038: CircleCI agentic-CLI output lands without human review
   (HIGH).** Completes the CircleCI agentic-AI matrix to 5/5 (prompt-
   injection, trust_remote_code, model-pinning, unsafe-deser, autoland),

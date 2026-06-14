@@ -27,7 +27,7 @@ expression.
 
 ## What it covers
 
-41 checks · 12 have an autofix patch (``--fix``).
+42 checks · 12 have an autofix patch (``--fix``).
 
 | Check | Title | Severity | Fix |
 |-------|-------|----------|-----|
@@ -72,6 +72,7 @@ expression.
 | [JF-039](#jf-039) | ML model loaded with trust_remote_code (code execution) | <span class="pg-sev pg-sev--high">HIGH</span> |  |
 | [JF-040](#jf-040) | AI model pulled without a pinned revision | <span class="pg-sev pg-sev--medium">MEDIUM</span> |  |
 | [JF-041](#jf-041) | Unsafe deserialization of a fetched artifact (pickle RCE) | <span class="pg-sev pg-sev--high">HIGH</span> |  |
+| [JF-042](#jf-042) | Secret-named variable echoed / printed in a build step | <span class="pg-sev pg-sev--high">HIGH</span> |  |
 
 ---
 
@@ -939,6 +940,26 @@ Reuses the shared ``unsafe_deser`` detector (with GHA-122 / GL-047 / BB-037 / AD
 **Recommended action**
 
 Don't deserialize a downloaded artifact through pickle. Load weights with safetensors, or pass ``weights_only=True`` to ``torch.load`` (the PyTorch 2.6+ default) so only tensors, not arbitrary Python, are unpickled. Drop ``allow_pickle=True`` from ``numpy.load``. If a pickle / joblib artifact is unavoidable, pin and verify its source (a pinned revision, a checksum, a signature) and load it in a stage with no production credentials bound.
+
+</div>
+
+</div>
+
+<div class="pg-rule pg-rule--high" markdown>
+
+## JF-042: Secret-named variable echoed / printed in a build step { #jf-042 }
+
+<div class="pg-rule__tags">
+<span class="pg-sev pg-sev--high">HIGH</span> <span class="pg-tag pg-tag--owasp">CICD-SEC-6</span> <span class="pg-tag pg-tag--esf">ESF-D-SECRETS</span> <span class="pg-tag pg-tag--cwe">CWE-532</span> <span class="pg-tag pg-tag--cwe">CWE-200</span>
+</div>
+
+Scans every ``sh`` / ``bat`` / ``powershell`` step body for a credential variable handed to ``echo`` / ``printf`` / ``cat`` / ``tee``, for an ``env`` / ``printenv`` dump, and for ``set -x`` with a secret-named variable in scope (the shared ``log_leak`` detector, with GHA-033 / GL-036 / BB-032 / ADO-031 / CC-032). The credential set is the union of name-pattern matches (PASSWORD / TOKEN / SECRET / API_KEY / CREDENTIAL) and the variable names bound by ``withCredentials([... variable: 'X'])`` anywhere in the Jenkinsfile, so a non-obviously-named bound credential (``variable: 'GH'``) is still caught when it is echoed. The Jenkins analog of GL-036 / CC-032.
+
+<div class="pg-rule__rec" markdown>
+
+**Recommended action**
+
+Don't print secret values in build steps. Jenkins masks credentials bound with ``withCredentials`` in the console, but only the exact bound string. Encoded, truncated, or derived forms bypass the mask, and ``set -x`` / ``env`` / ``printenv`` dump the raw value before masking can catch it. Log a boolean instead (``[ -n "$TOKEN" ] && echo set || echo unset``), and avoid ``set -x`` while a credential variable is in scope.
 
 </div>
 

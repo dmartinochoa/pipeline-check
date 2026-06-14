@@ -1,0 +1,12 @@
+pipeline {
+  agent any
+  stages {
+    stage('deploy') {
+      steps {
+        withCredentials([string(credentialsId: 'prod-token', variable: 'DEPLOY_TOKEN')]) {
+          sh '[ -n "$DEPLOY_TOKEN" ] && echo token-set || echo token-missing'
+        }
+      }
+    }
+  }
+}
