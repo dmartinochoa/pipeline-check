@@ -140,7 +140,7 @@ for inputs, idempotency, and fork-PR fallback behavior.
 | **Google Cloud Build** | `cloudbuild.yaml` | `--cloudbuild-path` | 27 checks · `GCB-001..027` |
 | **Buildkite** | `.buildkite/pipeline.yml` | `--buildkite-path` | 17 checks · `BK-001..016` + `TAINT-005` |
 | **Drone CI** | `.drone.yml` / `.drone.yaml` | `--drone-path` | 17 checks · `DR-001..017` · image / plugin pinning, privileged steps, `${DRONE_*}` injection, fork-PR exposure, pipe-to-shell, dangerous shell idioms, sensitive host-path mounts |
-| **Harness CI/CD** | Harness pipeline YAML (`.harness/`) | `--harness-path` | 11 checks · `HARNESS-001..011` · step image digest pinning, untrusted `<+codebase.*>` / `<+trigger.*>` expression injection into step commands, privileged steps, literal secrets in pipeline / stage variables, pipe-to-shell installs, TLS-verification bypass, sensitive host-path mounts, untrusted context into an agentic AI CLI, AI output autolanding without review, model `trust_remote_code` / unsafe-pickle deserialization (model-load RCE) |
+| **Harness CI/CD** | Harness pipeline YAML (`.harness/`) | `--harness-path` | 12 checks · `HARNESS-001..012` · step image digest pinning, untrusted `<+codebase.*>` / `<+trigger.*>` expression injection into step commands, privileged steps, literal secrets in pipeline / stage variables, pipe-to-shell installs, TLS-verification bypass, sensitive host-path mounts, untrusted context into an agentic AI CLI, AI output autolanding without review, model `trust_remote_code` / unsafe-pickle deserialization (model-load RCE), AI model pulled without a pinned revision |
 | **Tekton** | `Task` / `Pipeline` / `*Run` YAML | `--tekton-path` | 17 checks · `TKN-001..016` + `TAINT-006` |
 | **Argo Workflows** | `Workflow` / `WorkflowTemplate` YAML | `--argo-path` | 18 checks · `ARGO-001..017` + `TAINT-007` · over-privileged / default service account, untrusted-parameter manifest injection |
 | **Argo CD** | `Application` / `AppProject` YAML + `argocd-*` ConfigMaps | `--argocd-path` | 19 checks · `ARGOCD-001..019` · sourceRepo / destination wildcards, RBAC wildcards, mutable source refs, web terminal, drift-detection bypass. [Reference →](docs/providers/argocd.md) |
@@ -545,7 +545,7 @@ pipeline_check/
         ├── cloudbuild/rules/  # GCB-001 .. GCB-027
         ├── buildkite/rules/   # BK-001 .. BK-016 + TAINT-005
         ├── drone/rules/       # DR-001 .. DR-017
-        ├── harness/rules/     # HARNESS-001 .. HARNESS-011 — Harness CI/CD pipeline YAML (image pinning, untrusted-expression command injection, privileged steps, literal secrets in variables, pipe-to-shell, TLS bypass, host-path mounts, AI prompt injection, AI autoland, model trust_remote_code / unsafe-pickle deser)
+        ├── harness/rules/     # HARNESS-001 .. HARNESS-012 — Harness CI/CD pipeline YAML (image pinning, untrusted-expression command injection, privileged steps, literal secrets in variables, pipe-to-shell, TLS bypass, host-path mounts, AI prompt injection, AI autoland, model trust_remote_code / unsafe-pickle deser, unpinned model revision)
         ├── tekton/rules/      # TKN-001 .. TKN-016 + TAINT-006
         ├── argo/rules/        # ARGO-001 .. ARGO-017 + TAINT-007
         ├── argocd/rules/      # ARGOCD-001 .. ARGOCD-019
