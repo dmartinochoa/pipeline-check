@@ -1328,10 +1328,10 @@ Break the lane at either leg. Either: (a) drop the untrusted trigger from this w
 ### AC-040: Prompt-injected agent commits its output with no human review { #ac-040 }
 
 <div class="pg-rule__tags">
-<span class="pg-sev pg-sev--critical">CRITICAL</span> <span class="pg-tag" title="MITRE ATT&CK technique">MITRE T1195.002</span> <span class="pg-tag" title="MITRE ATT&CK technique">MITRE T1059</span> <span class="pg-tag" title="MITRE ATT&CK technique">MITRE T1078.004</span> <span class="pg-tag" title="kill-chain phase">initial-access (prompt injection via untrusted PR / branch / commit) -> execution (the agent follows the injected instruction and edits the tree) -> defense-evasion (no human reviews the diff) -> impact (the autoland step pushes or merges the agent's change to a branch)</span> <span class="pg-tag pg-tag--owasp">github</span> <span class="pg-tag pg-tag--owasp">gitlab</span> <span class="pg-tag pg-tag--owasp">bitbucket</span> <span class="pg-tag pg-tag--owasp">azure</span> <span class="pg-tag pg-tag--owasp">jenkins</span> <span class="pg-tag pg-tag--owasp">harness</span>
+<span class="pg-sev pg-sev--critical">CRITICAL</span> <span class="pg-tag" title="MITRE ATT&CK technique">MITRE T1195.002</span> <span class="pg-tag" title="MITRE ATT&CK technique">MITRE T1059</span> <span class="pg-tag" title="MITRE ATT&CK technique">MITRE T1078.004</span> <span class="pg-tag" title="kill-chain phase">initial-access (prompt injection via untrusted PR / branch / commit) -> execution (the agent follows the injected instruction and edits the tree) -> defense-evasion (no human reviews the diff) -> impact (the autoland step pushes or merges the agent's change to a branch)</span> <span class="pg-tag pg-tag--owasp">github</span> <span class="pg-tag pg-tag--owasp">gitlab</span> <span class="pg-tag pg-tag--owasp">bitbucket</span> <span class="pg-tag pg-tag--owasp">azure</span> <span class="pg-tag pg-tag--owasp">jenkins</span> <span class="pg-tag pg-tag--owasp">harness</span> <span class="pg-tag pg-tag--owasp">circleci</span>
 </div>
 
-Untrusted PR / branch / commit context reaches an agentic CLI's prompt (GHA-119 / GL-048 / BB-036 / ADO-035 / JF-037) AND the same pipeline lands that agent's output with no review gate (GHA-123 / GL-049 / BB-039 / ADO-038 / JF-038): a git push, an auto-merge, or a push-action. A prompt-injection line in the PR or commit makes the agent write a malicious change that the autoland step commits or merges, with no human between the untrusted input and the push.
+Untrusted PR / branch / commit context reaches an agentic CLI's prompt (GHA-119 / GL-048 / BB-036 / ADO-035 / JF-037 / HARNESS-008 / CC-037) AND the same pipeline lands that agent's output with no review gate (GHA-123 / GL-049 / BB-039 / ADO-038 / JF-038 / HARNESS-009 / CC-038): a git push, an auto-merge, or a push-action. A prompt-injection line in the PR or commit makes the agent write a malicious change that the autoland step commits or merges, with no human between the untrusted input and the push.
 
 **References**
 
@@ -1343,8 +1343,8 @@ Untrusted PR / branch / commit context reaches an agentic CLI's prompt (GHA-119 
 **Recommended action**
 
 Break either leg:
-  1. Cut the untrusted-input path: don't pass attacker-authored text (a PR title / branch name / commit message) into an agentic CLI's prompt; if the agent must see PR content, run it on a job with no write credentials and no tool / shell access (GHA-119 / GL-048 / BB-036 / ADO-035).
-  2. Take away the no-review landing: have the agent only open a pull request for human review, and drop the in-job ``git push`` / auto-merge / push-action (GHA-123 / GL-049 / BB-039 / ADO-038).
+  1. Cut the untrusted-input path: don't pass attacker-authored text (a PR title / branch name / commit message) into an agentic CLI's prompt; if the agent must see PR content, run it on a job with no write credentials and no tool / shell access (GHA-119 / GL-048 / BB-036 / ADO-035 / JF-037 / HARNESS-008 / CC-037).
+  2. Take away the no-review landing: have the agent only open a pull request for human review, and drop the in-job ``git push`` / auto-merge / push-action (GHA-123 / GL-049 / BB-039 / ADO-038 / JF-038 / HARNESS-009 / CC-038).
 Best: never let one pipeline both feed an agent untrusted input and land that agent's output without a human reviewing the diff.
 
 </div>
