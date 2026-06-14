@@ -34,6 +34,24 @@ release commit collapses this section into `## [X.Y.Z] - <date>`.
 
 ### Added
 
+- **JF-040 + JF-041: Jenkins model-load triad completed (MEDIUM + HIGH).**
+  With JF-039 (`trust_remote_code`), these bring Jenkins to full parity
+  with the GHA / GitLab / Bitbucket / Azure DevOps / Harness model-load
+  rule family. **JF-040** (MEDIUM) flags a `sh` / `bat` / `powershell`
+  step that fetches a model by a mutable registry reference
+  (`from_pretrained("org/model")`, `hf_hub_download` / `snapshot_download`
+  with a bare repo id, `huggingface-cli download org/model`) with no
+  revision pin, so the registry can serve swapped weights or loader code
+  on the next build (the analog of GHA-121 / BB-038 / HARNESS-012; reuses
+  `_primitives/model_ref`). **JF-041** (HIGH) flags unsafe deserialization
+  of a fetched artifact: an explicit `weights_only=False` / `allow_pickle=
+  True` opt-in, or a remote fetch plus a pickle-backed loader
+  (`torch.load` / `pickle.load` / `joblib.load`) in the same step with no
+  safe path, which is code execution on the agent (the analog of GHA-122 /
+  BB-037 / HARNESS-011; reuses `_primitives/unsafe_deser`). Both scan
+  shell-step bodies via the existing `SHELL_STEP_RE` and emit located
+  findings. JF-040 mapped across the 8 standards the model-pinning family
+  uses, JF-041 across the 12 the RCE family uses. `jenkins` 39 -> 41.
 - **JF-039: Jenkins ML model loaded with `trust_remote_code` (HIGH).**
   Brings the model-load supply-chain coverage the other CI providers carry
   (GHA-120 / GL-045 / BB-035 / ADO-034 / HARNESS-010) to the Jenkinsfile,

@@ -1,0 +1,10 @@
+pipeline {
+  agent any
+  stages {
+    stage('load-model') {
+      steps {
+        sh 'huggingface-cli download acme/llm'
+      }
+    }
+  }
+}

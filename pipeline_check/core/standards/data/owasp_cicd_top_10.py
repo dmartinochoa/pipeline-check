@@ -313,6 +313,8 @@ STANDARD = Standard(
         "BB-039":   ["CICD-SEC-1"],   # agentic CLI output lands without review
         "JF-038":   ["CICD-SEC-1"],   # agentic CLI output lands without review
         "JF-039":   ["CICD-SEC-4"],   # trust_remote_code model load = code exec
+        "JF-040":   ["CICD-SEC-3"],   # model pulled without a pinned revision
+        "JF-041":   ["CICD-SEC-4"],   # unsafe pickle deser of fetched artifact = code exec
         "BB-003":   ["CICD-SEC-6"],
         "BB-004":   ["CICD-SEC-1"],
         "BB-005":   ["CICD-SEC-7"],

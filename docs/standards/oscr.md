@@ -25,7 +25,7 @@ axis.
 
 - **Controls in this standard:** 86
 - **Controls evidenced by at least one check:** 61 / 86
-- **Distinct checks evidencing this standard:** 699
+- **Distinct checks evidencing this standard:** 700
 - **Of those, autofixable with `--fix`:** 112
 
 _Severity levels (`CRITICAL` / `HIGH` / `MEDIUM` / `LOW` / `INFO`) follow the same scale across every provider and standard. See [How to read severity](README.md#how-to-read-severity) on the standards overview for the definitions._
@@ -81,7 +81,7 @@ Click a control ID to jump to the per-control section with the full check list. 
 | [`EX-3`](#ctrl-ex-3) | IDE | 0 | — |
 | [`EX-4`](#ctrl-ex-4) | Runtime backdoor | 0 | — |
 | [`EX-5`](#ctrl-ex-5) | Package manager | 0 | — |
-| [`EX-6`](#ctrl-ex-6) | Command injection | 75 | 8C · 60H · 6M · 1L |
+| [`EX-6`](#ctrl-ex-6) | Command injection | 76 | 8C · 61H · 6M · 1L |
 | [`EX-7`](#ctrl-ex-7) | SQL injection | 0 | — |
 | [`EX-8`](#ctrl-ex-8) | Cross-site scripting | 0 | — |
 | [`EX-9`](#ctrl-ex-9) | Malicious artifact execution | 5 | 5C |
@@ -704,7 +704,7 @@ _No checks in this scanner currently evidence this control. Open an issue if you
 
 ### EX-6: Command injection { #ctrl-ex-6 }
 
-**Evidenced by 75 checks** across 14 providers (Argo CD, Argo Workflows, Azure DevOps, Bitbucket, Buildkite, CircleCI, Cloud Build, Dockerfile, Drone CI, GitHub Actions, GitLab CI, Harness CI/CD, Jenkins, Tekton).
+**Evidenced by 76 checks** across 14 providers (Argo CD, Argo Workflows, Azure DevOps, Bitbucket, Buildkite, CircleCI, Cloud Build, Dockerfile, Drone CI, GitHub Actions, GitLab CI, Harness CI/CD, Jenkins, Tekton).
 
 | Check | Title | Severity | Provider | Fix |
 |-------|-------|----------|----------|-----|
@@ -773,6 +773,7 @@ _No checks in this scanner currently evidence this control. Open an issue if you
 | [`JF-032`](../providers/jenkins.md#jf-032) | Agent label interpolates attacker-controllable value | <span class="pg-sev pg-sev--high">HIGH</span> | [Jenkins](../providers/jenkins.md) | <span class="pg-fix" title="`--fix` will patch this rule">🔧 fix</span> |
 | [`JF-037`](../providers/jenkins.md#jf-037) | Untrusted PR/build context reaches an agentic AI CLI (prompt injection) | <span class="pg-sev pg-sev--high">HIGH</span> | [Jenkins](../providers/jenkins.md) |  |
 | [`JF-039`](../providers/jenkins.md#jf-039) | ML model loaded with trust_remote_code (code execution) | <span class="pg-sev pg-sev--high">HIGH</span> | [Jenkins](../providers/jenkins.md) |  |
+| [`JF-041`](../providers/jenkins.md#jf-041) | Unsafe deserialization of a fetched artifact (pickle RCE) | <span class="pg-sev pg-sev--high">HIGH</span> | [Jenkins](../providers/jenkins.md) |  |
 | [`TAINT-001`](../providers/github.md#taint-001) | Untrusted input flows across step boundaries via step outputs | <span class="pg-sev pg-sev--high">HIGH</span> | [GitHub Actions](../providers/github.md) |  |
 | [`TAINT-002`](../providers/github.md#taint-002) | Untrusted input flows across jobs via ``jobs.<id>.outputs:`` | <span class="pg-sev pg-sev--high">HIGH</span> | [GitHub Actions](../providers/github.md) |  |
 | [`TAINT-003`](../providers/github.md#taint-003) | Untrusted input forwarded into reusable workflow ``with:`` | <span class="pg-sev pg-sev--high">HIGH</span> | [GitHub Actions](../providers/github.md) |  |

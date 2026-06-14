@@ -12,7 +12,7 @@ the scanner evidences controls that surface in CI/CD configuration.
 
 - **Controls in this standard:** 24
 - **Controls evidenced by at least one check:** 24 / 24
-- **Distinct checks evidencing this standard:** 966
+- **Distinct checks evidencing this standard:** 968
 - **Of those, autofixable with `--fix`:** 120
 
 _Severity levels (`CRITICAL` / `HIGH` / `MEDIUM` / `LOW` / `INFO`) follow the same scale across every provider and standard. See [How to read severity](README.md#how-to-read-severity) on the standards overview for the definitions._
@@ -32,10 +32,10 @@ Click a control ID to jump to the per-control section with the full check list. 
 | [`ESF-D-SBOM`](#ctrl-esf-d-sbom) | Produce SBOM / provenance metadata with every build | 26 | 1H · 20M · 5L |
 | [`ESF-D-CODE-REVIEW`](#ctrl-esf-d-code-review) | Require peer review of source and pipeline configuration | 43 | 1C · 19H · 15M · 8L |
 | [`ESF-D-TOKEN-HYGIENE`](#ctrl-esf-d-token-hygiene) | Use short-lived, federated credentials (OIDC), not long-lived tokens | 46 | 1C · 32H · 13M |
-| [`ESF-D-INJECTION`](#ctrl-esf-d-injection) | Prevent script / template injection from untrusted pipeline context | 116 | 29C · 75H · 8M · 4L |
+| [`ESF-D-INJECTION`](#ctrl-esf-d-injection) | Prevent script / template injection from untrusted pipeline context | 117 | 29C · 76H · 8M · 4L |
 | [`ESF-D-TAMPER`](#ctrl-esf-d-tamper) | Protect build artifacts from tampering and detect unauthorized modification | 6 | 1C · 4M · 1L |
-| [`ESF-S-VERIFY-DEPS`](#ctrl-esf-s-verify-deps) | Verify third-party and open-source dependencies before use | 235 | 24C · 122H · 74M · 15L |
-| [`ESF-S-PIN-DEPS`](#ctrl-esf-s-pin-deps) | Pin dependencies / actions / images to immutable digests | 93 | 1C · 43H · 43M · 6L |
+| [`ESF-S-VERIFY-DEPS`](#ctrl-esf-s-verify-deps) | Verify third-party and open-source dependencies before use | 236 | 24C · 122H · 75M · 15L |
+| [`ESF-S-PIN-DEPS`](#ctrl-esf-s-pin-deps) | Pin dependencies / actions / images to immutable digests | 94 | 1C · 43H · 44M · 6L |
 | [`ESF-S-TRUSTED-REG`](#ctrl-esf-s-trusted-reg) | Use only trusted, authenticated package and image registries | 53 | 1C · 40H · 11M · 1L |
 | [`ESF-S-VULN-MGMT`](#ctrl-esf-s-vuln-mgmt) | Scan inbound artifacts (images, packages) for known vulnerabilities | 30 | 5C · 4H · 17M · 4L |
 | [`ESF-S-IMMUTABLE`](#ctrl-esf-s-immutable) | Enforce artifact / tag immutability to preserve provenance | 17 | 11H · 2M · 3L · 1I |
@@ -508,7 +508,7 @@ pipeline_check --pipeline aws --standard esf_supply_chain --standard owasp_cicd_
 
 ### ESF-D-INJECTION: Prevent script / template injection from untrusted pipeline context { #ctrl-esf-d-injection }
 
-**Evidenced by 116 checks** across 17 providers (AWS, Argo CD, Argo Workflows, Azure DevOps, Bitbucket, Buildkite, CircleCI, Cloud Build, Developer environment, Dockerfile, Drone CI, GitHub Actions, GitLab CI, Harness CI/CD, Jenkins, Pulumi, Tekton).
+**Evidenced by 117 checks** across 17 providers (AWS, Argo CD, Argo Workflows, Azure DevOps, Bitbucket, Buildkite, CircleCI, Cloud Build, Developer environment, Dockerfile, Drone CI, GitHub Actions, GitLab CI, Harness CI/CD, Jenkins, Pulumi, Tekton).
 
 | Check | Title | Severity | Provider | Fix |
 |-------|-------|----------|----------|-----|
@@ -617,6 +617,7 @@ pipeline_check --pipeline aws --standard esf_supply_chain --standard owasp_cicd_
 | [`JF-036`](../providers/jenkins.md#jf-036) | Script step interpolates a build parameter (params.*) | <span class="pg-sev pg-sev--high">HIGH</span> | [Jenkins](../providers/jenkins.md) |  |
 | [`JF-037`](../providers/jenkins.md#jf-037) | Untrusted PR/build context reaches an agentic AI CLI (prompt injection) | <span class="pg-sev pg-sev--high">HIGH</span> | [Jenkins](../providers/jenkins.md) |  |
 | [`JF-039`](../providers/jenkins.md#jf-039) | ML model loaded with trust_remote_code (code execution) | <span class="pg-sev pg-sev--high">HIGH</span> | [Jenkins](../providers/jenkins.md) |  |
+| [`JF-041`](../providers/jenkins.md#jf-041) | Unsafe deserialization of a fetched artifact (pickle RCE) | <span class="pg-sev pg-sev--high">HIGH</span> | [Jenkins](../providers/jenkins.md) |  |
 | [`PULUMI-013`](../providers/pulumi.md) | Pulumi dynamic provider runs arbitrary code at deploy time | <span class="pg-sev pg-sev--high">HIGH</span> | [Pulumi](../providers/pulumi.md) |  |
 | [`TAINT-001`](../providers/github.md#taint-001) | Untrusted input flows across step boundaries via step outputs | <span class="pg-sev pg-sev--high">HIGH</span> | [GitHub Actions](../providers/github.md) |  |
 | [`TAINT-002`](../providers/github.md#taint-002) | Untrusted input flows across jobs via ``jobs.<id>.outputs:`` | <span class="pg-sev pg-sev--high">HIGH</span> | [GitHub Actions](../providers/github.md) |  |
@@ -644,7 +645,7 @@ pipeline_check --pipeline aws --standard esf_supply_chain --standard owasp_cicd_
 
 ### ESF-S-VERIFY-DEPS: Verify third-party and open-source dependencies before use { #ctrl-esf-s-verify-deps }
 
-**Evidenced by 235 checks** across 31 providers (AWS, Argo CD, Argo Workflows, Azure DevOps, Bitbucket, Buildkite, Cargo, CircleCI, Cloud Build, Composer, Developer environment, Dockerfile, Drone CI, GitHub Actions, GitLab CI, Go modules, Harness CI/CD, Helm, Jenkins, Kubernetes, Modelfile, NuGet, OCI manifest, Pulumi, PyPI, RubyGems, SCM, SCM org governance, Tekton, maven, npm).
+**Evidenced by 236 checks** across 31 providers (AWS, Argo CD, Argo Workflows, Azure DevOps, Bitbucket, Buildkite, Cargo, CircleCI, Cloud Build, Composer, Developer environment, Dockerfile, Drone CI, GitHub Actions, GitLab CI, Go modules, Harness CI/CD, Helm, Jenkins, Kubernetes, Modelfile, NuGet, OCI manifest, Pulumi, PyPI, RubyGems, SCM, SCM org governance, Tekton, maven, npm).
 
 | Check | Title | Severity | Provider | Fix |
 |-------|-------|----------|----------|-----|
@@ -814,6 +815,7 @@ pipeline_check --pipeline aws --standard esf_supply_chain --standard owasp_cicd_
 | [`JF-023`](../providers/jenkins.md#jf-023) | TLS / certificate verification bypass | <span class="pg-sev pg-sev--high">HIGH</span> | [Jenkins](../providers/jenkins.md) | <span class="pg-fix" title="`--fix` will patch this rule">🔧 fix</span> |
 | [`JF-029`](../providers/jenkins.md#jf-029) | Jenkinsfile contains indicators of malicious activity | <span class="pg-sev pg-sev--critical">CRITICAL</span> | [Jenkins](../providers/jenkins.md) |  |
 | [`JF-031`](../providers/jenkins.md#jf-031) | Package install bypasses registry integrity (git / path / tarball source) | <span class="pg-sev pg-sev--medium">MEDIUM</span> | [Jenkins](../providers/jenkins.md) |  |
+| [`JF-040`](../providers/jenkins.md#jf-040) | AI model pulled without a pinned revision | <span class="pg-sev pg-sev--medium">MEDIUM</span> | [Jenkins](../providers/jenkins.md) |  |
 | [`K8S-001`](../providers/kubernetes.md#k8s-001) | Container image not pinned by sha256 digest | <span class="pg-sev pg-sev--high">HIGH</span> | [Kubernetes](../providers/kubernetes.md) | <span class="pg-fix" title="`--fix` will patch this rule">🔧 fix</span> |
 | [`MODEL-001`](../providers/modelfile.md#model-001) | Base model pulled without a pinned reference | <span class="pg-sev pg-sev--medium">MEDIUM</span> | [Modelfile](../providers/modelfile.md) |  |
 | [`MODEL-002`](../providers/modelfile.md#model-002) | Base model pulled from a third-party hub | <span class="pg-sev pg-sev--medium">MEDIUM</span> | [Modelfile](../providers/modelfile.md) |  |
@@ -886,7 +888,7 @@ pipeline_check --pipeline aws --standard esf_supply_chain --standard owasp_cicd_
 
 ### ESF-S-PIN-DEPS: Pin dependencies / actions / images to immutable digests { #ctrl-esf-s-pin-deps }
 
-**Evidenced by 93 checks** across 21 providers (AWS, Argo CD, Argo Workflows, Azure DevOps, Bitbucket, Buildkite, CircleCI, Cloud Build, Dockerfile, Drone CI, GitHub Actions, GitLab CI, Harness CI/CD, Helm, Jenkins, Kubernetes, Modelfile, PyPI, Tekton, maven, npm).
+**Evidenced by 94 checks** across 21 providers (AWS, Argo CD, Argo Workflows, Azure DevOps, Bitbucket, Buildkite, CircleCI, Cloud Build, Dockerfile, Drone CI, GitHub Actions, GitLab CI, Harness CI/CD, Helm, Jenkins, Kubernetes, Modelfile, PyPI, Tekton, maven, npm).
 
 | Check | Title | Severity | Provider | Fix |
 |-------|-------|----------|----------|-----|
@@ -967,6 +969,7 @@ pipeline_check --pipeline aws --standard esf_supply_chain --standard owasp_cicd_
 | [`JF-021`](../providers/jenkins.md#jf-021) | Package install without lockfile enforcement | <span class="pg-sev pg-sev--medium">MEDIUM</span> | [Jenkins](../providers/jenkins.md) | <span class="pg-fix" title="`--fix` will patch this rule">🔧 fix</span> |
 | [`JF-022`](../providers/jenkins.md#jf-022) | Dependency update command bypasses lockfile pins | <span class="pg-sev pg-sev--medium">MEDIUM</span> | [Jenkins](../providers/jenkins.md) | <span class="pg-fix" title="`--fix` will patch this rule">🔧 fix</span> |
 | [`JF-031`](../providers/jenkins.md#jf-031) | Package install bypasses registry integrity (git / path / tarball source) | <span class="pg-sev pg-sev--medium">MEDIUM</span> | [Jenkins](../providers/jenkins.md) |  |
+| [`JF-040`](../providers/jenkins.md#jf-040) | AI model pulled without a pinned revision | <span class="pg-sev pg-sev--medium">MEDIUM</span> | [Jenkins](../providers/jenkins.md) |  |
 | [`K8S-001`](../providers/kubernetes.md#k8s-001) | Container image not pinned by sha256 digest | <span class="pg-sev pg-sev--high">HIGH</span> | [Kubernetes](../providers/kubernetes.md) | <span class="pg-fix" title="`--fix` will patch this rule">🔧 fix</span> |
 | [`K8S-036`](../providers/kubernetes.md#k8s-036) | ServiceAccount imagePullSecrets references missing Secret | <span class="pg-sev pg-sev--medium">MEDIUM</span> | [Kubernetes](../providers/kubernetes.md) |  |
 | [`MODEL-001`](../providers/modelfile.md#model-001) | Base model pulled without a pinned reference | <span class="pg-sev pg-sev--medium">MEDIUM</span> | [Modelfile](../providers/modelfile.md) |  |
