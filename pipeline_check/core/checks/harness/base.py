@@ -226,19 +226,34 @@ def step_spec(step: dict[str, Any]) -> dict[str, Any]:
     return spec if isinstance(spec, dict) else {}
 
 
-def step_command_text(step: dict[str, Any]) -> str:
-    """Return a step's ``spec.command`` as text (joining a list form).
+#: Step spec fields that carry user-authored shell. ``command`` is the
+#: ``Run`` script; ``preCommand`` / ``postCommand`` are the ``RunTests``
+#: hooks that run before/after the test command (the analog of GitLab
+#: ``before_script`` / ``after_script``); ``entrypoint`` / ``args`` carry
+#: the shell for ``Background`` / container steps. Each may be a string
+#: or a list. Scanning only ``command`` let injection / secret-leak
+#: idioms in the other phases pass silently.
+_SHELL_PHASE_KEYS = ("command", "preCommand", "postCommand", "entrypoint", "args")
 
-    Harness ``Run`` steps carry the script in ``spec.command``, usually a
-    multi-line string but occasionally a list; both normalize to one text
-    blob for command scanning.
+
+def step_command_text(step: dict[str, Any]) -> str:
+    """Return a step's shell text across every phase, as one blob.
+
+    Joins ``spec.command`` with the ``RunTests`` ``preCommand`` /
+    ``postCommand`` hooks and the ``Background`` / container
+    ``entrypoint`` / ``args``. Each field is usually a multi-line string
+    but occasionally a list; both normalize into the same blob so the
+    command-scanning rules see every shell phase, not just ``command``.
     """
-    cmd = step_spec(step).get("command")
-    if isinstance(cmd, str):
-        return cmd
-    if isinstance(cmd, list):
-        return "\n".join(c for c in cmd if isinstance(c, str))
-    return ""
+    spec = step_spec(step)
+    parts: list[str] = []
+    for key in _SHELL_PHASE_KEYS:
+        val = spec.get(key)
+        if isinstance(val, str):
+            parts.append(val)
+        elif isinstance(val, list):
+            parts.extend(c for c in val if isinstance(c, str))
+    return "\n".join(parts)
 
 
 def iter_variables(

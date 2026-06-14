@@ -561,6 +561,29 @@ class TestGHA020VulnScanning:
         f = run_check(wf, "GHA-020")
         assert f.passed
 
+    def test_passes_with_trivy_action(self):
+        # The reusable-action form (``aquasecurity/trivy-action``) is how
+        # most workflows run Trivy, not a ``run: trivy`` CLI line. It must
+        # count as a scan, otherwise the most common build-and-scan setup
+        # is falsely flagged (and GHA-098 already treats this ref as a
+        # scanner, so GHA-020 must agree).
+        wf = """
+        name: release
+        on: push
+        permissions: { contents: read }
+        jobs:
+          build:
+            runs-on: ubuntu-latest
+            timeout-minutes: 30
+            steps:
+              - uses: actions/checkout@692973e3d937129bcbf40652eb9f2f61becf3332
+              - uses: docker/build-push-action@v5
+              - uses: aquasecurity/trivy-action@0.20.0
+                with: { image-ref: ghcr.io/example/app:v1 }
+        """
+        f = run_check(wf, "GHA-020")
+        assert f.passed
+
 
 # ── GHA-024 SLSA provenance ─────────────────────────────────────────
 

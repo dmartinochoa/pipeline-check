@@ -137,6 +137,17 @@ VULN_SCAN_TOKENS = (
     "cargo audit", "bundler-audit", "bundle audit",
     "docker scout", "codeql-action", "github/codeql-action",
     "semgrep ", "bandit ", "checkov ", "tfsec ",
+    # Reusable-action, container-image, and native-step forms of the
+    # same scanners. The space-delimited CLI tokens above only match a
+    # ``run:`` / ``commands:`` invocation, so they miss how Trivy /
+    # Grype / Snyk are most often wired in CI: a pinned ``uses:`` action
+    # (``aquasecurity/trivy-action``), a scanner container image
+    # (``aquasec/trivy``), or a Harness STO step ``type: AquaTrivy``.
+    # Each slug is an unambiguous identifier, so prose can't trip it.
+    # GHA-004 / GHA-098 already treat these refs as scanners.
+    "aquasecurity/trivy-action", "aquasec/trivy", "aquatrivy",
+    "anchore/scan-action", "anchore/grype",
+    "snyk/actions",
 )
 
 
