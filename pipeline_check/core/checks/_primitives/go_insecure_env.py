@@ -39,11 +39,13 @@ import re
 
 _TRUTHY = {"1", "true", "on", "yes"}
 
-# ``export FOO=bar`` and a leading ``FOO=bar cmd`` env-prefix. Value is
-# captured up to whitespace / quote close; quoted values are unwrapped
-# by the caller-side strip.
+# ``export FOO=bar``, a leading ``FOO=bar cmd`` env-prefix, and the
+# persistent ``go env -w FOO=bar`` form (which writes the setting into
+# the Go env config, the canonical way to disable verification durably).
+# Value is captured up to whitespace / quote close; quoted values are
+# unwrapped by the caller-side strip.
 _EXPORT_RE = re.compile(
-    r"(?:^|;|&&|\|\||\bexport\s+)\s*"
+    r"(?:^|;|&&|\|\||\bexport\s+|\bgo\s+env\s+-w\s+)\s*"
     r"(?P<name>GO[A-Z_]+)\s*=\s*"
     r"(?P<value>\"[^\"]*\"|'[^']*'|\S*)",
     re.MULTILINE,

@@ -638,6 +638,13 @@ def is_quoted_assignment(line: str, *, paren_is_macro: bool = False) -> bool:
     rhs = line.split("=", 1)[1].strip()
     if rhs.startswith('"') and rhs.endswith('"'):
         rhs = rhs[1:-1]
+    # GitHub ``${{ ... }}`` expressions are substituted into the script
+    # text before the shell parses it, so double-quoting the assignment
+    # does not neutralize them: a ``"`` in the expanded value closes the
+    # string and the rest runs as shell. A co-occurring ordinary ``$VAR``
+    # must not make the line look safe (that bypassed GHA-003 / GHA-119).
+    if "${{" in rhs:
+        return False
     # ADO macros are pre-shell text substitution, so a quoted ``$(Name)``
     # capture is still injectable -- never a safe idiom.
     if paren_is_macro and _re.search(r"\$\([^)]*\)", rhs):
