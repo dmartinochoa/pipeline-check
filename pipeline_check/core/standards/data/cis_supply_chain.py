@@ -987,6 +987,8 @@ STANDARD = Standard(
         "ADO-032":  ["1.5.1", "2.3.4"],                  # checkout persistCredentials leaks token to .git/config
         "CC-032":   ["1.5.1", "2.3.4"],                  # secret echoed to CircleCI log
         "CC-034":   ["2.1.3"],                  # trust_remote_code model load = code exec
+        "CC-035":   ["1.4.1", "3.1.5"],                  # model pulled without a pinned revision
+        "CC-036":   ["2.1.3"],                  # unsafe pickle deser of fetched artifact = code exec
         "SCM-048":  ["2.4.3"],                           # org codespace secrets scoped to all repos
         "SCM-049":  ["1.3.4"],                           # classic PAT where fine-grained suffices
         "ORG-001":  ["1.3.4"],                           # org: 2FA not required org-wide

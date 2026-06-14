@@ -1028,6 +1028,8 @@ STANDARD = Standard(
         "ADO-032":  ["PR.AA-01", "PR.DS-01"],   # checkout persistCredentials leaks token to .git/config
         "CC-032":   ["PR.AA-01", "PR.DS-01"],   # secret echoed to CircleCI log
         "CC-034":   ["PR.PS-05"],   # trust_remote_code model load = code exec
+        "CC-035":   ["GV.SC-05"],   # model pulled without a pinned revision
+        "CC-036":   ["PR.PS-05"],   # unsafe pickle deser of fetched artifact = code exec
         "SCM-048":  ["PR.AA-05"],                # org codespace secrets scoped to all repos
         "SCM-049":  ["PR.AA-01", "PR.AA-05"],    # classic PAT used where fine-grained suffices
         "ORG-001":  ["PR.AA-01", "PR.AA-05"],    # org governance: 2FA not required org-wide
