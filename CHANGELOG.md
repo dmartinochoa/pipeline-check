@@ -12,6 +12,16 @@ release commit collapses this section into `## [X.Y.Z] - <date>`.
 
 ### Changed
 
+- **Loader robustness fuzzing moved to Hypothesis.** The generative pass
+  in `tests/test_loader_robustness.py` that throws arbitrary inputs at the
+  shared YAML loader was a hand-seeded `random` battery (the dev deps were
+  hash-locked, so Hypothesis was deferred). It is now a Hypothesis
+  property test: `st.recursive` structured documents plus `st.binary` /
+  `st.text` blobs, with `derandomize=True` to stay reproducible / CI-stable
+  while gaining automatic shrinking to a minimal reproducer on failure.
+  `hypothesis` added to `requirements-dev.in` and the hash-locked
+  `requirements-dev.txt`. The curated pathological battery and the
+  differential parser-shape tests are unchanged.
 - **Rego engine modules brought into coverage measurement.** The
   `--rego-rules` loader / runner / errors modules were omitted from the
   gated coverage run because their integration tests skip without the
