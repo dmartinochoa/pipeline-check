@@ -24,7 +24,7 @@ pipeline_check --pipeline gitlab_group --scm-org my-group \
 
 ## What it covers
 
-4 checks · 0 have an autofix patch (``--fix``).
+5 checks · 0 have an autofix patch (``--fix``).
 
 | Check | Title | Severity | Fix |
 |-------|-------|----------|-----|
@@ -32,6 +32,7 @@ pipeline_check --pipeline gitlab_group --scm-org my-group \
 | [GLGRP-002](#glgrp-002) | GitLab group allows forking projects outside the group | <span class="pg-sev pg-sev--medium">MEDIUM</span> |  |
 | [GLGRP-003](#glgrp-003) | GitLab group allows sharing projects outside the group hierarchy | <span class="pg-sev pg-sev--medium">MEDIUM</span> |  |
 | [GLGRP-004](#glgrp-004) | GitLab group default branch protection is disabled for new projects | <span class="pg-sev pg-sev--medium">MEDIUM</span> |  |
+| [GLGRP-005](#glgrp-005) | GitLab group webhook delivers events over insecure transport | <span class="pg-sev pg-sev--high">HIGH</span> |  |
 
 ---
 
@@ -110,6 +111,26 @@ Reads ``default_branch_protection`` from ``GET /groups/{group}`` and fires when 
 **Recommended action**
 
 Raise the group's ``Default branch protection`` above ``Not protected`` (Group Settings -> General -> Permissions and group features). At ``0`` (Not protected), every new project created in the group starts with a default branch any Developer can push to directly, force-push, and delete, with no review gate, so a single compromised or careless member can rewrite history or ship unreviewed code on day one. Set it to at least ``Partially protected`` (no force-push) and prefer ``Fully protected`` so new projects inherit a safe default; individual projects can still tighten it further. The repo-level analog is SCM-001.
+
+</div>
+
+</div>
+
+<div class="pg-rule pg-rule--high" markdown>
+
+## GLGRP-005: GitLab group webhook delivers events over insecure transport { #glgrp-005 }
+
+<div class="pg-rule__tags">
+<span class="pg-sev pg-sev--high">HIGH</span> <span class="pg-tag pg-tag--owasp">CICD-SEC-6</span> <span class="pg-tag pg-tag--owasp">CICD-SEC-10</span> <span class="pg-tag pg-tag--cwe">CWE-319</span>
+</div>
+
+Reads ``GET /groups/{group}/hooks`` and fires on any webhook whose ``url`` starts with ``http://`` or whose ``enable_ssl_verification`` is ``false`` (an https endpoint with TLS verification off). Scoped to transport security: unlike the per-project SCM-026 it does not flag a missing secret token, because the group hooks endpoint does not report secret presence. Needs a token with ``read_api`` and Owner access to the group; when the endpoint is unavailable the rule passes with a note rather than firing on absence.
+
+<div class="pg-rule__rec" markdown>
+
+**Recommended action**
+
+For each flagged group webhook (Group Settings -> Webhooks -> edit), switch the URL to ``https://`` and enable ``SSL verification``. A group webhook fires on events across every project in the group, so its payloads carry merge-request diffs, push commits, and pipeline / security content for the whole group. Over plain HTTP (or HTTPS with verification disabled) a network attacker between GitLab and the receiver reads all of it and can tamper with deliveries. Also set a ``Secret token`` and validate the ``X-Gitlab-Token`` header on the receiver. The GitHub-org analog is ORG-011; the per-project analog is SCM-026.
 
 </div>
 

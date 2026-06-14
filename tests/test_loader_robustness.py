@@ -15,22 +15,24 @@ Two complementary harnesses:
    valid syntaxes must yield the same finding, so a parser-shape quirk
    can't silently drop a rule.
 
-No Hypothesis dependency (the project's dev deps are hash-locked): the
-curated inputs are a deterministic battery of the shapes that actually
-break loaders (deep nesting, alias bombs, non-UTF-8 bytes, truncation,
-wrong top-level type, empty), backed by a *seeded* generative pass that
-fuzzes the shared YAML loader with a broad random sample (structured
-documents + arbitrary byte blobs) to catch a crash class no one thought
-to curate. Seeded, so it stays reproducible and CI-stable.
+The curated inputs are a deterministic battery of the shapes that
+actually break loaders (deep nesting, alias bombs, non-UTF-8 bytes,
+truncation, wrong top-level type, empty), backed by a Hypothesis
+property-based pass that fuzzes the shared YAML loader with a wide,
+shrinking sample (structured documents + arbitrary byte / text blobs) to
+catch a crash class no one thought to curate. The generative pass runs
+``derandomize=True`` so it stays reproducible and CI-stable while still
+shrinking any failure to a minimal reproducer.
 """
 from __future__ import annotations
 
 import json
-import random
 
+import hypothesis.strategies as st
 import pytest
 import yaml
 from click.testing import CliRunner
+from hypothesis import HealthCheck, given, settings
 
 from pipeline_check.cli import scan
 from pipeline_check.core.checks._yaml_files import load_yaml_files
@@ -197,60 +199,75 @@ def test_maven_parse_pom_degrades_on_recursion_error(monkeypatch):
     assert pom.parsed_ok is False
 
 
-# ── 1d. Generative fuzz — seeded random inputs ───────────────────────────
-# Where the batteries above are hand-curated shapes, this throws a broad
-# random sample at the shared YAML loader to catch a crash class no one
-# thought to curate. Seeded ``random`` (not Hypothesis — the dev deps are
-# hash-locked), so it's reproducible and CI-stable.
+# ── 1d. Generative fuzz — Hypothesis property tests ──────────────────────
+# Where the batteries above are hand-curated shapes, these throw a wide,
+# shrinking sample at the shared YAML loader to catch a crash class no one
+# thought to curate. Hypothesis generates structured documents and
+# arbitrary byte / text blobs and shrinks any failure to a minimal
+# reproducer. ``derandomize=True`` keeps the run reproducible and
+# CI-stable (the same examples every run); ``deadline=None`` because the
+# loader's recursion / anchor guards can be slow on a pathological
+# generated input and a per-example deadline would flake.
+
+# "Any YAML-dumpable Python object": scalars at the leaves, lists and
+# string-keyed dicts as containers.
+_yaml_objects = st.recursive(
+    st.none() | st.booleans() | st.integers() | st.floats() | st.text(),
+    lambda children: (
+        st.lists(children, max_size=5)
+        | st.dictionaries(st.text(max_size=20), children, max_size=5)
+    ),
+    max_leaves=30,
+)
+
+_FUZZ = settings(
+    max_examples=200,
+    deadline=None,
+    derandomize=True,
+    suppress_health_check=[HealthCheck.too_slow],
+)
 
 
-def _rand_scalar(rng: random.Random):
-    return rng.choice([
-        rng.randint(-(10**6), 10**6),
-        rng.random(),
-        rng.choice([True, False, None]),
-        "".join(
-            rng.choice("abcXYZ:-{}[]#&*!|>\"' \n\t.0/")
-            for _ in range(rng.randint(0, 40))
-        ),
-    ])
+@pytest.fixture(scope="module")
+def _fuzz_path(tmp_path_factory):
+    # Module-scoped (not function-scoped) so it is safe to consume from a
+    # ``@given`` test; reused across examples, which run sequentially
+    # within one worker so the overwrite-then-read is race-free.
+    return tmp_path_factory.mktemp("loader_fuzz") / "f.yml"
 
 
-def _rand_obj(rng: random.Random, depth: int = 0):
-    if depth > 6 or rng.random() < 0.35:
-        return _rand_scalar(rng)
-    if rng.random() < 0.5:
-        return [_rand_obj(rng, depth + 1) for _ in range(rng.randint(0, 5))]
-    return {
-        f"k{i}_{rng.randint(0, 999)}": _rand_obj(rng, depth + 1)
-        for i in range(rng.randint(0, 5))
-    }
+@_FUZZ
+@given(obj=_yaml_objects)
+def test_yaml_loader_never_raises_on_structured(_fuzz_path, obj):
+    """Any YAML-dumpable object, serialized then reloaded, must return the
+    (loaded, warnings, skipped) triple, never raise."""
+    try:
+        text = yaml.safe_dump(obj)
+    except yaml.YAMLError:
+        return  # un-dumpable object — not an input the scanner ever sees
+    _fuzz_path.write_text(text, encoding="utf-8")
+    loaded, _warnings, _skipped = load_yaml_files([_fuzz_path])
+    assert isinstance(loaded, list)
 
 
-def test_yaml_loader_fuzz_structured(tmp_path):
-    """Valid-but-arbitrary YAML documents must load without raising."""
-    rng = random.Random(0xC0FFEE)
-    p = tmp_path / "f.yml"
-    for _ in range(200):
-        try:
-            text = yaml.safe_dump(_rand_obj(rng))
-        except yaml.YAMLError:
-            continue  # un-dumpable object — not an input the scanner sees
-        p.write_text(text, encoding="utf-8")
-        loaded, _warnings, _skipped = load_yaml_files([p])  # must not raise
-        assert isinstance(loaded, list)
-
-
-def test_yaml_loader_fuzz_random_bytes(tmp_path):
+@_FUZZ
+@given(blob=st.binary(max_size=512))
+def test_yaml_loader_never_raises_on_bytes(_fuzz_path, blob):
     """Arbitrary byte blobs (mostly invalid YAML / bad encoding) must
     degrade to a skip, never raise."""
-    rng = random.Random(0xBADF00D)
-    p = tmp_path / "f.yml"
-    for _ in range(200):
-        n = rng.randint(0, 256)
-        p.write_bytes(bytes(rng.randint(0, 255) for _ in range(n)))
-        loaded, _warnings, _skipped = load_yaml_files([p])  # must not raise
-        assert isinstance(loaded, list)
+    _fuzz_path.write_bytes(blob)
+    loaded, _warnings, _skipped = load_yaml_files([_fuzz_path])
+    assert isinstance(loaded, list)
+
+
+@_FUZZ
+@given(text=st.text())
+def test_yaml_loader_never_raises_on_text(_fuzz_path, text):
+    """Arbitrary valid-UTF-8 text (arbitrary YAML validity) must not raise
+    out of the loader."""
+    _fuzz_path.write_text(text, encoding="utf-8")
+    loaded, _warnings, _skipped = load_yaml_files([_fuzz_path])
+    assert isinstance(loaded, list)
 
 
 # ── 2. Differential — the same trigger in different YAML shapes ──────────

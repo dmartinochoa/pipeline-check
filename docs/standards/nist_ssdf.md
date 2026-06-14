@@ -31,7 +31,7 @@ Click a control ID to jump to the per-control section with the full check list. 
 
 | Control | Title | Checks | Severity mix |
 |---------|-------|-------:|--------------|
-| [`PO.3.2`](#ctrl-po-3-2) | Implement and maintain supporting toolchains with security controls | 12 | 3H · 5M · 4L |
+| [`PO.3.2`](#ctrl-po-3-2) | Implement and maintain supporting toolchains with security controls | 13 | 4H · 5M · 4L |
 | [`PO.3.3`](#ctrl-po-3-3) | Configure the toolchain to generate an audit trail of SDLC activities | 59 | 6H · 27M · 10L · 16I |
 | [`PO.5.1`](#ctrl-po-5-1) | Separate and protect each environment involved in software development | 262 | 33C · 149H · 72M · 8L |
 | [`PO.5.2`](#ctrl-po-5-2) | Secure and harden endpoints used for software development | 26 | 1C · 4H · 17M · 4L |
@@ -64,7 +64,7 @@ pipeline_check --pipeline aws --standard nist_ssdf --standard owasp_cicd_top_10
 
 ### PO.3.2: Implement and maintain supporting toolchains with security controls { #ctrl-po-3-2 }
 
-**Evidenced by 12 checks** across 5 providers (AWS, Azure Cloud, GCP, SCM, SCM org governance).
+**Evidenced by 13 checks** across 6 providers (AWS, Azure Cloud, GCP, GitLab group governance, SCM, SCM org governance).
 
 | Check | Title | Severity | Provider | Fix |
 |-------|-------|----------|----------|-----|
@@ -76,6 +76,7 @@ pipeline_check --pipeline aws --standard nist_ssdf --standard owasp_cicd_top_10
 | [`GCRUN-003`](../providers/gcp.md) | Cloud Run service has zero minimum instances | <span class="pg-sev pg-sev--low">LOW</span> | [GCP](../providers/gcp.md) |  |
 | [`GCSQL-002`](../providers/gcp.md) | Cloud SQL instance does not have automated backups enabled | <span class="pg-sev pg-sev--medium">MEDIUM</span> | [GCP](../providers/gcp.md) |  |
 | [`GCSQL-005`](../providers/gcp.md) | Cloud SQL instance does not have point-in-time recovery enabled | <span class="pg-sev pg-sev--medium">MEDIUM</span> | [GCP](../providers/gcp.md) |  |
+| [`GLGRP-005`](../providers/gitlab_group.md#glgrp-005) | GitLab group webhook delivers events over insecure transport | <span class="pg-sev pg-sev--high">HIGH</span> | [GitLab group governance](../providers/gitlab_group.md) |  |
 | [`ORG-011`](../providers/scm_org.md#org-011) | Organization webhook delivers events over insecure transport | <span class="pg-sev pg-sev--high">HIGH</span> | [SCM org governance](../providers/scm_org.md) |  |
 | [`PBAC-001`](../providers/aws.md#pbac-001) | CodeBuild project has no VPC configuration | <span class="pg-sev pg-sev--high">HIGH</span> | [AWS](../providers/aws.md) |  |
 | [`PBAC-002`](../providers/aws.md#pbac-002) | CodeBuild service role shared across multiple projects | <span class="pg-sev pg-sev--medium">MEDIUM</span> | [AWS](../providers/aws.md) |  |

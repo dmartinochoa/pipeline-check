@@ -37,7 +37,7 @@ Click a control ID to jump to the per-control section with the full check list. 
 | [`2.3.7`](#ctrl-2-3-7) | Ensure pipeline steps produce audit logs | 55 | 11H · 24M · 6L · 14I |
 | [`2.3.8`](#ctrl-2-3-8) | Ensure pipeline configuration files are reviewed before execution | 75 | 13C · 46H · 13M · 3L |
 | [`2.4.2`](#ctrl-2-4-2) | Ensure pipeline integrity, artifacts are signed by the pipeline | 17 | 6H · 11M |
-| [`2.4.3`](#ctrl-2-4-3) | Ensure access to the pipeline execution environment is restricted | 86 | 17C · 43H · 25M · 1L |
+| [`2.4.3`](#ctrl-2-4-3) | Ensure access to the pipeline execution environment is restricted | 87 | 17C · 44H · 25M · 1L |
 | [`3.1.3`](#ctrl-3-1-3) | Ensure signed metadata of dependencies is verified | 112 | 11C · 46H · 50M · 5L |
 | [`3.1.5`](#ctrl-3-1-5) | Ensure only trusted package managers and repositories are used | 81 | 1C · 57H · 22M · 1L |
 | [`4.1.1`](#ctrl-4-1-1) | Ensure all artifacts on all releases are verified (signed, integrity-checked) | 47 | 16H · 28M · 2L · 1I |
@@ -1072,7 +1072,7 @@ pipeline_check --pipeline aws --standard cis_supply_chain --standard owasp_cicd_
 
 ### 2.4.3: Ensure access to the pipeline execution environment is restricted { #ctrl-2-4-3 }
 
-**Evidenced by 86 checks** across 17 providers (AWS, Argo CD, Argo Workflows, Azure Cloud, Azure DevOps, Bitbucket, CircleCI, Cloud Build, GCP, GitHub Actions, GitLab CI, Jenkins, Kubernetes, SCM, SCM org governance, Tekton, Terraform).
+**Evidenced by 87 checks** across 18 providers (AWS, Argo CD, Argo Workflows, Azure Cloud, Azure DevOps, Bitbucket, CircleCI, Cloud Build, GCP, GitHub Actions, GitLab CI, GitLab group governance, Jenkins, Kubernetes, SCM, SCM org governance, Tekton, Terraform).
 
 | Check | Title | Severity | Provider | Fix |
 |-------|-------|----------|----------|-----|
@@ -1135,6 +1135,7 @@ pipeline_check --pipeline aws --standard cis_supply_chain --standard owasp_cicd_
 | [`GL-020`](../providers/gitlab.md#gl-020) | CI_JOB_TOKEN written to persistent storage | <span class="pg-sev pg-sev--critical">CRITICAL</span> | [GitLab CI](../providers/gitlab.md) | <span class="pg-fix" title="`--fix` will patch this rule">🔧 fix</span> |
 | [`GL-031`](../providers/gitlab.md#gl-031) | id_tokens: missing audience pin or environment binding | <span class="pg-sev pg-sev--high">HIGH</span> | [GitLab CI](../providers/gitlab.md) |  |
 | [`GL-040`](../providers/gitlab.md#gl-040) | CI_JOB_TOKEN used for cross-project / remote access | <span class="pg-sev pg-sev--high">HIGH</span> | [GitLab CI](../providers/gitlab.md) |  |
+| [`GLGRP-005`](../providers/gitlab_group.md#glgrp-005) | GitLab group webhook delivers events over insecure transport | <span class="pg-sev pg-sev--high">HIGH</span> | [GitLab group governance](../providers/gitlab_group.md) |  |
 | [`IAM-001`](../providers/aws.md#iam-001) | CI/CD role has AdministratorAccess policy attached | <span class="pg-sev pg-sev--critical">CRITICAL</span> | [AWS](../providers/aws.md) |  |
 | [`IAM-002`](../providers/aws.md#iam-002) | CI/CD role has wildcard Action in attached policy | <span class="pg-sev pg-sev--high">HIGH</span> | [AWS](../providers/aws.md) |  |
 | [`IAM-003`](../providers/aws.md#iam-003) | CI/CD role has no permission boundary | <span class="pg-sev pg-sev--medium">MEDIUM</span> | [AWS](../providers/aws.md) |  |
