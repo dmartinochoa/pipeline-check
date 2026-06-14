@@ -321,6 +321,7 @@ STANDARD = Standard(
         "BB-038":   ["PW.4.1", "PW.4.4"],   # model pulled without a pinned revision
         "BB-039":   ["PO.5.1"],   # agentic CLI output lands without review
         "JF-038":   ["PO.5.1"],   # agentic CLI output lands without review
+        "JF-039":   ["PW.6.1", "PW.9.1"],   # trust_remote_code model load = code exec
         "BB-003":   ["PS.1.1"],
         "BB-004":   ["PO.5.1"],
         "BB-005":   ["PO.5.2", "PW.9.1"],
@@ -489,6 +490,7 @@ STANDARD = Standard(
         "HARNESS-008":   ["PW.6.1", "PW.9.1"],  # Harness agentic-CLI prompt injection
         "HARNESS-010":   ["PW.6.1", "PW.9.1"],  # Harness model trust_remote_code (code exec)
         "HARNESS-011":   ["PW.6.1", "PW.9.1"],  # Harness unsafe model deser (pickle RCE)
+        "HARNESS-012":   ["PW.4.1", "PW.4.4"],  # Harness model pulled without a pinned revision
         "HARNESS-009":   ["PO.5.1"],  # Harness agentic-CLI output autolands without review
         "DR-002":   ["PO.5.1", "PW.9.1"],              # privileged step
         "DR-003":   ["PW.6.1", "PW.9.1"],              # Drone variable injection

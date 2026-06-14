@@ -189,6 +189,7 @@ STANDARD = Standard(
         "BB-038":   ["ESF-S-PIN-DEPS", "ESF-S-VERIFY-DEPS"],   # unpinned model registry ref
         "BB-039":   ["ESF-C-APPROVAL"],   # agentic CLI output lands without review
         "JF-038":   ["ESF-C-APPROVAL"],   # agentic CLI output lands without review
+        "JF-039":   ["ESF-D-INJECTION"],   # trust_remote_code model load = code exec
         "BB-003":   ["ESF-D-SECRETS"],
         "BB-004":   ["ESF-C-APPROVAL", "ESF-C-ENV-SEP"],
         "BB-005":   ["ESF-D-BUILD-TIMEOUT"],
@@ -697,6 +698,7 @@ STANDARD = Standard(
         "HARNESS-008":   ["ESF-D-INJECTION"],  # Harness agentic-CLI prompt injection
         "HARNESS-010":   ["ESF-D-INJECTION"],  # Harness model trust_remote_code (code exec)
         "HARNESS-011":   ["ESF-D-INJECTION"],  # Harness unsafe model deser (pickle RCE)
+        "HARNESS-012":   ["ESF-S-PIN-DEPS", "ESF-S-VERIFY-DEPS"],  # Harness model pulled without a pinned revision
         "HARNESS-009":   ["ESF-C-APPROVAL"],  # Harness agentic-CLI output autolands without review
         "DR-002":   ["ESF-D-PRIV-BUILD"],           # privileged step
         "DR-003":   ["ESF-D-INJECTION"],            # Drone variable injection

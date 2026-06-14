@@ -137,6 +137,8 @@ spec:
                 sh 'eval "$BUILD_CMD"'
                 // JF-031: pip install from an unpinned git URL.
                 sh 'pip install git+https://example.com/internal/helper.git'
+                // JF-039: model loaded with trust_remote_code (RCE on the agent).
+                sh 'huggingface-cli download acme/llm --trust-remote-code'
                 script {
                     def proc = Runtime.getRuntime().exec("id")
                 }

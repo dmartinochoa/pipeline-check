@@ -135,12 +135,12 @@ for inputs, idempotency, and fork-PR fallback behavior.
 | **GitLab CI** | `.gitlab-ci.yml` | `--gitlab-path` | 52 checks · `GL-001..050` + `TAINT-004`/`008` · `CI_JOB_TOKEN` cross-project scope, DinD TLS bypass, debug-trace secret leaks, MR-pipeline IaC apply + prod deploy, disabled native scanners, `trust_remote_code` + unpinned + pickle model loads, agentic-CLI prompt injection + autoland, long-lived publish token vs OIDC trusted publishing, mutable `include: component:` |
 | **Bitbucket Pipelines** | `bitbucket-pipelines.yml` | `--bitbucket-path` | 39 checks · `BB-001..039` · PR-pipeline IaC apply + prod deploy, `trust_remote_code` model loads, untrusted PR context into an agentic AI CLI, unsafe pickle deserialization, unpinned model pulls, agentic-CLI output pushed without review |
 | **Azure DevOps** | `azure-pipelines.yml` | `--azure-path` | 38 checks · `ADO-001..038` · incl. IaC apply on a PR-validated pipeline, `trust_remote_code` model loads, untrusted PR context into an agentic AI CLI, unsafe pickle deserialization, unpinned model pulls, agentic-CLI output pushed without review |
-| **Jenkins** | `Jenkinsfile` (Declarative / Scripted) | `--jenkinsfile-path` | 38 checks · `JF-001..038` · incl. untrusted PR/build context into an agentic AI CLI, agentic-CLI output pushed without review |
+| **Jenkins** | `Jenkinsfile` (Declarative / Scripted) | `--jenkinsfile-path` | 39 checks · `JF-001..039` · incl. untrusted PR/build context into an agentic AI CLI, agentic-CLI output pushed without review, ML model loaded with `trust_remote_code` |
 | **CircleCI** | `.circleci/config.yml` | `--circleci-path` | 33 checks · `CC-001..033` · incl. Go-module-verification bypass |
 | **Google Cloud Build** | `cloudbuild.yaml` | `--cloudbuild-path` | 27 checks · `GCB-001..027` |
 | **Buildkite** | `.buildkite/pipeline.yml` | `--buildkite-path` | 17 checks · `BK-001..016` + `TAINT-005` |
 | **Drone CI** | `.drone.yml` / `.drone.yaml` | `--drone-path` | 17 checks · `DR-001..017` · image / plugin pinning, privileged steps, `${DRONE_*}` injection, fork-PR exposure, pipe-to-shell, dangerous shell idioms, sensitive host-path mounts |
-| **Harness CI/CD** | Harness pipeline YAML (`.harness/`) | `--harness-path` | 11 checks · `HARNESS-001..011` · step image digest pinning, untrusted `<+codebase.*>` / `<+trigger.*>` expression injection into step commands, privileged steps, literal secrets in pipeline / stage variables, pipe-to-shell installs, TLS-verification bypass, sensitive host-path mounts, untrusted context into an agentic AI CLI, AI output autolanding without review, model `trust_remote_code` / unsafe-pickle deserialization (model-load RCE) |
+| **Harness CI/CD** | Harness pipeline YAML (`.harness/`) | `--harness-path` | 12 checks · `HARNESS-001..012` · step image digest pinning, untrusted `<+codebase.*>` / `<+trigger.*>` expression injection into step commands, privileged steps, literal secrets in pipeline / stage variables, pipe-to-shell installs, TLS-verification bypass, sensitive host-path mounts, untrusted context into an agentic AI CLI, AI output autolanding without review, model `trust_remote_code` / unsafe-pickle deserialization (model-load RCE), AI model pulled without a pinned revision |
 | **Tekton** | `Task` / `Pipeline` / `*Run` YAML | `--tekton-path` | 17 checks · `TKN-001..016` + `TAINT-006` |
 | **Argo Workflows** | `Workflow` / `WorkflowTemplate` YAML | `--argo-path` | 18 checks · `ARGO-001..017` + `TAINT-007` · over-privileged / default service account, untrusted-parameter manifest injection |
 | **Argo CD** | `Application` / `AppProject` YAML + `argocd-*` ConfigMaps | `--argocd-path` | 19 checks · `ARGOCD-001..019` · sourceRepo / destination wildcards, RBAC wildcards, mutable source refs, web terminal, drift-detection bypass. [Reference →](docs/providers/argocd.md) |
@@ -540,12 +540,12 @@ pipeline_check/
         ├── gitlab/rules/      # GL-001 .. GL-050 + TAINT-004 / TAINT-008
         ├── bitbucket/rules/   # BB-001 .. BB-039
         ├── azure/rules/       # ADO-001 .. ADO-038
-        ├── jenkins/rules/     # JF-001 .. JF-038
+        ├── jenkins/rules/     # JF-001 .. JF-039
         ├── circleci/rules/    # CC-001 .. CC-033
         ├── cloudbuild/rules/  # GCB-001 .. GCB-027
         ├── buildkite/rules/   # BK-001 .. BK-016 + TAINT-005
         ├── drone/rules/       # DR-001 .. DR-017
-        ├── harness/rules/     # HARNESS-001 .. HARNESS-011 — Harness CI/CD pipeline YAML (image pinning, untrusted-expression command injection, privileged steps, literal secrets in variables, pipe-to-shell, TLS bypass, host-path mounts, AI prompt injection, AI autoland, model trust_remote_code / unsafe-pickle deser)
+        ├── harness/rules/     # HARNESS-001 .. HARNESS-012 — Harness CI/CD pipeline YAML (image pinning, untrusted-expression command injection, privileged steps, literal secrets in variables, pipe-to-shell, TLS bypass, host-path mounts, AI prompt injection, AI autoland, model trust_remote_code / unsafe-pickle deser, unpinned model revision)
         ├── tekton/rules/      # TKN-001 .. TKN-016 + TAINT-006
         ├── argo/rules/        # ARGO-001 .. ARGO-017 + TAINT-007
         ├── argocd/rules/      # ARGOCD-001 .. ARGOCD-019

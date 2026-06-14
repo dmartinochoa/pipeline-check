@@ -312,6 +312,7 @@ STANDARD = Standard(
         "BB-038":   ["CICD-SEC-3"],   # model pulled without a pinned revision
         "BB-039":   ["CICD-SEC-1"],   # agentic CLI output lands without review
         "JF-038":   ["CICD-SEC-1"],   # agentic CLI output lands without review
+        "JF-039":   ["CICD-SEC-4"],   # trust_remote_code model load = code exec
         "BB-003":   ["CICD-SEC-6"],
         "BB-004":   ["CICD-SEC-1"],
         "BB-005":   ["CICD-SEC-7"],
@@ -830,6 +831,7 @@ STANDARD = Standard(
         "HARNESS-008":   ["CICD-SEC-4"],  # Harness agentic-CLI prompt injection
         "HARNESS-010":   ["CICD-SEC-4"],  # Harness model trust_remote_code (code exec)
         "HARNESS-011":   ["CICD-SEC-4"],  # Harness unsafe model deser (pickle RCE)
+        "HARNESS-012":   ["CICD-SEC-3"],  # Harness model pulled without a pinned revision
         "HARNESS-009":   ["CICD-SEC-1"],  # Harness agentic-CLI output autolands without review
         "DR-002":   ["CICD-SEC-5"],                 # step privileged
         "DR-003":   ["CICD-SEC-4", "CICD-SEC-1"],   # Drone variable injection

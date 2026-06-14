@@ -106,6 +106,7 @@ STANDARD = Standard(
         "ADO-027":  ["4.1.3"],
         "JF-002":   ["4.1.3"],
         "JF-037":   ["4.1.3"],   # agentic CLI ingests untrusted context (prompt injection)
+        "JF-039":   ["4.1.3"],   # trust_remote_code model load = code exec
         "JF-016":   ["4.1.3"],
         "JF-029":   ["4.1.3"],
         "JF-030":   ["4.1.3"],

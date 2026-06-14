@@ -273,6 +273,7 @@ STANDARD = Standard(
         "BB-037":   ["Dangerous-Workflow"],   # unsafe pickle deser of fetched artifact = code exec
         "BB-039":   ["Code-Review"],   # agentic CLI output lands without review
         "JF-038":   ["Code-Review"],   # agentic CLI output lands without review
+        "JF-039":   ["Dangerous-Workflow"],   # trust_remote_code model load = code exec
         "BB-018":   ["Dangerous-Workflow"],
         "BB-023":   ["Dangerous-Workflow"],
         "BB-025":   ["Dangerous-Workflow"],                            # malicious activity

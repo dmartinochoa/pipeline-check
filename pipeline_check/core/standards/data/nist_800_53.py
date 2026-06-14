@@ -306,6 +306,7 @@ STANDARD = Standard(
         "BB-038":   ["SR-3", "SR-11", "SI-2"],   # model pulled without a pinned revision
         "BB-039":   ["SA-10", "AC-3"],   # agentic CLI output lands without review
         "JF-038":   ["SA-10", "AC-3"],   # agentic CLI output lands without review
+        "JF-039":   ["SI-7", "SA-11", "CM-6"],   # trust_remote_code model load = code exec
         "BB-003":   ["IA-5"],
         "BB-004":   ["SA-10", "AC-3"],
         "BB-034":   ["SA-10", "AC-3"],                   # prod deploy on a PR pipeline
@@ -458,6 +459,7 @@ STANDARD = Standard(
         "HARNESS-008":   ["CM-6", "SA-11"],  # Harness agentic-CLI prompt injection
         "HARNESS-010":   ["CM-6", "SA-11", "SA-15"],  # Harness model trust_remote_code (code exec)
         "HARNESS-011":   ["CM-6", "SA-11", "SA-15"],  # Harness unsafe model deser (pickle RCE)
+        "HARNESS-012":   ["SR-3", "SR-11", "SI-2"],  # Harness model pulled without a pinned revision
         "HARNESS-009":   ["SA-10", "AC-3"],  # Harness agentic-CLI output autolands without review
         "DR-002":   ["AC-6", "CM-7"],                    # privileged step
         "DR-003":   ["CM-6", "SA-11"],                   # Drone variable injection

@@ -174,6 +174,7 @@ STANDARD = Standard(
         "BB-037":   ["CC6.8"],   # unsafe pickle deser of fetched artifact = code exec
         "BB-039":   ["CC8.1"],   # agentic CLI output lands without review
         "JF-038":   ["CC8.1"],   # agentic CLI output lands without review
+        "JF-039":   ["CC6.8"],   # trust_remote_code model load = code exec
         "BB-012":   ["CC6.8"],
         "BB-015":   ["CC6.8"],
         "BB-025":   ["CC6.8"],
@@ -603,6 +604,7 @@ STANDARD = Standard(
         "HARNESS-008":   ["CC6.8"],  # Harness agentic-CLI prompt injection
         "HARNESS-010":   ["CC6.8"],  # Harness model trust_remote_code (code exec)
         "HARNESS-011":   ["CC6.8"],  # Harness unsafe model deser (pickle RCE)
+        "HARNESS-012":   ["CC8.1"],  # Harness model pulled without a pinned revision
         "HARNESS-009":   ["CC8.1"],  # Harness agentic-CLI output autolands without review
         "DR-002":   ["CC6.1", "CC6.8"],     # privileged step
         "DR-003":   ["CC6.8"],              # Drone variable injection

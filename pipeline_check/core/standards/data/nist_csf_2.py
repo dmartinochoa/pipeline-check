@@ -278,6 +278,7 @@ STANDARD = Standard(
         "BB-037":   ["PR.PS-05"],   # unsafe pickle deser of fetched artifact = code exec
         "BB-039":   ["PR.PS-06"],   # agentic CLI output lands without review
         "JF-038":   ["PR.PS-06"],   # agentic CLI output lands without review
+        "JF-039":   ["PR.PS-05"],   # trust_remote_code model load = code exec
         "BB-012":   ["PR.PS-05"],
         "BB-025":   ["PR.PS-05"],
         "BB-026":   ["PR.PS-05"],
@@ -631,6 +632,7 @@ STANDARD = Standard(
         "HARNESS-008":   ["PR.PS-05"],  # Harness agentic-CLI prompt injection
         "HARNESS-010":   ["PR.PS-05"],  # Harness model trust_remote_code (code exec)
         "HARNESS-011":   ["PR.PS-05"],  # Harness unsafe model deser (pickle RCE)
+        "HARNESS-012":   ["GV.SC-05"],  # Harness model pulled without a pinned revision
         "HARNESS-009":   ["PR.PS-06"],  # Harness agentic-CLI output autolands without review
         "DR-002":  ["PR.PS-01"],                # privileged step
         "DR-003":  ["PR.PS-05"],                # Drone variable injection
