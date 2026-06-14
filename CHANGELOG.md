@@ -40,6 +40,25 @@ release commit collapses this section into `## [X.Y.Z] - <date>`.
   release.** The `aquasecurity/trivy-action` entry matched any `v0.x.y` tag,
   so the fixed `v0.35.0` (the compromise covered 0.0.1 through 0.34.2) was
   reported as compromised. The range is now capped at 0.34.x.
+- **`set +x` no longer reported as a secret trace-log leak.** The shell-trace
+  detector matched both `set -x` (which enables xtrace) and `set +x` (which
+  disables it, the secure idiom used right before handling a secret). The
+  leading sign is now `-` only, matching the long-form behavior that already
+  ignored `set +o xtrace`. Removes a false positive in the log-leak family
+  (GL-036 / BB-032 / ADO-031 / CC-032 / HARNESS-013).
+- **`curl` insecure flag detected inside bundled short-flag clusters.** The
+  TLS-bypass detector only matched a standalone `-k`, missing the dominant
+  real-world forms `curl -sk` / `curl -ks` / `curl -fsSLk` / `curl -kL`. It
+  now matches a lowercase `k` anywhere in a single-dash flag cluster while
+  still ignoring the uppercase `-K` (`--config`) flag. Closes a false
+  negative for every provider's TLS-bypass rule.
+- **`go env -w GOSUMDB=off` (the persistent form) is now flagged.** The Go
+  module-integrity check only matched `export` / inline assignments and missed
+  the canonical persistent-config form. Affects GHA-110 / GL-037 / CC-033.
+- **Lockfile-integrity check no longer lets a pinned git dep mask an unpinned
+  sibling.** A pinned `git+...@<sha>` earlier on a `pip install` / `npm install`
+  line suppressed the finding for an unpinned dep later on the same line; each
+  git dependency is now evaluated on its own.
 
 ## [1.15.0] - 2026-06-14
 

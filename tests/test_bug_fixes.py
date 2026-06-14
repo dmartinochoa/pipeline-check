@@ -361,6 +361,64 @@ def test_gha003_catches_new_injection_shapes_end_to_end():
         assert not g3.check("wf.yml", wf(run)).passed, run
 
 
+def test_log_leak_set_plus_x_not_flagged_as_trace_leak():
+    # ``set +x`` DISABLES xtrace (the secure idiom placed before handling
+    # a secret); only ``set -x`` enables it. The disabling form must not
+    # be reported as a leak.
+    from pipeline_check.core.checks._primitives.log_leak import (
+        scan_script_for_leaked_secrets,
+    )
+    assert scan_script_for_leaked_secrets("set +x\nrun_with $PASSWORD") == []
+    # Regression: enabling xtrace with a secret-named var still fires,
+    # including the bundled ``set -euxo`` form.
+    assert scan_script_for_leaked_secrets("set -x\nrun_with $PASSWORD")
+    assert scan_script_for_leaked_secrets("set -euxo pipefail\nrun_with $PASSWORD")
+
+
+def test_curl_insecure_bundled_short_flags_flagged():
+    # ``-k`` is rarely written standalone; it rides inside a short-flag
+    # cluster (``curl -sk``, ``curl -fsSLk``, ``curl -kL``). All must flag.
+    from pipeline_check.core.checks._primitives import tls_bypass
+
+    def kinds(text):
+        return [f.kind for f in tls_bypass.scan(text)]
+
+    for text in ("curl -k https://x", "curl -sk https://x",
+                 "curl -ks https://x", "curl -fsSLk https://x",
+                 "curl -kL https://x"):
+        assert "curl-insecure" in kinds(text), text
+    # Must NOT flag uppercase ``-K`` (curl --config) or a cluster whose
+    # only ``k`` is uppercase, nor a ``k``-prefixed filename argument.
+    for text in ("curl -K config.txt https://x", "curl -sK https://x",
+                 "curl --cacert key.pem https://x"):
+        assert "curl-insecure" not in kinds(text), text
+
+
+def test_go_env_w_persistent_form_flagged():
+    # ``go env -w GOSUMDB=off`` writes the setting persistently and is the
+    # canonical disable; it was missed because only export/inline forms
+    # were matched.
+    from pipeline_check.core.checks._primitives import go_insecure_env
+    assert go_insecure_env.insecure_settings_in_script("go env -w GOSUMDB=off")
+    assert go_insecure_env.insecure_settings_in_script(
+        "go env -w GOFLAGS=-insecure"
+    )
+    # Regression: the export form still fires; an unrelated read does not.
+    assert go_insecure_env.insecure_settings_in_script("export GOSUMDB=off")
+    assert not go_insecure_env.insecure_settings_in_script("go env GOSUMDB")
+
+
+def test_lockfile_pinned_dep_does_not_mask_unpinned_sibling():
+    # A pinned git dep earlier on the same install line must not suppress
+    # an unpinned one later.
+    from pipeline_check.core.checks._primitives import lockfile_integrity as lf
+    sha = "a" * 40
+    assert lf.scan(f"pip install git+https://x/a.git@{sha} git+https://x/b.git")
+    assert lf.scan(f"npm install git+https://x/a.git#{sha} git+https://x/b.git")
+    # Regression: a single pinned dep is still safe.
+    assert lf.scan(f"pip install git+https://github.com/foo/bar.git@{sha}") == []
+
+
 # ────────────────────────────────────────────────────────────────────────
 # Bug F — a single crashing rule must not abort the whole scan.
 #   A scanner runs over config it didn't author; one rule tripping over
