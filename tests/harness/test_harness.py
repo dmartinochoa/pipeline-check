@@ -555,3 +555,29 @@ class TestHarness012ModelPinning:
     def test_passes_clean_pipeline(self, tmp_path):
         out = _for(_findings(_ctx(tmp_path, _CLEAN)), "HARNESS-012")
         assert out and all(f.passed for f in out)
+
+
+class TestHarness013LogLeak:
+    def test_flags_echo_secret_named_var(self, tmp_path):
+        text = _model_pipeline('echo "key is $AWS_SECRET_ACCESS_KEY"')
+        out = [f for f in _for(_findings(_ctx(tmp_path, text)), "HARNESS-013")
+               if not f.passed]
+        assert len(out) == 1
+        assert out[0].severity is Severity.HIGH
+        assert "ci/load" in out[0].description
+
+    def test_flags_printenv_dump(self, tmp_path):
+        text = _model_pipeline("printenv")
+        out = [f for f in _for(_findings(_ctx(tmp_path, text)), "HARNESS-013")
+               if not f.passed]
+        assert len(out) == 1
+
+    def test_passes_on_safe_existence_check(self, tmp_path):
+        text = _model_pipeline('[ -n "$TOKEN" ] && echo set || echo unset')
+        out = [f for f in _for(_findings(_ctx(tmp_path, text)), "HARNESS-013")
+               if not f.passed]
+        assert out == []
+
+    def test_passes_clean_pipeline(self, tmp_path):
+        out = _for(_findings(_ctx(tmp_path, _CLEAN)), "HARNESS-013")
+        assert out and all(f.passed for f in out)

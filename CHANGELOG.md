@@ -53,6 +53,17 @@ release commit collapses this section into `## [X.Y.Z] - <date>`.
 
 ### Added
 
+- **HARNESS-013: Harness secret echoed to the step log (HIGH).** Continues
+  the log-leak family (GHA-033 / GL-036 / BB-032 / ADO-031 / CC-032 /
+  JF-042) into the Harness CD provider. Scans every step `command` for a
+  secret-named variable handed to `echo` / `printf` / `cat` / `tee`, an
+  `env` / `printenv` dump, or `set -x` with a secret-named variable in
+  scope (names matching PASSWORD / TOKEN / SECRET / API_KEY / CREDENTIAL).
+  Harness masks resolved `<+secrets.getValue(...)>` values in the log, but
+  only the exact string: `set -x`, encoded, or derived forms slip past.
+  Reuses the shared `_primitives/log_leak` detector over the Harness step
+  model; mapped across the 10 standards the log-leak family uses.
+  `harness` 12 -> 13.
 - **JF-042: Jenkins secret echoed to the build log (HIGH).** Brings the
   log-leak rule (GHA-033 / GL-036 / BB-032 / ADO-031 / CC-032) to Jenkins,
   the mainstream provider that lacked it. Scans every `sh` / `bat` /

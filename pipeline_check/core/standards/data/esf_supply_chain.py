@@ -702,6 +702,7 @@ STANDARD = Standard(
         "HARNESS-010":   ["ESF-D-INJECTION"],  # Harness model trust_remote_code (code exec)
         "HARNESS-011":   ["ESF-D-INJECTION"],  # Harness unsafe model deser (pickle RCE)
         "HARNESS-012":   ["ESF-S-PIN-DEPS", "ESF-S-VERIFY-DEPS"],  # Harness model pulled without a pinned revision
+        "HARNESS-013":   ["ESF-D-SECRETS"],  # Harness secret echoed to step log
         "HARNESS-009":   ["ESF-C-APPROVAL"],  # Harness agentic-CLI output autolands without review
         "DR-002":   ["ESF-D-PRIV-BUILD"],           # privileged step
         "DR-003":   ["ESF-D-INJECTION"],            # Drone variable injection
