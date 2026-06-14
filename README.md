@@ -25,7 +25,7 @@
 
 Pipeline-Check is a security scanner for GitHub Actions, GitLab CI, Jenkins, CircleCI, Azure DevOps, Bitbucket Pipelines, Buildkite, Drone, Harness, Tekton, Argo Workflows, and Google Cloud Build, plus Terraform, CloudFormation, Kubernetes, Helm, Dockerfile, OCI image manifests, and live AWS, Azure, and GCP accounts. It maps every finding to the [OWASP Top 10 CI/CD Security Risks](https://owasp.org/www-project-top-10-ci-cd-security-risks/), SLSA, NIST SSDF, PCI DSS, SOC 2, the CIS GitHub Benchmark, and twelve other frameworks, and scores each scan A through D so you can gate merges on the result.
 
-**1240+ checks** across **39 providers**, mapped to **18 compliance standards**, with **120 autofixers**, plus **56 attack chains** correlating findings into MITRE ATT&CK-mapped kill chains. A dataflow taint engine catches multi-step and cross-job propagation that single-rule scanners miss.
+**1260+ checks** across **39 providers**, mapped to **18 compliance standards**, with **120 autofixers**, plus **56 attack chains** correlating findings into MITRE ATT&CK-mapped kill chains. A dataflow taint engine catches multi-step and cross-job propagation that single-rule scanners miss.
 
 [Quick start](#-quick-start) |
 [Usage guide](docs/usage.md) |
@@ -140,7 +140,7 @@ for inputs, idempotency, and fork-PR fallback behavior.
 | **Google Cloud Build** | `cloudbuild.yaml` | `--cloudbuild-path` | 28 checks · `GCB-001..027` |
 | **Buildkite** | `.buildkite/pipeline.yml` | `--buildkite-path` | 18 checks · `BK-001..016` + `TAINT-005` |
 | **Drone CI** | `.drone.yml` / `.drone.yaml` | `--drone-path` | 22 checks · `DR-001..017` · image / plugin pinning, privileged steps, `${DRONE_*}` injection, fork-PR exposure, pipe-to-shell, dangerous shell idioms, sensitive host-path mounts |
-| **Harness CI/CD** | Harness pipeline YAML (`.harness/`) | `--harness-path` | 14 checks · `HARNESS-001..014` · step image digest pinning, untrusted `<+codebase.*>` / `<+trigger.*>` expression injection into step commands, privileged steps, literal secrets in pipeline / stage variables, pipe-to-shell installs, TLS-verification bypass, sensitive host-path mounts, untrusted context into an agentic AI CLI, AI output autolanding without review, model `trust_remote_code` / unsafe-pickle deserialization (model-load RCE), AI model pulled without a pinned revision, secret echoed to the step log, dangerous shell idiom (`eval` / `sh -c`) |
+| **Harness CI/CD** | Harness pipeline YAML (`.harness/`) | `--harness-path` | 18 checks · `HARNESS-001..018` · step image digest pinning, untrusted `<+codebase.*>` / `<+trigger.*>` expression injection into step commands, privileged steps, literal secrets in pipeline / stage variables, pipe-to-shell installs, TLS-verification bypass, sensitive host-path mounts, untrusted context into an agentic AI CLI, AI output autolanding without review, model `trust_remote_code` / unsafe-pickle deserialization (model-load RCE), AI model pulled without a pinned revision, secret echoed to the step log, dangerous shell idiom (`eval` / `sh -c`), supply-chain gates (no signing / SBOM / SLSA provenance / vuln-scan) |
 | **Tekton** | `Task` / `Pipeline` / `*Run` YAML | `--tekton-path` | 19 checks · `TKN-001..016` + `TAINT-006` |
 | **Argo Workflows** | `Workflow` / `WorkflowTemplate` YAML | `--argo-path` | 20 checks · `ARGO-001..017` + `TAINT-007` · over-privileged / default service account, untrusted-parameter manifest injection |
 | **Argo CD** | `Application` / `AppProject` YAML + `argocd-*` ConfigMaps | `--argocd-path` | 19 checks · `ARGOCD-001..019` · sourceRepo / destination wildcards, RBAC wildcards, mutable source refs, web terminal, drift-detection bypass. [Reference →](docs/providers/argocd.md) |
@@ -179,7 +179,7 @@ for the full per-check reference.
 
 ```
                  +-----------+
-  Config files   |  Scanner  |   1240+ checks across 39 providers
+  Config files   |  Scanner  |   1260+ checks across 39 providers
   or live APIs ---->         +---> Findings (check_id, severity, resource)
                  +-----------+
                        |
@@ -545,7 +545,7 @@ pipeline_check/
         ├── cloudbuild/rules/  # GCB-001 .. GCB-028
         ├── buildkite/rules/   # BK-001 .. BK-017 + TAINT-005
         ├── drone/rules/       # DR-001 .. DR-022
-        ├── harness/rules/     # HARNESS-001 .. HARNESS-014 — Harness CI/CD pipeline YAML (image pinning, untrusted-expression command injection, privileged steps, literal secrets in variables, pipe-to-shell, TLS bypass, host-path mounts, AI prompt injection, AI autoland, model trust_remote_code / unsafe-pickle deser, unpinned model revision, secret echoed to step log, dangerous shell idiom)
+        ├── harness/rules/     # HARNESS-001 .. HARNESS-018 — Harness CI/CD pipeline YAML (image pinning, untrusted-expression command injection, privileged steps, literal secrets in variables, pipe-to-shell, TLS bypass, host-path mounts, AI prompt injection, AI autoland, model trust_remote_code / unsafe-pickle deser, unpinned model revision, secret echoed to step log, dangerous shell idiom, supply-chain gates)
         ├── tekton/rules/      # TKN-001 .. TKN-018 + TAINT-006
         ├── argo/rules/        # ARGO-001 .. ARGO-019 + TAINT-007
         ├── argocd/rules/      # ARGOCD-001 .. ARGOCD-019

@@ -601,3 +601,44 @@ class TestHarness014ShellEval:
     def test_passes_clean_pipeline(self, tmp_path):
         out = _for(_findings(_ctx(tmp_path, _CLEAN)), "HARNESS-014")
         assert out and all(f.passed for f in out)
+
+
+class TestHarness015to018SupplyChainGates:
+    def _build(self, *extra: str) -> str:
+        cmd = "docker build -t app . && docker push app"
+        for e in extra:
+            cmd += " && " + e
+        return _model_pipeline(cmd)
+
+    def _failing(self, tmp_path, text, rule_id):
+        return [f for f in _for(_findings(_ctx(tmp_path, text)), rule_id)
+                if not f.passed]
+
+    def test_signing_fails_on_unsigned_build(self, tmp_path):
+        out = self._failing(tmp_path, self._build(), "HARNESS-015")
+        assert len(out) == 1
+        assert out[0].severity is Severity.MEDIUM
+
+    def test_signing_passes_with_cosign(self, tmp_path):
+        text = self._build("cosign sign --yes app")
+        assert self._failing(tmp_path, text, "HARNESS-015") == []
+
+    def test_signing_not_applicable_on_lint_only(self, tmp_path):
+        # _CLEAN produces no artifacts -> signing gate is not applicable.
+        out = _for(_findings(_ctx(tmp_path, _CLEAN)), "HARNESS-015")
+        assert out and all(f.passed for f in out)
+
+    def test_sbom_fails_then_passes(self, tmp_path):
+        assert self._failing(tmp_path, self._build(), "HARNESS-016")
+        text = self._build("syft app -o cyclonedx-json")
+        assert self._failing(tmp_path, text, "HARNESS-016") == []
+
+    def test_provenance_fails_then_passes(self, tmp_path):
+        assert self._failing(tmp_path, self._build(), "HARNESS-017")
+        text = self._build("cosign attest --predicate slsa.json app")
+        assert self._failing(tmp_path, text, "HARNESS-017") == []
+
+    def test_vuln_fails_then_passes(self, tmp_path):
+        assert self._failing(tmp_path, self._build(), "HARNESS-018")
+        text = self._build("trivy image app")
+        assert self._failing(tmp_path, text, "HARNESS-018") == []

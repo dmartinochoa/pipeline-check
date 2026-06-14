@@ -337,6 +337,7 @@ STANDARD = Standard(
         "ECR-001":  ["IA-13"],
         "ECR-007":  ["IA-13"],
         "BK-012":   ["IA-13"],
+        "HARNESS-018":  ["IA-13"],  # Harness no vuln scan
         "DR-022":  ["IA-13"],  # Drone no vuln scan
         "TKN-012":  ["IA-13"],
         "ARGO-012": ["IA-13"],
@@ -764,6 +765,7 @@ STANDARD = Standard(
         "JF-006":   ["DE-4"],
         "CC-006":   ["DE-4"],
         "BK-009":   ["DE-4"],
+        "HARNESS-015":  ["DE-4"],  # Harness artifacts not signed
         "DR-019":  ["DE-4"],  # Drone artifacts not signed
         "TKN-009":  ["DE-4"],
         "ARGO-009": ["DE-4"],
@@ -775,6 +777,7 @@ STANDARD = Standard(
         "JF-007":   ["DE-4"],
         "CC-007":   ["DE-4"],
         "BK-010":   ["DE-4"],
+        "HARNESS-016":  ["DE-4"],  # Harness no SBOM
         "DR-020":  ["DE-4"],  # Drone no SBOM
         "TKN-010":  ["DE-4"],
         "ARGO-010": ["DE-4"],
@@ -785,6 +788,7 @@ STANDARD = Standard(
         "JF-028":   ["DE-4"],
         "CC-024":   ["DE-4"],
         "BK-011":   ["DE-4"],
+        "HARNESS-017":  ["DE-4"],  # Harness no SLSA provenance
         "DR-021":  ["DE-4"],  # Drone no SLSA provenance
         "TKN-011":  ["DE-4"],
         "ARGO-011": ["DE-4"],

@@ -594,12 +594,16 @@ STANDARD = Standard(
         "BK-007":   ["Code-Review"],                                   # deploy not gated
         "BK-008":   ["Pinned-Dependencies"],                           # TLS bypass
         "BK-009":   ["Signed-Releases"],                               # artifact signing
+        "HARNESS-015":  ["Signed-Releases"],  # Harness artifacts not signed
         "DR-019":  ["Signed-Releases"],  # Drone artifacts not signed
         "BK-010":   ["SBOM"],                                          # SBOM
+        "HARNESS-016":  ["SBOM"],  # Harness no SBOM
         "DR-020":  ["SBOM"],  # Drone no SBOM
         "BK-011":   ["Signed-Releases", "SBOM"],                       # SLSA provenance
+        "HARNESS-017":  ["Signed-Releases", "SBOM"],  # Harness no SLSA provenance
         "DR-021":  ["Signed-Releases", "SBOM"],  # Drone no SLSA provenance
         "BK-012":   ["Vulnerabilities", "SAST"],                       # vuln scanning
+        "HARNESS-018":  ["Vulnerabilities", "SAST"],  # Harness no vuln scan
         "DR-022":  ["Vulnerabilities", "SAST"],  # Drone no vuln scan
         # ── Tekton ───────────────────────────────────────────────────
         "TKN-001":  ["Pinned-Dependencies"],                           # step image not digest-pinned

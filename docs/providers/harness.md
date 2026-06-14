@@ -38,7 +38,7 @@ All other flags (`--output`, `--severity-threshold`, `--checks`,
 
 ## What it covers
 
-14 checks · 3 have an autofix patch (``--fix``).
+18 checks · 3 have an autofix patch (``--fix``).
 
 | Check | Title | Severity | Fix |
 |-------|-------|----------|-----|
@@ -56,6 +56,10 @@ All other flags (`--output`, `--severity-threshold`, `--checks`,
 | [HARNESS-012](#harness-012) | AI model pulled without a pinned revision | <span class="pg-sev pg-sev--medium">MEDIUM</span> |  |
 | [HARNESS-013](#harness-013) | Secret-named variable echoed / printed in a step command | <span class="pg-sev pg-sev--high">HIGH</span> |  |
 | [HARNESS-014](#harness-014) | Dangerous shell idiom (eval, sh -c variable, backtick exec) | <span class="pg-sev pg-sev--high">HIGH</span> |  |
+| [HARNESS-015](#harness-015) | Artifacts not signed (no cosign/sigstore step) | <span class="pg-sev pg-sev--medium">MEDIUM</span> |  |
+| [HARNESS-016](#harness-016) | No SBOM produced (no syft / cyclonedx step) | <span class="pg-sev pg-sev--medium">MEDIUM</span> |  |
+| [HARNESS-017](#harness-017) | No SLSA provenance attestation produced | <span class="pg-sev pg-sev--medium">MEDIUM</span> |  |
+| [HARNESS-018](#harness-018) | No vulnerability-scan step (trivy / grype / snyk) | <span class="pg-sev pg-sev--medium">MEDIUM</span> |  |
 
 ---
 
@@ -360,6 +364,86 @@ Complements HARNESS-002 (untrusted ``<+codebase.*>`` / ``<+trigger.*>`` expressi
 **Recommended action**
 
 Replace ``eval "$VAR"`` / ``sh -c "$VAR"`` / backtick exec with direct command invocation. Validate or allow-list any value that must feed a dynamic command at the boundary.
+
+</div>
+
+</div>
+
+<div class="pg-rule pg-rule--medium" markdown>
+
+## HARNESS-015: Artifacts not signed (no cosign/sigstore step) { #harness-015 }
+
+<div class="pg-rule__tags">
+<span class="pg-sev pg-sev--medium">MEDIUM</span> <span class="pg-tag pg-tag--owasp">CICD-SEC-9</span> <span class="pg-tag pg-tag--esf">ESF-D-SIGN-ARTIFACTS</span> <span class="pg-tag pg-tag--cwe">CWE-345</span>
+</div>
+
+Detection mirrors GHA-006 / BK-009 / CC-006 / TKN-009 / DR-019, the shared signing-token catalog (cosign, sigstore, slsa-github-generator, slsa-framework, notation-sign) is searched across every string in the pipeline document. The rule only fires on artifact-producing pipelines (``docker build`` / ``docker push`` / ``buildah`` / ``kaniko`` / etc.) so lint / test-only pipelines don't trip it. The Harness analog of BK-009 / TKN-009.
+
+<div class="pg-rule__rec" markdown>
+
+**Recommended action**
+
+Add a signing step after the build: install cosign in the step image and call ``cosign sign --yes <repo>@sha256:<digest>`` so a re-pushed tag can't bypass the signature. Publish the signature alongside the artifact and verify it at consumption time.
+
+</div>
+
+</div>
+
+<div class="pg-rule pg-rule--medium" markdown>
+
+## HARNESS-016: No SBOM produced (no syft / cyclonedx step) { #harness-016 }
+
+<div class="pg-rule__tags">
+<span class="pg-sev pg-sev--medium">MEDIUM</span> <span class="pg-tag pg-tag--owasp">CICD-SEC-9</span> <span class="pg-tag pg-tag--esf">ESF-S-SBOM</span> <span class="pg-tag pg-tag--cwe">CWE-1357</span>
+</div>
+
+Detection mirrors GHA-007 / BK-010 / CC-007 / TKN-010 / DR-020, the shared SBOM-token catalog (syft, cyclonedx, spdx, bom, trivy sbom) is searched across every string in the pipeline document. The rule only fires on artifact-producing pipelines (``docker build`` / ``docker push`` / ``buildah`` / ``kaniko`` / etc.) so lint / test-only pipelines don't trip it. The Harness analog of BK-010 / TKN-010.
+
+<div class="pg-rule__rec" markdown>
+
+**Recommended action**
+
+Generate a Software Bill of Materials as part of the build: run ``syft <image> -o cyclonedx-json`` (or ``cyclonedx`` / ``spdx`` tooling) and publish it alongside the artifact, so consumers can audit the components and respond to new CVEs without rebuilding. Harness also offers a built-in SBOM Orchestration step.
+
+</div>
+
+</div>
+
+<div class="pg-rule pg-rule--medium" markdown>
+
+## HARNESS-017: No SLSA provenance attestation produced { #harness-017 }
+
+<div class="pg-rule__tags">
+<span class="pg-sev pg-sev--medium">MEDIUM</span> <span class="pg-tag pg-tag--owasp">CICD-SEC-9</span> <span class="pg-tag pg-tag--esf">ESF-S-PROVENANCE</span> <span class="pg-tag pg-tag--cwe">CWE-345</span>
+</div>
+
+Detection mirrors GHA-024 / BK-011 / CC-024 / TKN-011 / DR-021, the shared provenance-token catalog (slsa, provenance, in-toto, attestation, cosign attest) is searched across every string in the pipeline document. The rule only fires on artifact-producing pipelines (``docker build`` / ``docker push`` / ``buildah`` / etc.) so lint / test-only pipelines don't trip it. The Harness analog of BK-011 / TKN-011.
+
+<div class="pg-rule__rec" markdown>
+
+**Recommended action**
+
+Emit a signed SLSA provenance attestation for the build: use ``cosign attest --predicate`` with an in-toto / SLSA predicate, or Harness's built-in SLSA provenance / attestation step, so a verifier can confirm which pipeline and source revision produced the artifact.
+
+</div>
+
+</div>
+
+<div class="pg-rule pg-rule--medium" markdown>
+
+## HARNESS-018: No vulnerability-scan step (trivy / grype / snyk) { #harness-018 }
+
+<div class="pg-rule__tags">
+<span class="pg-sev pg-sev--medium">MEDIUM</span> <span class="pg-tag pg-tag--owasp">CICD-SEC-9</span> <span class="pg-tag pg-tag--esf">ESF-D-VULN-SCAN</span> <span class="pg-tag pg-tag--cwe">CWE-1104</span>
+</div>
+
+Detection mirrors GHA-020 / BK-012 / CC-020 / TKN-012 / DR-022, the shared scanner-token catalog (trivy, grype, snyk, clair, npm audit, pip-audit, etc.) is searched across every string in the pipeline document. Fires on any pipeline that runs no scanner (the build ships without a CVE signal). The Harness analog of BK-012 / TKN-012.
+
+<div class="pg-rule__rec" markdown>
+
+**Recommended action**
+
+Add a vulnerability-scan step to the build: ``trivy``, ``grype``, ``snyk``, ``npm audit``, or ``pip-audit`` over the image or dependency tree (or a Harness Security Testing Orchestration step), and fail the build on findings above your threshold so known CVEs don't ship to production silently.
 
 </div>
 
