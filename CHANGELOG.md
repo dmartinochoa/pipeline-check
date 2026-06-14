@@ -12,6 +12,16 @@ release commit collapses this section into `## [X.Y.Z] - <date>`.
 
 ### Changed
 
+- **Loader robustness fuzzing moved to Hypothesis.** The generative pass
+  in `tests/test_loader_robustness.py` that throws arbitrary inputs at the
+  shared YAML loader was a hand-seeded `random` battery (the dev deps were
+  hash-locked, so Hypothesis was deferred). It is now a Hypothesis
+  property test: `st.recursive` structured documents plus `st.binary` /
+  `st.text` blobs, with `derandomize=True` to stay reproducible / CI-stable
+  while gaining automatic shrinking to a minimal reproducer on failure.
+  `hypothesis` added to `requirements-dev.in` and the hash-locked
+  `requirements-dev.txt`. The curated pathological battery and the
+  differential parser-shape tests are unchanged.
 - **Rego engine modules brought into coverage measurement.** The
   `--rego-rules` loader / runner / errors modules were omitted from the
   gated coverage run because their integration tests skip without the
@@ -52,6 +62,22 @@ release commit collapses this section into `## [X.Y.Z] - <date>`.
   shell-step bodies via the existing `SHELL_STEP_RE` and emit located
   findings. JF-040 mapped across the 8 standards the model-pinning family
   uses, JF-041 across the 12 the RCE family uses. `jenkins` 39 -> 41.
+- **GLGRP-006: GitLab group CI/CD variable exposes a secret with a weak
+  control (HIGH).** The `gitlab_group` provider now also fetches
+  `GET /groups/{group}/variables` and fires on a group-level CI/CD
+  variable whose value matches a known credential shape (the shared
+  `find_secret_values` catalog: PATs, cloud keys, provider tokens, PEM
+  blocks) AND that is `protected: false` (handed to pipelines on every
+  branch / MR, including feature branches and fork MRs where fork
+  pipelines run) or `masked: false` (printed in cleartext in job logs). A
+  group variable is inherited by every project in the group, so the blast
+  radius is the whole group. The value-shape gate keeps it low-FP: an
+  ordinary unprotected config variable (a URL, a region, a flag) is not
+  flagged, only an actual secret with a weakened control; the token body
+  is never echoed, only its detector label. This is the group-API surface
+  the static `.gitlab-ci.yml` rules (GL-003 / GL-008) structurally can't
+  see. Fetched independently, so a token that can read the group but not
+  its variables degrades to a pass-with-note. `gitlab_group` 5 -> 6.
 - **JF-039: Jenkins ML model loaded with `trust_remote_code` (HIGH).**
   Brings the model-load supply-chain coverage the other CI providers carry
   (GHA-120 / GL-045 / BB-035 / ADO-034 / HARNESS-010) to the Jenkinsfile,
@@ -66,6 +92,34 @@ release commit collapses this section into `## [X.Y.Z] - <date>`.
   detector; both single- and double-quoted step bodies are flagged
   (Groovy quoting does not defang an in-process model load). Mapped across
   the 12 standards the `trust_remote_code` family uses. `jenkins` 38 -> 39.
+- **HARNESS-012: AI model pulled without a pinned revision (MEDIUM).**
+  Completes the Harness agentic-AI rule row to parity with GitHub Actions
+  / GitLab / Bitbucket / Azure DevOps (the matrix already covered Harness
+  for prompt-injection, autoland, `trust_remote_code`, and unsafe-pickle
+  deserialization; model-pinning was the last gap). Fires on a Harness
+  step `command` that fetches a model from a registry by a mutable
+  reference (`from_pretrained("org/model")`, `hf_hub_download` /
+  `snapshot_download` with a bare repo id, `huggingface-cli download
+  org/model`) and supplies no revision pin, so the registry can serve
+  swapped weights or loader code on the next build with no diff in the
+  repo. Reuses the shared `_primitives/model_ref` detector (with GHA-121 /
+  GL-046 / BB-038 / ADO-037): pinned revisions, local paths, `<+...>`
+  expressions, and bare first-party hub names all pass. The model-registry
+  analog of HARNESS-001 (step image digest pinning) and the prerequisite
+  control for HARNESS-010's `trust_remote_code` path. `harness` 11 -> 12.
+- **GLGRP-005: GitLab group webhook over insecure transport (HIGH).** The
+  GitLab-group twin of the shipped ORG-011 (and the per-project SCM-026).
+  The `gitlab_group` provider now also fetches `GET /groups/{group}/hooks`
+  and fires on any group webhook whose `url` is `http://` or whose
+  `enable_ssl_verification` is `false`: a group webhook fires on events
+  across every project in the group, so its payloads (MR diffs, push
+  commits, pipeline content) ride to the receiver in cleartext where a
+  network attacker can read and tamper with them. Scoped to transport
+  security (no secret-token check, since the group hooks endpoint does not
+  report secret presence). The new endpoint is fetched independently, so a
+  token that can read the group but not its hooks degrades GLGRP-005 to a
+  pass-with-note instead of crashing the other group checks. `gitlab_group`
+  4 -> 5.
 - **`scripts/sync_doc_claims.py`: registry-derived doc-claim writer.**
   `tests/test_doc_claims.py` already *checks* that headline counts ("39
   providers", "120 autofixers", "1220+ checks", the per-provider "N

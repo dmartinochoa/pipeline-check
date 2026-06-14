@@ -512,3 +512,46 @@ class TestHarness011UnsafeDeser:
         out = [f for f in _for(_findings(_ctx(tmp_path, text)), "HARNESS-011")
                if not f.passed]
         assert out == []
+
+
+class TestHarness012ModelPinning:
+    _PIN = "0123456789abcdef0123456789abcdef01234567"
+
+    def test_flags_unpinned_org_model(self, tmp_path):
+        text = _model_pipeline(
+            "python -c 'AutoModel.from_pretrained(\"acme/llm\")'"
+        )
+        out = [f for f in _for(_findings(_ctx(tmp_path, text)), "HARNESS-012")
+               if not f.passed]
+        assert len(out) == 1
+        assert out[0].severity is Severity.MEDIUM
+        assert "ci/load" in out[0].description
+        assert "acme/llm" in out[0].description
+
+    def test_flags_unpinned_cli_download(self, tmp_path):
+        text = _model_pipeline("huggingface-cli download acme/llm")
+        out = [f for f in _for(_findings(_ctx(tmp_path, text)), "HARNESS-012")
+               if not f.passed]
+        assert len(out) == 1
+
+    def test_passes_when_revision_pinned(self, tmp_path):
+        text = _model_pipeline(
+            f"python -c 'AutoModel.from_pretrained(\"acme/llm\", "
+            f"revision=\"{self._PIN}\")'"
+        )
+        out = [f for f in _for(_findings(_ctx(tmp_path, text)), "HARNESS-012")
+               if not f.passed]
+        assert out == []
+
+    def test_passes_on_first_party_hub_name(self, tmp_path):
+        # No org/ namespace -> canonical first-party model, not flagged.
+        text = _model_pipeline(
+            "python -c 'AutoModel.from_pretrained(\"bert-base-uncased\")'"
+        )
+        out = [f for f in _for(_findings(_ctx(tmp_path, text)), "HARNESS-012")
+               if not f.passed]
+        assert out == []
+
+    def test_passes_clean_pipeline(self, tmp_path):
+        out = _for(_findings(_ctx(tmp_path, _CLEAN)), "HARNESS-012")
+        assert out and all(f.passed for f in out)

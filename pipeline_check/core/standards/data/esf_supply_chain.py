@@ -450,6 +450,8 @@ STANDARD = Standard(
         "GLGRP-002":  ["ESF-C-LEAST-PRIV"],  # gitlab group: forking outside group allowed
         "GLGRP-003":  ["ESF-C-LEAST-PRIV"],  # gitlab group: sharing projects outside the hierarchy
         "GLGRP-004":  ["ESF-D-CODE-REVIEW"],  # gitlab group: default branch protection disabled for new projects
+        "GLGRP-005":  ["ESF-D-SECRETS"],  # gitlab group: group webhook over insecure transport
+        "GLGRP-006":  ["ESF-D-SECRETS"],  # gitlab group: group CI/CD variable holds a secret with a weak control
         "ORG-008":  ["ESF-C-LEAST-PRIV"],           # org: members can create public repos (code exposure)
         "ORG-009":  ["ESF-D-BUILD-ENV", "ESF-D-PRIV-BUILD"],  # org: self-hosted runner group exposed to public repos
         "ORG-010":  ["ESF-D-SECRETS"],              # org: new-repo secret-scanning push-protection default off
@@ -698,6 +700,7 @@ STANDARD = Standard(
         "HARNESS-008":   ["ESF-D-INJECTION"],  # Harness agentic-CLI prompt injection
         "HARNESS-010":   ["ESF-D-INJECTION"],  # Harness model trust_remote_code (code exec)
         "HARNESS-011":   ["ESF-D-INJECTION"],  # Harness unsafe model deser (pickle RCE)
+        "HARNESS-012":   ["ESF-S-PIN-DEPS", "ESF-S-VERIFY-DEPS"],  # Harness model pulled without a pinned revision
         "HARNESS-009":   ["ESF-C-APPROVAL"],  # Harness agentic-CLI output autolands without review
         "DR-002":   ["ESF-D-PRIV-BUILD"],           # privileged step
         "DR-003":   ["ESF-D-INJECTION"],            # Drone variable injection
