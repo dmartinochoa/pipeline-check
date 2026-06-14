@@ -44,6 +44,19 @@ release commit collapses this section into `## [X.Y.Z] - <date>`.
 
 ### Added
 
+- **GLGRP-005: GitLab group webhook over insecure transport (HIGH).** The
+  GitLab-group twin of the shipped ORG-011 (and the per-project SCM-026).
+  The `gitlab_group` provider now also fetches `GET /groups/{group}/hooks`
+  and fires on any group webhook whose `url` is `http://` or whose
+  `enable_ssl_verification` is `false`: a group webhook fires on events
+  across every project in the group, so its payloads (MR diffs, push
+  commits, pipeline content) ride to the receiver in cleartext where a
+  network attacker can read and tamper with them. Scoped to transport
+  security (no secret-token check, since the group hooks endpoint does not
+  report secret presence). The new endpoint is fetched independently, so a
+  token that can read the group but not its hooks degrades GLGRP-005 to a
+  pass-with-note instead of crashing the other group checks. `gitlab_group`
+  4 -> 5.
 - **`scripts/sync_doc_claims.py`: registry-derived doc-claim writer.**
   `tests/test_doc_claims.py` already *checks* that headline counts ("39
   providers", "120 autofixers", "1220+ checks", the per-provider "N

@@ -36,8 +36,12 @@ class GitLabGroupContext:
     #: read this slot; ``None`` means "couldn't ask" (pass with a note),
     #: distinct from a setting that is present but insecure.
     group_meta: dict[str, Any] | None = None
+    #: ``GET /groups/{group}/hooks`` body (a list of ``{id, url,
+    #: enable_ssl_verification, ...}``), or ``None`` when unavailable.
+    #: GLGRP-005.
+    group_hooks: list[Any] | None = None
     warnings: list[str] = field(default_factory=list)
-    files_scanned: int = 0   # repurposed: 1 when the group endpoint was fetched
+    files_scanned: int = 0   # repurposed: 1 when any group endpoint was fetched
     files_skipped: int = 0
 
     @property
@@ -59,14 +63,22 @@ class GitLabGroupContext:
         raw = fetcher.fetch(f"groups/{encoded}")
         if isinstance(raw, dict):
             ctx.group_meta = raw
-            ctx.files_scanned = 1
         else:
             ctx.warnings.append(
                 f"[gitlab-group] could not fetch groups/{group} (missing "
                 "token, 404, or insufficient scope; the group-owner settings "
                 "need a token with ``read_api`` and Owner access to the group)."
             )
-            ctx.files_skipped = 1
+        # The group webhooks endpoint returns a bare JSON array, not an
+        # object, and needs Owner access. Fetched independently so a
+        # token that can read the group but not its hooks still degrades
+        # GLGRP-005 to a pass-with-note rather than crashing the others.
+        hooks = fetcher.fetch(f"groups/{encoded}/hooks")
+        if isinstance(hooks, list):
+            ctx.group_hooks = hooks
+        fetched_any = ctx.group_meta is not None or ctx.group_hooks is not None
+        ctx.files_scanned = 1 if fetched_any else 0
+        ctx.files_skipped = 0 if fetched_any else 1
         return ctx
 
 
