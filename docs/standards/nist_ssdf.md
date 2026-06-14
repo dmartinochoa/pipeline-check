@@ -20,7 +20,7 @@ risk language.
 
 - **Controls in this standard:** 13
 - **Controls evidenced by at least one check:** 13 / 13
-- **Distinct checks evidencing this standard:** 967
+- **Distinct checks evidencing this standard:** 969
 - **Of those, autofixable with `--fix`:** 120
 
 _Severity levels (`CRITICAL` / `HIGH` / `MEDIUM` / `LOW` / `INFO`) follow the same scale across every provider and standard. See [How to read severity](README.md#how-to-read-severity) on the standards overview for the definitions._
@@ -35,7 +35,7 @@ Click a control ID to jump to the per-control section with the full check list. 
 | [`PO.3.3`](#ctrl-po-3-3) | Configure the toolchain to generate an audit trail of SDLC activities | 59 | 6H · 27M · 10L · 16I |
 | [`PO.5.1`](#ctrl-po-5-1) | Separate and protect each environment involved in software development | 263 | 33C · 150H · 72M · 8L |
 | [`PO.5.2`](#ctrl-po-5-2) | Secure and harden endpoints used for software development | 26 | 1C · 4H · 17M · 4L |
-| [`PS.1.1`](#ctrl-ps-1-1) | Store all forms of code based on least-privilege and tamper-resistance | 215 | 35C · 113H · 56M · 11L |
+| [`PS.1.1`](#ctrl-ps-1-1) | Store all forms of code based on least-privilege and tamper-resistance | 217 | 35C · 115H · 56M · 11L |
 | [`PS.2.1`](#ctrl-ps-2-1) | Make software integrity verification information available to acquirers | 36 | 11H · 25M |
 | [`PS.3.1`](#ctrl-ps-3-1) | Securely archive the necessary files and data for each software release | 11 | 5H · 5M · 1I |
 | [`PS.3.2`](#ctrl-ps-3-2) | Collect, safeguard, maintain, and share provenance data for releases | 58 | 12H · 39M · 7L |
@@ -453,7 +453,7 @@ pipeline_check --pipeline aws --standard nist_ssdf --standard owasp_cicd_top_10
 
 ### PS.1.1: Store all forms of code based on least-privilege and tamper-resistance { #ctrl-ps-1-1 }
 
-**Evidenced by 215 checks** across 33 providers (AWS, Argo Workflows, Azure Cloud, Azure DevOps, Bitbucket, Buildkite, Cargo, CircleCI, Cloud Build, CloudFormation, Composer, Developer environment, Dockerfile, Drone CI, GCP, GitHub Actions, GitLab CI, GitLab group governance, Go modules, Harness CI/CD, Helm, Jenkins, Kubernetes, NuGet, Pulumi, PyPI, RubyGems, SCM, SCM org governance, Tekton, Terraform, maven, npm).
+**Evidenced by 217 checks** across 33 providers (AWS, Argo Workflows, Azure Cloud, Azure DevOps, Bitbucket, Buildkite, Cargo, CircleCI, Cloud Build, CloudFormation, Composer, Developer environment, Dockerfile, Drone CI, GCP, GitHub Actions, GitLab CI, GitLab group governance, Go modules, Harness CI/CD, Helm, Jenkins, Kubernetes, NuGet, Pulumi, PyPI, RubyGems, SCM, SCM org governance, Tekton, Terraform, maven, npm).
 
 | Check | Title | Severity | Provider | Fix |
 |-------|-------|----------|----------|-----|
@@ -485,6 +485,7 @@ pipeline_check --pipeline aws --standard nist_ssdf --standard owasp_cicd_top_10
 | [`BB-028`](../providers/bitbucket.md#bb-028) | OIDC step without deployment-gated environment | <span class="pg-sev pg-sev--high">HIGH</span> | [Bitbucket](../providers/bitbucket.md) |  |
 | [`BB-032`](../providers/bitbucket.md#bb-032) | Secret-named variable echoed / printed in a script block | <span class="pg-sev pg-sev--high">HIGH</span> | [Bitbucket](../providers/bitbucket.md) |  |
 | [`BK-002`](../providers/buildkite.md#bk-002) | Literal secret value in pipeline env block | <span class="pg-sev pg-sev--critical">CRITICAL</span> | [Buildkite](../providers/buildkite.md) | <span class="pg-fix" title="`--fix` will patch this rule">🔧 fix</span> |
+| [`BK-017`](../providers/buildkite.md#bk-017) | Secret-named variable echoed / printed in a step command | <span class="pg-sev pg-sev--high">HIGH</span> | [Buildkite](../providers/buildkite.md) |  |
 | [`CA-001`](../providers/aws.md#ca-001) | CodeArtifact domain has no KMS encryptionKey configured | <span class="pg-sev pg-sev--medium">MEDIUM</span> | [AWS](../providers/aws.md) |  |
 | [`CA-003`](../providers/aws.md#ca-003) | CodeArtifact domain policy allows cross-account wildcard | <span class="pg-sev pg-sev--critical">CRITICAL</span> | [AWS](../providers/aws.md) |  |
 | [`CA-004`](../providers/aws.md#ca-004) | CodeArtifact repo policy grants ``codeartifact:*`` with ``Resource '*'`` | <span class="pg-sev pg-sev--high">HIGH</span> | [AWS](../providers/aws.md) |  |
@@ -513,6 +514,7 @@ pipeline_check --pipeline aws --standard nist_ssdf --standard owasp_cicd_top_10
 | [`DF-020`](../providers/dockerfile.md#df-020) | ARG declares a credential-named build argument | <span class="pg-sev pg-sev--high">HIGH</span> | [Dockerfile](../providers/dockerfile.md) | <span class="pg-fix" title="`--fix` will patch this rule">🔧 fix</span> |
 | [`DF-025`](../providers/dockerfile.md#df-025) | RUN writes a registry auth token into a Docker layer | <span class="pg-sev pg-sev--critical">CRITICAL</span> | [Dockerfile](../providers/dockerfile.md) |  |
 | [`DR-004`](../providers/drone.md#dr-004) | Literal credential in step environment / settings | <span class="pg-sev pg-sev--critical">CRITICAL</span> | [Drone CI](../providers/drone.md) |  |
+| [`DR-018`](../providers/drone.md#dr-018) | Secret-named variable echoed / printed in a step command | <span class="pg-sev pg-sev--high">HIGH</span> | [Drone CI](../providers/drone.md) |  |
 | [`ECR-003`](../providers/aws.md#ecr-003) | Repository policy allows public access | <span class="pg-sev pg-sev--critical">CRITICAL</span> | [AWS](../providers/aws.md) |  |
 | [`ECR-005`](../providers/aws.md#ecr-005) | Repository encrypted with AES256 rather than KMS CMK | <span class="pg-sev pg-sev--medium">MEDIUM</span> | [AWS](../providers/aws.md) |  |
 | [`ENTRA-002`](../providers/azure_cloud.md) | App registration credential valid beyond 180 days | <span class="pg-sev pg-sev--high">HIGH</span> | [Azure Cloud](../providers/azure_cloud.md) |  |

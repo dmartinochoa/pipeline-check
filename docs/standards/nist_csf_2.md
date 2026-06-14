@@ -14,7 +14,7 @@ process telemetry the tool cannot witness.
 
 - **Controls in this standard:** 23
 - **Controls evidenced by at least one check:** 23 / 23
-- **Distinct checks evidencing this standard:** 977
+- **Distinct checks evidencing this standard:** 979
 - **Of those, autofixable with `--fix`:** 120
 
 _Severity levels (`CRITICAL` / `HIGH` / `MEDIUM` / `LOW` / `INFO`) follow the same scale across every provider and standard. See [How to read severity](README.md#how-to-read-severity) on the standards overview for the definitions._
@@ -30,10 +30,10 @@ Click a control ID to jump to the per-control section with the full check list. 
 | [`GV.SC-05`](#ctrl-gv-sc-05) | Requirements to address cybersecurity risks in supply chains are established, prioritized, and integrated into contracts | 200 | 10C · 100H · 74M · 16L |
 | [`GV.SC-07`](#ctrl-gv-sc-07) | Risks posed by suppliers, their products and services, are understood, recorded, prioritized, assessed, responded to, and monitored | 128 | 11C · 63H · 42M · 12L |
 | [`GV.SC-08`](#ctrl-gv-sc-08) | Relevant suppliers and other third parties are included in incident planning, response, and recovery activities | 11 | 10H · 1M |
-| [`PR.AA-01`](#ctrl-pr-aa-01) | Identities and credentials for authorized users, services, and hardware are managed | 109 | 30C · 59H · 20M |
+| [`PR.AA-01`](#ctrl-pr-aa-01) | Identities and credentials for authorized users, services, and hardware are managed | 111 | 30C · 61H · 20M |
 | [`PR.AA-03`](#ctrl-pr-aa-03) | Users, services, and hardware are authenticated | 10 | 6H · 4M |
 | [`PR.AA-05`](#ctrl-pr-aa-05) | Access permissions, entitlements, and authorizations are defined in a policy, managed, enforced, and reviewed | 76 | 8C · 39H · 28M · 1L |
-| [`PR.DS-01`](#ctrl-pr-ds-01) | The confidentiality, integrity, and availability of data-at-rest are protected | 74 | 11C · 45H · 16M · 2L |
+| [`PR.DS-01`](#ctrl-pr-ds-01) | The confidentiality, integrity, and availability of data-at-rest are protected | 76 | 11C · 47H · 16M · 2L |
 | [`PR.DS-02`](#ctrl-pr-ds-02) | The confidentiality, integrity, and availability of data-in-transit are protected | 46 | 40H · 5M · 1L |
 | [`PR.PS-01`](#ctrl-pr-ps-01) | Configuration management practices are established and applied | 92 | 13C · 34H · 31M · 13L · 1I |
 | [`PR.PS-02`](#ctrl-pr-ps-02) | Software is maintained, replaced, and removed commensurate with risk | 52 | 8C · 14H · 19M · 11L |
@@ -482,7 +482,7 @@ pipeline_check --pipeline aws --standard nist_csf_2 --standard owasp_cicd_top_10
 
 ### PR.AA-01: Identities and credentials for authorized users, services, and hardware are managed { #ctrl-pr-aa-01 }
 
-**Evidenced by 109 checks** across 28 providers (AWS, Argo Workflows, Azure Cloud, Azure DevOps, Bitbucket, Buildkite, CircleCI, Cloud Build, CloudFormation, Composer, Developer environment, Dockerfile, Drone CI, GCP, GitHub Actions, GitLab CI, GitLab group governance, Harness CI/CD, Jenkins, Kubernetes, NuGet, Pulumi, RubyGems, SCM, SCM org governance, Tekton, Terraform, npm).
+**Evidenced by 111 checks** across 28 providers (AWS, Argo Workflows, Azure Cloud, Azure DevOps, Bitbucket, Buildkite, CircleCI, Cloud Build, CloudFormation, Composer, Developer environment, Dockerfile, Drone CI, GCP, GitHub Actions, GitLab CI, GitLab group governance, Harness CI/CD, Jenkins, Kubernetes, NuGet, Pulumi, RubyGems, SCM, SCM org governance, Tekton, Terraform, npm).
 
 | Check | Title | Severity | Provider | Fix |
 |-------|-------|----------|----------|-----|
@@ -505,6 +505,7 @@ pipeline_check --pipeline aws --standard nist_csf_2 --standard owasp_cicd_top_10
 | [`BB-019`](../providers/bitbucket.md#bb-019) | after-script references secrets | <span class="pg-sev pg-sev--high">HIGH</span> | [Bitbucket](../providers/bitbucket.md) |  |
 | [`BB-032`](../providers/bitbucket.md#bb-032) | Secret-named variable echoed / printed in a script block | <span class="pg-sev pg-sev--high">HIGH</span> | [Bitbucket](../providers/bitbucket.md) |  |
 | [`BK-002`](../providers/buildkite.md#bk-002) | Literal secret value in pipeline env block | <span class="pg-sev pg-sev--critical">CRITICAL</span> | [Buildkite](../providers/buildkite.md) | <span class="pg-fix" title="`--fix` will patch this rule">🔧 fix</span> |
+| [`BK-017`](../providers/buildkite.md#bk-017) | Secret-named variable echoed / printed in a step command | <span class="pg-sev pg-sev--high">HIGH</span> | [Buildkite](../providers/buildkite.md) |  |
 | [`CB-001`](../providers/aws.md#cb-001) | Secrets in plaintext environment variables | <span class="pg-sev pg-sev--critical">CRITICAL</span> | [AWS](../providers/aws.md) |  |
 | [`CB-006`](../providers/aws.md#cb-006) | CodeBuild source auth uses long-lived token | <span class="pg-sev pg-sev--high">HIGH</span> | [AWS](../providers/aws.md) |  |
 | [`CC-004`](../providers/circleci.md#cc-004) | Secret-like environment variable not managed via context | <span class="pg-sev pg-sev--medium">MEDIUM</span> | [CircleCI](../providers/circleci.md) |  |
@@ -523,6 +524,7 @@ pipeline_check --pipeline aws --standard nist_csf_2 --standard owasp_cicd_top_10
 | [`DF-020`](../providers/dockerfile.md#df-020) | ARG declares a credential-named build argument | <span class="pg-sev pg-sev--high">HIGH</span> | [Dockerfile](../providers/dockerfile.md) | <span class="pg-fix" title="`--fix` will patch this rule">🔧 fix</span> |
 | [`DF-025`](../providers/dockerfile.md#df-025) | RUN writes a registry auth token into a Docker layer | <span class="pg-sev pg-sev--critical">CRITICAL</span> | [Dockerfile](../providers/dockerfile.md) |  |
 | [`DR-004`](../providers/drone.md#dr-004) | Literal credential in step environment / settings | <span class="pg-sev pg-sev--critical">CRITICAL</span> | [Drone CI](../providers/drone.md) |  |
+| [`DR-018`](../providers/drone.md#dr-018) | Secret-named variable echoed / printed in a step command | <span class="pg-sev pg-sev--high">HIGH</span> | [Drone CI](../providers/drone.md) |  |
 | [`ENTRA-002`](../providers/azure_cloud.md) | App registration credential valid beyond 180 days | <span class="pg-sev pg-sev--high">HIGH</span> | [Azure Cloud](../providers/azure_cloud.md) |  |
 | [`ENTRA-003`](../providers/azure_cloud.md) | Service principal uses password credential | <span class="pg-sev pg-sev--high">HIGH</span> | [Azure Cloud](../providers/azure_cloud.md) |  |
 | [`GCB-003`](../providers/cloudbuild.md#gcb-003) | Secret Manager value referenced in step args | <span class="pg-sev pg-sev--high">HIGH</span> | [Cloud Build](../providers/cloudbuild.md) |  |
@@ -698,7 +700,7 @@ pipeline_check --pipeline aws --standard nist_csf_2 --standard owasp_cicd_top_10
 
 ### PR.DS-01: The confidentiality, integrity, and availability of data-at-rest are protected { #ctrl-pr-ds-01 }
 
-**Evidenced by 74 checks** across 29 providers (AWS, Argo Workflows, Azure Cloud, Azure DevOps, Bitbucket, Buildkite, Cargo, CircleCI, CloudFormation, Composer, Dockerfile, GCP, GitHub Actions, GitLab CI, Go modules, Harness CI/CD, Helm, Jenkins, Kubernetes, NuGet, Pulumi, PyPI, RubyGems, SCM, SCM org governance, Tekton, Terraform, maven, npm).
+**Evidenced by 76 checks** across 30 providers (AWS, Argo Workflows, Azure Cloud, Azure DevOps, Bitbucket, Buildkite, Cargo, CircleCI, CloudFormation, Composer, Dockerfile, Drone CI, GCP, GitHub Actions, GitLab CI, Go modules, Harness CI/CD, Helm, Jenkins, Kubernetes, NuGet, Pulumi, PyPI, RubyGems, SCM, SCM org governance, Tekton, Terraform, maven, npm).
 
 | Check | Title | Severity | Provider | Fix |
 |-------|-------|----------|----------|-----|
@@ -712,6 +714,7 @@ pipeline_check --pipeline aws --standard nist_csf_2 --standard owasp_cicd_top_10
 | [`AZVM-001`](../providers/azure_cloud.md) | Virtual machine disks are not encrypted | <span class="pg-sev pg-sev--high">HIGH</span> | [Azure Cloud](../providers/azure_cloud.md) |  |
 | [`BB-032`](../providers/bitbucket.md#bb-032) | Secret-named variable echoed / printed in a script block | <span class="pg-sev pg-sev--high">HIGH</span> | [Bitbucket](../providers/bitbucket.md) |  |
 | [`BK-002`](../providers/buildkite.md#bk-002) | Literal secret value in pipeline env block | <span class="pg-sev pg-sev--critical">CRITICAL</span> | [Buildkite](../providers/buildkite.md) | <span class="pg-fix" title="`--fix` will patch this rule">🔧 fix</span> |
+| [`BK-017`](../providers/buildkite.md#bk-017) | Secret-named variable echoed / printed in a step command | <span class="pg-sev pg-sev--high">HIGH</span> | [Buildkite](../providers/buildkite.md) |  |
 | [`CA-001`](../providers/aws.md#ca-001) | CodeArtifact domain has no KMS encryptionKey configured | <span class="pg-sev pg-sev--medium">MEDIUM</span> | [AWS](../providers/aws.md) |  |
 | [`CARGO-003`](../providers/cargo.md) | Cargo.toml present without a sibling Cargo.lock | <span class="pg-sev pg-sev--high">HIGH</span> | [Cargo](../providers/cargo.md) |  |
 | [`CC-032`](../providers/circleci.md#cc-032) | Secret-named variable echoed / printed in a run step | <span class="pg-sev pg-sev--high">HIGH</span> | [CircleCI](../providers/circleci.md) |  |
@@ -721,6 +724,7 @@ pipeline_check --pipeline aws --standard nist_csf_2 --standard owasp_cicd_top_10
 | [`COMPOSER-009`](../providers/composer.md) | auth.json committed alongside composer.json with literal credentials | <span class="pg-sev pg-sev--high">HIGH</span> | [Composer](../providers/composer.md) |  |
 | [`CP-002`](../providers/aws.md#cp-002) | Artifact store not encrypted with customer-managed KMS key | <span class="pg-sev pg-sev--medium">MEDIUM</span> | [AWS](../providers/aws.md) |  |
 | [`DF-006`](../providers/dockerfile.md#df-006) | ENV or ARG carries a credential-shaped literal value | <span class="pg-sev pg-sev--critical">CRITICAL</span> | [Dockerfile](../providers/dockerfile.md) |  |
+| [`DR-018`](../providers/drone.md#dr-018) | Secret-named variable echoed / printed in a step command | <span class="pg-sev pg-sev--high">HIGH</span> | [Drone CI](../providers/drone.md) |  |
 | [`ECR-005`](../providers/aws.md#ecr-005) | Repository encrypted with AES256 rather than KMS CMK | <span class="pg-sev pg-sev--medium">MEDIUM</span> | [AWS](../providers/aws.md) |  |
 | [`GCKMS-001`](../providers/gcp.md) | KMS key rotation period exceeds 365 days | <span class="pg-sev pg-sev--medium">MEDIUM</span> | [GCP](../providers/gcp.md) |  |
 | [`GCKMS-002`](../providers/gcp.md) | KMS key IAM policy grants public access | <span class="pg-sev pg-sev--high">HIGH</span> | [GCP](../providers/gcp.md) |  |

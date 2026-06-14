@@ -138,8 +138,8 @@ for inputs, idempotency, and fork-PR fallback behavior.
 | **Jenkins** | `Jenkinsfile` (Declarative / Scripted) | `--jenkinsfile-path` | 42 checks · `JF-001..042` · incl. untrusted PR/build context into an agentic AI CLI, agentic-CLI output pushed without review, the model-load supply-chain triad (`trust_remote_code`, unpinned model revision, unsafe pickle deserialization), secret echoed to the build log |
 | **CircleCI** | `.circleci/config.yml` | `--circleci-path` | 38 checks · `CC-001..038` · incl. Go-module-verification bypass, the model-load triad (`trust_remote_code`, unpinned model revision, unsafe pickle deserialization), untrusted PR/build context into an agentic AI CLI, agentic-CLI output pushed without review |
 | **Google Cloud Build** | `cloudbuild.yaml` | `--cloudbuild-path` | 27 checks · `GCB-001..027` |
-| **Buildkite** | `.buildkite/pipeline.yml` | `--buildkite-path` | 17 checks · `BK-001..016` + `TAINT-005` |
-| **Drone CI** | `.drone.yml` / `.drone.yaml` | `--drone-path` | 17 checks · `DR-001..017` · image / plugin pinning, privileged steps, `${DRONE_*}` injection, fork-PR exposure, pipe-to-shell, dangerous shell idioms, sensitive host-path mounts |
+| **Buildkite** | `.buildkite/pipeline.yml` | `--buildkite-path` | 18 checks · `BK-001..016` + `TAINT-005` |
+| **Drone CI** | `.drone.yml` / `.drone.yaml` | `--drone-path` | 18 checks · `DR-001..017` · image / plugin pinning, privileged steps, `${DRONE_*}` injection, fork-PR exposure, pipe-to-shell, dangerous shell idioms, sensitive host-path mounts |
 | **Harness CI/CD** | Harness pipeline YAML (`.harness/`) | `--harness-path` | 13 checks · `HARNESS-001..013` · step image digest pinning, untrusted `<+codebase.*>` / `<+trigger.*>` expression injection into step commands, privileged steps, literal secrets in pipeline / stage variables, pipe-to-shell installs, TLS-verification bypass, sensitive host-path mounts, untrusted context into an agentic AI CLI, AI output autolanding without review, model `trust_remote_code` / unsafe-pickle deserialization (model-load RCE), AI model pulled without a pinned revision, secret echoed to the step log |
 | **Tekton** | `Task` / `Pipeline` / `*Run` YAML | `--tekton-path` | 17 checks · `TKN-001..016` + `TAINT-006` |
 | **Argo Workflows** | `Workflow` / `WorkflowTemplate` YAML | `--argo-path` | 18 checks · `ARGO-001..017` + `TAINT-007` · over-privileged / default service account, untrusted-parameter manifest injection |
@@ -543,8 +543,8 @@ pipeline_check/
         ├── jenkins/rules/     # JF-001 .. JF-042
         ├── circleci/rules/    # CC-001 .. CC-038
         ├── cloudbuild/rules/  # GCB-001 .. GCB-027
-        ├── buildkite/rules/   # BK-001 .. BK-016 + TAINT-005
-        ├── drone/rules/       # DR-001 .. DR-017
+        ├── buildkite/rules/   # BK-001 .. BK-017 + TAINT-005
+        ├── drone/rules/       # DR-001 .. DR-018
         ├── harness/rules/     # HARNESS-001 .. HARNESS-013 — Harness CI/CD pipeline YAML (image pinning, untrusted-expression command injection, privileged steps, literal secrets in variables, pipe-to-shell, TLS bypass, host-path mounts, AI prompt injection, AI autoland, model trust_remote_code / unsafe-pickle deser, unpinned model revision, secret echoed to step log)
         ├── tekton/rules/      # TKN-001 .. TKN-016 + TAINT-006
         ├── argo/rules/        # ARGO-001 .. ARGO-017 + TAINT-007

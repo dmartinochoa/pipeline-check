@@ -126,7 +126,7 @@ class TestDronePipelineChecksOrchestrator:
             "DR-004", "DR-005", "DR-006", "DR-007",
             "DR-008", "DR-009", "DR-010", "DR-011",
             "DR-012", "DR-013", "DR-014", "DR-015",
-            "DR-016", "DR-017",
+            "DR-016", "DR-017", "DR-018",
         ]
         # Every rule passes on the hardened fixture.
         assert all(f.passed for f in findings), [
@@ -194,7 +194,7 @@ class TestScannerWiring:
             "DR-004", "DR-005", "DR-006", "DR-007",
             "DR-008", "DR-009", "DR-010", "DR-011",
             "DR-012", "DR-013", "DR-014", "DR-015",
-            "DR-016", "DR-017",
+            "DR-016", "DR-017", "DR-018",
         ]
         # Vulnerable fixture trips DR-001..004, DR-006, plus the new
         # DR-013 (no trigger: block). Other rules need shapes the

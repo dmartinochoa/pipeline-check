@@ -12,7 +12,7 @@ the scanner evidences controls that surface in CI/CD configuration.
 
 - **Controls in this standard:** 24
 - **Controls evidenced by at least one check:** 24 / 24
-- **Distinct checks evidencing this standard:** 978
+- **Distinct checks evidencing this standard:** 980
 - **Of those, autofixable with `--fix`:** 120
 
 _Severity levels (`CRITICAL` / `HIGH` / `MEDIUM` / `LOW` / `INFO`) follow the same scale across every provider and standard. See [How to read severity](README.md#how-to-read-severity) on the standards overview for the definitions._
@@ -26,7 +26,7 @@ Click a control ID to jump to the per-control section with the full check list. 
 | [`ESF-D-BUILD-ENV`](#ctrl-esf-d-build-env) | Harden the build environment (isolated, minimal, ephemeral workers) | 82 | 11C · 30H · 31M · 10L |
 | [`ESF-D-BUILD-LOGS`](#ctrl-esf-d-build-logs) | Generate and preserve build audit logs | 5 | 1H · 2M · 2L |
 | [`ESF-D-BUILD-TIMEOUT`](#ctrl-esf-d-build-timeout) | Enforce bounded build execution (single-use, time-limited) | 12 | 8M · 4L |
-| [`ESF-D-SECRETS`](#ctrl-esf-d-secrets) | Protect secrets used during build; no secrets in source or env | 90 | 30C · 53H · 6M · 1L |
+| [`ESF-D-SECRETS`](#ctrl-esf-d-secrets) | Protect secrets used during build; no secrets in source or env | 92 | 30C · 55H · 6M · 1L |
 | [`ESF-D-PRIV-BUILD`](#ctrl-esf-d-priv-build) | Avoid privileged / host-networked build workers | 48 | 6C · 27H · 14M · 1L |
 | [`ESF-D-SIGN-ARTIFACTS`](#ctrl-esf-d-sign-artifacts) | Sign build artifacts and verify signatures before release | 30 | 6H · 24M |
 | [`ESF-D-SBOM`](#ctrl-esf-d-sbom) | Produce SBOM / provenance metadata with every build | 26 | 1H · 20M · 5L |
@@ -187,7 +187,7 @@ pipeline_check --pipeline aws --standard esf_supply_chain --standard owasp_cicd_
 
 ### ESF-D-SECRETS: Protect secrets used during build; no secrets in source or env { #ctrl-esf-d-secrets }
 
-**Evidenced by 90 checks** across 30 providers (AWS, Argo CD, Argo Workflows, Azure DevOps, Bitbucket, Buildkite, CircleCI, Cloud Build, CloudFormation, Composer, Developer environment, Dockerfile, Drone CI, GitHub Actions, GitLab CI, GitLab group governance, Harness CI/CD, Helm, Jenkins, Kubernetes, NuGet, Pulumi, PyPI, RubyGems, SCM, SCM org governance, Tekton, Terraform, maven, npm).
+**Evidenced by 92 checks** across 30 providers (AWS, Argo CD, Argo Workflows, Azure DevOps, Bitbucket, Buildkite, CircleCI, Cloud Build, CloudFormation, Composer, Developer environment, Dockerfile, Drone CI, GitHub Actions, GitLab CI, GitLab group governance, Harness CI/CD, Helm, Jenkins, Kubernetes, NuGet, Pulumi, PyPI, RubyGems, SCM, SCM org governance, Tekton, Terraform, maven, npm).
 
 | Check | Title | Severity | Provider | Fix |
 |-------|-------|----------|----------|-----|
@@ -203,6 +203,7 @@ pipeline_check --pipeline aws --standard esf_supply_chain --standard owasp_cicd_
 | [`BB-019`](../providers/bitbucket.md#bb-019) | after-script references secrets | <span class="pg-sev pg-sev--high">HIGH</span> | [Bitbucket](../providers/bitbucket.md) |  |
 | [`BB-032`](../providers/bitbucket.md#bb-032) | Secret-named variable echoed / printed in a script block | <span class="pg-sev pg-sev--high">HIGH</span> | [Bitbucket](../providers/bitbucket.md) |  |
 | [`BK-002`](../providers/buildkite.md#bk-002) | Literal secret value in pipeline env block | <span class="pg-sev pg-sev--critical">CRITICAL</span> | [Buildkite](../providers/buildkite.md) | <span class="pg-fix" title="`--fix` will patch this rule">🔧 fix</span> |
+| [`BK-017`](../providers/buildkite.md#bk-017) | Secret-named variable echoed / printed in a step command | <span class="pg-sev pg-sev--high">HIGH</span> | [Buildkite](../providers/buildkite.md) |  |
 | [`CB-001`](../providers/aws.md#cb-001) | Secrets in plaintext environment variables | <span class="pg-sev pg-sev--critical">CRITICAL</span> | [AWS](../providers/aws.md) |  |
 | [`CC-004`](../providers/circleci.md#cc-004) | Secret-like environment variable not managed via context | <span class="pg-sev pg-sev--medium">MEDIUM</span> | [CircleCI](../providers/circleci.md) |  |
 | [`CC-008`](../providers/circleci.md#cc-008) | Credential-shaped literal in config body | <span class="pg-sev pg-sev--critical">CRITICAL</span> | [CircleCI](../providers/circleci.md) | <span class="pg-fix" title="`--fix` will patch this rule">🔧 fix</span> |
@@ -217,6 +218,7 @@ pipeline_check --pipeline aws --standard esf_supply_chain --standard owasp_cicd_
 | [`DF-020`](../providers/dockerfile.md#df-020) | ARG declares a credential-named build argument | <span class="pg-sev pg-sev--high">HIGH</span> | [Dockerfile](../providers/dockerfile.md) | <span class="pg-fix" title="`--fix` will patch this rule">🔧 fix</span> |
 | [`DF-025`](../providers/dockerfile.md#df-025) | RUN writes a registry auth token into a Docker layer | <span class="pg-sev pg-sev--critical">CRITICAL</span> | [Dockerfile](../providers/dockerfile.md) |  |
 | [`DR-004`](../providers/drone.md#dr-004) | Literal credential in step environment / settings | <span class="pg-sev pg-sev--critical">CRITICAL</span> | [Drone CI](../providers/drone.md) |  |
+| [`DR-018`](../providers/drone.md#dr-018) | Secret-named variable echoed / printed in a step command | <span class="pg-sev pg-sev--high">HIGH</span> | [Drone CI](../providers/drone.md) |  |
 | [`GCB-002`](../providers/cloudbuild.md#gcb-002) | Cloud Build uses the default service account | <span class="pg-sev pg-sev--high">HIGH</span> | [Cloud Build](../providers/cloudbuild.md) |  |
 | [`GCB-003`](../providers/cloudbuild.md#gcb-003) | Secret Manager value referenced in step args | <span class="pg-sev pg-sev--high">HIGH</span> | [Cloud Build](../providers/cloudbuild.md) |  |
 | [`GCB-005`](../providers/cloudbuild.md#gcb-005) | Build timeout unset or excessive | <span class="pg-sev pg-sev--low">LOW</span> | [Cloud Build](../providers/cloudbuild.md) | <span class="pg-fix" title="`--fix` will patch this rule">🔧 fix</span> |

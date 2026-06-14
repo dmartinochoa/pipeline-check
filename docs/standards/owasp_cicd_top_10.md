@@ -19,7 +19,7 @@ Kubernetes, …) when an audit asks for that framework's vocabulary.
 
 - **Controls in this standard:** 10
 - **Controls evidenced by at least one check:** 10 / 10
-- **Distinct checks evidencing this standard:** 997
+- **Distinct checks evidencing this standard:** 999
 - **Of those, autofixable with `--fix`:** 120
 
 _Severity levels (`CRITICAL` / `HIGH` / `MEDIUM` / `LOW` / `INFO`) follow the same scale across every provider and standard. See [How to read severity](README.md#how-to-read-severity) on the standards overview for the definitions._
@@ -35,7 +35,7 @@ Click a control ID to jump to the per-control section with the full check list. 
 | [`CICD-SEC-3`](#ctrl-cicd-sec-3) | Dependency Chain Abuse | 321 | 12C · 169H · 116M · 24L |
 | [`CICD-SEC-4`](#ctrl-cicd-sec-4) | Poisoned Pipeline Execution | 167 | 33C · 97H · 25M · 12L |
 | [`CICD-SEC-5`](#ctrl-cicd-sec-5) | Insufficient PBAC | 79 | 4C · 56H · 19M |
-| [`CICD-SEC-6`](#ctrl-cicd-sec-6) | Insufficient Credential Hygiene | 124 | 33C · 66H · 25M |
+| [`CICD-SEC-6`](#ctrl-cicd-sec-6) | Insufficient Credential Hygiene | 126 | 33C · 68H · 25M |
 | [`CICD-SEC-7`](#ctrl-cicd-sec-7) | Insecure System Configuration | 151 | 26C · 67H · 47M · 11L |
 | [`CICD-SEC-8`](#ctrl-cicd-sec-8) | Ungoverned Usage of 3rd-Party Services | 41 | 13C · 21H · 7M |
 | [`CICD-SEC-9`](#ctrl-cicd-sec-9) | Improper Artifact Integrity Validation | 132 | 3C · 44H · 72M · 12L · 1I |
@@ -871,7 +871,7 @@ Build steps with deploy-class permissions, jobs sharing a single broad role, and
 
 Plaintext secrets in YAML, env vars baked into image layers, or tokens echoed to logs all leak credentials before they're ever exploited; rotation only helps if the leak is detected.
 
-**Evidenced by 124 checks** across 32 providers (AWS, Argo CD, Argo Workflows, Azure Cloud, Azure DevOps, Bitbucket, Buildkite, CircleCI, Cloud Build, CloudFormation, Composer, Developer environment, Dockerfile, Drone CI, GCP, GitHub Actions, GitLab CI, GitLab group governance, Harness CI/CD, Helm, Jenkins, Kubernetes, NuGet, Pulumi, PyPI, RubyGems, SCM, SCM org governance, Tekton, Terraform, maven, npm).
+**Evidenced by 126 checks** across 32 providers (AWS, Argo CD, Argo Workflows, Azure Cloud, Azure DevOps, Bitbucket, Buildkite, CircleCI, Cloud Build, CloudFormation, Composer, Developer environment, Dockerfile, Drone CI, GCP, GitHub Actions, GitLab CI, GitLab group governance, Harness CI/CD, Helm, Jenkins, Kubernetes, NuGet, Pulumi, PyPI, RubyGems, SCM, SCM org governance, Tekton, Terraform, maven, npm).
 
 | Check | Title | Severity | Provider | Fix |
 |-------|-------|----------|----------|-----|
@@ -892,6 +892,7 @@ Plaintext secrets in YAML, env vars baked into image layers, or tokens echoed to
 | [`BB-019`](../providers/bitbucket.md#bb-019) | after-script references secrets | <span class="pg-sev pg-sev--high">HIGH</span> | [Bitbucket](../providers/bitbucket.md) |  |
 | [`BB-032`](../providers/bitbucket.md#bb-032) | Secret-named variable echoed / printed in a script block | <span class="pg-sev pg-sev--high">HIGH</span> | [Bitbucket](../providers/bitbucket.md) |  |
 | [`BK-002`](../providers/buildkite.md#bk-002) | Literal secret value in pipeline env block | <span class="pg-sev pg-sev--critical">CRITICAL</span> | [Buildkite](../providers/buildkite.md) | <span class="pg-fix" title="`--fix` will patch this rule">🔧 fix</span> |
+| [`BK-017`](../providers/buildkite.md#bk-017) | Secret-named variable echoed / printed in a step command | <span class="pg-sev pg-sev--high">HIGH</span> | [Buildkite](../providers/buildkite.md) |  |
 | [`CB-001`](../providers/aws.md#cb-001) | Secrets in plaintext environment variables | <span class="pg-sev pg-sev--critical">CRITICAL</span> | [AWS](../providers/aws.md) |  |
 | [`CB-006`](../providers/aws.md#cb-006) | CodeBuild source auth uses long-lived token | <span class="pg-sev pg-sev--high">HIGH</span> | [AWS](../providers/aws.md) |  |
 | [`CC-004`](../providers/circleci.md#cc-004) | Secret-like environment variable not managed via context | <span class="pg-sev pg-sev--medium">MEDIUM</span> | [CircleCI](../providers/circleci.md) |  |
@@ -911,6 +912,7 @@ Plaintext secrets in YAML, env vars baked into image layers, or tokens echoed to
 | [`DF-020`](../providers/dockerfile.md#df-020) | ARG declares a credential-named build argument | <span class="pg-sev pg-sev--high">HIGH</span> | [Dockerfile](../providers/dockerfile.md) | <span class="pg-fix" title="`--fix` will patch this rule">🔧 fix</span> |
 | [`DF-025`](../providers/dockerfile.md#df-025) | RUN writes a registry auth token into a Docker layer | <span class="pg-sev pg-sev--critical">CRITICAL</span> | [Dockerfile](../providers/dockerfile.md) |  |
 | [`DR-004`](../providers/drone.md#dr-004) | Literal credential in step environment / settings | <span class="pg-sev pg-sev--critical">CRITICAL</span> | [Drone CI](../providers/drone.md) |  |
+| [`DR-018`](../providers/drone.md#dr-018) | Secret-named variable echoed / printed in a step command | <span class="pg-sev pg-sev--high">HIGH</span> | [Drone CI](../providers/drone.md) |  |
 | [`GCB-003`](../providers/cloudbuild.md#gcb-003) | Secret Manager value referenced in step args | <span class="pg-sev pg-sev--high">HIGH</span> | [Cloud Build](../providers/cloudbuild.md) |  |
 | [`GCB-007`](../providers/cloudbuild.md#gcb-007) | availableSecrets references ``versions/latest`` | <span class="pg-sev pg-sev--medium">MEDIUM</span> | [Cloud Build](../providers/cloudbuild.md) | <span class="pg-fix" title="`--fix` will patch this rule">🔧 fix</span> |
 | [`GCB-012`](../providers/cloudbuild.md#gcb-012) | Credential-shaped literal in pipeline body | <span class="pg-sev pg-sev--critical">CRITICAL</span> | [Cloud Build](../providers/cloudbuild.md) | <span class="pg-fix" title="`--fix` will patch this rule">🔧 fix</span> |

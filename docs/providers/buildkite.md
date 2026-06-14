@@ -33,7 +33,7 @@ All other flags (`--output`, `--severity-threshold`, `--checks`,
 
 ## What it covers
 
-17 checks · 4 have an autofix patch (``--fix``).
+18 checks · 4 have an autofix patch (``--fix``).
 
 | Check | Title | Severity | Fix |
 |-------|-------|----------|-----|
@@ -53,6 +53,7 @@ All other flags (`--output`, `--severity-threshold`, `--checks`,
 | [BK-014](#bk-014) | Step commands run unpinned package installs | <span class="pg-sev pg-sev--medium">MEDIUM</span> |  |
 | [BK-015](#bk-015) | agents map interpolates attacker-controllable Buildkite variable | <span class="pg-sev pg-sev--high">HIGH</span> |  |
 | [BK-016](#bk-016) | Dangerous shell idiom (eval, sh -c variable, backtick exec) | <span class="pg-sev pg-sev--high">HIGH</span> |  |
+| [BK-017](#bk-017) | Secret-named variable echoed / printed in a step command | <span class="pg-sev pg-sev--high">HIGH</span> |  |
 | [TAINT-005](#taint-005) | Untrusted input flows across steps via ``buildkite-agent meta-data`` | <span class="pg-sev pg-sev--high">HIGH</span> |  |
 
 ---
@@ -408,6 +409,26 @@ Complements BK-003 (untrusted Buildkite variable interpolated in a command). Thi
 **Recommended action**
 
 Replace ``eval "$VAR"`` / ``sh -c "$VAR"`` / backtick exec with direct command invocation. Validate or allow-list any value that must feed a dynamic command at the boundary.
+
+</div>
+
+</div>
+
+<div class="pg-rule pg-rule--high" markdown>
+
+## BK-017: Secret-named variable echoed / printed in a step command { #bk-017 }
+
+<div class="pg-rule__tags">
+<span class="pg-sev pg-sev--high">HIGH</span> <span class="pg-tag pg-tag--owasp">CICD-SEC-6</span> <span class="pg-tag pg-tag--esf">ESF-D-SECRETS</span> <span class="pg-tag pg-tag--cwe">CWE-532</span> <span class="pg-tag pg-tag--cwe">CWE-200</span>
+</div>
+
+Scans every ``command`` / ``commands`` entry on every step for a secret-named variable handed to ``echo`` / ``printf`` / ``cat`` / ``tee``, for an ``env`` / ``printenv`` dump, and for ``set -x`` with a secret-named variable in scope (the shared ``log_leak`` detector, with GHA-033 / GL-036 / BB-032 / ADO-031 / CC-032 / JF-042 / HARNESS-013). Variable names matching common secret patterns (PASSWORD / TOKEN / SECRET / API_KEY / CREDENTIAL) trigger the rule. The Buildkite analog of GL-036 / CC-032.
+
+<div class="pg-rule__rec" markdown>
+
+**Recommended action**
+
+Don't print secret values in step commands. Buildkite redacts the values of pipeline secrets / known env in the log, but only the exact string. Encoded, truncated, or derived forms bypass the redaction, and ``set -x`` / ``env`` / ``printenv`` dump the raw value before redaction can catch it. Log a boolean instead (``[ -n "$TOKEN" ] && echo set || echo unset``), and avoid ``set -x`` while a credential variable is in scope.
 
 </div>
 

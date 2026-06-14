@@ -20,7 +20,7 @@ the source-control side of the chain.
 
 - **Controls in this standard:** 7
 - **Controls evidenced by at least one check:** 6 / 7
-- **Distinct checks evidencing this standard:** 680
+- **Distinct checks evidencing this standard:** 682
 - **Of those, autofixable with `--fix`:** 101
 
 _Severity levels (`CRITICAL` / `HIGH` / `MEDIUM` / `LOW` / `INFO`) follow the same scale across every provider and standard. See [How to read severity](README.md#how-to-read-severity) on the standards overview for the definitions._
@@ -37,7 +37,7 @@ Click a control ID to jump to the per-control section with the full check list. 
 | [`Build.L2.Signed`](#ctrl-build-l2-signed) | Build L2: Provenance is authenticated and cannot be forged by tenants | 44 | 9H · 32M · 3L |
 | [`Build.L3.Isolated`](#ctrl-build-l3-isolated) | Build L3: Build runs in an isolated environment not influenced by other builds | 215 | 30C · 139H · 41M · 5L |
 | [`Build.L3.Ephemeral`](#ctrl-build-l3-ephemeral) | Build L3: Build environment is ephemeral and provisioned fresh for each run | 22 | 3H · 14M · 5L |
-| [`Build.L3.NonFalsifiable`](#ctrl-build-l3-nonfalsifiable) | Build L3: Provenance cannot be falsified by the build's own tenant | 420 | 50C · 215H · 139M · 15L · 1I |
+| [`Build.L3.NonFalsifiable`](#ctrl-build-l3-nonfalsifiable) | Build L3: Provenance cannot be falsified by the build's own tenant | 422 | 50C · 217H · 139M · 15L · 1I |
 
 ## Filter at runtime
 
@@ -445,7 +445,7 @@ Build environments are provisioned per run and torn down after, so a compromised
 
 The build platform's provenance signature is bound to inputs the tenant cannot influence (e.g. a backend-controlled identity), so a tenant-controlled compromise cannot mint forged provenance.
 
-**Evidenced by 420 checks** across 30 providers (AWS, Argo Workflows, Azure Cloud, Azure DevOps, Bitbucket, Buildkite, CircleCI, Cloud Build, CloudFormation, Composer, Developer environment, Dockerfile, Drone CI, GCP, GitHub Actions, GitLab CI, Harness CI/CD, Helm, Jenkins, Modelfile, NuGet, OCI manifest, PyPI, RubyGems, SCM, SCM org governance, Tekton, Terraform, maven, npm).
+**Evidenced by 422 checks** across 30 providers (AWS, Argo Workflows, Azure Cloud, Azure DevOps, Bitbucket, Buildkite, CircleCI, Cloud Build, CloudFormation, Composer, Developer environment, Dockerfile, Drone CI, GCP, GitHub Actions, GitLab CI, Harness CI/CD, Helm, Jenkins, Modelfile, NuGet, OCI manifest, PyPI, RubyGems, SCM, SCM org governance, Tekton, Terraform, maven, npm).
 
 | Check | Title | Severity | Provider | Fix |
 |-------|-------|----------|----------|-----|
@@ -532,6 +532,7 @@ The build platform's provenance signature is bound to inputs the tenant cannot i
 | [`BK-011`](../providers/buildkite.md#bk-011) | No SLSA provenance attestation produced | <span class="pg-sev pg-sev--medium">MEDIUM</span> | [Buildkite](../providers/buildkite.md) |  |
 | [`BK-013`](../providers/buildkite.md#bk-013) | Deploy step has no branches: filter | <span class="pg-sev pg-sev--medium">MEDIUM</span> | [Buildkite](../providers/buildkite.md) |  |
 | [`BK-014`](../providers/buildkite.md#bk-014) | Step commands run unpinned package installs | <span class="pg-sev pg-sev--medium">MEDIUM</span> | [Buildkite](../providers/buildkite.md) |  |
+| [`BK-017`](../providers/buildkite.md#bk-017) | Secret-named variable echoed / printed in a step command | <span class="pg-sev pg-sev--high">HIGH</span> | [Buildkite](../providers/buildkite.md) |  |
 | [`CB-001`](../providers/aws.md#cb-001) | Secrets in plaintext environment variables | <span class="pg-sev pg-sev--critical">CRITICAL</span> | [AWS](../providers/aws.md) |  |
 | [`CB-005`](../providers/aws.md#cb-005) | Outdated managed build image | <span class="pg-sev pg-sev--medium">MEDIUM</span> | [AWS](../providers/aws.md) |  |
 | [`CB-006`](../providers/aws.md#cb-006) | CodeBuild source auth uses long-lived token | <span class="pg-sev pg-sev--high">HIGH</span> | [AWS](../providers/aws.md) |  |
@@ -592,6 +593,7 @@ The build platform's provenance signature is bound to inputs the tenant cannot i
 | [`DR-012`](../providers/drone.md#dr-012) | Service container image not pinned to digest | <span class="pg-sev pg-sev--high">HIGH</span> | [Drone CI](../providers/drone.md) |  |
 | [`DR-014`](../providers/drone.md#dr-014) | Step pipes a remote download into a shell interpreter | <span class="pg-sev pg-sev--high">HIGH</span> | [Drone CI](../providers/drone.md) | <span class="pg-fix" title="`--fix` will patch this rule">🔧 fix</span> |
 | [`DR-015`](../providers/drone.md#dr-015) | Pipeline clone enables recursive submodule cloning | <span class="pg-sev pg-sev--medium">MEDIUM</span> | [Drone CI](../providers/drone.md) |  |
+| [`DR-018`](../providers/drone.md#dr-018) | Secret-named variable echoed / printed in a step command | <span class="pg-sev pg-sev--high">HIGH</span> | [Drone CI](../providers/drone.md) |  |
 | [`ECR-002`](../providers/aws.md#ecr-002) | Image tags are mutable | <span class="pg-sev pg-sev--high">HIGH</span> | [AWS](../providers/aws.md) |  |
 | [`ECR-006`](../providers/aws.md#ecr-006) | ECR pull-through cache rule uses an untrusted upstream | <span class="pg-sev pg-sev--high">HIGH</span> | [AWS](../providers/aws.md) |  |
 | [`ENTRA-001`](../providers/azure_cloud.md) | Service principal assigned Global Administrator | <span class="pg-sev pg-sev--critical">CRITICAL</span> | [Azure Cloud](../providers/azure_cloud.md) |  |
