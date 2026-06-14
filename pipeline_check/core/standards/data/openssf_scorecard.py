@@ -273,6 +273,8 @@ STANDARD = Standard(
         "BB-037":   ["Dangerous-Workflow"],   # unsafe pickle deser of fetched artifact = code exec
         "BB-039":   ["Code-Review"],   # agentic CLI output lands without review
         "JF-038":   ["Code-Review"],   # agentic CLI output lands without review
+        "JF-039":   ["Dangerous-Workflow"],   # trust_remote_code model load = code exec
+        "JF-041":   ["Dangerous-Workflow"],   # unsafe pickle deser of fetched artifact = code exec
         "BB-018":   ["Dangerous-Workflow"],
         "BB-023":   ["Dangerous-Workflow"],
         "BB-025":   ["Dangerous-Workflow"],                            # malicious activity
@@ -303,6 +305,11 @@ STANDARD = Standard(
         "CC-025":   ["Dangerous-Workflow"],
         "CC-026":   ["Dangerous-Workflow"],                            # malicious activity
         "CC-027":   ["Dangerous-Workflow"],
+        "DR-017":  ["Dangerous-Workflow"],  # Drone dangerous shell idiom
+        "BK-016":  ["Dangerous-Workflow"],  # Buildkite dangerous shell idiom
+        "ARGO-019":  ["Dangerous-Workflow"],  # Argo dangerous shell idiom
+        "TKN-018":  ["Dangerous-Workflow"],  # Tekton dangerous shell idiom
+        "HARNESS-014":  ["Dangerous-Workflow"],  # Harness dangerous shell idiom
         "GCB-004":  ["Dangerous-Workflow"],
         "GCB-006":  ["Dangerous-Workflow"],
         # curl|bash is classic Dangerous-Workflow territory
@@ -456,6 +463,10 @@ STANDARD = Standard(
         "CC-008":   ["Token-Permissions"],
         "CC-019":   ["Token-Permissions"],
         "CC-030":   ["Token-Permissions"],
+        "CC-034":   ["Dangerous-Workflow"],   # trust_remote_code model load = code exec
+        "CC-036":   ["Dangerous-Workflow"],   # unsafe pickle deser of fetched artifact = code exec
+        "CC-037":   ["Dangerous-Workflow"],   # agentic CLI ingests untrusted context (prompt injection)
+        "CC-038":   ["Code-Review"],   # agentic CLI output lands without review
         "GCB-002":  ["Token-Permissions"],
         "GCB-003":  ["Token-Permissions"],
         "GCB-007":  ["Token-Permissions"],
@@ -583,9 +594,17 @@ STANDARD = Standard(
         "BK-007":   ["Code-Review"],                                   # deploy not gated
         "BK-008":   ["Pinned-Dependencies"],                           # TLS bypass
         "BK-009":   ["Signed-Releases"],                               # artifact signing
+        "HARNESS-015":  ["Signed-Releases"],  # Harness artifacts not signed
+        "DR-019":  ["Signed-Releases"],  # Drone artifacts not signed
         "BK-010":   ["SBOM"],                                          # SBOM
+        "HARNESS-016":  ["SBOM"],  # Harness no SBOM
+        "DR-020":  ["SBOM"],  # Drone no SBOM
         "BK-011":   ["Signed-Releases", "SBOM"],                       # SLSA provenance
+        "HARNESS-017":  ["Signed-Releases", "SBOM"],  # Harness no SLSA provenance
+        "DR-021":  ["Signed-Releases", "SBOM"],  # Drone no SLSA provenance
         "BK-012":   ["Vulnerabilities", "SAST"],                       # vuln scanning
+        "HARNESS-018":  ["Vulnerabilities", "SAST"],  # Harness no vuln scan
+        "DR-022":  ["Vulnerabilities", "SAST"],  # Drone no vuln scan
         # ── Tekton ───────────────────────────────────────────────────
         "TKN-001":  ["Pinned-Dependencies"],                           # step image not digest-pinned
         "TKN-016": ["Pinned-Dependencies"],  # remote resolver / bundle task body not pinned

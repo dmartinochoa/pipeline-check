@@ -1,6 +1,0 @@
-[run]
-omit =
-    pipeline_check/core/fleet.py
-    pipeline_check/core/checks/custom/rego_errors.py
-    pipeline_check/core/checks/custom/rego_loader.py
-    pipeline_check/core/checks/custom/rego_runner.py

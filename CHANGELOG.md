@@ -10,6 +10,343 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 PRs landing on `dev` between releases append entries below. The
 release commit collapses this section into `## [X.Y.Z] - <date>`.
 
+## [1.15.0] - 2026-06-14
+
+### Changed
+
+- **BK-016 / DR-017 standards mappings harmonized with the
+  dangerous-shell-idiom family.** The Buildkite and Drone members of the
+  `eval` / `sh -c` family were under-mapped to 7 standards while the other
+  eight members (GHA-028 / GL-026 / BB-026 / ADO-027 / CC-027 / HARNESS-014
+  / TKN-018 / ARGO-019) carry the full 12-standard code-execution mapping.
+  Backfilled both into the five missing standards (cis_supply_chain,
+  nist_800_190, openssf_scorecard, oscr, slsa) with
+  `scripts/clone_standards_mapping.py` (its skip-already-mapped behavior
+  makes it a clean backfill tool, not just a new-rule cloner), so a
+  Buildkite / Drone `eval` finding now evidences the same controls as
+  every other provider's. No rule or behavior change.
+- **AC-040 (prompt-injected agent auto-lands its output) extended to
+  CircleCI.** The injection->autoland kill chain now correlates the
+  CircleCI agentic-AI pair (CC-037 injection + CC-038 autoland) on the
+  same `.circleci/config.yml`, alongside the GitHub / GitLab / Bitbucket /
+  Azure DevOps / Jenkins / Harness pairs it already covered. With the
+  CircleCI AI rules now landed, this closes the gap where CC-037 + CC-038
+  on one config would not compose into the CRITICAL chain. The chain count
+  is unchanged (the legs widened, not a new chain); AC-040 now spans all
+  seven script-based providers that carry the agentic-AI rule pack.
+- **Loader robustness fuzzing moved to Hypothesis.** The generative pass
+  in `tests/test_loader_robustness.py` that throws arbitrary inputs at the
+  shared YAML loader was a hand-seeded `random` battery (the dev deps were
+  hash-locked, so Hypothesis was deferred). It is now a Hypothesis
+  property test: `st.recursive` structured documents plus `st.binary` /
+  `st.text` blobs, with `derandomize=True` to stay reproducible / CI-stable
+  while gaining automatic shrinking to a minimal reproducer on failure.
+  `hypothesis` added to `requirements-dev.in` and the hash-locked
+  `requirements-dev.txt`. The curated pathological battery and the
+  differential parser-shape tests are unchanged.
+- **Rego engine modules brought into coverage measurement.** The
+  `--rego-rules` loader / runner / errors modules were omitted from the
+  gated coverage run because their integration tests skip without the
+  `opa` binary (absent in CI), leaving them at 13-58% measured. New
+  binary-free mock tests (`tests/custom/test_rego_mocked.py`, 51 cases)
+  exercise every pure-logic helper directly and mock the two external
+  seams (`shutil.which("opa")` and `subprocess.run`), raising the three
+  modules to 97-100% and letting them come off the coverage-omit list.
+  Whole-repo coverage stays above the 90% gate (91.8%).
+- **`fleet.py` brought into coverage measurement; the omit list is now
+  empty and removed.** `fleet.py` was the last omitted module (its 71
+  tests ran in a separate, non-coverage `test-fleet` CI job). The main
+  test step now runs the suite under xdist with the fleet tests excluded,
+  then runs them serially with `--cov-append`, so their coverage combines
+  into the gated total (`fleet.py` measured at 88%, repo at 91.8%). The
+  redundant `test-fleet` job and the `.github/coveragerc-no-fleet` file
+  are removed, and the step uses `shell: bash` so the two invocations
+  share fail-fast semantics on the Windows runner too. Every
+  `pipeline_check` module is now measured against the 90% gate.
+
+### Added
+
+- **HARNESS-015..018: supply-chain hygiene gates brought to Harness
+  (MEDIUM).** The Harness counterpart of the Drone gates below: HARNESS-015
+  (no signing), HARNESS-016 (no SBOM), HARNESS-017 (no SLSA provenance),
+  HARNESS-018 (no vuln scanner), reusing the same shared `tokens.py`
+  detectors over the Harness pipeline document. Signing / SBOM / provenance
+  are scoped to artifact-producing pipelines; the vuln-scan gate fires on
+  any pipeline with no scanner. All four registered in `BEST_PRACTICE_IDS`
+  (demoted to LOW by the confidence-tiering). With this, **both Harness and
+  Drone reach parity** with the other ten CI providers on the
+  signing / SBOM / provenance / vuln-scan family. Standards cloned from the
+  Buildkite analogs. `harness` 14 -> 18.
+- **DR-019..022: supply-chain hygiene gates brought to Drone (MEDIUM).**
+  Drone lacked the artifact-signing / SBOM / SLSA-provenance / vuln-scan
+  gate family that the other ten CI providers carry. DR-019 (no
+  cosign/sigstore signing step), DR-020 (no syft/cyclonedx SBOM), DR-021
+  (no SLSA provenance attestation), and DR-022 (no trivy/grype/snyk
+  scanner) reuse the shared `tokens.py` detectors (`produces_artifacts` /
+  `has_signing` / `has_sbom` / `has_provenance` / `has_vuln_scanning`), so
+  detection matches GHA-006/007/024/020 and the BK / TKN analogs exactly.
+  Signing / SBOM / provenance only fire on artifact-producing pipelines
+  (a `docker build` / `push` / `buildah` / `kaniko` step), so lint /
+  test-only pipelines don't trip them; the vuln-scan gate fires on any
+  pipeline with no scanner. All four are registered in `BEST_PRACTICE_IDS`,
+  so the confidence-tiering demotes them to LOW (visible at the default
+  threshold, hidden at `--min-confidence MEDIUM`). Standards cloned from
+  the Buildkite analogs with `scripts/clone_standards_mapping.py`. `drone`
+  18 -> 22.
+- **HARNESS-014 + TKN-018 + ARGO-019: dangerous-shell-idiom rule extended
+  to Harness, Tekton, and Argo (HIGH).** The `eval "$VAR"` / `sh -c "$VAR"`
+  / backtick-exec family (GHA-028 / GL-026 / BB-026 / ADO-027 / CC-027 /
+  BK-016 / DR-017) now covers the three remaining shell-surface providers
+  that lacked it. Each fires on intrinsically risky idioms that hand a
+  value full shell-grammar reach, regardless of whether the input is
+  currently trusted (complementing the per-provider untrusted-input rules
+  HARNESS-002 / TKN-003 / ARGO-005), via the shared `_primitives.shell_eval`
+  detector over the provider's shell surface (Harness step `command`,
+  Tekton step `script`, Argo `script.source` / `container.args`). The
+  `eval "$(ssh-agent -s)"` bootstrap idiom is intentionally not flagged.
+  Standards cloned from CC-027 (the correctly-mapped family member, 12
+  standards) with `scripts/clone_standards_mapping.py`. `harness` 13 -> 14,
+  `tekton` 18 -> 19, `argo` 19 -> 20.
+- **TKN-017 + ARGO-018 + GCB-028: log-leak rule completed across the
+  remaining shell providers (HIGH).** Finishes the log-leak family
+  (GHA-033 / GL-036 / BB-032 / ADO-031 / CC-032 / JF-042 / HARNESS-013 /
+  BK-017 / DR-018) for Tekton, Argo Workflows, and Google Cloud Build, so
+  every CI provider with a shell command surface now flags secrets printed
+  to the log. Each scans the provider's shell surface (Tekton step
+  `script`, Argo template `script.source` / `container.args`, Cloud Build
+  step `entrypoint` / `args` / `script`) for a secret-named variable
+  handed to `echo` / `printf` / `cat` / `tee`, an `env` / `printenv` dump,
+  or `set -x` with a secret-named variable in scope, via the shared
+  `_primitives/log_leak` detector. GCB-028 normalizes Cloud Build's `$$`
+  escaping to `$` and scans each arg on its own (a `bash -c '<script>'`
+  step keeps the script in a single arg). Standards cloned with
+  `scripts/clone_standards_mapping.py` (10 each). The `nist_800_190`
+  per-framework coverage floor drops 53 -> 52 (container-scoped; the
+  secret-hygiene rules dilute the denominator without container coverage).
+  `tekton` 17 -> 18, `argo` 18 -> 19, `cloudbuild` 27 -> 28.
+- **BK-017 + DR-018: log-leak rule extended to Buildkite and Drone
+  (HIGH).** Continues the log-leak family (GHA-033 / GL-036 / BB-032 /
+  ADO-031 / CC-032 / JF-042 / HARNESS-013) into two more shell-command CI
+  providers. Each scans every step command (`command` / `commands`) for a
+  secret-named variable handed to `echo` / `printf` / `cat` / `tee`, an
+  `env` / `printenv` dump, or `set -x` with a secret-named variable in
+  scope, via the shared `_primitives/log_leak` detector. DR-018 only
+  scans container-flavored Drone pipelines (the ones with a shell command
+  surface). Mapped across the 10 standards the log-leak family uses (the
+  per-standard mappings were cloned with the new
+  `scripts/clone_standards_mapping.py`). The `cis_aws_foundations`
+  per-framework coverage floor drops 12 -> 11 (the expected denominator
+  dilution as non-AWS rule packs grow). `buildkite` 17 -> 18, `drone`
+  17 -> 18.
+- **`scripts/clone_standards_mapping.py`: clone a rule's standards
+  mappings onto a new rule.** Adding a parity / family rule (a
+  cross-provider sibling, a new member of an established family) means
+  giving it the *same* control IDs in every standard the analog is mapped
+  to, which until now meant opening each
+  `pipeline_check/core/standards/data/*.py`, finding the analog's line,
+  reading off that standard's controls, and inserting a matching line by
+  hand (~10-12 files per rule). This tool does it in one shot: it touches
+  only the standards the analog is already in (preserving the deliberate
+  "which standards does this kind of rule belong in" decision the analog
+  encodes) and copies each standard's control set verbatim. `--apply`
+  inserts each entry right after the analog's line so it stays grouped
+  with its provider block; the default is a dry-run preview. Referenced
+  from `new_rule.py`'s next-steps. Covered by
+  `tests/test_clone_standards_mapping.py` (synthetic data dir + a
+  self-consistency check against the live mappings).
+- **HARNESS-013: Harness secret echoed to the step log (HIGH).** Continues
+  the log-leak family (GHA-033 / GL-036 / BB-032 / ADO-031 / CC-032 /
+  JF-042) into the Harness CD provider. Scans every step `command` for a
+  secret-named variable handed to `echo` / `printf` / `cat` / `tee`, an
+  `env` / `printenv` dump, or `set -x` with a secret-named variable in
+  scope (names matching PASSWORD / TOKEN / SECRET / API_KEY / CREDENTIAL).
+  Harness masks resolved `<+secrets.getValue(...)>` values in the log, but
+  only the exact string: `set -x`, encoded, or derived forms slip past.
+  Reuses the shared `_primitives/log_leak` detector over the Harness step
+  model; mapped across the 10 standards the log-leak family uses.
+  `harness` 12 -> 13.
+- **JF-042: Jenkins secret echoed to the build log (HIGH).** Brings the
+  log-leak rule (GHA-033 / GL-036 / BB-032 / ADO-031 / CC-032) to Jenkins,
+  the mainstream provider that lacked it. Scans every `sh` / `bat` /
+  `powershell` step body for a credential variable handed to `echo` /
+  `printf` / `cat` / `tee`, an `env` / `printenv` dump, or `set -x` with a
+  secret-named variable in scope. The credential set is the union of
+  name-pattern matches (PASSWORD / TOKEN / SECRET / API_KEY / CREDENTIAL)
+  and the variable names bound by `withCredentials([... variable: 'X'])`
+  anywhere in the Jenkinsfile, so a non-obviously-named bound credential
+  (`variable: 'GH'`) is still caught when echoed (Jenkins masks bound
+  credentials in the console, but only the exact string: `set -x`,
+  encoded, or derived forms slip past). Reuses the shared
+  `_primitives/log_leak` detector; mapped across the 10 standards the
+  log-leak family uses. `jenkins` 41 -> 42.
+- **CC-038: CircleCI agentic-CLI output lands without human review
+  (HIGH).** Completes the CircleCI agentic-AI matrix to 5/5 (prompt-
+  injection, trust_remote_code, model-pinning, unsafe-deser, autoland),
+  bringing it to parity with the other providers. The flow-control leg
+  alongside CC-037, and the analog of GHA-123 / GL-049 / BB-039 / ADO-038
+  / JF-038. Fires when one CircleCI job both invokes an agentic CLI
+  (claude / gemini / cursor-agent / aider / openhands / goose / `q chat`)
+  in a `run:` command and, in the same job, lands the result with a
+  `git push` straight to a branch (no review gate). Coupling is **per
+  job** (more precise than the Jenkins pipeline-level model): a CircleCI
+  job has its own executor / checkout, so the run steps of one job share a
+  workspace while separate jobs do not. Passes when the agent only opens a
+  PR, on a push with no agent, when the two sit in different jobs, or on
+  `git push --dry-run`. Reuses the shared `_primitives/agentic_cli`
+  detector; mapped across the 12 standards the autoland family uses
+  (mirrors JF-038). `circleci` 37 -> 38.
+- **CC-037: CircleCI untrusted PR/build context reaches an agentic AI CLI
+  (HIGH).** The AI face of CC-002 (script injection) and the CircleCI
+  analog of GHA-119 / GL-048 / BB-036 / ADO-035 / JF-037. Fires when a
+  `run:` command invokes an agentic CLI (claude / gemini / cursor-agent /
+  aider / openhands / goose / `q chat`) AND attacker-controllable CircleCI
+  context reaches it: an event-source env var (`$CIRCLE_BRANCH` /
+  `$CIRCLE_TAG` / `$CIRCLE_PR_*`) or a `<< pipeline.git.branch >>` /
+  `<< pipeline.git.tag >>` interpolation. A PR author or branch namer can
+  then smuggle instructions the agent executes. Unlike CC-002 the value is
+  flagged in any quote style (an LLM reads it as prompt text regardless of
+  shell quoting); `<< pipeline.parameters.* >>` stays safe. Reuses the
+  shared `_primitives/agentic_cli` detector + CircleCI's `UNTRUSTED_ENV_RE`,
+  mapped across the 12 standards the prompt-injection family uses.
+  `circleci` 36 -> 37.
+- **CC-035 + CC-036: CircleCI model-load triad completed (MEDIUM + HIGH).**
+  With CC-034 (`trust_remote_code`), these bring CircleCI to full parity
+  with the GHA / GitLab / Bitbucket / Azure DevOps / Harness / Jenkins
+  model-load rule family. **CC-035** (MEDIUM) flags a `run:` command that
+  fetches a model by a mutable registry reference
+  (`from_pretrained("org/model")`, `hf_hub_download` / `snapshot_download`
+  with a bare repo id, `huggingface-cli download org/model`) with no
+  revision pin, so the registry can serve swapped weights or loader code
+  on the next build (the analog of GHA-121 / BB-038 / JF-040; reuses
+  `_primitives/model_ref`). **CC-036** (HIGH) flags unsafe deserialization
+  of a fetched artifact: an explicit `weights_only=False` / `allow_pickle=
+  True` opt-in, or a remote fetch plus a pickle-backed loader
+  (`torch.load` / `pickle.load` / `joblib.load`) in the same command with
+  no safe path, which is code execution on the runner (the analog of
+  GHA-122 / BB-037 / JF-041; reuses `_primitives/unsafe_deser`). Both scan
+  `iter_run_commands` across all jobs. CC-035 mapped across the 8 standards
+  the model-pinning family uses, CC-036 across the 12 the RCE family uses.
+  `circleci` 34 -> 36.
+- **CC-034: CircleCI ML model loaded with `trust_remote_code` (HIGH).**
+  Brings the first AI / model-load coverage to CircleCI, a mainstream CI
+  provider that previously had none of the model-load family the other six
+  providers carry (GHA-120 / GL-045 / BB-035 / ADO-034 / HARNESS-010 /
+  JF-039). Scans every `run:` command across all jobs for
+  `trust_remote_code=True` (or `--trust-remote-code`): the transformers /
+  huggingface_hub loader executes the model repo's own `modeling_*.py` at
+  load time, so an untrusted or unpinned model is arbitrary code execution
+  on the runner with the job's context secrets and OIDC in scope. Reuses
+  the shared `_primitives/model_trust` detector over `iter_run_commands`,
+  and is mapped across the 12 standards the `trust_remote_code` family
+  uses. `circleci` 33 -> 34.
+- **JF-040 + JF-041: Jenkins model-load triad completed (MEDIUM + HIGH).**
+  With JF-039 (`trust_remote_code`), these bring Jenkins to full parity
+  with the GHA / GitLab / Bitbucket / Azure DevOps / Harness model-load
+  rule family. **JF-040** (MEDIUM) flags a `sh` / `bat` / `powershell`
+  step that fetches a model by a mutable registry reference
+  (`from_pretrained("org/model")`, `hf_hub_download` / `snapshot_download`
+  with a bare repo id, `huggingface-cli download org/model`) with no
+  revision pin, so the registry can serve swapped weights or loader code
+  on the next build (the analog of GHA-121 / BB-038 / HARNESS-012; reuses
+  `_primitives/model_ref`). **JF-041** (HIGH) flags unsafe deserialization
+  of a fetched artifact: an explicit `weights_only=False` / `allow_pickle=
+  True` opt-in, or a remote fetch plus a pickle-backed loader
+  (`torch.load` / `pickle.load` / `joblib.load`) in the same step with no
+  safe path, which is code execution on the agent (the analog of GHA-122 /
+  BB-037 / HARNESS-011; reuses `_primitives/unsafe_deser`). Both scan
+  shell-step bodies via the existing `SHELL_STEP_RE` and emit located
+  findings. JF-040 mapped across the 8 standards the model-pinning family
+  uses, JF-041 across the 12 the RCE family uses. `jenkins` 39 -> 41.
+- **GLGRP-006: GitLab group CI/CD variable exposes a secret with a weak
+  control (HIGH).** The `gitlab_group` provider now also fetches
+  `GET /groups/{group}/variables` and fires on a group-level CI/CD
+  variable whose value matches a known credential shape (the shared
+  `find_secret_values` catalog: PATs, cloud keys, provider tokens, PEM
+  blocks) AND that is `protected: false` (handed to pipelines on every
+  branch / MR, including feature branches and fork MRs where fork
+  pipelines run) or `masked: false` (printed in cleartext in job logs). A
+  group variable is inherited by every project in the group, so the blast
+  radius is the whole group. The value-shape gate keeps it low-FP: an
+  ordinary unprotected config variable (a URL, a region, a flag) is not
+  flagged, only an actual secret with a weakened control; the token body
+  is never echoed, only its detector label. This is the group-API surface
+  the static `.gitlab-ci.yml` rules (GL-003 / GL-008) structurally can't
+  see. Fetched independently, so a token that can read the group but not
+  its variables degrades to a pass-with-note. `gitlab_group` 5 -> 6.
+- **JF-039: Jenkins ML model loaded with `trust_remote_code` (HIGH).**
+  Brings the model-load supply-chain coverage the other CI providers carry
+  (GHA-120 / GL-045 / BB-035 / ADO-034 / HARNESS-010) to the Jenkinsfile,
+  and adds the model-load leg to a provider that previously only had the
+  agentic-CLI AI rules (JF-037 prompt-injection, JF-038 autoland). Fires
+  when a `sh` / `bat` / `powershell` step loads a model with
+  `trust_remote_code=True` (or `--trust-remote-code`), so the transformers
+  / huggingface_hub loader executes the model repo's own `modeling_*.py`
+  at load time: a poisoned, typosquatted, or unpinned model is then
+  arbitrary code execution on the Jenkins agent with the build's
+  credentials in reach. Reuses the shared `_primitives/model_trust`
+  detector; both single- and double-quoted step bodies are flagged
+  (Groovy quoting does not defang an in-process model load). Mapped across
+  the 12 standards the `trust_remote_code` family uses. `jenkins` 38 -> 39.
+- **HARNESS-012: AI model pulled without a pinned revision (MEDIUM).**
+  Completes the Harness agentic-AI rule row to parity with GitHub Actions
+  / GitLab / Bitbucket / Azure DevOps (the matrix already covered Harness
+  for prompt-injection, autoland, `trust_remote_code`, and unsafe-pickle
+  deserialization; model-pinning was the last gap). Fires on a Harness
+  step `command` that fetches a model from a registry by a mutable
+  reference (`from_pretrained("org/model")`, `hf_hub_download` /
+  `snapshot_download` with a bare repo id, `huggingface-cli download
+  org/model`) and supplies no revision pin, so the registry can serve
+  swapped weights or loader code on the next build with no diff in the
+  repo. Reuses the shared `_primitives/model_ref` detector (with GHA-121 /
+  GL-046 / BB-038 / ADO-037): pinned revisions, local paths, `<+...>`
+  expressions, and bare first-party hub names all pass. The model-registry
+  analog of HARNESS-001 (step image digest pinning) and the prerequisite
+  control for HARNESS-010's `trust_remote_code` path. `harness` 11 -> 12.
+- **GLGRP-005: GitLab group webhook over insecure transport (HIGH).** The
+  GitLab-group twin of the shipped ORG-011 (and the per-project SCM-026).
+  The `gitlab_group` provider now also fetches `GET /groups/{group}/hooks`
+  and fires on any group webhook whose `url` is `http://` or whose
+  `enable_ssl_verification` is `false`: a group webhook fires on events
+  across every project in the group, so its payloads (MR diffs, push
+  commits, pipeline content) ride to the receiver in cleartext where a
+  network attacker can read and tamper with them. Scoped to transport
+  security (no secret-token check, since the group hooks endpoint does not
+  report secret presence). The new endpoint is fetched independently, so a
+  token that can read the group but not its hooks degrades GLGRP-005 to a
+  pass-with-note instead of crashing the other group checks. `gitlab_group`
+  4 -> 5.
+- **`scripts/sync_doc_claims.py`: registry-derived doc-claim writer.**
+  `tests/test_doc_claims.py` already *checks* that headline counts ("39
+  providers", "120 autofixers", "1220+ checks", the per-provider "N
+  checks" cells, the README architecture ID ranges) match the live
+  registries; this is the *writer* for the same claims, so adding a rule
+  or provider no longer means hand-editing README.md, `action.yml`,
+  `docs/comparison.md`, CONTRIBUTING.md, and the Docker Hub README (step 7
+  of the `new_rule.py` checklist). `--check` reports drift and exits
+  non-zero (now part of `scripts/preflight.py`); the default rewrites.
+  Uses "make it pass" semantics, only a claim that would fail the gate is
+  touched, so a run against an in-sync tree changes nothing.
+
+### Changed
+
+- **`cli.py` decomposition: auxiliary subcommands moved to
+  `cli_aux_commands.py`.** The four self-contained top-level verbs
+  (`explain`, `fp-stats`, `history`, `verify-artifact`) moved out of the
+  5,100-line `cli.py` into a sibling module; `cli` re-imports them so
+  `main`'s dispatch and the `pipeline_check.cli.<cmd>` references in the
+  test suite are unchanged. No behavior change. `scan` and its plumbing
+  stay in `cli.py`.
+- **`cli.py` decomposition: operational subcommands moved to
+  `cli_ops_commands.py`.** The remaining three verbs (`init`, `fleet`,
+  `fix-pr`) and their scanner-setup helpers (`_init_scanner_kwargs_for`,
+  `_print_init_summary`, `_fix_pr_scan`, the `_INIT_*` / `_FIX_PR_TIERS`
+  maps) moved into a second sibling module, taking `cli.py` from ~4,770 to
+  ~3,930 lines. `init` and `fix-pr` build a Scanner directly, so the
+  smart-init tests now patch `pipeline_check.cli_ops_commands.Scanner`. As
+  with the aux split, `cli` re-imports the command objects, so dispatch and
+  the `pipeline_check.cli.<cmd>` test imports are unchanged. No behavior
+  change. `scan` and its option/validation plumbing remain in `cli.py`.
+
 ## [1.14.1] - 2026-06-13
 
 ### Added

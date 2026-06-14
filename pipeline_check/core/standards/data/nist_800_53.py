@@ -306,6 +306,10 @@ STANDARD = Standard(
         "BB-038":   ["SR-3", "SR-11", "SI-2"],   # model pulled without a pinned revision
         "BB-039":   ["SA-10", "AC-3"],   # agentic CLI output lands without review
         "JF-038":   ["SA-10", "AC-3"],   # agentic CLI output lands without review
+        "JF-039":   ["SI-7", "SA-11", "CM-6"],   # trust_remote_code model load = code exec
+        "JF-040":   ["SR-3", "SR-11", "SI-2"],   # model pulled without a pinned revision
+        "JF-041":   ["CM-6", "SA-11", "SA-15"],   # unsafe pickle deser of fetched artifact = code exec
+        "JF-042":   ["IA-5", "AU-9"],   # secret echoed to Jenkins build log
         "BB-003":   ["IA-5"],
         "BB-004":   ["SA-10", "AC-3"],
         "BB-034":   ["SA-10", "AC-3"],                   # prod deploy on a PR pipeline
@@ -405,6 +409,9 @@ STANDARD = Standard(
         "CC-025":   ["CM-6", "SA-11"],                   # cache key tainted
         "CC-026":   ["SR-3", "RA-5"],                    # malicious-activity indicators
         "CC-027":   ["CM-6", "SA-11"],                   # dangerous shell idiom
+        "ARGO-019":  ["CM-6", "SA-11"],  # Argo dangerous shell idiom
+        "TKN-018":  ["CM-6", "SA-11"],  # Tekton dangerous shell idiom
+        "HARNESS-014":  ["CM-6", "SA-11"],  # Harness dangerous shell idiom
         "CC-028":   ["SR-3", "SR-11"],                   # install bypasses registry integrity
         "CC-029":   ["SR-3", "SR-11", "SI-2"],           # machine executor image not pinned
         "CC-030":   ["SA-10", "AC-3"],                   # job w/o branch filter / approval gate
@@ -458,6 +465,13 @@ STANDARD = Standard(
         "HARNESS-008":   ["CM-6", "SA-11"],  # Harness agentic-CLI prompt injection
         "HARNESS-010":   ["CM-6", "SA-11", "SA-15"],  # Harness model trust_remote_code (code exec)
         "HARNESS-011":   ["CM-6", "SA-11", "SA-15"],  # Harness unsafe model deser (pickle RCE)
+        "HARNESS-012":   ["SR-3", "SR-11", "SI-2"],  # Harness model pulled without a pinned revision
+        "HARNESS-013":   ["IA-5", "AU-9"],  # Harness secret echoed to step log
+        "GCB-028":  ["IA-5", "AU-9"],  # Cloud Build secret echoed to build log
+        "ARGO-018":  ["IA-5", "AU-9"],  # Argo secret echoed to template log
+        "TKN-017":  ["IA-5", "AU-9"],  # Tekton secret echoed to step log
+        "DR-018":  ["IA-5", "AU-9"],  # Drone secret echoed to step log
+        "BK-017":  ["IA-5", "AU-9"],  # Buildkite secret echoed to step log
         "HARNESS-009":   ["SA-10", "AC-3"],  # Harness agentic-CLI output autolands without review
         "DR-002":   ["AC-6", "CM-7"],                    # privileged step
         "DR-003":   ["CM-6", "SA-11"],                   # Drone variable injection
@@ -586,9 +600,17 @@ STANDARD = Standard(
         "BK-007":   ["AC-3", "SA-10"],                   # deploy not gated
         "BK-008":   ["SC-8", "SC-13"],                   # TLS bypass
         "BK-009":   ["SI-7", "SR-4"],                    # artifacts not signed
+        "HARNESS-015":  ["SI-7", "SR-4"],  # Harness artifacts not signed
+        "DR-019":  ["SI-7", "SR-4"],  # Drone artifacts not signed
         "BK-010":   ["SR-4", "CM-8"],                    # no SBOM
+        "HARNESS-016":  ["SR-4", "CM-8"],  # Harness no SBOM
+        "DR-020":  ["SR-4", "CM-8"],  # Drone no SBOM
         "BK-011":   ["SI-7", "SR-4", "CM-2"],            # no SLSA provenance
+        "HARNESS-017":  ["SI-7", "SR-4", "CM-2"],  # Harness no SLSA provenance
+        "DR-021":  ["SI-7", "SR-4", "CM-2"],  # Drone no SLSA provenance
         "BK-012":   ["RA-5", "SI-2"],                    # no vuln scanning
+        "HARNESS-018":  ["RA-5", "SI-2"],  # Harness no vuln scan
+        "DR-022":  ["RA-5", "SI-2"],  # Drone no vuln scan
         "BK-013":   ["AC-3"],                            # deploy without branch filter
         "BK-014":   ["SR-3", "SR-11"],                   # unpinned package install
         "BK-015":   ["CM-6", "SA-11"],                   # agents map untrusted interpolation
@@ -976,6 +998,11 @@ STANDARD = Standard(
         "ADO-031":  ["IA-5", "AU-9"],                      # secret echoed to Azure DevOps log
         "ADO-032":  ["IA-5", "AU-9"],                      # checkout persistCredentials leaks token to .git/config
         "CC-032":   ["IA-5", "AU-9"],                      # secret echoed to CircleCI log
+        "CC-034":   ["SI-7", "SA-11", "CM-6"],             # trust_remote_code model load = code exec
+        "CC-035":   ["SR-3", "SR-11", "SI-2"],             # model pulled without a pinned revision
+        "CC-036":   ["CM-6", "SA-11", "SA-15"],            # unsafe pickle deser of fetched artifact = code exec
+        "CC-037":   ["CM-6", "SA-11"],            # agentic CLI ingests untrusted context (prompt injection)
+        "CC-038":   ["SA-10", "AC-3"],            # agentic CLI output lands without review
         "SCM-048":  ["AC-6", "IA-5"],                      # org codespace secrets scoped to all repos
         "SCM-049":  ["AC-6", "IA-5"],                      # classic PAT used where fine-grained suffices
         "ORG-001":  ["AC-6", "IA-5"],                      # org: 2FA not required org-wide
@@ -989,6 +1016,8 @@ STANDARD = Standard(
         "GLGRP-002":  ["AC-6"],  # gitlab group: forking outside group allowed
         "GLGRP-003":  ["AC-6"],  # gitlab group: sharing projects outside the hierarchy
         "GLGRP-004":  ["SA-15", "AC-3"],  # gitlab group: default branch protection disabled for new projects
+        "GLGRP-005":  ["SC-8"],  # gitlab group: group webhook over insecure transport
+        "GLGRP-006":  ["IA-5"],  # gitlab group: group CI/CD variable holds a secret with a weak control
         "ORG-008":  ["AC-6"],                              # org: members can create public repos (code exposure)
         "ORG-009":  ["CM-6", "CM-7"],                      # org: self-hosted runner group exposed to public repos
         "ORG-010":  ["SI-7", "IA-5"],                      # org: new-repo secret-scanning push-protection default off

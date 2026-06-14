@@ -27,7 +27,7 @@ expression.
 
 ## What it covers
 
-38 checks · 12 have an autofix patch (``--fix``).
+42 checks · 12 have an autofix patch (``--fix``).
 
 | Check | Title | Severity | Fix |
 |-------|-------|----------|-----|
@@ -69,6 +69,10 @@ expression.
 | [JF-036](#jf-036) | Script step interpolates a build parameter (params.*) | <span class="pg-sev pg-sev--high">HIGH</span> |  |
 | [JF-037](#jf-037) | Untrusted PR/build context reaches an agentic AI CLI (prompt injection) | <span class="pg-sev pg-sev--high">HIGH</span> |  |
 | [JF-038](#jf-038) | Agentic CLI output lands without human review | <span class="pg-sev pg-sev--high">HIGH</span> |  |
+| [JF-039](#jf-039) | ML model loaded with trust_remote_code (code execution) | <span class="pg-sev pg-sev--high">HIGH</span> |  |
+| [JF-040](#jf-040) | AI model pulled without a pinned revision | <span class="pg-sev pg-sev--medium">MEDIUM</span> |  |
+| [JF-041](#jf-041) | Unsafe deserialization of a fetched artifact (pickle RCE) | <span class="pg-sev pg-sev--high">HIGH</span> |  |
+| [JF-042](#jf-042) | Secret-named variable echoed / printed in a build step | <span class="pg-sev pg-sev--high">HIGH</span> |  |
 
 ---
 
@@ -870,6 +874,92 @@ Does NOT fire when the agent only opens a pull request for review, nor on a push
 **Recommended action**
 
 Don't let an agentic CLI's output reach a branch without a human review gate. Have the agent open a normal pull request (no auto-merge) so a person reviews the diff before it lands, and don't pair the agent with a ``git push`` straight to a branch in the same pipeline. If the agent's prompt can be influenced by untrusted input (a PR title / branch, a build parameter), treat the committed result as attacker-controlled.
+
+</div>
+
+</div>
+
+<div class="pg-rule pg-rule--high" markdown>
+
+## JF-039: ML model loaded with trust_remote_code (code execution) { #jf-039 }
+
+<div class="pg-rule__tags">
+<span class="pg-sev pg-sev--high">HIGH</span> <span class="pg-tag pg-tag--owasp">CICD-SEC-4</span> <span class="pg-tag pg-tag--esf">ESF-D-INJECTION</span> <span class="pg-tag pg-tag--cwe">CWE-494</span> <span class="pg-tag pg-tag--cwe">CWE-829</span>
+</div>
+
+Fires on ``trust_remote_code=True`` / ``--trust-remote-code`` in a ``sh`` / ``bat`` / ``powershell`` step body (the shared ``model_trust`` detector, with GHA-120 / GL-045 / BB-035 / ADO-034 / HARNESS-010). Groovy quoting does not defang it: the loader runs the model repo's own Python regardless of how the command string is quoted, so both single- and double-quoted step bodies are flagged. The transformers / huggingface_hub loader executes that code at load time, so an untrusted or unpinned model is arbitrary code execution on the agent with the build's credentials in scope.
+
+<div class="pg-rule__rec" markdown>
+
+**Recommended action**
+
+Load models with ``trust_remote_code=False`` (the library default). If a model genuinely needs custom code, vet it and pin an exact revision (a commit SHA, not a tag or branch), run the load in a stage with no production credentials bound, and prefer safetensors weights over pickle.
+
+</div>
+
+</div>
+
+<div class="pg-rule pg-rule--medium" markdown>
+
+## JF-040: AI model pulled without a pinned revision { #jf-040 }
+
+<div class="pg-rule__tags">
+<span class="pg-sev pg-sev--medium">MEDIUM</span> <span class="pg-tag pg-tag--owasp">CICD-SEC-3</span> <span class="pg-tag pg-tag--esf">ESF-S-PIN-DEPS</span> <span class="pg-tag pg-tag--esf">ESF-S-VERIFY-DEPS</span> <span class="pg-tag pg-tag--cwe">CWE-494</span> <span class="pg-tag pg-tag--cwe">CWE-829</span>
+</div>
+
+Fires on a ``sh`` / ``bat`` / ``powershell`` step that fetches a model by a mutable registry reference and supplies no revision pin (the shared ``model_ref`` detector, with GHA-121 / GL-046 / BB-038 / ADO-037 / HARNESS-012). Detected fetch forms: ``from_pretrained("org/model")``, ``hf_hub_download`` / ``snapshot_download`` with a ``org/model`` repo id, and ``huggingface-cli download org/model``.
+
+Does NOT fire when a revision is pinned in the same step (``revision='<sha>'`` / ``--revision <sha>``), when the reference is a local path or a variable interpolation (the value can't be judged statically), or on a bare single-segment canonical hub name (``bert-base-uncased``) with no ``org/`` namespace, since those are first-party and the org-scoped third-party models are the higher-risk surface.
+
+**Known false-positive modes**
+
+- A team that re-pulls its own org's model on every run may treat the latest revision as intentional. The right fix is still to pin the revision (it makes an upstream compromise visible); if a rolling pull is genuinely wanted, suppress on the specific step with a rationale naming the model and who controls it.
+
+<div class="pg-rule__rec" markdown>
+
+**Recommended action**
+
+Pin the model to an immutable revision. Pass an exact commit ``revision=`` to ``from_pretrained`` / ``hf_hub_download`` / ``snapshot_download`` (a 40-char commit SHA, not a branch or a tag, both of which the owner can move), or ``--revision <sha>`` to ``huggingface-cli download``. A pinned revision is what makes a swapped-weights or swapped-loader-code attack show up as a diff in your repo instead of silently landing on the next build. Pair with ``trust_remote_code=False`` (JF-039) and prefer safetensors weights over pickle.
+
+</div>
+
+</div>
+
+<div class="pg-rule pg-rule--high" markdown>
+
+## JF-041: Unsafe deserialization of a fetched artifact (pickle RCE) { #jf-041 }
+
+<div class="pg-rule__tags">
+<span class="pg-sev pg-sev--high">HIGH</span> <span class="pg-tag pg-tag--owasp">CICD-SEC-4</span> <span class="pg-tag pg-tag--esf">ESF-D-INJECTION</span> <span class="pg-tag pg-tag--cwe">CWE-502</span> <span class="pg-tag pg-tag--cwe">CWE-494</span> <span class="pg-tag pg-tag--cwe">CWE-829</span>
+</div>
+
+Reuses the shared ``unsafe_deser`` detector (with GHA-122 / GL-047 / BB-037 / ADO-036 / HARNESS-011) over each ``sh`` / ``bat`` / ``powershell`` step body. Fires in two shapes: (A) an explicit unsafe opt-in (``weights_only=False`` on a load, or ``allow_pickle=True`` on ``numpy.load``), always; and (B) a remote fetch (``curl`` / ``wget`` / ``hf_hub_download`` / ``snapshot_download`` / ``huggingface-cli download`` / ``requests.get`` / ``urlretrieve``) together with a pickle-backed loader (``torch.load`` / ``pickle.load(s)`` / ``joblib.load``) in the same step, with no safe path (``weights_only=True`` / safetensors). A bare local unpickle with no fetch does not fire.
+
+<div class="pg-rule__rec" markdown>
+
+**Recommended action**
+
+Don't deserialize a downloaded artifact through pickle. Load weights with safetensors, or pass ``weights_only=True`` to ``torch.load`` (the PyTorch 2.6+ default) so only tensors, not arbitrary Python, are unpickled. Drop ``allow_pickle=True`` from ``numpy.load``. If a pickle / joblib artifact is unavoidable, pin and verify its source (a pinned revision, a checksum, a signature) and load it in a stage with no production credentials bound.
+
+</div>
+
+</div>
+
+<div class="pg-rule pg-rule--high" markdown>
+
+## JF-042: Secret-named variable echoed / printed in a build step { #jf-042 }
+
+<div class="pg-rule__tags">
+<span class="pg-sev pg-sev--high">HIGH</span> <span class="pg-tag pg-tag--owasp">CICD-SEC-6</span> <span class="pg-tag pg-tag--esf">ESF-D-SECRETS</span> <span class="pg-tag pg-tag--cwe">CWE-532</span> <span class="pg-tag pg-tag--cwe">CWE-200</span>
+</div>
+
+Scans every ``sh`` / ``bat`` / ``powershell`` step body for a credential variable handed to ``echo`` / ``printf`` / ``cat`` / ``tee``, for an ``env`` / ``printenv`` dump, and for ``set -x`` with a secret-named variable in scope (the shared ``log_leak`` detector, with GHA-033 / GL-036 / BB-032 / ADO-031 / CC-032). The credential set is the union of name-pattern matches (PASSWORD / TOKEN / SECRET / API_KEY / CREDENTIAL) and the variable names bound by ``withCredentials([... variable: 'X'])`` anywhere in the Jenkinsfile, so a non-obviously-named bound credential (``variable: 'GH'``) is still caught when it is echoed. The Jenkins analog of GL-036 / CC-032.
+
+<div class="pg-rule__rec" markdown>
+
+**Recommended action**
+
+Don't print secret values in build steps. Jenkins masks credentials bound with ``withCredentials`` in the console, but only the exact bound string. Encoded, truncated, or derived forms bypass the mask, and ``set -x`` / ``env`` / ``printenv`` dump the raw value before masking can catch it. Log a boolean instead (``[ -n "$TOKEN" ] && echo set || echo unset``), and avoid ``set -x`` while a credential variable is in scope.
 
 </div>
 

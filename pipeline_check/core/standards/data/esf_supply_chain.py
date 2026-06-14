@@ -189,6 +189,10 @@ STANDARD = Standard(
         "BB-038":   ["ESF-S-PIN-DEPS", "ESF-S-VERIFY-DEPS"],   # unpinned model registry ref
         "BB-039":   ["ESF-C-APPROVAL"],   # agentic CLI output lands without review
         "JF-038":   ["ESF-C-APPROVAL"],   # agentic CLI output lands without review
+        "JF-039":   ["ESF-D-INJECTION"],   # trust_remote_code model load = code exec
+        "JF-040":   ["ESF-S-PIN-DEPS", "ESF-S-VERIFY-DEPS"],   # unpinned model registry ref
+        "JF-041":   ["ESF-D-INJECTION"],   # unsafe pickle deser of fetched artifact = code exec
+        "JF-042":   ["ESF-D-SECRETS"],   # secret echoed to Jenkins build log
         "BB-003":   ["ESF-D-SECRETS"],
         "BB-004":   ["ESF-C-APPROVAL", "ESF-C-ENV-SEP"],
         "BB-005":   ["ESF-D-BUILD-TIMEOUT"],
@@ -310,6 +314,9 @@ STANDARD = Standard(
         "CC-025":   ["ESF-D-INJECTION", "ESF-S-VERIFY-DEPS"],
         "CC-026":   ["ESF-D-INJECTION", "ESF-S-VERIFY-DEPS"],
         "CC-027":   ["ESF-D-INJECTION"],
+        "ARGO-019":  ["ESF-D-INJECTION"],  # Argo dangerous shell idiom
+        "TKN-018":  ["ESF-D-INJECTION"],  # Tekton dangerous shell idiom
+        "HARNESS-014":  ["ESF-D-INJECTION"],  # Harness dangerous shell idiom
         "CC-028":   ["ESF-S-PIN-DEPS", "ESF-S-VERIFY-DEPS"],
         # ── Buildkite ─────────────────────────────────────────────
         "BK-001":   ["ESF-S-PIN-DEPS"],                            # plugin not pinned
@@ -321,9 +328,17 @@ STANDARD = Standard(
         "BK-007":   ["ESF-C-APPROVAL"],                            # deploy not gated
         "BK-008":   ["ESF-S-TRUSTED-REG"],                         # TLS bypass
         "BK-009":   ["ESF-D-SIGN-ARTIFACTS"],                      # artifact signing
+        "HARNESS-015":  ["ESF-D-SIGN-ARTIFACTS"],  # Harness artifacts not signed
+        "DR-019":  ["ESF-D-SIGN-ARTIFACTS"],  # Drone artifacts not signed
         "BK-010":   ["ESF-D-SBOM"],                                # SBOM
+        "HARNESS-016":  ["ESF-D-SBOM"],  # Harness no SBOM
+        "DR-020":  ["ESF-D-SBOM"],  # Drone no SBOM
         "BK-011":   ["ESF-S-PROVENANCE", "ESF-D-SIGN-ARTIFACTS"],  # SLSA provenance
+        "HARNESS-017":  ["ESF-S-PROVENANCE", "ESF-D-SIGN-ARTIFACTS"],  # Harness no SLSA provenance
+        "DR-021":  ["ESF-S-PROVENANCE", "ESF-D-SIGN-ARTIFACTS"],  # Drone no SLSA provenance
         "BK-012":   ["ESF-S-VULN-MGMT"],                           # vuln scanning
+        "HARNESS-018":  ["ESF-S-VULN-MGMT"],  # Harness no vuln scan
+        "DR-022":  ["ESF-S-VULN-MGMT"],  # Drone no vuln scan
         "BK-013":   ["ESF-C-ENV-SEP"],                             # deploy without branch filter
         # ── Tekton ────────────────────────────────────────────────
         "TKN-001":  ["ESF-S-PIN-DEPS", "ESF-S-IMMUTABLE"],         # step image not digest-pinned
@@ -447,6 +462,8 @@ STANDARD = Standard(
         "GLGRP-002":  ["ESF-C-LEAST-PRIV"],  # gitlab group: forking outside group allowed
         "GLGRP-003":  ["ESF-C-LEAST-PRIV"],  # gitlab group: sharing projects outside the hierarchy
         "GLGRP-004":  ["ESF-D-CODE-REVIEW"],  # gitlab group: default branch protection disabled for new projects
+        "GLGRP-005":  ["ESF-D-SECRETS"],  # gitlab group: group webhook over insecure transport
+        "GLGRP-006":  ["ESF-D-SECRETS"],  # gitlab group: group CI/CD variable holds a secret with a weak control
         "ORG-008":  ["ESF-C-LEAST-PRIV"],           # org: members can create public repos (code exposure)
         "ORG-009":  ["ESF-D-BUILD-ENV", "ESF-D-PRIV-BUILD"],  # org: self-hosted runner group exposed to public repos
         "ORG-010":  ["ESF-D-SECRETS"],              # org: new-repo secret-scanning push-protection default off
@@ -695,6 +712,13 @@ STANDARD = Standard(
         "HARNESS-008":   ["ESF-D-INJECTION"],  # Harness agentic-CLI prompt injection
         "HARNESS-010":   ["ESF-D-INJECTION"],  # Harness model trust_remote_code (code exec)
         "HARNESS-011":   ["ESF-D-INJECTION"],  # Harness unsafe model deser (pickle RCE)
+        "HARNESS-012":   ["ESF-S-PIN-DEPS", "ESF-S-VERIFY-DEPS"],  # Harness model pulled without a pinned revision
+        "HARNESS-013":   ["ESF-D-SECRETS"],  # Harness secret echoed to step log
+        "GCB-028":  ["ESF-D-SECRETS"],  # Cloud Build secret echoed to build log
+        "ARGO-018":  ["ESF-D-SECRETS"],  # Argo secret echoed to template log
+        "TKN-017":  ["ESF-D-SECRETS"],  # Tekton secret echoed to step log
+        "DR-018":  ["ESF-D-SECRETS"],  # Drone secret echoed to step log
+        "BK-017":  ["ESF-D-SECRETS"],  # Buildkite secret echoed to step log
         "HARNESS-009":   ["ESF-C-APPROVAL"],  # Harness agentic-CLI output autolands without review
         "DR-002":   ["ESF-D-PRIV-BUILD"],           # privileged step
         "DR-003":   ["ESF-D-INJECTION"],            # Drone variable injection
@@ -1005,6 +1029,11 @@ STANDARD = Standard(
         "ADO-032":  ["ESF-D-SECRETS"],             # checkout persistCredentials leaks token to .git/config
         "ADO-033":  ["ESF-D-INJECTION"],           # IaC apply on a PR-validated pipeline
         "CC-032":   ["ESF-D-SECRETS"],             # secret echoed to CircleCI log
+        "CC-034":   ["ESF-D-INJECTION"],           # trust_remote_code model load = code exec
+        "CC-035":   ["ESF-S-PIN-DEPS", "ESF-S-VERIFY-DEPS"],   # unpinned model registry ref
+        "CC-036":   ["ESF-D-INJECTION"],           # unsafe pickle deser of fetched artifact = code exec
+        "CC-037":   ["ESF-D-INJECTION"],           # agentic CLI ingests untrusted context (prompt injection)
+        "CC-038":   ["ESF-C-APPROVAL"],            # agentic CLI output lands without review
         "SCM-048":  ["ESF-D-SECRETS"],             # org codespace secret scoped to all repos
         "SCM-049":  ["ESF-D-SECRETS"],             # classic PAT where fine-grained suffices
         "NPM-012":  ["ESF-D-SECRETS", "ESF-S-VERIFY-DEPS"],  # publish token lacking restrictions

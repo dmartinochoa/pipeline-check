@@ -134,6 +134,29 @@ jobs:
       - run: echo "integration suite"
       # CC-032: secret echoed to log.
       - run: echo "Token is $DEPLOY_TOKEN"
+      # CC-034: model loaded with trust_remote_code (RCE on the runner).
+      - run:
+          name: Load model
+          command: python -c "AutoModel.from_pretrained('acme/llm', trust_remote_code=True)"
+      # CC-035: model pulled without a pinned revision (swappable weights).
+      - run:
+          name: Fetch model
+          command: huggingface-cli download acme/llm
+      # CC-036: fetch + pickle-backed load of a model checkpoint (RCE).
+      - run:
+          name: Load checkpoint
+          command: |
+            curl -fsSL -o m.pt https://models.example.com/m.pt
+            python -c "import torch; torch.load('m.pt')"
+      # CC-037: untrusted PR context fed into an agentic AI CLI prompt.
+      - run:
+          name: AI triage
+          command: claude -p "Triage this PR on branch $CIRCLE_BRANCH"
+      # CC-038: the agent's output (claude above) is pushed straight to a
+      # branch in the same job, with no review gate.
+      - run:
+          name: Land the fix
+          command: git push origin HEAD
 
 # CC-006: No signing tool (cosign/sigstore) present anywhere.
 # CC-007: No SBOM tool (syft/cyclonedx) present anywhere.

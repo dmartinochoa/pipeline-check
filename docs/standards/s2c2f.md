@@ -12,7 +12,7 @@ for taking a third-party dependency safely.
 
 - **Controls in this standard:** 11
 - **Controls evidenced by at least one check:** 11 / 11
-- **Distinct checks evidencing this standard:** 385
+- **Distinct checks evidencing this standard:** 394
 - **Of those, autofixable with `--fix`:** 43
 
 _Severity levels (`CRITICAL` / `HIGH` / `MEDIUM` / `LOW` / `INFO`) follow the same scale across every provider and standard. See [How to read severity](README.md#how-to-read-severity) on the standards overview for the definitions._
@@ -25,15 +25,15 @@ Click a control ID to jump to the per-control section with the full check list. 
 |---------|-------|-------:|--------------|
 | [`ING-1`](#ctrl-ing-1) | L1: Use package managers trusted by your organization | 87 | 1C · 63H · 21M · 2L |
 | [`ING-3`](#ctrl-ing-3) | L1: Have the capability to deny-list specific vulnerable / malicious OSS | 29 | 10C · 15H · 4M |
-| [`SCA-1`](#ctrl-sca-1) | L1: Scan OSS for known vulnerabilities | 16 | 3H · 13M |
+| [`SCA-1`](#ctrl-sca-1) | L1: Scan OSS for known vulnerabilities | 18 | 3H · 15M |
 | [`SCA-3`](#ctrl-sca-3) | L2: Scan OSS for malware | 36 | 18C · 12H · 6M |
 | [`UPD-1`](#ctrl-upd-1) | L1: Update vulnerable OSS manually (pin + track versions) | 87 | 47H · 33M · 7L |
 | [`UPD-2`](#ctrl-upd-2) | L3: Enable automated OSS updates (Dependabot / Renovate) | 6 | 6M |
-| [`ENF-1`](#ctrl-enf-1) | L2: Enforce security policy of OSS usage (block on violation) | 70 | 4C · 30H · 33M · 2L · 1I |
+| [`ENF-1`](#ctrl-enf-1) | L2: Enforce security policy of OSS usage (block on violation) | 71 | 4C · 31H · 33M · 2L · 1I |
 | [`ENF-2`](#ctrl-enf-2) | L2: Break the build when a violation is detected | 26 | 5H · 20M · 1L |
-| [`REB-2`](#ctrl-reb-2) | L4: Digitally sign rebuilt / produced OSS artifacts | 23 | 3H · 18M · 2L |
-| [`REB-3`](#ctrl-reb-3) | L4: Generate SBOMs for artifacts produced | 25 | 3H · 15M · 7L |
-| [`REB-4`](#ctrl-reb-4) | L4: Digitally sign SBOMs produced (attested provenance) | 14 | 4H · 10M |
+| [`REB-2`](#ctrl-reb-2) | L4: Digitally sign rebuilt / produced OSS artifacts | 25 | 3H · 20M · 2L |
+| [`REB-3`](#ctrl-reb-3) | L4: Generate SBOMs for artifacts produced | 27 | 3H · 17M · 7L |
+| [`REB-4`](#ctrl-reb-4) | L4: Digitally sign SBOMs produced (attested provenance) | 16 | 4H · 12M |
 
 ## Filter at runtime
 
@@ -184,7 +184,7 @@ pipeline_check --pipeline aws --standard s2c2f --standard owasp_cicd_top_10
 
 ### SCA-1: L1: Scan OSS for known vulnerabilities { #ctrl-sca-1 }
 
-**Evidenced by 16 checks** across 13 providers (AWS, Argo Workflows, Azure Cloud, Azure DevOps, Bitbucket, Buildkite, CircleCI, Cloud Build, GCP, GitHub Actions, GitLab CI, Jenkins, Tekton).
+**Evidenced by 18 checks** across 15 providers (AWS, Argo Workflows, Azure Cloud, Azure DevOps, Bitbucket, Buildkite, CircleCI, Cloud Build, Drone CI, GCP, GitHub Actions, GitLab CI, Harness CI/CD, Jenkins, Tekton).
 
 | Check | Title | Severity | Provider | Fix |
 |-------|-------|----------|----------|-----|
@@ -196,12 +196,14 @@ pipeline_check --pipeline aws --standard s2c2f --standard owasp_cicd_top_10
 | [`BB-015`](../providers/bitbucket.md#bb-015) | No vulnerability scanning step | <span class="pg-sev pg-sev--medium">MEDIUM</span> | [Bitbucket](../providers/bitbucket.md) |  |
 | [`BK-012`](../providers/buildkite.md#bk-012) | No vulnerability scanning step | <span class="pg-sev pg-sev--medium">MEDIUM</span> | [Buildkite](../providers/buildkite.md) |  |
 | [`CC-020`](../providers/circleci.md#cc-020) | No vulnerability scanning step | <span class="pg-sev pg-sev--medium">MEDIUM</span> | [CircleCI](../providers/circleci.md) |  |
+| [`DR-022`](../providers/drone.md#dr-022) | No vulnerability-scan step (trivy / grype / snyk) | <span class="pg-sev pg-sev--medium">MEDIUM</span> | [Drone CI](../providers/drone.md) |  |
 | [`ECR-001`](../providers/aws.md#ecr-001) | Image scanning on push not enabled | <span class="pg-sev pg-sev--high">HIGH</span> | [AWS](../providers/aws.md) |  |
 | [`ECR-007`](../providers/aws.md#ecr-007) | Inspector v2 enhanced scanning disabled for ECR | <span class="pg-sev pg-sev--medium">MEDIUM</span> | [AWS](../providers/aws.md) |  |
 | [`GAR-001`](../providers/gcp.md) | Artifact Registry repository has no vulnerability scanning | <span class="pg-sev pg-sev--high">HIGH</span> | [GCP](../providers/gcp.md) |  |
 | [`GCB-008`](../providers/cloudbuild.md#gcb-008) | No vulnerability scanning step in Cloud Build pipeline | <span class="pg-sev pg-sev--medium">MEDIUM</span> | [Cloud Build](../providers/cloudbuild.md) |  |
 | [`GHA-020`](../providers/github.md#gha-020) | No vulnerability scanning step | <span class="pg-sev pg-sev--medium">MEDIUM</span> | [GitHub Actions](../providers/github.md) |  |
 | [`GL-019`](../providers/gitlab.md#gl-019) | No vulnerability scanning step | <span class="pg-sev pg-sev--medium">MEDIUM</span> | [GitLab CI](../providers/gitlab.md) |  |
+| [`HARNESS-018`](../providers/harness.md#harness-018) | No vulnerability-scan step (trivy / grype / snyk) | <span class="pg-sev pg-sev--medium">MEDIUM</span> | [Harness CI/CD](../providers/harness.md) |  |
 | [`JF-020`](../providers/jenkins.md#jf-020) | No vulnerability scanning step | <span class="pg-sev pg-sev--medium">MEDIUM</span> | [Jenkins](../providers/jenkins.md) |  |
 | [`TKN-012`](../providers/tekton.md#tkn-012) | No vulnerability scanning step | <span class="pg-sev pg-sev--medium">MEDIUM</span> | [Tekton](../providers/tekton.md) |  |
 
@@ -357,7 +359,7 @@ pipeline_check --pipeline aws --standard s2c2f --standard owasp_cicd_top_10
 
 ### ENF-1: L2: Enforce security policy of OSS usage (block on violation) { #ctrl-enf-1 }
 
-**Evidenced by 70 checks** across 11 providers (AWS, Azure Cloud, Azure DevOps, Bitbucket, Buildkite, CircleCI, GCP, GitHub Actions, GitLab CI, Harness CI/CD, Jenkins).
+**Evidenced by 71 checks** across 11 providers (AWS, Azure Cloud, Azure DevOps, Bitbucket, Buildkite, CircleCI, GCP, GitHub Actions, GitLab CI, Harness CI/CD, Jenkins).
 
 | Check | Title | Severity | Provider | Fix |
 |-------|-------|----------|----------|-----|
@@ -389,6 +391,7 @@ pipeline_check --pipeline aws --standard s2c2f --standard owasp_cicd_top_10
 | [`BK-013`](../providers/buildkite.md#bk-013) | Deploy step has no branches: filter | <span class="pg-sev pg-sev--medium">MEDIUM</span> | [Buildkite](../providers/buildkite.md) |  |
 | [`CB-008`](../providers/aws.md#cb-008) | CodeBuild buildspec is inline (not sourced from a protected repo) | <span class="pg-sev pg-sev--high">HIGH</span> | [AWS](../providers/aws.md) |  |
 | [`CC-009`](../providers/circleci.md#cc-009) | Deploy job missing manual approval gate | <span class="pg-sev pg-sev--medium">MEDIUM</span> | [CircleCI](../providers/circleci.md) |  |
+| [`CC-038`](../providers/circleci.md#cc-038) | Agentic CLI output lands without human review | <span class="pg-sev pg-sev--high">HIGH</span> | [CircleCI](../providers/circleci.md) |  |
 | [`CD-002`](../providers/aws.md#cd-002) | AllAtOnce deployment config, no canary or rolling strategy | <span class="pg-sev pg-sev--high">HIGH</span> | [AWS](../providers/aws.md) |  |
 | [`CP-001`](../providers/aws.md#cp-001) | No approval action before deploy stages | <span class="pg-sev pg-sev--high">HIGH</span> | [AWS](../providers/aws.md) |  |
 | [`CP-005`](../providers/aws.md#cp-005) | Production Deploy stage has no preceding ManualApproval | <span class="pg-sev pg-sev--medium">MEDIUM</span> | [AWS](../providers/aws.md) |  |
@@ -467,7 +470,7 @@ pipeline_check --pipeline aws --standard s2c2f --standard owasp_cicd_top_10
 
 ### REB-2: L4: Digitally sign rebuilt / produced OSS artifacts { #ctrl-reb-2 }
 
-**Evidenced by 23 checks** across 13 providers (AWS, Argo Workflows, Azure Cloud, Azure DevOps, Bitbucket, Buildkite, CircleCI, Cloud Build, GCP, GitHub Actions, GitLab CI, Jenkins, Tekton).
+**Evidenced by 25 checks** across 15 providers (AWS, Argo Workflows, Azure Cloud, Azure DevOps, Bitbucket, Buildkite, CircleCI, Cloud Build, Drone CI, GCP, GitHub Actions, GitLab CI, Harness CI/CD, Jenkins, Tekton).
 
 | Check | Title | Severity | Provider | Fix |
 |-------|-------|----------|----------|-----|
@@ -482,6 +485,7 @@ pipeline_check --pipeline aws --standard s2c2f --standard owasp_cicd_top_10
 | [`CA-001`](../providers/aws.md#ca-001) | CodeArtifact domain has no KMS encryptionKey configured | <span class="pg-sev pg-sev--medium">MEDIUM</span> | [AWS](../providers/aws.md) |  |
 | [`CC-006`](../providers/circleci.md#cc-006) | Artifacts not signed (no cosign/sigstore step) | <span class="pg-sev pg-sev--medium">MEDIUM</span> | [CircleCI](../providers/circleci.md) |  |
 | [`CP-002`](../providers/aws.md#cp-002) | Artifact store not encrypted with customer-managed KMS key | <span class="pg-sev pg-sev--medium">MEDIUM</span> | [AWS](../providers/aws.md) |  |
+| [`DR-019`](../providers/drone.md#dr-019) | Artifacts not signed (no cosign/sigstore step) | <span class="pg-sev pg-sev--medium">MEDIUM</span> | [Drone CI](../providers/drone.md) |  |
 | [`ECR-005`](../providers/aws.md#ecr-005) | Repository encrypted with AES256 rather than KMS CMK | <span class="pg-sev pg-sev--medium">MEDIUM</span> | [AWS](../providers/aws.md) |  |
 | [`GCB-009`](../providers/cloudbuild.md#gcb-009) | Artifacts not signed (no cosign / sigstore step) | <span class="pg-sev pg-sev--medium">MEDIUM</span> | [Cloud Build](../providers/cloudbuild.md) |  |
 | [`GCKMS-003`](../providers/gcp.md) | KMS key not using HSM protection level | <span class="pg-sev pg-sev--low">LOW</span> | [GCP](../providers/gcp.md) |  |
@@ -489,6 +493,7 @@ pipeline_check --pipeline aws --standard s2c2f --standard owasp_cicd_top_10
 | [`GCS-004`](../providers/gcp.md) | Cloud Storage bucket not encrypted with CMEK | <span class="pg-sev pg-sev--medium">MEDIUM</span> | [GCP](../providers/gcp.md) |  |
 | [`GHA-006`](../providers/github.md#gha-006) | Artifacts not signed (no cosign/sigstore step) | <span class="pg-sev pg-sev--medium">MEDIUM</span> | [GitHub Actions](../providers/github.md) |  |
 | [`GL-006`](../providers/gitlab.md#gl-006) | Artifacts not signed | <span class="pg-sev pg-sev--medium">MEDIUM</span> | [GitLab CI](../providers/gitlab.md) |  |
+| [`HARNESS-015`](../providers/harness.md#harness-015) | Artifacts not signed (no cosign/sigstore step) | <span class="pg-sev pg-sev--medium">MEDIUM</span> | [Harness CI/CD](../providers/harness.md) |  |
 | [`JF-006`](../providers/jenkins.md#jf-006) | Artifacts not signed | <span class="pg-sev pg-sev--medium">MEDIUM</span> | [Jenkins](../providers/jenkins.md) |  |
 | [`LMB-001`](../providers/aws.md#lmb-001) | Lambda function has no code-signing config | <span class="pg-sev pg-sev--high">HIGH</span> | [AWS](../providers/aws.md) |  |
 | [`SIGN-001`](../providers/aws.md#sign-001) | No AWS Signer profile defined for Lambda deploys | <span class="pg-sev pg-sev--medium">MEDIUM</span> | [AWS](../providers/aws.md) |  |
@@ -497,7 +502,7 @@ pipeline_check --pipeline aws --standard s2c2f --standard owasp_cicd_top_10
 
 ### REB-3: L4: Generate SBOMs for artifacts produced { #ctrl-reb-3 }
 
-**Evidenced by 25 checks** across 12 providers (Argo Workflows, Azure DevOps, Bitbucket, Buildkite, CircleCI, Dockerfile, GitHub Actions, GitLab CI, Helm, Jenkins, OCI manifest, Tekton).
+**Evidenced by 27 checks** across 14 providers (Argo Workflows, Azure DevOps, Bitbucket, Buildkite, CircleCI, Dockerfile, Drone CI, GitHub Actions, GitLab CI, Harness CI/CD, Helm, Jenkins, OCI manifest, Tekton).
 
 | Check | Title | Severity | Provider | Fix |
 |-------|-------|----------|----------|-----|
@@ -510,8 +515,10 @@ pipeline_check --pipeline aws --standard s2c2f --standard owasp_cicd_top_10
 | [`BK-010`](../providers/buildkite.md#bk-010) | No SBOM generated for build artifacts | <span class="pg-sev pg-sev--medium">MEDIUM</span> | [Buildkite](../providers/buildkite.md) |  |
 | [`CC-007`](../providers/circleci.md#cc-007) | SBOM not produced (no CycloneDX/syft/Trivy-SBOM step) | <span class="pg-sev pg-sev--medium">MEDIUM</span> | [CircleCI](../providers/circleci.md) |  |
 | [`DF-016`](../providers/dockerfile.md#df-016) | Image lacks OCI provenance labels | <span class="pg-sev pg-sev--low">LOW</span> | [Dockerfile](../providers/dockerfile.md) |  |
+| [`DR-020`](../providers/drone.md#dr-020) | No SBOM produced (no syft / cyclonedx step) | <span class="pg-sev pg-sev--medium">MEDIUM</span> | [Drone CI](../providers/drone.md) |  |
 | [`GHA-007`](../providers/github.md#gha-007) | SBOM not produced (no CycloneDX/syft/Trivy-SBOM step) | <span class="pg-sev pg-sev--medium">MEDIUM</span> | [GitHub Actions](../providers/github.md) |  |
 | [`GL-007`](../providers/gitlab.md#gl-007) | SBOM not produced | <span class="pg-sev pg-sev--medium">MEDIUM</span> | [GitLab CI](../providers/gitlab.md) |  |
+| [`HARNESS-016`](../providers/harness.md#harness-016) | No SBOM produced (no syft / cyclonedx step) | <span class="pg-sev pg-sev--medium">MEDIUM</span> | [Harness CI/CD](../providers/harness.md) |  |
 | [`HELM-002`](../providers/helm.md#helm-002) | Chart.lock missing per-dependency digests | <span class="pg-sev pg-sev--high">HIGH</span> | [Helm](../providers/helm.md) | <span class="pg-fix" title="`--fix` will patch this rule">🔧 fix</span> |
 | [`HELM-005`](../providers/helm.md#helm-005) | Chart maintainers field empty or missing chain-of-custody info | <span class="pg-sev pg-sev--low">LOW</span> | [Helm](../providers/helm.md) |  |
 | [`HELM-007`](../providers/helm.md#helm-007) | Chart.yaml description field is empty or missing | <span class="pg-sev pg-sev--low">LOW</span> | [Helm](../providers/helm.md) |  |
@@ -529,7 +536,7 @@ pipeline_check --pipeline aws --standard s2c2f --standard owasp_cicd_top_10
 
 ### REB-4: L4: Digitally sign SBOMs produced (attested provenance) { #ctrl-reb-4 }
 
-**Evidenced by 14 checks** across 10 providers (Argo Workflows, Azure DevOps, Bitbucket, Buildkite, CircleCI, GitHub Actions, GitLab CI, Jenkins, OCI manifest, Tekton).
+**Evidenced by 16 checks** across 12 providers (Argo Workflows, Azure DevOps, Bitbucket, Buildkite, CircleCI, Drone CI, GitHub Actions, GitLab CI, Harness CI/CD, Jenkins, OCI manifest, Tekton).
 
 | Check | Title | Severity | Provider | Fix |
 |-------|-------|----------|----------|-----|
@@ -542,8 +549,10 @@ pipeline_check --pipeline aws --standard s2c2f --standard owasp_cicd_top_10
 | [`BB-024`](../providers/bitbucket.md#bb-024) | No SLSA provenance attestation produced | <span class="pg-sev pg-sev--medium">MEDIUM</span> | [Bitbucket](../providers/bitbucket.md) |  |
 | [`BK-011`](../providers/buildkite.md#bk-011) | No SLSA provenance attestation produced | <span class="pg-sev pg-sev--medium">MEDIUM</span> | [Buildkite](../providers/buildkite.md) |  |
 | [`CC-024`](../providers/circleci.md#cc-024) | No SLSA provenance attestation produced | <span class="pg-sev pg-sev--medium">MEDIUM</span> | [CircleCI](../providers/circleci.md) |  |
+| [`DR-021`](../providers/drone.md#dr-021) | No SLSA provenance attestation produced | <span class="pg-sev pg-sev--medium">MEDIUM</span> | [Drone CI](../providers/drone.md) |  |
 | [`GHA-024`](../providers/github.md#gha-024) | No SLSA provenance attestation produced | <span class="pg-sev pg-sev--medium">MEDIUM</span> | [GitHub Actions](../providers/github.md) |  |
 | [`GL-024`](../providers/gitlab.md#gl-024) | No SLSA provenance attestation produced | <span class="pg-sev pg-sev--medium">MEDIUM</span> | [GitLab CI](../providers/gitlab.md) |  |
+| [`HARNESS-017`](../providers/harness.md#harness-017) | No SLSA provenance attestation produced | <span class="pg-sev pg-sev--medium">MEDIUM</span> | [Harness CI/CD](../providers/harness.md) |  |
 | [`JF-028`](../providers/jenkins.md#jf-028) | No SLSA provenance attestation produced | <span class="pg-sev pg-sev--medium">MEDIUM</span> | [Jenkins](../providers/jenkins.md) |  |
 | [`OCI-002`](../providers/oci.md#oci-002) | Image is missing a build attestation manifest | <span class="pg-sev pg-sev--high">HIGH</span> | [OCI manifest](../providers/oci.md) |  |
 | [`TKN-011`](../providers/tekton.md#tkn-011) | No SLSA provenance attestation produced | <span class="pg-sev pg-sev--medium">MEDIUM</span> | [Tekton](../providers/tekton.md) |  |

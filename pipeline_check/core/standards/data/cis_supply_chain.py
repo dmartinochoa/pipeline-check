@@ -330,6 +330,10 @@ STANDARD = Standard(
         "BB-038":   ["1.4.1", "3.1.5"],                  # model pulled without a pinned revision
         "BB-039":   ["5.1.4", "5.2.1"],                  # agentic CLI output lands without review
         "JF-038":   ["5.1.4", "5.2.1"],                  # agentic CLI output lands without review
+        "JF-039":   ["2.1.3"],                  # trust_remote_code model load = code exec
+        "JF-040":   ["1.4.1", "3.1.5"],                  # model pulled without a pinned revision
+        "JF-041":   ["2.1.3"],                  # unsafe pickle deser of fetched artifact = code exec
+        "JF-042":   ["1.5.1", "2.3.4"],                  # secret echoed to Jenkins build log
         "BB-003":   ["1.5.1", "2.3.4", "2.4.3"],
         "BB-004":   ["5.1.4", "5.2.1"],
         "BB-005":   ["2.2.2"],
@@ -424,6 +428,11 @@ STANDARD = Standard(
         "CC-025":   ["2.1.3", "2.3.8"],            # cache key tainted by attacker input
         "CC-026":   ["1.4.1", "2.1.3"],            # malicious-activity indicators
         "CC-027":   ["2.1.3"],                     # dangerous shell idiom
+        "DR-017":  ["2.1.3"],  # Drone dangerous shell idiom
+        "BK-016":  ["2.1.3"],  # Buildkite dangerous shell idiom
+        "ARGO-019":  ["2.1.3"],  # Argo dangerous shell idiom
+        "TKN-018":  ["2.1.3"],  # Tekton dangerous shell idiom
+        "HARNESS-014":  ["2.1.3"],  # Harness dangerous shell idiom
         "CC-028":   ["1.4.1", "3.1.5"],            # install bypasses registry integrity
         "CC-029":   ["1.4.1", "3.1.3"],            # machine executor image not pinned
         "CC-030":   ["5.1.4", "5.2.1"],            # job w/o branch filter / approval gate
@@ -438,9 +447,17 @@ STANDARD = Standard(
         "BK-007":   ["2.3.8", "5.1.4"],            # deploy not gated
         "BK-008":   ["3.1.3"],                     # TLS bypass
         "BK-009":   ["4.1.1"],                     # artifact signing
+        "HARNESS-015":  ["4.1.1"],  # Harness artifacts not signed
+        "DR-019":  ["4.1.1"],  # Drone artifacts not signed
         "BK-010":   ["4.4.1"],                     # SBOM
+        "HARNESS-016":  ["4.4.1"],  # Harness no SBOM
+        "DR-020":  ["4.4.1"],  # Drone no SBOM
         "BK-011":   ["4.1.1", "4.4.1"],            # SLSA provenance
+        "HARNESS-017":  ["4.1.1", "4.4.1"],  # Harness no SLSA provenance
+        "DR-021":  ["4.1.1", "4.4.1"],  # Drone no SLSA provenance
         "BK-012":   ["1.1.8", "1.4.1", "3.1.3"],   # vuln scanning
+        "HARNESS-018":  ["1.1.8", "1.4.1", "3.1.3"],  # Harness no vuln scan
+        "DR-022":  ["1.1.8", "1.4.1", "3.1.3"],  # Drone no vuln scan
         "BK-013":   ["5.1.4", "5.2.1"],            # deploy step no branches: filter
         "BK-014":   ["1.4.1", "3.1.5"],            # unpinned package install
         "BK-015":   ["2.1.3"],                     # agents map interpolates untrusted variable
@@ -631,6 +648,13 @@ STANDARD = Standard(
         "HARNESS-008":   ["2.1.3", "2.3.8"],  # Harness agentic-CLI prompt injection
         "HARNESS-010":   ["2.1.3"],  # Harness model trust_remote_code (code exec)
         "HARNESS-011":   ["2.1.3"],  # Harness unsafe model deser (pickle RCE)
+        "HARNESS-012":   ["1.4.1", "3.1.5"],  # Harness model pulled without a pinned revision
+        "HARNESS-013":   ["1.5.1", "2.3.4"],  # Harness secret echoed to step log
+        "GCB-028":  ["1.5.1", "2.3.4"],  # Cloud Build secret echoed to build log
+        "ARGO-018":  ["1.5.1", "2.3.4"],  # Argo secret echoed to template log
+        "TKN-017":  ["1.5.1", "2.3.4"],  # Tekton secret echoed to step log
+        "DR-018":  ["1.5.1", "2.3.4"],  # Drone secret echoed to step log
+        "BK-017":  ["1.5.1", "2.3.4"],  # Buildkite secret echoed to step log
         "HARNESS-009":   ["5.1.4", "5.2.1"],  # Harness agentic-CLI output autolands without review
         "DR-002":   ["2.1.3"],                     # step privileged
         "DR-003":   ["2.1.3", "2.3.8"],            # Drone variable injection in shell
@@ -982,6 +1006,11 @@ STANDARD = Standard(
         "ADO-031":  ["1.5.1", "2.3.4"],                  # secret echoed to Azure DevOps log
         "ADO-032":  ["1.5.1", "2.3.4"],                  # checkout persistCredentials leaks token to .git/config
         "CC-032":   ["1.5.1", "2.3.4"],                  # secret echoed to CircleCI log
+        "CC-034":   ["2.1.3"],                  # trust_remote_code model load = code exec
+        "CC-035":   ["1.4.1", "3.1.5"],                  # model pulled without a pinned revision
+        "CC-036":   ["2.1.3"],                  # unsafe pickle deser of fetched artifact = code exec
+        "CC-037":   ["2.1.3", "2.3.8"],                  # agentic CLI ingests untrusted context (prompt injection)
+        "CC-038":   ["5.1.4", "5.2.1"],                  # agentic CLI output lands without review
         "SCM-048":  ["2.4.3"],                           # org codespace secrets scoped to all repos
         "SCM-049":  ["1.3.4"],                           # classic PAT where fine-grained suffices
         "ORG-001":  ["1.3.4"],                           # org: 2FA not required org-wide
@@ -995,6 +1024,8 @@ STANDARD = Standard(
         "GLGRP-002":  ["1.3.4"],  # gitlab group: forking outside group allowed
         "GLGRP-003":  ["1.3.4"],  # gitlab group: sharing projects outside the hierarchy
         "GLGRP-004":  ["1.1.17"],  # gitlab group: default branch protection disabled for new projects
+        "GLGRP-005":  ["2.4.3"],  # gitlab group: group webhook over insecure transport
+        "GLGRP-006":  ["2.3.4"],  # gitlab group: group CI/CD variable holds a secret with a weak control
         "ORG-008":  ["1.3.4"],                           # org: members can create public repos (code exposure)
         "ORG-009":  ["2.2.2"],                           # org: self-hosted runner group exposed to public repos
         "ORG-010":  ["1.5.1"],                           # org: new-repo secret-scanning push-protection default off

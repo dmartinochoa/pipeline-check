@@ -28,7 +28,7 @@ in other providers:
 
 ## What it covers
 
-33 checks · 10 have an autofix patch (``--fix``).
+38 checks · 10 have an autofix patch (``--fix``).
 
 | Check | Title | Severity | Fix |
 |-------|-------|----------|-----|
@@ -65,6 +65,11 @@ in other providers:
 | [CC-031](#cc-031) | OIDC role assumption without branch filter or approval gate | <span class="pg-sev pg-sev--high">HIGH</span> |  |
 | [CC-032](#cc-032) | Secret-named variable echoed / printed in a run step | <span class="pg-sev pg-sev--high">HIGH</span> |  |
 | [CC-033](#cc-033) | Job disables Go module checksum / sum-db verification | <span class="pg-sev pg-sev--high">HIGH</span> |  |
+| [CC-034](#cc-034) | ML model loaded with trust_remote_code (code execution) | <span class="pg-sev pg-sev--high">HIGH</span> |  |
+| [CC-035](#cc-035) | AI model pulled without a pinned revision | <span class="pg-sev pg-sev--medium">MEDIUM</span> |  |
+| [CC-036](#cc-036) | Unsafe deserialization of a fetched artifact (pickle RCE) | <span class="pg-sev pg-sev--high">HIGH</span> |  |
+| [CC-037](#cc-037) | Untrusted PR/build context reaches an agentic AI CLI (prompt injection) | <span class="pg-sev pg-sev--high">HIGH</span> |  |
+| [CC-038](#cc-038) | Agentic CLI output lands without human review | <span class="pg-sev pg-sev--high">HIGH</span> |  |
 
 ---
 
@@ -754,6 +759,114 @@ Scoped ``GOPRIVATE`` and ``GOPROXY=off`` / ``direct`` (still checksum-verified) 
 **Recommended action**
 
 Remove the Go toolchain environment settings that turn off module integrity verification so ``go build`` keeps checking every downloaded module against ``go.sum`` and the checksum transparency database. Drop ``GOFLAGS=-insecure`` (plain HTTP fetch, TLS off), ``GOSUMDB=off`` / legacy ``GONOSUMCHECK`` (checksum DB / sum check off), and any ``GOINSECURE``; scope ``GOPRIVATE`` / ``GONOSUMDB`` to the exact internal namespace (``corp.example.com/team/*``) rather than a broad ``*`` or whole public host. This is the CI-env twin of GOMOD-001, a committed ``go.sum`` is moot if the runner ignores it. For private modules, prefer a trusted internal ``GOPROXY`` that still enforces checksums over disabling verification.
+
+</div>
+
+</div>
+
+<div class="pg-rule pg-rule--high" markdown>
+
+## CC-034: ML model loaded with trust_remote_code (code execution) { #cc-034 }
+
+<div class="pg-rule__tags">
+<span class="pg-sev pg-sev--high">HIGH</span> <span class="pg-tag pg-tag--owasp">CICD-SEC-4</span> <span class="pg-tag pg-tag--esf">ESF-D-INJECTION</span> <span class="pg-tag pg-tag--cwe">CWE-494</span> <span class="pg-tag pg-tag--cwe">CWE-829</span>
+</div>
+
+Scans every ``run:`` command across all jobs for ``trust_remote_code=True`` / ``--trust-remote-code`` (the shared ``model_trust`` detector, with GHA-120 / GL-045 / BB-035 / ADO-034 / HARNESS-010 / JF-039). The transformers / huggingface_hub loader executes the model repo's own Python at load time, so an untrusted or unpinned model is arbitrary code execution on the runner with the job's context secrets and OIDC in scope. The first AI model-load rule for CircleCI.
+
+<div class="pg-rule__rec" markdown>
+
+**Recommended action**
+
+Load models with ``trust_remote_code=False`` (the library default). If a model genuinely needs custom code, vet it and pin an exact revision (a commit SHA, not a tag or branch), run the load in a job with no production context bound, and prefer safetensors weights over pickle.
+
+</div>
+
+</div>
+
+<div class="pg-rule pg-rule--medium" markdown>
+
+## CC-035: AI model pulled without a pinned revision { #cc-035 }
+
+<div class="pg-rule__tags">
+<span class="pg-sev pg-sev--medium">MEDIUM</span> <span class="pg-tag pg-tag--owasp">CICD-SEC-3</span> <span class="pg-tag pg-tag--esf">ESF-S-PIN-DEPS</span> <span class="pg-tag pg-tag--esf">ESF-S-VERIFY-DEPS</span> <span class="pg-tag pg-tag--cwe">CWE-494</span> <span class="pg-tag pg-tag--cwe">CWE-829</span>
+</div>
+
+Scans every ``run:`` command for a model fetched by a mutable registry reference with no revision pin (the shared ``model_ref`` detector, with GHA-121 / GL-046 / BB-038 / ADO-037 / HARNESS-012 / JF-040). Detected fetch forms: ``from_pretrained("org/model")``, ``hf_hub_download`` / ``snapshot_download`` with a ``org/model`` repo id, and ``huggingface-cli download org/model``.
+
+Does NOT fire when a revision is pinned in the same command (``revision='<sha>'`` / ``--revision <sha>``), when the reference is a local path or a variable interpolation (the value can't be judged statically), or on a bare single-segment canonical hub name (``bert-base-uncased``) with no ``org/`` namespace.
+
+**Known false-positive modes**
+
+- A team that re-pulls its own org's model on every run may treat the latest revision as intentional. The right fix is still to pin the revision (it makes an upstream compromise visible); if a rolling pull is genuinely wanted, suppress on the specific step with a rationale naming the model and who controls it.
+
+<div class="pg-rule__rec" markdown>
+
+**Recommended action**
+
+Pin the model to an immutable revision. Pass an exact commit ``revision=`` to ``from_pretrained`` / ``hf_hub_download`` / ``snapshot_download`` (a 40-char commit SHA, not a branch or a tag, both of which the owner can move), or ``--revision <sha>`` to ``huggingface-cli download``. A pinned revision is what makes a swapped-weights or swapped-loader-code attack show up as a diff in your repo instead of silently landing on the next build. Pair with ``trust_remote_code=False`` (CC-034) and prefer safetensors weights over pickle.
+
+</div>
+
+</div>
+
+<div class="pg-rule pg-rule--high" markdown>
+
+## CC-036: Unsafe deserialization of a fetched artifact (pickle RCE) { #cc-036 }
+
+<div class="pg-rule__tags">
+<span class="pg-sev pg-sev--high">HIGH</span> <span class="pg-tag pg-tag--owasp">CICD-SEC-4</span> <span class="pg-tag pg-tag--esf">ESF-D-INJECTION</span> <span class="pg-tag pg-tag--cwe">CWE-502</span> <span class="pg-tag pg-tag--cwe">CWE-494</span> <span class="pg-tag pg-tag--cwe">CWE-829</span>
+</div>
+
+Reuses the shared ``unsafe_deser`` detector (with GHA-122 / GL-047 / BB-037 / ADO-036 / HARNESS-011 / JF-041) over every ``run:`` command. Fires in two shapes: (A) an explicit unsafe opt-in (``weights_only=False`` on a load, or ``allow_pickle=True`` on ``numpy.load``), always; and (B) a remote fetch (``curl`` / ``wget`` / ``hf_hub_download`` / ``snapshot_download`` / ``huggingface-cli download`` / ``requests.get`` / ``urlretrieve``) together with a pickle-backed loader (``torch.load`` / ``pickle.load(s)`` / ``joblib.load``) in the same command, with no safe path (``weights_only=True`` / safetensors). A bare local unpickle with no fetch does not fire.
+
+<div class="pg-rule__rec" markdown>
+
+**Recommended action**
+
+Don't deserialize a downloaded artifact through pickle. Load weights with safetensors, or pass ``weights_only=True`` to ``torch.load`` (the PyTorch 2.6+ default) so only tensors, not arbitrary Python, are unpickled. Drop ``allow_pickle=True`` from ``numpy.load``. If a pickle / joblib artifact is unavoidable, pin and verify its source (a pinned revision, a checksum, a signature) and load it in a job with no production context bound.
+
+</div>
+
+</div>
+
+<div class="pg-rule pg-rule--high" markdown>
+
+## CC-037: Untrusted PR/build context reaches an agentic AI CLI (prompt injection) { #cc-037 }
+
+<div class="pg-rule__tags">
+<span class="pg-sev pg-sev--high">HIGH</span> <span class="pg-tag pg-tag--owasp">CICD-SEC-4</span> <span class="pg-tag pg-tag--esf">ESF-D-INJECTION</span> <span class="pg-tag pg-tag--cwe">CWE-94</span> <span class="pg-tag pg-tag--cwe">CWE-77</span>
+</div>
+
+The AI analog of CC-002 (script injection). Fires when a ``run:`` command invokes an agentic CLI (claude / gemini / cursor-agent / aider / openhands / goose / ``q chat``) AND attacker-controllable CircleCI context reaches it: an event-source env var (`$CIRCLE_BRANCH` / `$CIRCLE_TAG` / `$CIRCLE_PR_NUMBER` / `$CIRCLE_PULL_REQUEST`) or a `<< pipeline.git.branch >>` / `<< pipeline.git.tag >>` interpolation. Unlike CC-002 the value is flagged in any quote style: an LLM ingests it as prompt text regardless of shell quoting, so the CC-002 mitigation does not apply. `<< pipeline.parameters.* >>` is the safe alternative.
+
+<div class="pg-rule__rec" markdown>
+
+**Recommended action**
+
+Do not place attacker-controllable context (a PR's branch / tag, `$CIRCLE_BRANCH` / `$CIRCLE_TAG` / `$CIRCLE_PR_*`, or a `<< pipeline.git.* >>` interpolation) in an agentic CLI's prompt. Quoting does NOT sanitize a prompt the way it does a shell command, the model still reads the value. If the agent must see PR content, run it in a job with no context / credentials bound and no tool / shell access, and treat its output as untrusted. Pass trusted inputs through typed `<< pipeline.parameters.* >>` instead.
+
+</div>
+
+</div>
+
+<div class="pg-rule pg-rule--high" markdown>
+
+## CC-038: Agentic CLI output lands without human review { #cc-038 }
+
+<div class="pg-rule__tags">
+<span class="pg-sev pg-sev--high">HIGH</span> <span class="pg-tag pg-tag--owasp">CICD-SEC-1</span> <span class="pg-tag pg-tag--esf">ESF-C-APPROVAL</span> <span class="pg-tag pg-tag--cwe">CWE-94</span> <span class="pg-tag pg-tag--cwe">CWE-693</span>
+</div>
+
+Fires when one CircleCI job both invokes an agentic CLI (``claude`` / ``gemini`` / ``cursor-agent`` / ``aider`` / ``openhands`` / ``goose`` / ``q chat``) in a ``run:`` command and, in the same job, lands the result with a ``git push`` (committing straight to a branch). Coupling is per-job because a CircleCI job has its own executor / checkout; the run steps of one job share a workspace, separate jobs do not.
+
+Does NOT fire when the agent only opens a pull request for review, nor on a push step that does not run an agent (ordinary formatting / generated-file jobs), nor when the agent and the push are in different jobs. A ``git push --dry-run`` is ignored.
+
+<div class="pg-rule__rec" markdown>
+
+**Recommended action**
+
+Don't let an agentic CLI's output reach a branch without a human review gate. Have the agent open a normal pull request (no auto-merge) so a person reviews the diff before it lands, and don't pair the agent with a ``git push`` straight to a branch in the same job. If the agent's prompt can be influenced by untrusted input (a PR title / branch, a pipeline parameter), treat the committed result as attacker-controlled.
 
 </div>
 

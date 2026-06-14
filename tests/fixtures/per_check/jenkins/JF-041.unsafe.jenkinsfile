@@ -1,0 +1,10 @@
+pipeline {
+  agent any
+  stages {
+    stage('load-model') {
+      steps {
+        sh 'curl -fsSL -o m.pt https://models.example.com/m.pt && python -c "import torch; torch.load(\'m.pt\')"'
+      }
+    }
+  }
+}

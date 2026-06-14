@@ -1,0 +1,15 @@
+version: 2.1
+jobs:
+  train:
+    docker:
+      - image: cimg/python:3.12
+    steps:
+      - run:
+          name: Load checkpoint
+          command: |
+            curl -fsSL -o m.safetensors https://models.example.com/m.safetensors
+            python -c "from safetensors.torch import load_file; load_file('m.safetensors')"
+workflows:
+  build:
+    jobs:
+      - train

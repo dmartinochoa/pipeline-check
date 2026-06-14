@@ -27,16 +27,17 @@ BEST_PRACTICE_IDS: frozenset[str] = frozenset({
     "CC-014", "CC-015", "TKN-006", "GCB-005", "CB-004", "ARGO-007",
     # Artifact signing absent (no cosign / sigstore step).
     "GHA-006", "GL-006", "BB-006", "JF-006", "ADO-006", "CC-006",
-    "GCB-009", "ARGO-009", "BK-009", "TKN-009",
+    "GCB-009", "ARGO-009", "BK-009", "TKN-009", "DR-019", "HARNESS-015",
     # SBOM not produced.
     "GHA-007", "GL-007", "BB-007", "JF-007", "ADO-007", "CC-007",
-    "GCB-015", "ARGO-010", "BK-010", "TKN-010",
+    "GCB-015", "ARGO-010", "BK-010", "TKN-010", "DR-020", "HARNESS-016",
     # SLSA provenance attestation not produced.
     "GHA-024", "GL-024", "BB-024", "JF-028", "ADO-024", "CC-024",
-    "GCB-017", "ARGO-011", "BK-011", "TKN-011",
+    "GCB-017", "ARGO-011", "BK-011", "TKN-011", "DR-021", "HARNESS-017",
     # Vulnerability-scan step absent (+ deploy without a scan gate).
     "GHA-020", "GL-019", "BB-015", "JF-020", "ADO-020", "CC-020",
-    "GCB-008", "ARGO-012", "TKN-012", "BK-012", "GHA-098",
+    "GCB-008", "ARGO-012", "TKN-012", "BK-012", "GHA-098", "DR-022",
+    "HARNESS-018",
 })
 
 

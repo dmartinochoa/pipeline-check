@@ -1,17 +1,19 @@
 """AC-040. Prompt-injected agent commits its output with no human review.
 
-Two legs on the same pipeline file, in any of the five script-based
+Two legs on the same pipeline file, in any of the seven script-based
 providers that carry the agentic-AI rule pack:
 
   * An *injection* leg: untrusted PR / branch / commit context reaches an
     agentic CLI's prompt (``GHA-119`` / ``GL-048`` / ``BB-036`` /
-    ``ADO-035`` / ``JF-037``). A pull-request author (or build queuer)
-    controls text the model ingests as instructions.
+    ``ADO-035`` / ``JF-037`` / ``HARNESS-008`` / ``CC-037``). A
+    pull-request author (or build queuer) controls text the model ingests
+    as instructions.
   * An *autoland* leg: the same workflow lets that agent's output reach a
     branch (or a merge) with no human review (``GHA-123`` / ``GL-049`` /
-    ``BB-039`` / ``ADO-038`` / ``JF-038``): a ``git push`` straight to a
-    branch, an auto-merge (``gh pr merge --auto`` / ``glab mr merge`` /
-    ``az repos pr --auto-complete``), or a push-action.
+    ``BB-039`` / ``ADO-038`` / ``JF-038`` / ``HARNESS-009`` / ``CC-038``):
+    a ``git push`` straight to a branch, an auto-merge (``gh pr merge
+    --auto`` / ``glab mr merge`` / ``az repos pr --auto-complete``), or a
+    push-action.
 
 Independently each leg is already a finding: the injection leg is an
 untrusted-input exposure, the autoland leg removes the human review
@@ -43,10 +45,11 @@ RULE = ChainRule(
     severity=Severity.CRITICAL,
     summary=(
         "Untrusted PR / branch / commit context reaches an agentic CLI's "
-        "prompt (GHA-119 / GL-048 / BB-036 / ADO-035 / JF-037) AND the same "
-        "pipeline lands that agent's output with no review gate (GHA-123 / "
-        "GL-049 / BB-039 / ADO-038 / JF-038): a git push, an auto-merge, or "
-        "a push-action. A prompt-injection line in the PR or commit makes the "
+        "prompt (GHA-119 / GL-048 / BB-036 / ADO-035 / JF-037 / HARNESS-008 "
+        "/ CC-037) AND the same pipeline lands that agent's output with no "
+        "review gate (GHA-123 / GL-049 / BB-039 / ADO-038 / JF-038 / "
+        "HARNESS-009 / CC-038): a git push, an auto-merge, or a "
+        "push-action. A prompt-injection line in the PR or commit makes the "
         "agent write a malicious change that the autoland step commits or "
         "merges, with no human between the untrusted input and the push."
     ),
@@ -74,14 +77,18 @@ RULE = ChainRule(
         "text (a PR title / branch name / commit message) into an agentic "
         "CLI's prompt; if the agent must see PR content, run it on a job "
         "with no write credentials and no tool / shell access (GHA-119 / "
-        "GL-048 / BB-036 / ADO-035).\n"
+        "GL-048 / BB-036 / ADO-035 / JF-037 / HARNESS-008 / CC-037).\n"
         "  2. Take away the no-review landing: have the agent only open a "
         "pull request for human review, and drop the in-job ``git push`` / "
-        "auto-merge / push-action (GHA-123 / GL-049 / BB-039 / ADO-038).\n"
+        "auto-merge / push-action (GHA-123 / GL-049 / BB-039 / ADO-038 / "
+        "JF-038 / HARNESS-009 / CC-038).\n"
         "Best: never let one pipeline both feed an agent untrusted input "
         "and land that agent's output without a human reviewing the diff."
     ),
-    providers=("github", "gitlab", "bitbucket", "azure", "jenkins", "harness"),
+    providers=(
+        "github", "gitlab", "bitbucket", "azure", "jenkins", "harness",
+        "circleci",
+    ),
     triggering_check_ids=(
         "GHA-119", "GHA-123",
         "GL-048", "GL-049",
@@ -89,6 +96,7 @@ RULE = ChainRule(
         "ADO-035", "ADO-038",
         "JF-037", "JF-038",
         "HARNESS-008", "HARNESS-009",
+        "CC-037", "CC-038",
     ),
 )
 
@@ -101,6 +109,7 @@ _PAIRS = (
     ("ADO-035", "ADO-038"),
     ("JF-037", "JF-038"),
     ("HARNESS-008", "HARNESS-009"),
+    ("CC-037", "CC-038"),
 )
 
 

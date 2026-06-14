@@ -38,7 +38,7 @@ All other flags (`--output`, `--severity-threshold`, `--checks`,
 
 ## What it covers
 
-11 checks · 3 have an autofix patch (``--fix``).
+18 checks · 3 have an autofix patch (``--fix``).
 
 | Check | Title | Severity | Fix |
 |-------|-------|----------|-----|
@@ -53,6 +53,13 @@ All other flags (`--output`, `--severity-threshold`, `--checks`,
 | [HARNESS-009](#harness-009) | Agentic CLI output lands without human review | <span class="pg-sev pg-sev--high">HIGH</span> |  |
 | [HARNESS-010](#harness-010) | ML model loaded with trust_remote_code (code execution) | <span class="pg-sev pg-sev--high">HIGH</span> |  |
 | [HARNESS-011](#harness-011) | Unsafe deserialization of a fetched artifact (pickle RCE) | <span class="pg-sev pg-sev--high">HIGH</span> |  |
+| [HARNESS-012](#harness-012) | AI model pulled without a pinned revision | <span class="pg-sev pg-sev--medium">MEDIUM</span> |  |
+| [HARNESS-013](#harness-013) | Secret-named variable echoed / printed in a step command | <span class="pg-sev pg-sev--high">HIGH</span> |  |
+| [HARNESS-014](#harness-014) | Dangerous shell idiom (eval, sh -c variable, backtick exec) | <span class="pg-sev pg-sev--high">HIGH</span> |  |
+| [HARNESS-015](#harness-015) | Artifacts not signed (no cosign/sigstore step) | <span class="pg-sev pg-sev--medium">MEDIUM</span> |  |
+| [HARNESS-016](#harness-016) | No SBOM produced (no syft / cyclonedx step) | <span class="pg-sev pg-sev--medium">MEDIUM</span> |  |
+| [HARNESS-017](#harness-017) | No SLSA provenance attestation produced | <span class="pg-sev pg-sev--medium">MEDIUM</span> |  |
+| [HARNESS-018](#harness-018) | No vulnerability-scan step (trivy / grype / snyk) | <span class="pg-sev pg-sev--medium">MEDIUM</span> |  |
 
 ---
 
@@ -287,6 +294,156 @@ Reuses the shared ``unsafe_deser`` detector (with GHA-122 / GL-047 / BB-037 / AD
 **Recommended action**
 
 Don't deserialize a downloaded artifact through pickle. Load weights with safetensors, or pass ``weights_only=True`` to ``torch.load`` (the PyTorch 2.6+ default) so only tensors, not arbitrary Python, are unpickled. Drop ``allow_pickle=True`` from ``numpy.load``. If a pickle / joblib artifact is unavoidable, pin and verify its source (a pinned revision, a checksum, a signature) and load it in an isolated stage with no production secrets.
+
+</div>
+
+</div>
+
+<div class="pg-rule pg-rule--medium" markdown>
+
+## HARNESS-012: AI model pulled without a pinned revision { #harness-012 }
+
+<div class="pg-rule__tags">
+<span class="pg-sev pg-sev--medium">MEDIUM</span> <span class="pg-tag pg-tag--owasp">CICD-SEC-3</span> <span class="pg-tag pg-tag--esf">ESF-S-PIN-DEPS</span> <span class="pg-tag pg-tag--esf">ESF-S-VERIFY-DEPS</span> <span class="pg-tag pg-tag--cwe">CWE-494</span> <span class="pg-tag pg-tag--cwe">CWE-829</span>
+</div>
+
+Fires on a step ``command`` that fetches a model by a mutable registry reference and supplies no revision pin (the shared ``model_ref`` detector, with GHA-121 / GL-046 / BB-038 / ADO-037). Detected fetch forms: ``from_pretrained("org/model")``, ``hf_hub_download`` / ``snapshot_download`` with a ``org/model`` repo id, and ``huggingface-cli download org/model`` / ``hf download org/model``.
+
+Does NOT fire when a revision is pinned in the same step (``revision='<sha>'`` / ``--revision <sha>``), when the reference is a local path (``./model``, ``/models/x``) or a variable / ``<+...>`` expression (the value can't be judged statically), or on a bare single-segment canonical hub name (``bert-base-uncased``) that has no ``org/`` namespace, since those are first-party and the org-scoped third-party models are the higher-risk surface.
+
+**Known false-positive modes**
+
+- A team that re-pulls its own org's model on every run may treat the latest revision as intentional. The right fix is still to pin the revision (it makes an upstream compromise visible); if a rolling pull is genuinely wanted, suppress on the specific step with a rationale naming the model and who controls it.
+
+<div class="pg-rule__rec" markdown>
+
+**Recommended action**
+
+Pin the model to an immutable revision. Pass an exact commit ``revision=`` to ``from_pretrained`` / ``hf_hub_download`` / ``snapshot_download`` (a 40-char commit SHA, not a branch or a tag, both of which the owner can move), or ``--revision <sha>`` to ``huggingface-cli download``. A pinned revision is what makes a swapped-weights or swapped-loader-code attack show up as a diff in your repo instead of silently landing on the next build. Pair with ``trust_remote_code=False`` (HARNESS-010) and prefer safetensors weights over pickle.
+
+</div>
+
+</div>
+
+<div class="pg-rule pg-rule--high" markdown>
+
+## HARNESS-013: Secret-named variable echoed / printed in a step command { #harness-013 }
+
+<div class="pg-rule__tags">
+<span class="pg-sev pg-sev--high">HIGH</span> <span class="pg-tag pg-tag--owasp">CICD-SEC-6</span> <span class="pg-tag pg-tag--esf">ESF-D-SECRETS</span> <span class="pg-tag pg-tag--cwe">CWE-532</span> <span class="pg-tag pg-tag--cwe">CWE-200</span>
+</div>
+
+Scans every step ``command`` for a secret-named variable handed to ``echo`` / ``printf`` / ``cat`` / ``tee``, for an ``env`` / ``printenv`` dump, and for ``set -x`` with a secret-named variable in scope (the shared ``log_leak`` detector, with GHA-033 / GL-036 / BB-032 / ADO-031 / CC-032 / JF-042). Variable names matching common secret patterns (PASSWORD / TOKEN / SECRET / API_KEY / CREDENTIAL) trigger the rule. The Harness analog of GL-036 / CC-032.
+
+<div class="pg-rule__rec" markdown>
+
+**Recommended action**
+
+Don't print secret values in step commands. Harness masks resolved ``<+secrets.getValue(...)>`` values in the log, but only the exact resolved string. Encoded, truncated, or derived forms bypass the mask, and ``set -x`` / ``env`` / ``printenv`` dump the raw value before masking can catch it. Log a boolean instead (``[ -n "$TOKEN" ] && echo set || echo unset``), and avoid ``set -x`` while a credential variable is in scope.
+
+</div>
+
+</div>
+
+<div class="pg-rule pg-rule--high" markdown>
+
+## HARNESS-014: Dangerous shell idiom (eval, sh -c variable, backtick exec) { #harness-014 }
+
+<div class="pg-rule__tags">
+<span class="pg-sev pg-sev--high">HIGH</span> <span class="pg-tag pg-tag--owasp">CICD-SEC-4</span> <span class="pg-tag pg-tag--esf">ESF-D-INJECTION</span> <span class="pg-tag pg-tag--cwe">CWE-95</span>
+</div>
+
+Complements HARNESS-002 (untrusted ``<+codebase.*>`` / ``<+trigger.*>`` expression in a step command). This rule fires on intrinsically risky idioms, ``eval``, ``sh -c "$X"``, backtick exec, regardless of whether the input source is currently trusted, because the idiom hands a value full shell-grammar reach. Uses the shared ``_primitives.shell_eval`` detector over each step ``command``. The Harness analog of GHA-028 / GL-026 / BB-026 / ADO-027 / CC-027 / BK-016 / DR-017.
+
+**Known false-positive modes**
+
+- ``eval "$(ssh-agent -s)"`` and similar ``eval "$(<literal-tool>)"`` bootstrap idioms are intentionally NOT flagged, the substituted command is literal, only its output is eval'd.
+
+<div class="pg-rule__rec" markdown>
+
+**Recommended action**
+
+Replace ``eval "$VAR"`` / ``sh -c "$VAR"`` / backtick exec with direct command invocation. Validate or allow-list any value that must feed a dynamic command at the boundary.
+
+</div>
+
+</div>
+
+<div class="pg-rule pg-rule--medium" markdown>
+
+## HARNESS-015: Artifacts not signed (no cosign/sigstore step) { #harness-015 }
+
+<div class="pg-rule__tags">
+<span class="pg-sev pg-sev--medium">MEDIUM</span> <span class="pg-tag pg-tag--owasp">CICD-SEC-9</span> <span class="pg-tag pg-tag--esf">ESF-D-SIGN-ARTIFACTS</span> <span class="pg-tag pg-tag--cwe">CWE-345</span>
+</div>
+
+Detection mirrors GHA-006 / BK-009 / CC-006 / TKN-009 / DR-019, the shared signing-token catalog (cosign, sigstore, slsa-github-generator, slsa-framework, notation-sign) is searched across every string in the pipeline document. The rule only fires on artifact-producing pipelines (``docker build`` / ``docker push`` / ``buildah`` / ``kaniko`` / etc.) so lint / test-only pipelines don't trip it. The Harness analog of BK-009 / TKN-009.
+
+<div class="pg-rule__rec" markdown>
+
+**Recommended action**
+
+Add a signing step after the build: install cosign in the step image and call ``cosign sign --yes <repo>@sha256:<digest>`` so a re-pushed tag can't bypass the signature. Publish the signature alongside the artifact and verify it at consumption time.
+
+</div>
+
+</div>
+
+<div class="pg-rule pg-rule--medium" markdown>
+
+## HARNESS-016: No SBOM produced (no syft / cyclonedx step) { #harness-016 }
+
+<div class="pg-rule__tags">
+<span class="pg-sev pg-sev--medium">MEDIUM</span> <span class="pg-tag pg-tag--owasp">CICD-SEC-9</span> <span class="pg-tag pg-tag--esf">ESF-S-SBOM</span> <span class="pg-tag pg-tag--cwe">CWE-1357</span>
+</div>
+
+Detection mirrors GHA-007 / BK-010 / CC-007 / TKN-010 / DR-020, the shared SBOM-token catalog (syft, cyclonedx, spdx, bom, trivy sbom) is searched across every string in the pipeline document. The rule only fires on artifact-producing pipelines (``docker build`` / ``docker push`` / ``buildah`` / ``kaniko`` / etc.) so lint / test-only pipelines don't trip it. The Harness analog of BK-010 / TKN-010.
+
+<div class="pg-rule__rec" markdown>
+
+**Recommended action**
+
+Generate a Software Bill of Materials as part of the build: run ``syft <image> -o cyclonedx-json`` (or ``cyclonedx`` / ``spdx`` tooling) and publish it alongside the artifact, so consumers can audit the components and respond to new CVEs without rebuilding. Harness also offers a built-in SBOM Orchestration step.
+
+</div>
+
+</div>
+
+<div class="pg-rule pg-rule--medium" markdown>
+
+## HARNESS-017: No SLSA provenance attestation produced { #harness-017 }
+
+<div class="pg-rule__tags">
+<span class="pg-sev pg-sev--medium">MEDIUM</span> <span class="pg-tag pg-tag--owasp">CICD-SEC-9</span> <span class="pg-tag pg-tag--esf">ESF-S-PROVENANCE</span> <span class="pg-tag pg-tag--cwe">CWE-345</span>
+</div>
+
+Detection mirrors GHA-024 / BK-011 / CC-024 / TKN-011 / DR-021, the shared provenance-token catalog (slsa, provenance, in-toto, attestation, cosign attest) is searched across every string in the pipeline document. The rule only fires on artifact-producing pipelines (``docker build`` / ``docker push`` / ``buildah`` / etc.) so lint / test-only pipelines don't trip it. The Harness analog of BK-011 / TKN-011.
+
+<div class="pg-rule__rec" markdown>
+
+**Recommended action**
+
+Emit a signed SLSA provenance attestation for the build: use ``cosign attest --predicate`` with an in-toto / SLSA predicate, or Harness's built-in SLSA provenance / attestation step, so a verifier can confirm which pipeline and source revision produced the artifact.
+
+</div>
+
+</div>
+
+<div class="pg-rule pg-rule--medium" markdown>
+
+## HARNESS-018: No vulnerability-scan step (trivy / grype / snyk) { #harness-018 }
+
+<div class="pg-rule__tags">
+<span class="pg-sev pg-sev--medium">MEDIUM</span> <span class="pg-tag pg-tag--owasp">CICD-SEC-9</span> <span class="pg-tag pg-tag--esf">ESF-D-VULN-SCAN</span> <span class="pg-tag pg-tag--cwe">CWE-1104</span>
+</div>
+
+Detection mirrors GHA-020 / BK-012 / CC-020 / TKN-012 / DR-022, the shared scanner-token catalog (trivy, grype, snyk, clair, npm audit, pip-audit, etc.) is searched across every string in the pipeline document. Fires on any pipeline that runs no scanner (the build ships without a CVE signal). The Harness analog of BK-012 / TKN-012.
+
+<div class="pg-rule__rec" markdown>
+
+**Recommended action**
+
+Add a vulnerability-scan step to the build: ``trivy``, ``grype``, ``snyk``, ``npm audit``, or ``pip-audit`` over the image or dependency tree (or a Harness Security Testing Orchestration step), and fail the build on findings above your threshold so known CVEs don't ship to production silently.
 
 </div>
 

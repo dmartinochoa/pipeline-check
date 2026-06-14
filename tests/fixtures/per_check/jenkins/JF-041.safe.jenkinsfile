@@ -1,0 +1,10 @@
+pipeline {
+  agent any
+  stages {
+    stage('load-model') {
+      steps {
+        sh 'curl -fsSL -o m.safetensors https://models.example.com/m.safetensors && python -c "from safetensors.torch import load_file; load_file(\'m.safetensors\')"'
+      }
+    }
+  }
+}

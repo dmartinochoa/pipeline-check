@@ -61,6 +61,7 @@ def _steps(quick: bool) -> list[tuple[str, list[str]]]:
         ("provider docs fresh", _gen("gen_provider_docs.py")),
         ("standards docs fresh", _gen("gen_standards_docs.py")),
         ("attack-chains doc fresh", _gen("gen_attack_chains_doc.py")),
+        ("doc claims fresh", _gen("sync_doc_claims.py")),
         ("mypy (strict)", [_PY, "-m", "mypy", "pipeline_check"]),
     ]
     if quick:

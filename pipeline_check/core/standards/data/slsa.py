@@ -228,6 +228,9 @@ STANDARD = Standard(
         "BB-037":   ["Build.L3.Isolated"],                         # unsafe pickle deser of fetched artifact
         "BB-039":   ["Build.L3.NonFalsifiable"],                         # agentic CLI output lands without review
         "JF-038":   ["Build.L3.NonFalsifiable"],                         # agentic CLI output lands without review
+        "JF-039":   ["Build.L3.Isolated"],                         # trust_remote_code model load = code exec
+        "JF-041":   ["Build.L3.Isolated"],                         # unsafe pickle deser of fetched artifact = code exec
+        "JF-042":   ["Build.L3.NonFalsifiable"],                         # secret echoed to Jenkins build log
         "BB-005":   ["Build.L3.Ephemeral"],                        # unbounded runtime
         "BB-006":   ["Build.L2.Signed"],
         "BB-007":   ["Build.L1.Provenance"],
@@ -349,6 +352,11 @@ STANDARD = Standard(
                      "Build.L3.NonFalsifiable"],
         "CC-025":   ["Build.L3.Isolated"],                         # cache poisoning
         "CC-027":   ["Build.L3.Isolated"],                         # eval / shell re-invocation
+        "DR-017":  ["Build.L3.Isolated"],  # Drone dangerous shell idiom
+        "BK-016":  ["Build.L3.Isolated"],  # Buildkite dangerous shell idiom
+        "ARGO-019":  ["Build.L3.Isolated"],  # Argo dangerous shell idiom
+        "TKN-018":  ["Build.L3.Isolated"],  # Tekton dangerous shell idiom
+        "HARNESS-014":  ["Build.L3.Isolated"],  # Harness dangerous shell idiom
         "CC-028":   ["Build.L3.Isolated"],                         # package source bypasses lockfile
         "CC-005":   ["Build.L3.NonFalsifiable"],                   # leaked credentials
         "CC-009":   ["Build.L3.NonFalsifiable"],                   # job missing approval gate
@@ -370,7 +378,11 @@ STANDARD = Standard(
         "BK-007":   ["Build.L3.NonFalsifiable"],                   # deploy not gated
         "BK-008":   ["Build.L3.Isolated"],                         # TLS bypass
         "BK-009":   ["Build.L2.Signed"],                           # artifact signing
+        "HARNESS-015":  ["Build.L2.Signed"],  # Harness artifacts not signed
+        "DR-019":  ["Build.L2.Signed"],  # Drone artifacts not signed
         "BK-010":   ["Build.L1.Provenance"],                       # SBOM
+        "HARNESS-016":  ["Build.L1.Provenance"],  # Harness no SBOM
+        "DR-020":  ["Build.L1.Provenance"],  # Drone no SBOM
         "BK-011":   ["Build.L1.Provenance", "Build.L2.Signed",
                      "Build.L3.NonFalsifiable"],                   # SLSA provenance
         "BK-013":   ["Build.L3.NonFalsifiable"],                   # deploy step no branches filter
@@ -424,6 +436,12 @@ STANDARD = Standard(
         "HARNESS-008":   ["Build.L3.Isolated"],  # Harness agentic-CLI prompt injection
         "HARNESS-010":   ["Build.L3.Isolated"],  # Harness model trust_remote_code (code exec)
         "HARNESS-011":   ["Build.L3.Isolated"],  # Harness unsafe model deser (pickle RCE)
+        "HARNESS-013":   ["Build.L3.NonFalsifiable"],  # Harness secret echoed to step log
+        "GCB-028":  ["Build.L3.NonFalsifiable"],  # Cloud Build secret echoed to build log
+        "ARGO-018":  ["Build.L3.NonFalsifiable"],  # Argo secret echoed to template log
+        "TKN-017":  ["Build.L3.NonFalsifiable"],  # Tekton secret echoed to step log
+        "DR-018":  ["Build.L3.NonFalsifiable"],  # Drone secret echoed to step log
+        "BK-017":  ["Build.L3.NonFalsifiable"],  # Buildkite secret echoed to step log
         "HARNESS-009":   ["Build.L3.NonFalsifiable"],  # Harness agentic-CLI output autolands without review
         "DR-002":   ["Build.L3.Isolated"],                         # privileged step
         "DR-003":   ["Build.L3.Isolated"],                         # Drone variable injection
@@ -727,6 +745,10 @@ STANDARD = Standard(
         "ADO-031":  ["Build.L3.NonFalsifiable"],                   # secret echoed to Azure DevOps log
         "ADO-032":  ["Build.L3.NonFalsifiable"],                   # checkout persistCredentials leaks token
         "CC-032":   ["Build.L3.NonFalsifiable"],                   # secret echoed to CircleCI log
+        "CC-034":   ["Build.L3.Isolated"],                   # trust_remote_code model load = code exec
+        "CC-036":   ["Build.L3.Isolated"],                   # unsafe pickle deser of fetched artifact = code exec
+        "CC-037":   ["Build.L3.Isolated"],                   # agentic CLI prompt injection
+        "CC-038":   ["Build.L3.NonFalsifiable"],                   # agentic CLI output lands without review
         "SCM-048":  ["Build.L3.NonFalsifiable"],                   # org codespace secrets scoped to all repos
         "SCM-049":  ["Build.L3.NonFalsifiable"],                   # classic PAT where fine-grained suffices
         "NPM-012":  ["Build.L2.Signed"],                           # publish token missing restrictions

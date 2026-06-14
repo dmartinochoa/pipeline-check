@@ -174,6 +174,10 @@ STANDARD = Standard(
         "BB-037":   ["CC6.8"],   # unsafe pickle deser of fetched artifact = code exec
         "BB-039":   ["CC8.1"],   # agentic CLI output lands without review
         "JF-038":   ["CC8.1"],   # agentic CLI output lands without review
+        "JF-039":   ["CC6.8"],   # trust_remote_code model load = code exec
+        "JF-040":   ["CC8.1"],   # model pulled without a pinned revision
+        "JF-041":   ["CC6.8"],   # unsafe pickle deser of fetched artifact = code exec
+        "JF-042":   ["CC6.1"],   # secret echoed to Jenkins build log
         "BB-012":   ["CC6.8"],
         "BB-015":   ["CC6.8"],
         "BB-025":   ["CC6.8"],
@@ -198,6 +202,9 @@ STANDARD = Standard(
         "CC-020":   ["CC6.8"],
         "CC-026":   ["CC6.8"],
         "CC-027":   ["CC6.8"],
+        "ARGO-019":  ["CC6.8"],  # Argo dangerous shell idiom
+        "TKN-018":  ["CC6.8"],  # Tekton dangerous shell idiom
+        "HARNESS-014":  ["CC6.8"],  # Harness dangerous shell idiom
         "GCB-006":  ["CC6.8"],
         "GCB-008":  ["CC6.8"],
         "ECR-001":  ["CC6.8"],
@@ -382,9 +389,17 @@ STANDARD = Standard(
         "BK-007": ["CC8.1"],                # no manual deploy gate
         "BK-008": ["CC6.7"],                # TLS bypass
         "BK-009": ["CC8.1"],                # no signing
+        "HARNESS-015":  ["CC8.1"],  # Harness artifacts not signed
+        "DR-019":  ["CC8.1"],  # Drone artifacts not signed
         "BK-010": ["CC8.1"],                # no SBOM
+        "HARNESS-016":  ["CC8.1"],  # Harness no SBOM
+        "DR-020":  ["CC8.1"],  # Drone no SBOM
         "BK-011": ["CC8.1"],                # no SLSA provenance
+        "HARNESS-017":  ["CC8.1"],  # Harness no SLSA provenance
+        "DR-021":  ["CC8.1"],  # Drone no SLSA provenance
         "BK-012": ["CC7.1"],                # no vuln scan
+        "HARNESS-018":  ["CC7.1"],  # Harness no vuln scan
+        "DR-022":  ["CC7.1"],  # Drone no vuln scan
         "BK-013": ["CC8.1"],                # no branches filter
         "BK-014": ["CC8.1"],                # unpinned package install
         "BK-015": ["CC6.8"],                # agents map untrusted interpolation
@@ -603,6 +618,13 @@ STANDARD = Standard(
         "HARNESS-008":   ["CC6.8"],  # Harness agentic-CLI prompt injection
         "HARNESS-010":   ["CC6.8"],  # Harness model trust_remote_code (code exec)
         "HARNESS-011":   ["CC6.8"],  # Harness unsafe model deser (pickle RCE)
+        "HARNESS-012":   ["CC8.1"],  # Harness model pulled without a pinned revision
+        "HARNESS-013":   ["CC6.1"],  # Harness secret echoed to step log
+        "GCB-028":  ["CC6.1"],  # Cloud Build secret echoed to build log
+        "ARGO-018":  ["CC6.1"],  # Argo secret echoed to template log
+        "TKN-017":  ["CC6.1"],  # Tekton secret echoed to step log
+        "DR-018":  ["CC6.1"],  # Drone secret echoed to step log
+        "BK-017":  ["CC6.1"],  # Buildkite secret echoed to step log
         "HARNESS-009":   ["CC8.1"],  # Harness agentic-CLI output autolands without review
         "DR-002":   ["CC6.1", "CC6.8"],     # privileged step
         "DR-003":   ["CC6.8"],              # Drone variable injection
@@ -936,6 +958,11 @@ STANDARD = Standard(
         "ADO-031":  ["CC6.1"],              # secret echoed to Azure DevOps log
         "ADO-032":  ["CC6.1"],              # checkout persistCredentials leaks token to .git/config
         "CC-032":   ["CC6.1"],              # secret echoed to CircleCI log
+        "CC-034":   ["CC6.8"],              # trust_remote_code model load = code exec
+        "CC-035":   ["CC8.1"],              # model pulled without a pinned revision
+        "CC-036":   ["CC6.8"],              # unsafe pickle deser of fetched artifact = code exec
+        "CC-037":   ["CC6.8"],              # agentic CLI ingests untrusted context (prompt injection)
+        "CC-038":   ["CC8.1"],              # agentic CLI output lands without review
         "SCM-048":  ["CC6.1"],                   # org codespace secrets scoped to all repos
         "SCM-049":  ["CC6.1", "CC6.3"],          # classic PAT used where fine-grained suffices
         "ORG-001":  ["CC6.1", "CC6.3"],          # org governance: 2FA not required org-wide
@@ -949,6 +976,8 @@ STANDARD = Standard(
         "GLGRP-002":  ["CC6.1"],  # gitlab group: forking outside group allowed
         "GLGRP-003":  ["CC6.1"],  # gitlab group: sharing projects outside the hierarchy
         "GLGRP-004":  ["CC8.1"],  # gitlab group: default branch protection disabled for new projects
+        "GLGRP-005":  ["CC6.7"],  # gitlab group: group webhook over insecure transport
+        "GLGRP-006":  ["CC6.1"],  # gitlab group: group CI/CD variable holds a secret with a weak control
         "ORG-008":  ["CC6.1"],                   # org governance: members can create public repos (code exposure)
         "ORG-009":  ["CC6.6"],                   # org governance: self-hosted runner group exposed to public repos
         "ORG-010":  ["CC6.1"],                   # org governance: new-repo secret-scanning push-protection default off

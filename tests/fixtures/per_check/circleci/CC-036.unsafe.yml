@@ -1,0 +1,15 @@
+version: 2.1
+jobs:
+  train:
+    docker:
+      - image: cimg/python:3.12
+    steps:
+      - run:
+          name: Load checkpoint
+          command: |
+            curl -fsSL -o m.pt https://models.example.com/m.pt
+            python -c "import torch; torch.load('m.pt')"
+workflows:
+  build:
+    jobs:
+      - train

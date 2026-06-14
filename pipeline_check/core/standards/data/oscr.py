@@ -301,6 +301,12 @@ STANDARD = Standard(
         "HARNESS-008":   ["EX-6"],  # Harness agentic-CLI prompt injection
         "HARNESS-010":   ["EX-6"],  # Harness model trust_remote_code (code exec)
         "HARNESS-011":   ["EX-6"],  # Harness unsafe model deser (pickle RCE)
+        "HARNESS-013":   ["CA-5", "CA-6"],  # Harness secret echoed to step log
+        "GCB-028":  ["CA-5", "CA-6"],  # Cloud Build secret echoed to build log
+        "ARGO-018":  ["CA-5", "CA-6"],  # Argo secret echoed to template log
+        "TKN-017":  ["CA-5", "CA-6"],  # Tekton secret echoed to step log
+        "DR-018":  ["CA-5", "CA-6"],  # Drone secret echoed to step log
+        "BK-017":  ["CA-5", "CA-6"],  # Buildkite secret echoed to step log
         "HARNESS-009":   ["DE-1"],  # Harness agentic-CLI output autolands without review
         "DR-005":   ["IA-11"],
         "DF-001":   ["IA-11"],
@@ -331,6 +337,8 @@ STANDARD = Standard(
         "ECR-001":  ["IA-13"],
         "ECR-007":  ["IA-13"],
         "BK-012":   ["IA-13"],
+        "HARNESS-018":  ["IA-13"],  # Harness no vuln scan
+        "DR-022":  ["IA-13"],  # Drone no vuln scan
         "TKN-012":  ["IA-13"],
         "ARGO-012": ["IA-13"],
         "GHA-059":  ["IA-13"],
@@ -416,6 +424,9 @@ STANDARD = Standard(
         "BB-037":   ["EX-6"],   # unsafe pickle deser of fetched artifact = code exec
         "BB-039":   ["DE-1"],   # agentic CLI output lands without review
         "JF-038":   ["DE-1"],   # agentic CLI output lands without review
+        "JF-039":   ["EX-6"],   # trust_remote_code model load = code exec
+        "JF-041":   ["EX-6"],   # unsafe pickle deser of fetched artifact = code exec
+        "JF-042":   ["CA-5", "CA-6"],   # secret echoed to Jenkins build log
         "ADO-002":  ["EX-6"],
         "ADO-034":  ["EX-6"],   # trust_remote_code model load = code exec
         "ADO-035":  ["EX-6"],   # untrusted PR context into agentic CLI = prompt injection
@@ -450,6 +461,11 @@ STANDARD = Standard(
         "ADO-027":  ["EX-6"],
         "JF-030":   ["EX-6"],
         "CC-027":   ["EX-6"],
+        "DR-017":  ["EX-6"],  # Drone dangerous shell idiom
+        "BK-016":  ["EX-6"],  # Buildkite dangerous shell idiom
+        "ARGO-019":  ["EX-6"],  # Argo dangerous shell idiom
+        "TKN-018":  ["EX-6"],  # Tekton dangerous shell idiom
+        "HARNESS-014":  ["EX-6"],  # Harness dangerous shell idiom
         "GCB-006":  ["EX-6"],
         "DF-005":   ["EX-6"],
         "GHA-031":  ["EX-6"],
@@ -749,6 +765,8 @@ STANDARD = Standard(
         "JF-006":   ["DE-4"],
         "CC-006":   ["DE-4"],
         "BK-009":   ["DE-4"],
+        "HARNESS-015":  ["DE-4"],  # Harness artifacts not signed
+        "DR-019":  ["DE-4"],  # Drone artifacts not signed
         "TKN-009":  ["DE-4"],
         "ARGO-009": ["DE-4"],
         "GCB-009":  ["DE-4"],
@@ -759,6 +777,8 @@ STANDARD = Standard(
         "JF-007":   ["DE-4"],
         "CC-007":   ["DE-4"],
         "BK-010":   ["DE-4"],
+        "HARNESS-016":  ["DE-4"],  # Harness no SBOM
+        "DR-020":  ["DE-4"],  # Drone no SBOM
         "TKN-010":  ["DE-4"],
         "ARGO-010": ["DE-4"],
         "GHA-024":  ["DE-4"],
@@ -768,6 +788,8 @@ STANDARD = Standard(
         "JF-028":   ["DE-4"],
         "CC-024":   ["DE-4"],
         "BK-011":   ["DE-4"],
+        "HARNESS-017":  ["DE-4"],  # Harness no SLSA provenance
+        "DR-021":  ["DE-4"],  # Drone no SLSA provenance
         "TKN-011":  ["DE-4"],
         "ARGO-011": ["DE-4"],
         "GCB-015":  ["DE-4"],
@@ -999,6 +1021,10 @@ STANDARD = Standard(
         "ADO-031":  ["CA-5", "CA-6"],              # secret echoed to Azure DevOps log
         "ADO-032":  ["CA-5", "CA-6"],              # checkout persistCredentials leaks token to .git/config
         "CC-032":   ["CA-5", "CA-6"],              # secret echoed to CircleCI log
+        "CC-034":   ["EX-6"],              # trust_remote_code model load = code exec
+        "CC-036":   ["EX-6"],              # unsafe pickle deser of fetched artifact = code exec
+        "CC-037":   ["EX-6"],              # agentic CLI ingests untrusted context (prompt injection)
+        "CC-038":   ["DE-1"],              # agentic CLI output lands without review
         "SCM-048":  ["CA-5"],                      # org codespace secrets scoped to all repos
         "SCM-049":  ["IA-9"],                      # classic PAT where fine-grained suffices
         "NPM-012":  ["IA-9"],                      # publish token lacking restrictions

@@ -25,7 +25,7 @@
 
 Pipeline-Check is a security scanner for GitHub Actions, GitLab CI, Jenkins, CircleCI, Azure DevOps, Bitbucket Pipelines, Buildkite, Drone, Harness, Tekton, Argo Workflows, and Google Cloud Build, plus Terraform, CloudFormation, Kubernetes, Helm, Dockerfile, OCI image manifests, and live AWS, Azure, and GCP accounts. It maps every finding to the [OWASP Top 10 CI/CD Security Risks](https://owasp.org/www-project-top-10-ci-cd-security-risks/), SLSA, NIST SSDF, PCI DSS, SOC 2, the CIS GitHub Benchmark, and twelve other frameworks, and scores each scan A through D so you can gate merges on the result.
 
-**1220+ checks** across **39 providers**, mapped to **18 compliance standards**, with **120 autofixers**, plus **56 attack chains** correlating findings into MITRE ATT&CK-mapped kill chains. A dataflow taint engine catches multi-step and cross-job propagation that single-rule scanners miss.
+**1260+ checks** across **39 providers**, mapped to **18 compliance standards**, with **120 autofixers**, plus **56 attack chains** correlating findings into MITRE ATT&CK-mapped kill chains. A dataflow taint engine catches multi-step and cross-job propagation that single-rule scanners miss.
 
 [Quick start](#-quick-start) |
 [Usage guide](docs/usage.md) |
@@ -135,14 +135,14 @@ for inputs, idempotency, and fork-PR fallback behavior.
 | **GitLab CI** | `.gitlab-ci.yml` | `--gitlab-path` | 52 checks · `GL-001..050` + `TAINT-004`/`008` · `CI_JOB_TOKEN` cross-project scope, DinD TLS bypass, debug-trace secret leaks, MR-pipeline IaC apply + prod deploy, disabled native scanners, `trust_remote_code` + unpinned + pickle model loads, agentic-CLI prompt injection + autoland, long-lived publish token vs OIDC trusted publishing, mutable `include: component:` |
 | **Bitbucket Pipelines** | `bitbucket-pipelines.yml` | `--bitbucket-path` | 39 checks · `BB-001..039` · PR-pipeline IaC apply + prod deploy, `trust_remote_code` model loads, untrusted PR context into an agentic AI CLI, unsafe pickle deserialization, unpinned model pulls, agentic-CLI output pushed without review |
 | **Azure DevOps** | `azure-pipelines.yml` | `--azure-path` | 38 checks · `ADO-001..038` · incl. IaC apply on a PR-validated pipeline, `trust_remote_code` model loads, untrusted PR context into an agentic AI CLI, unsafe pickle deserialization, unpinned model pulls, agentic-CLI output pushed without review |
-| **Jenkins** | `Jenkinsfile` (Declarative / Scripted) | `--jenkinsfile-path` | 38 checks · `JF-001..038` · incl. untrusted PR/build context into an agentic AI CLI, agentic-CLI output pushed without review |
-| **CircleCI** | `.circleci/config.yml` | `--circleci-path` | 33 checks · `CC-001..033` · incl. Go-module-verification bypass |
-| **Google Cloud Build** | `cloudbuild.yaml` | `--cloudbuild-path` | 27 checks · `GCB-001..027` |
-| **Buildkite** | `.buildkite/pipeline.yml` | `--buildkite-path` | 17 checks · `BK-001..016` + `TAINT-005` |
-| **Drone CI** | `.drone.yml` / `.drone.yaml` | `--drone-path` | 17 checks · `DR-001..017` · image / plugin pinning, privileged steps, `${DRONE_*}` injection, fork-PR exposure, pipe-to-shell, dangerous shell idioms, sensitive host-path mounts |
-| **Harness CI/CD** | Harness pipeline YAML (`.harness/`) | `--harness-path` | 11 checks · `HARNESS-001..011` · step image digest pinning, untrusted `<+codebase.*>` / `<+trigger.*>` expression injection into step commands, privileged steps, literal secrets in pipeline / stage variables, pipe-to-shell installs, TLS-verification bypass, sensitive host-path mounts, untrusted context into an agentic AI CLI, AI output autolanding without review, model `trust_remote_code` / unsafe-pickle deserialization (model-load RCE) |
-| **Tekton** | `Task` / `Pipeline` / `*Run` YAML | `--tekton-path` | 17 checks · `TKN-001..016` + `TAINT-006` |
-| **Argo Workflows** | `Workflow` / `WorkflowTemplate` YAML | `--argo-path` | 18 checks · `ARGO-001..017` + `TAINT-007` · over-privileged / default service account, untrusted-parameter manifest injection |
+| **Jenkins** | `Jenkinsfile` (Declarative / Scripted) | `--jenkinsfile-path` | 42 checks · `JF-001..042` · incl. untrusted PR/build context into an agentic AI CLI, agentic-CLI output pushed without review, the model-load supply-chain triad (`trust_remote_code`, unpinned model revision, unsafe pickle deserialization), secret echoed to the build log |
+| **CircleCI** | `.circleci/config.yml` | `--circleci-path` | 38 checks · `CC-001..038` · incl. Go-module-verification bypass, the model-load triad (`trust_remote_code`, unpinned model revision, unsafe pickle deserialization), untrusted PR/build context into an agentic AI CLI, agentic-CLI output pushed without review |
+| **Google Cloud Build** | `cloudbuild.yaml` | `--cloudbuild-path` | 28 checks · `GCB-001..027` |
+| **Buildkite** | `.buildkite/pipeline.yml` | `--buildkite-path` | 18 checks · `BK-001..016` + `TAINT-005` |
+| **Drone CI** | `.drone.yml` / `.drone.yaml` | `--drone-path` | 22 checks · `DR-001..017` · image / plugin pinning, privileged steps, `${DRONE_*}` injection, fork-PR exposure, pipe-to-shell, dangerous shell idioms, sensitive host-path mounts |
+| **Harness CI/CD** | Harness pipeline YAML (`.harness/`) | `--harness-path` | 18 checks · `HARNESS-001..018` · step image digest pinning, untrusted `<+codebase.*>` / `<+trigger.*>` expression injection into step commands, privileged steps, literal secrets in pipeline / stage variables, pipe-to-shell installs, TLS-verification bypass, sensitive host-path mounts, untrusted context into an agentic AI CLI, AI output autolanding without review, model `trust_remote_code` / unsafe-pickle deserialization (model-load RCE), AI model pulled without a pinned revision, secret echoed to the step log, dangerous shell idiom (`eval` / `sh -c`), supply-chain gates (no signing / SBOM / SLSA provenance / vuln-scan) |
+| **Tekton** | `Task` / `Pipeline` / `*Run` YAML | `--tekton-path` | 19 checks · `TKN-001..016` + `TAINT-006` |
+| **Argo Workflows** | `Workflow` / `WorkflowTemplate` YAML | `--argo-path` | 20 checks · `ARGO-001..017` + `TAINT-007` · over-privileged / default service account, untrusted-parameter manifest injection |
 | **Argo CD** | `Application` / `AppProject` YAML + `argocd-*` ConfigMaps | `--argocd-path` | 19 checks · `ARGOCD-001..019` · sourceRepo / destination wildcards, RBAC wildcards, mutable source refs, web terminal, drift-detection bypass. [Reference →](docs/providers/argocd.md) |
 | **Dockerfile** | `Dockerfile` / `Containerfile` | `--dockerfile-path` | 31 checks · `DF-001..031` · image digest pinning, lifecycle scripts, TLS / loader-hijack env, unpinned `COPY --from` |
 | **Modelfile** | `Modelfile` · HF `config.json` | `--modelfile-path` | 5 checks · `MODEL-001..005` · unpinned base model, third-party-hub (`hf.co`) source, local weights blob, remote LoRA adapter, model config custom code (`auto_map`) |
@@ -179,7 +179,7 @@ for the full per-check reference.
 
 ```
                  +-----------+
-  Config files   |  Scanner  |   1220+ checks across 39 providers
+  Config files   |  Scanner  |   1260+ checks across 39 providers
   or live APIs ---->         +---> Findings (check_id, severity, resource)
                  +-----------+
                        |
@@ -540,14 +540,14 @@ pipeline_check/
         ├── gitlab/rules/      # GL-001 .. GL-050 + TAINT-004 / TAINT-008
         ├── bitbucket/rules/   # BB-001 .. BB-039
         ├── azure/rules/       # ADO-001 .. ADO-038
-        ├── jenkins/rules/     # JF-001 .. JF-038
-        ├── circleci/rules/    # CC-001 .. CC-033
-        ├── cloudbuild/rules/  # GCB-001 .. GCB-027
-        ├── buildkite/rules/   # BK-001 .. BK-016 + TAINT-005
-        ├── drone/rules/       # DR-001 .. DR-017
-        ├── harness/rules/     # HARNESS-001 .. HARNESS-011 — Harness CI/CD pipeline YAML (image pinning, untrusted-expression command injection, privileged steps, literal secrets in variables, pipe-to-shell, TLS bypass, host-path mounts, AI prompt injection, AI autoland, model trust_remote_code / unsafe-pickle deser)
-        ├── tekton/rules/      # TKN-001 .. TKN-016 + TAINT-006
-        ├── argo/rules/        # ARGO-001 .. ARGO-017 + TAINT-007
+        ├── jenkins/rules/     # JF-001 .. JF-042
+        ├── circleci/rules/    # CC-001 .. CC-038
+        ├── cloudbuild/rules/  # GCB-001 .. GCB-028
+        ├── buildkite/rules/   # BK-001 .. BK-017 + TAINT-005
+        ├── drone/rules/       # DR-001 .. DR-022
+        ├── harness/rules/     # HARNESS-001 .. HARNESS-018 — Harness CI/CD pipeline YAML (image pinning, untrusted-expression command injection, privileged steps, literal secrets in variables, pipe-to-shell, TLS bypass, host-path mounts, AI prompt injection, AI autoland, model trust_remote_code / unsafe-pickle deser, unpinned model revision, secret echoed to step log, dangerous shell idiom, supply-chain gates)
+        ├── tekton/rules/      # TKN-001 .. TKN-018 + TAINT-006
+        ├── argo/rules/        # ARGO-001 .. ARGO-019 + TAINT-007
         ├── argocd/rules/      # ARGOCD-001 .. ARGOCD-019
         ├── oci/rules/         # OCI-001 .. OCI-009 + ATTEST-001..007
         ├── dockerfile/rules/  # DF-001 .. DF-031
@@ -556,7 +556,7 @@ pipeline_check/
         ├── helm/rules/        # HELM-001 .. HELM-017 + renders charts so the K8S rule pack also applies
         ├── scm/rules/         # SCM-001 .. SCM-055 — repo governance via the platform REST API (GitHub SCM-001..049 full pack: Actions governance + environment protection + deploy-keys + webhook security + outside-collaborator audit + private-repo fork policy + ruleset enforcement / always-bypass / PR-review / status-checks / force-push / deletion / signed-commits / stale-review dismissal / linear-history / required-workflows / code-scanning-gate / deployment-env-gate / merge-queue + auto-merge audit + tag-ruleset signing + admin-bypass-on-signing + default-scanning query-suite / paused / language-coverage; GitLab platform pack SCM-050..053: push-rule prevent_secrets / committer-check, MR discussions-resolved, MR author self-approval; Bitbucket platform pack SCM-054..055: private-repo fork policy, default-branch write-side restriction kinds; GitLab + Bitbucket universal subset SCM-001/002/006/007/008/009/017)
         ├── scm_org/rules/     # ORG-001 .. ORG-013 — GitHub organization-wide governance via the REST API (org-wide 2FA requirement, default member repository permission, Actions allow-list, default workflow token permission, Actions-can-approve-PRs review bypass, org secret scoped to all repos, private-repo forking allowed, member public-repo creation, self-hosted runner group exposed to public repos, new-repo push-protection default, webhook insecure transport, new-repo Dependabot security-updates default, org ruleset not enforced); complements scm (one repo) with org-level posture
-        ├── gitlab_group/rules/ # GLGRP-001 .. GLGRP-004 — GitLab group-wide governance via the REST API (group-wide 2FA requirement, project forking outside the group allowed, project sharing outside the group hierarchy allowed, default branch protection disabled for new projects); the GitLab analog of scm_org
+        ├── gitlab_group/rules/ # GLGRP-001 .. GLGRP-006 — GitLab group-wide governance via the REST API (group-wide 2FA requirement, project forking outside the group allowed, project sharing outside the group hierarchy allowed, default branch protection disabled for new projects, group webhook over insecure transport, group CI/CD variable exposing a secret with a weak control); the GitLab analog of scm_org
         ├── npm/rules/         # NPM-001 .. NPM-020 — package.json + package-lock.json + .npmrc supply-chain hygiene + curated compromised-package registry + files-field secret-leak detector + broad-files-field publish-blast-radius detector + cooldown gate + OSV advisory lookup + single-publisher / provenance / untrusted-ref / OpenSSF-Scorecard / new-publisher-takeover behavioral signals + overrides/resolutions source-redirect + .npmrc registry-repoint
         ├── pypi/rules/        # PYPI-001 .. PYPI-021 — requirements.txt + pyproject.toml supply-chain hygiene + curated compromised-package registry + cooldown gate + OSV advisory lookup + index-URL credentials + --trusted-host + build-system requires pinning + dynamic-dep deferral + custom-source HTTP + direct-artifact-URL / repointed-index / find-links / no-binary + PEP 740 provenance gap + provenance non-release ref + low upstream OpenSSF Scorecard
         ├── maven/rules/       # MVN-001 .. MVN-018 — pom.xml + settings.xml supply-chain hygiene + curated compromised-package registry (Log4Shell / Spring4Shell / Text4Shell) + cooldown gate + OSV advisory lookup + settings.xml plaintext server credentials + repo URL embedded credentials + build plugin / extension floating versions + Maven Wrapper distributionSha256Sum verification + lifecycle-bound command-running plugin (build-time RCE) + gradle allowInsecureProtocol + settings.xml private-key plaintext passphrase + distributionManagement release repo accepting SNAPSHOTs

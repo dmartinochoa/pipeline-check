@@ -512,3 +512,133 @@ class TestHarness011UnsafeDeser:
         out = [f for f in _for(_findings(_ctx(tmp_path, text)), "HARNESS-011")
                if not f.passed]
         assert out == []
+
+
+class TestHarness012ModelPinning:
+    _PIN = "0123456789abcdef0123456789abcdef01234567"
+
+    def test_flags_unpinned_org_model(self, tmp_path):
+        text = _model_pipeline(
+            "python -c 'AutoModel.from_pretrained(\"acme/llm\")'"
+        )
+        out = [f for f in _for(_findings(_ctx(tmp_path, text)), "HARNESS-012")
+               if not f.passed]
+        assert len(out) == 1
+        assert out[0].severity is Severity.MEDIUM
+        assert "ci/load" in out[0].description
+        assert "acme/llm" in out[0].description
+
+    def test_flags_unpinned_cli_download(self, tmp_path):
+        text = _model_pipeline("huggingface-cli download acme/llm")
+        out = [f for f in _for(_findings(_ctx(tmp_path, text)), "HARNESS-012")
+               if not f.passed]
+        assert len(out) == 1
+
+    def test_passes_when_revision_pinned(self, tmp_path):
+        text = _model_pipeline(
+            f"python -c 'AutoModel.from_pretrained(\"acme/llm\", "
+            f"revision=\"{self._PIN}\")'"
+        )
+        out = [f for f in _for(_findings(_ctx(tmp_path, text)), "HARNESS-012")
+               if not f.passed]
+        assert out == []
+
+    def test_passes_on_first_party_hub_name(self, tmp_path):
+        # No org/ namespace -> canonical first-party model, not flagged.
+        text = _model_pipeline(
+            "python -c 'AutoModel.from_pretrained(\"bert-base-uncased\")'"
+        )
+        out = [f for f in _for(_findings(_ctx(tmp_path, text)), "HARNESS-012")
+               if not f.passed]
+        assert out == []
+
+    def test_passes_clean_pipeline(self, tmp_path):
+        out = _for(_findings(_ctx(tmp_path, _CLEAN)), "HARNESS-012")
+        assert out and all(f.passed for f in out)
+
+
+class TestHarness013LogLeak:
+    def test_flags_echo_secret_named_var(self, tmp_path):
+        text = _model_pipeline('echo "key is $AWS_SECRET_ACCESS_KEY"')
+        out = [f for f in _for(_findings(_ctx(tmp_path, text)), "HARNESS-013")
+               if not f.passed]
+        assert len(out) == 1
+        assert out[0].severity is Severity.HIGH
+        assert "ci/load" in out[0].description
+
+    def test_flags_printenv_dump(self, tmp_path):
+        text = _model_pipeline("printenv")
+        out = [f for f in _for(_findings(_ctx(tmp_path, text)), "HARNESS-013")
+               if not f.passed]
+        assert len(out) == 1
+
+    def test_passes_on_safe_existence_check(self, tmp_path):
+        text = _model_pipeline('[ -n "$TOKEN" ] && echo set || echo unset')
+        out = [f for f in _for(_findings(_ctx(tmp_path, text)), "HARNESS-013")
+               if not f.passed]
+        assert out == []
+
+    def test_passes_clean_pipeline(self, tmp_path):
+        out = _for(_findings(_ctx(tmp_path, _CLEAN)), "HARNESS-013")
+        assert out and all(f.passed for f in out)
+
+
+class TestHarness014ShellEval:
+    def test_flags_eval_variable(self, tmp_path):
+        text = _model_pipeline('eval "$BUILD_CMD"')
+        out = [f for f in _for(_findings(_ctx(tmp_path, text)), "HARNESS-014")
+               if not f.passed]
+        assert len(out) == 1
+        assert out[0].severity is Severity.HIGH
+        assert "ci/load" in out[0].description
+
+    def test_passes_on_ssh_agent_bootstrap(self, tmp_path):
+        text = _model_pipeline('eval "$(ssh-agent -s)"')
+        out = [f for f in _for(_findings(_ctx(tmp_path, text)), "HARNESS-014")
+               if not f.passed]
+        assert out == []
+
+    def test_passes_clean_pipeline(self, tmp_path):
+        out = _for(_findings(_ctx(tmp_path, _CLEAN)), "HARNESS-014")
+        assert out and all(f.passed for f in out)
+
+
+class TestHarness015to018SupplyChainGates:
+    def _build(self, *extra: str) -> str:
+        cmd = "docker build -t app . && docker push app"
+        for e in extra:
+            cmd += " && " + e
+        return _model_pipeline(cmd)
+
+    def _failing(self, tmp_path, text, rule_id):
+        return [f for f in _for(_findings(_ctx(tmp_path, text)), rule_id)
+                if not f.passed]
+
+    def test_signing_fails_on_unsigned_build(self, tmp_path):
+        out = self._failing(tmp_path, self._build(), "HARNESS-015")
+        assert len(out) == 1
+        assert out[0].severity is Severity.MEDIUM
+
+    def test_signing_passes_with_cosign(self, tmp_path):
+        text = self._build("cosign sign --yes app")
+        assert self._failing(tmp_path, text, "HARNESS-015") == []
+
+    def test_signing_not_applicable_on_lint_only(self, tmp_path):
+        # _CLEAN produces no artifacts -> signing gate is not applicable.
+        out = _for(_findings(_ctx(tmp_path, _CLEAN)), "HARNESS-015")
+        assert out and all(f.passed for f in out)
+
+    def test_sbom_fails_then_passes(self, tmp_path):
+        assert self._failing(tmp_path, self._build(), "HARNESS-016")
+        text = self._build("syft app -o cyclonedx-json")
+        assert self._failing(tmp_path, text, "HARNESS-016") == []
+
+    def test_provenance_fails_then_passes(self, tmp_path):
+        assert self._failing(tmp_path, self._build(), "HARNESS-017")
+        text = self._build("cosign attest --predicate slsa.json app")
+        assert self._failing(tmp_path, text, "HARNESS-017") == []
+
+    def test_vuln_fails_then_passes(self, tmp_path):
+        assert self._failing(tmp_path, self._build(), "HARNESS-018")
+        text = self._build("trivy image app")
+        assert self._failing(tmp_path, text, "HARNESS-018") == []

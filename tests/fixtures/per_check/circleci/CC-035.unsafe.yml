@@ -1,0 +1,13 @@
+version: 2.1
+jobs:
+  train:
+    docker:
+      - image: cimg/python:3.12
+    steps:
+      - run:
+          name: Fetch model
+          command: huggingface-cli download acme/llm
+workflows:
+  build:
+    jobs:
+      - train

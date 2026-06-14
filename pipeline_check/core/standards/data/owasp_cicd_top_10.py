@@ -312,6 +312,10 @@ STANDARD = Standard(
         "BB-038":   ["CICD-SEC-3"],   # model pulled without a pinned revision
         "BB-039":   ["CICD-SEC-1"],   # agentic CLI output lands without review
         "JF-038":   ["CICD-SEC-1"],   # agentic CLI output lands without review
+        "JF-039":   ["CICD-SEC-4"],   # trust_remote_code model load = code exec
+        "JF-040":   ["CICD-SEC-3"],   # model pulled without a pinned revision
+        "JF-041":   ["CICD-SEC-4"],   # unsafe pickle deser of fetched artifact = code exec
+        "JF-042":   ["CICD-SEC-6"],   # secret echoed to Jenkins build log
         "BB-003":   ["CICD-SEC-6"],
         "BB-004":   ["CICD-SEC-1"],
         "BB-005":   ["CICD-SEC-7"],
@@ -444,6 +448,9 @@ STANDARD = Standard(
         "CC-025":   ["CICD-SEC-4"],
         "CC-026":   ["CICD-SEC-4", "CICD-SEC-7"],
         "CC-027":   ["CICD-SEC-4"],
+        "ARGO-019":  ["CICD-SEC-4"],  # Argo dangerous shell idiom
+        "TKN-018":  ["CICD-SEC-4"],  # Tekton dangerous shell idiom
+        "HARNESS-014":  ["CICD-SEC-4"],  # Harness dangerous shell idiom
         "CC-028":   ["CICD-SEC-3"],
         "CC-029":   ["CICD-SEC-3"],
         "CC-030":   ["CICD-SEC-6"],
@@ -744,9 +751,17 @@ STANDARD = Standard(
         "BK-007":   ["CICD-SEC-2", "CICD-SEC-7"],  # deploy step not gated
         "BK-008":   ["CICD-SEC-3"],   # TLS verification disabled
         "BK-009":   ["CICD-SEC-9"],   # artifacts not signed
+        "HARNESS-015":  ["CICD-SEC-9"],  # Harness artifacts not signed
+        "DR-019":  ["CICD-SEC-9"],  # Drone artifacts not signed
         "BK-010":   ["CICD-SEC-9"],   # SBOM not generated
+        "HARNESS-016":  ["CICD-SEC-9"],  # Harness no SBOM
+        "DR-020":  ["CICD-SEC-9"],  # Drone no SBOM
         "BK-011":   ["CICD-SEC-9"],   # SLSA provenance not produced
+        "HARNESS-017":  ["CICD-SEC-9"],  # Harness no SLSA provenance
+        "DR-021":  ["CICD-SEC-9"],  # Drone no SLSA provenance
         "BK-012":   ["CICD-SEC-9"],   # no vulnerability scanning
+        "HARNESS-018":  ["CICD-SEC-9"],  # Harness no vuln scan
+        "DR-022":  ["CICD-SEC-9"],  # Drone no vuln scan
         "BK-013":   ["CICD-SEC-1"],   # deploy step has no branches filter
         "BK-014":   ["CICD-SEC-3"],   # unpinned package install
         "BK-015":   ["CICD-SEC-7", "CICD-SEC-1"],  # agents map interpolation
@@ -830,6 +845,13 @@ STANDARD = Standard(
         "HARNESS-008":   ["CICD-SEC-4"],  # Harness agentic-CLI prompt injection
         "HARNESS-010":   ["CICD-SEC-4"],  # Harness model trust_remote_code (code exec)
         "HARNESS-011":   ["CICD-SEC-4"],  # Harness unsafe model deser (pickle RCE)
+        "HARNESS-012":   ["CICD-SEC-3"],  # Harness model pulled without a pinned revision
+        "HARNESS-013":   ["CICD-SEC-6"],  # Harness secret echoed to step log
+        "GCB-028":  ["CICD-SEC-6"],  # Cloud Build secret echoed to build log
+        "ARGO-018":  ["CICD-SEC-6"],  # Argo secret echoed to template log
+        "TKN-017":  ["CICD-SEC-6"],  # Tekton secret echoed to step log
+        "DR-018":  ["CICD-SEC-6"],  # Drone secret echoed to step log
+        "BK-017":  ["CICD-SEC-6"],  # Buildkite secret echoed to step log
         "HARNESS-009":   ["CICD-SEC-1"],  # Harness agentic-CLI output autolands without review
         "DR-002":   ["CICD-SEC-5"],                 # step privileged
         "DR-003":   ["CICD-SEC-4", "CICD-SEC-1"],   # Drone variable injection
@@ -926,6 +948,8 @@ STANDARD = Standard(
         "GLGRP-002":  ["CICD-SEC-2"],  # gitlab group: forking outside group allowed
         "GLGRP-003":  ["CICD-SEC-2"],  # gitlab group: sharing projects outside the hierarchy
         "GLGRP-004":  ["CICD-SEC-1"],  # gitlab group: default branch protection disabled for new projects
+        "GLGRP-005":  ["CICD-SEC-6", "CICD-SEC-10"],  # gitlab group: group webhook over insecure transport
+        "GLGRP-006":  ["CICD-SEC-6"],  # gitlab group: group CI/CD variable holds a secret with a weak control
         "ORG-008":  ["CICD-SEC-2"],                # org: members can create public repos (code exposure)
         "ORG-009":  ["CICD-SEC-4", "CICD-SEC-7"],   # org: self-hosted runner group exposed to public repos
         "ORG-010":  ["CICD-SEC-6"],                # org: new-repo secret-scanning push-protection default off
@@ -956,6 +980,11 @@ STANDARD = Standard(
         "ADO-032":  ["CICD-SEC-6"],               # checkout persistCredentials leaks token to .git/config
         "ADO-033":  ["CICD-SEC-4"],               # IaC apply on a PR-validated pipeline
         "CC-032":   ["CICD-SEC-6"],               # secret echoed to CircleCI log
+        "CC-034":   ["CICD-SEC-4"],               # trust_remote_code model load = code exec
+        "CC-035":   ["CICD-SEC-3"],               # model pulled without a pinned revision
+        "CC-036":   ["CICD-SEC-4"],               # unsafe pickle deser of fetched artifact = code exec
+        "CC-037":   ["CICD-SEC-4"],               # agentic CLI ingests untrusted context (prompt injection)
+        "CC-038":   ["CICD-SEC-1"],               # agentic CLI output lands without review
         # npm supply-chain posture
         "NPM-012":  ["CICD-SEC-3", "CICD-SEC-6"],  # publish token missing restrictions
         "NPM-013":  ["CICD-SEC-6", "CICD-SEC-3"],  # broad files-field publishes everything
