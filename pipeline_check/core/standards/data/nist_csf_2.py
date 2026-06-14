@@ -679,6 +679,7 @@ STANDARD = Standard(
         "TKN-004": ["PR.PS-01"],                # hostPath / host namespaces
         "TKN-005": ["PR.AA-01", "PR.DS-01"],    # leaked creds
         "TKN-006": ["PR.PS-01"],                # no explicit timeout
+        "HARNESS-019":  ["PR.PS-01"],  # Harness pipeline lacks an explicit timeout
         "TKN-007": ["PR.AA-05"],                # default ServiceAccount
         "TKN-008": ["GV.SC-05", "PR.DS-02"],    # remote install / TLS bypass
         "TKN-009": ["PR.PS-06"],                # artifacts not signed

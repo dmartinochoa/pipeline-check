@@ -396,6 +396,7 @@ STANDARD = Standard(
         "TKN-004":  ["Build.L3.Isolated"],                         # hostPath / host namespaces
         "TKN-005":  ["Build.L3.NonFalsifiable"],                   # leaked creds in env / param
         "TKN-006":  ["Build.L3.Ephemeral"],                        # no timeout
+        "HARNESS-019":  ["Build.L3.Ephemeral"],  # Harness pipeline lacks an explicit timeout
         "TKN-007":  ["Build.L3.NonFalsifiable"],                   # default ServiceAccount
         "TKN-008":  ["Build.L3.Isolated"],                         # remote install / TLS bypass
         "TKN-009":  ["Build.L2.Signed"],                           # artifact signing

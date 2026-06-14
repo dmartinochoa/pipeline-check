@@ -38,7 +38,7 @@ All other flags (`--output`, `--severity-threshold`, `--checks`,
 
 ## What it covers
 
-18 checks · 3 have an autofix patch (``--fix``).
+19 checks · 3 have an autofix patch (``--fix``).
 
 | Check | Title | Severity | Fix |
 |-------|-------|----------|-----|
@@ -60,6 +60,7 @@ All other flags (`--output`, `--severity-threshold`, `--checks`,
 | [HARNESS-016](#harness-016) | No SBOM produced (no syft / cyclonedx step) | <span class="pg-sev pg-sev--medium">MEDIUM</span> |  |
 | [HARNESS-017](#harness-017) | No SLSA provenance attestation produced | <span class="pg-sev pg-sev--medium">MEDIUM</span> |  |
 | [HARNESS-018](#harness-018) | No vulnerability-scan step (trivy / grype / snyk) | <span class="pg-sev pg-sev--medium">MEDIUM</span> |  |
+| [HARNESS-019](#harness-019) | Pipeline step lacks an explicit timeout | <span class="pg-sev pg-sev--low">LOW</span> |  |
 
 ---
 
@@ -444,6 +445,26 @@ Detection mirrors GHA-020 / BK-012 / CC-020 / TKN-012 / DR-022, the shared scann
 **Recommended action**
 
 Add a vulnerability-scan step to the build: ``trivy``, ``grype``, ``snyk``, ``npm audit``, or ``pip-audit`` over the image or dependency tree (or a Harness Security Testing Orchestration step), and fail the build on findings above your threshold so known CVEs don't ship to production silently.
+
+</div>
+
+</div>
+
+<div class="pg-rule pg-rule--low" markdown>
+
+## HARNESS-019: Pipeline step lacks an explicit timeout { #harness-019 }
+
+<div class="pg-rule__tags">
+<span class="pg-sev pg-sev--low">LOW</span> <span class="pg-tag pg-tag--owasp">CICD-SEC-9</span> <span class="pg-tag pg-tag--esf">ESF-D-RUNTIME-HARDENING</span> <span class="pg-tag pg-tag--cwe">CWE-400</span>
+</div>
+
+Harness ``timeout`` is a string duration (``10m``, ``1h30m``) that sits beside ``spec`` on a step and on a stage. The rule walks every step (across CI and CD stages, through ``parallel`` / ``stepGroup`` nesting) and flags a step that carries no ``timeout`` of its own and whose enclosing stage carries none either, since a stage-level timeout bounds all of its steps. A runtime input (``<+input>``) counts as set. A best-practice / missing-control rule (LOW, dropped by ``--no-best-practice``); the Harness analog of TKN-006 / GHA-015 / GCB-005.
+
+<div class="pg-rule__rec" markdown>
+
+**Recommended action**
+
+Set an explicit ``timeout`` on every step, or on the enclosing stage to bound all of its steps at once: ``timeout: 10m`` / ``timeout: 1h``. Without one a hung step falls back to Harness's default and can pin a build VM / delegate far longer than the job needs, wasting capacity and delaying the queue. For genuinely long jobs set a generous explicit value (``2h``, ``6h``) rather than leaving it implicit.
 
 </div>
 

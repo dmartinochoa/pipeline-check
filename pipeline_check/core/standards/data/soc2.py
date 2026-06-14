@@ -651,6 +651,7 @@ STANDARD = Standard(
         "TKN-004":  ["CC6.6", "CC6.8"],     # hostPath / host namespaces
         "TKN-005":  ["CC6.1"],              # leaked creds
         "TKN-006":  ["CC6.6"],              # no explicit timeout
+        "HARNESS-019":  ["CC6.6"],  # Harness pipeline lacks an explicit timeout
         "TKN-007":  ["CC6.1"],              # default ServiceAccount
         "TKN-008":  ["CC6.7", "CC8.1"],     # remote install / TLS bypass
         "TKN-009":  ["CC8.1"],              # artifacts not signed

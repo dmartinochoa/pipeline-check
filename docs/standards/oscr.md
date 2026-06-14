@@ -25,7 +25,7 @@ axis.
 
 - **Controls in this standard:** 86
 - **Controls evidenced by at least one check:** 61 / 86
-- **Distinct checks evidencing this standard:** 724
+- **Distinct checks evidencing this standard:** 725
 - **Of those, autofixable with `--fix`:** 112
 
 _Severity levels (`CRITICAL` / `HIGH` / `MEDIUM` / `LOW` / `INFO`) follow the same scale across every provider and standard. See [How to read severity](README.md#how-to-read-severity) on the standards overview for the definitions._
@@ -56,7 +56,7 @@ Click a control ID to jump to the per-control section with the full check list. 
 | [`IA-2`](#ctrl-ia-2) | Malicious IDE extension | 0 | — |
 | [`IA-3`](#ctrl-ia-3) | External user accounts | 1 | 1H |
 | [`IA-4`](#ctrl-ia-4) | Services / servers compromise | 6 | 1H · 5M |
-| [`IA-5`](#ctrl-ia-5) | Vulnerable CI/CD system | 13 | 8M · 5L |
+| [`IA-5`](#ctrl-ia-5) | Vulnerable CI/CD system | 14 | 8M · 6L |
 | [`IA-6`](#ctrl-ia-6) | Exposed storage | 6 | 3C · 1H · 2M |
 | [`IA-7`](#ctrl-ia-7) | Malicious module injection | 0 | — |
 | [`IA-8`](#ctrl-ia-8) | Exposed webhook | 1 | 1H |
@@ -316,7 +316,7 @@ _No checks in this scanner currently evidence this control. Open an issue if you
 
 ### IA-5: Vulnerable CI/CD system { #ctrl-ia-5 }
 
-**Evidenced by 13 checks** across 11 providers (AWS, Argo Workflows, Azure DevOps, Bitbucket, Buildkite, CircleCI, Cloud Build, GitHub Actions, GitLab CI, Jenkins, Tekton).
+**Evidenced by 14 checks** across 12 providers (AWS, Argo Workflows, Azure DevOps, Bitbucket, Buildkite, CircleCI, Cloud Build, GitHub Actions, GitLab CI, Harness CI/CD, Jenkins, Tekton).
 
 | Check | Title | Severity | Provider | Fix |
 |-------|-------|----------|----------|-----|
@@ -331,6 +331,7 @@ _No checks in this scanner currently evidence this control. Open an issue if you
 | [`GHA-015`](../providers/github.md#gha-015) | Job has no `timeout-minutes`, unbounded build | <span class="pg-sev pg-sev--medium">MEDIUM</span> | [GitHub Actions](../providers/github.md) | <span class="pg-fix" title="`--fix` will patch this rule">🔧 fix</span> |
 | [`GHA-068`](../providers/github.md#gha-068) | ``runs-on:`` targets an end-of-life hosted-runner image | <span class="pg-sev pg-sev--medium">MEDIUM</span> | [GitHub Actions](../providers/github.md) |  |
 | [`GL-015`](../providers/gitlab.md#gl-015) | Job has no `timeout`, unbounded build | <span class="pg-sev pg-sev--medium">MEDIUM</span> | [GitLab CI](../providers/gitlab.md) | <span class="pg-fix" title="`--fix` will patch this rule">🔧 fix</span> |
+| [`HARNESS-019`](../providers/harness.md#harness-019) | Pipeline step lacks an explicit timeout | <span class="pg-sev pg-sev--low">LOW</span> | [Harness CI/CD](../providers/harness.md) |  |
 | [`JF-015`](../providers/jenkins.md#jf-015) | Pipeline has no `timeout` wrapper, unbounded build | <span class="pg-sev pg-sev--medium">MEDIUM</span> | [Jenkins](../providers/jenkins.md) | <span class="pg-fix" title="`--fix` will patch this rule">🔧 fix</span> |
 | [`TKN-006`](../providers/tekton.md#tkn-006) | Tekton run lacks an explicit timeout | <span class="pg-sev pg-sev--low">LOW</span> | [Tekton](../providers/tekton.md) |  |
 

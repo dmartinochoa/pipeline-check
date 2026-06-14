@@ -627,6 +627,7 @@ STANDARD = Standard(
         # ── Tekton container-touching extras ─────────────────────
         "TKN-003": ["4.4.5"],                      # param injection in script
         "TKN-006": ["4.4.5"],                      # no timeout
+        "HARNESS-019":  ["4.4.5"],  # Harness pipeline lacks an explicit timeout
         "TKN-008": ["4.2.1"],                      # remote install / TLS
         "TKN-014": ["4.1.5"],                      # unpinned package install
         "TKN-015": ["4.4.5"],                      # workspace subPath param injection

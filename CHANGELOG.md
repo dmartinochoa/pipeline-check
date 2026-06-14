@@ -10,6 +10,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 PRs landing on `dev` between releases append entries below. The
 release commit collapses this section into `## [X.Y.Z] - <date>`.
 
+### Added
+
+- **HARNESS-019: Harness pipeline step lacks an explicit timeout.** A
+  best-practice / missing-control rule (LOW, dropped by
+  `--no-best-practice`) that flags a step carrying no `timeout` of its own
+  whose enclosing stage carries none either; a stage-level timeout bounds
+  all of its steps, and a runtime input (`<+input>`) counts as set. Closes
+  the last cross-provider gap in the build-time-timeout hygiene family
+  (the Harness analog of TKN-006 / GHA-015 / GCB-005).
+
 ## [1.15.0] - 2026-06-14
 
 ### Changed
