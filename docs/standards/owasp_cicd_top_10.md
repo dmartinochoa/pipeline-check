@@ -19,7 +19,7 @@ Kubernetes, …) when an audit asks for that framework's vocabulary.
 
 - **Controls in this standard:** 10
 - **Controls evidenced by at least one check:** 10 / 10
-- **Distinct checks evidencing this standard:** 990
+- **Distinct checks evidencing this standard:** 991
 - **Of those, autofixable with `--fix`:** 120
 
 _Severity levels (`CRITICAL` / `HIGH` / `MEDIUM` / `LOW` / `INFO`) follow the same scale across every provider and standard. See [How to read severity](README.md#how-to-read-severity) on the standards overview for the definitions._
@@ -33,7 +33,7 @@ Click a control ID to jump to the per-control section with the full check list. 
 | [`CICD-SEC-1`](#ctrl-cicd-sec-1) | Insufficient Flow Control Mechanisms | 107 | 7C · 55H · 37M · 8L |
 | [`CICD-SEC-2`](#ctrl-cicd-sec-2) | Inadequate Identity and Access Management | 89 | 11C · 51H · 26M · 1L |
 | [`CICD-SEC-3`](#ctrl-cicd-sec-3) | Dependency Chain Abuse | 320 | 12C · 169H · 115M · 24L |
-| [`CICD-SEC-4`](#ctrl-cicd-sec-4) | Poisoned Pipeline Execution | 164 | 33C · 94H · 25M · 12L |
+| [`CICD-SEC-4`](#ctrl-cicd-sec-4) | Poisoned Pipeline Execution | 165 | 33C · 95H · 25M · 12L |
 | [`CICD-SEC-5`](#ctrl-cicd-sec-5) | Insufficient PBAC | 79 | 4C · 56H · 19M |
 | [`CICD-SEC-6`](#ctrl-cicd-sec-6) | Insufficient Credential Hygiene | 122 | 33C · 64H · 25M |
 | [`CICD-SEC-7`](#ctrl-cicd-sec-7) | Insecure System Configuration | 151 | 26C · 67H · 47M · 11L |
@@ -605,7 +605,7 @@ Floating tags, range constraints, and unverified registries let an upstream main
 
 An attacker who can influence what a build runs, via a PR, an issue comment, or a tainted environment variable, executes with the build's secrets and write-access to your artifacts.
 
-**Evidenced by 164 checks** across 27 providers (AWS, Actions run history, Argo CD, Argo Workflows, Azure DevOps, Bitbucket, Buildkite, Cargo, CircleCI, Cloud Build, Developer environment, Dockerfile, Drone CI, GitHub Actions, GitLab CI, GitLab pipeline run history, Go modules, Harness CI/CD, Helm, Jenkins, NuGet, Pulumi, PyPI, SCM, SCM org governance, Tekton, npm).
+**Evidenced by 165 checks** across 27 providers (AWS, Actions run history, Argo CD, Argo Workflows, Azure DevOps, Bitbucket, Buildkite, Cargo, CircleCI, Cloud Build, Developer environment, Dockerfile, Drone CI, GitHub Actions, GitLab CI, GitLab pipeline run history, Go modules, Harness CI/CD, Helm, Jenkins, NuGet, Pulumi, PyPI, SCM, SCM org governance, Tekton, npm).
 
 | Check | Title | Severity | Provider | Fix |
 |-------|-------|----------|----------|-----|
@@ -649,6 +649,7 @@ An attacker who can influence what a build runs, via a PR, an issue comment, or 
 | [`CC-025`](../providers/circleci.md#cc-025) | Cache key derives from attacker-controllable input | <span class="pg-sev pg-sev--medium">MEDIUM</span> | [CircleCI](../providers/circleci.md) |  |
 | [`CC-026`](../providers/circleci.md#cc-026) | Config contains indicators of malicious activity | <span class="pg-sev pg-sev--critical">CRITICAL</span> | [CircleCI](../providers/circleci.md) |  |
 | [`CC-027`](../providers/circleci.md#cc-027) | Dangerous shell idiom (eval, sh -c variable, backtick exec) | <span class="pg-sev pg-sev--high">HIGH</span> | [CircleCI](../providers/circleci.md) |  |
+| [`CC-034`](../providers/circleci.md#cc-034) | ML model loaded with trust_remote_code (code execution) | <span class="pg-sev pg-sev--high">HIGH</span> | [CircleCI](../providers/circleci.md) |  |
 | [`CP-003`](../providers/aws.md#cp-003) | Source stage using polling instead of event-driven trigger | <span class="pg-sev pg-sev--low">LOW</span> | [AWS](../providers/aws.md) |  |
 | [`CP-007`](../providers/aws.md#cp-007) | CodePipeline v2 PR trigger accepts all branches | <span class="pg-sev pg-sev--high">HIGH</span> | [AWS](../providers/aws.md) |  |
 | [`DEV-001`](../providers/devenv.md) | VS Code task runs automatically on folder open | <span class="pg-sev pg-sev--low">LOW</span> | [Developer environment](../providers/devenv.md) |  |

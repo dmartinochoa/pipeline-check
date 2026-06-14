@@ -134,6 +134,10 @@ jobs:
       - run: echo "integration suite"
       # CC-032: secret echoed to log.
       - run: echo "Token is $DEPLOY_TOKEN"
+      # CC-034: model loaded with trust_remote_code (RCE on the runner).
+      - run:
+          name: Load model
+          command: python -c "AutoModel.from_pretrained('acme/llm', trust_remote_code=True)"
 
 # CC-006: No signing tool (cosign/sigstore) present anywhere.
 # CC-007: No SBOM tool (syft/cyclonedx) present anywhere.

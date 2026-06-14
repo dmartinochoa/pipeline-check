@@ -969,6 +969,7 @@ STANDARD = Standard(
         "ADO-031":  ["8.2.1", "10.3.2"],                  # secret echoed to Azure DevOps log
         "ADO-032":  ["8.2.1", "10.3.2"],                  # checkout persistCredentials leaks token to .git/config
         "CC-032":   ["8.2.1", "10.3.2"],                  # secret echoed to CircleCI log
+        "CC-034":   ["6.5.1"],                  # trust_remote_code model load = code exec
         "SCM-048":  ["7.2.5", "8.2.1"],                   # org codespace secrets scoped to all repos
         "SCM-049":  ["7.2.5", "8.2.1"],                   # classic PAT used where fine-grained suffices
         "ORG-001":  ["8.2.1", "7.2.5"],                   # org: 2FA not required org-wide

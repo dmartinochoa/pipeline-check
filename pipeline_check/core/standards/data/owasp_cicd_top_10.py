@@ -962,6 +962,7 @@ STANDARD = Standard(
         "ADO-032":  ["CICD-SEC-6"],               # checkout persistCredentials leaks token to .git/config
         "ADO-033":  ["CICD-SEC-4"],               # IaC apply on a PR-validated pipeline
         "CC-032":   ["CICD-SEC-6"],               # secret echoed to CircleCI log
+        "CC-034":   ["CICD-SEC-4"],               # trust_remote_code model load = code exec
         # npm supply-chain posture
         "NPM-012":  ["CICD-SEC-3", "CICD-SEC-6"],  # publish token missing restrictions
         "NPM-013":  ["CICD-SEC-6", "CICD-SEC-3"],  # broad files-field publishes everything

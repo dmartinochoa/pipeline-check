@@ -1011,6 +1011,7 @@ STANDARD = Standard(
         "ADO-032":  ["ESF-D-SECRETS"],             # checkout persistCredentials leaks token to .git/config
         "ADO-033":  ["ESF-D-INJECTION"],           # IaC apply on a PR-validated pipeline
         "CC-032":   ["ESF-D-SECRETS"],             # secret echoed to CircleCI log
+        "CC-034":   ["ESF-D-INJECTION"],           # trust_remote_code model load = code exec
         "SCM-048":  ["ESF-D-SECRETS"],             # org codespace secret scoped to all repos
         "SCM-049":  ["ESF-D-SECRETS"],             # classic PAT where fine-grained suffices
         "NPM-012":  ["ESF-D-SECRETS", "ESF-S-VERIFY-DEPS"],  # publish token lacking restrictions

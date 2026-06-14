@@ -281,7 +281,7 @@ class TestJenkinsFixtures:
 
 
 class TestCircleCIFixtures:
-    EXPECTED_IDS = {f"CC-{i:03d}" for i in range(1, 34)}
+    EXPECTED_IDS = {f"CC-{i:03d}" for i in range(1, 35)}
 
     def _scan(self, filename: str):
         ctx = CircleCIContext.from_path(FIXTURES / "circleci" / filename)
