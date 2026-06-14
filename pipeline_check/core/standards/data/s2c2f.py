@@ -134,6 +134,7 @@ STANDARD = Standard(
         "ECR-001":  ["SCA-1"],
         "ECR-007":  ["SCA-1"],             # Inspector v2 enhanced scanning
         "BK-012":   ["SCA-1"],
+        "HARNESS-018":  ["SCA-1"],  # Harness no vuln scan
         "DR-022":  ["SCA-1"],  # Drone no vuln scan
         "TKN-012":  ["SCA-1"],
         "ARGO-012": ["SCA-1"],
@@ -306,6 +307,7 @@ STANDARD = Standard(
         "CC-006":   ["REB-2"],
         "GCB-009":  ["REB-2"],
         "BK-009":   ["REB-2"],
+        "HARNESS-015":  ["REB-2"],  # Harness artifacts not signed
         "DR-019":  ["REB-2"],  # Drone artifacts not signed
         "TKN-009":  ["REB-2"],
         "ARGO-009": ["REB-2"],
@@ -318,6 +320,7 @@ STANDARD = Standard(
         "JF-007":   ["REB-3"],
         "CC-007":   ["REB-3"],
         "BK-010":   ["REB-3"],
+        "HARNESS-016":  ["REB-3"],  # Harness no SBOM
         "DR-020":  ["REB-3"],  # Drone no SBOM
         "TKN-010":  ["REB-3"],
         "ARGO-010": ["REB-3"],
@@ -355,6 +358,7 @@ STANDARD = Standard(
         "CC-024":   ["REB-4"],
         "CC-038":   ["ENF-1"],   # agentic CLI output lands without review
         "BK-011":   ["REB-4"],
+        "HARNESS-017":  ["REB-4"],  # Harness no SLSA provenance
         "DR-021":  ["REB-4"],  # Drone no SLSA provenance
         "TKN-011":  ["REB-4"],
         "ARGO-011": ["REB-4"],

@@ -509,12 +509,16 @@ STANDARD = Standard(
         "BK-007": ["PR.AA-05", "PR.PS-06"],     # no manual deploy gate
         "BK-008": ["PR.DS-02"],                 # TLS bypass
         "BK-009": ["GV.SC-05", "PR.PS-06"],     # no signing
+        "HARNESS-015":  ["GV.SC-05", "PR.PS-06"],  # Harness artifacts not signed
         "DR-019":  ["GV.SC-05", "PR.PS-06"],  # Drone artifacts not signed
         "BK-010": ["GV.SC-05"],                 # no SBOM
+        "HARNESS-016":  ["GV.SC-05"],  # Harness no SBOM
         "DR-020":  ["GV.SC-05"],  # Drone no SBOM
         "BK-011": ["GV.SC-05"],                 # no SLSA provenance
+        "HARNESS-017":  ["GV.SC-05"],  # Harness no SLSA provenance
         "DR-021":  ["GV.SC-05"],  # Drone no SLSA provenance
         "BK-012": ["PR.PS-02", "DE.CM-09"],     # no vuln scan
+        "HARNESS-018":  ["PR.PS-02", "DE.CM-09"],  # Harness no vuln scan
         "DR-022":  ["PR.PS-02", "DE.CM-09"],  # Drone no vuln scan
         "BK-013": ["PR.AA-05"],                 # no branches filter
         "BK-014": ["GV.SC-05"],                 # unpinned package install

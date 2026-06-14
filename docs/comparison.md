@@ -36,7 +36,7 @@ missing major surfaces or requires extra config. No = not in scope.
 | Azure DevOps | Yes (38) | No | Partial | No | No | No |
 | Bitbucket Pipelines | Yes (39) | No | No | No | No | No |
 | Google Cloud Build | Yes (28) | No | Partial | No | No | No |
-| Harness CI/CD | Yes (14) | No | No | No | No | No |
+| Harness CI/CD | Yes (18) | No | No | No | No | No |
 | Buildkite | Yes (18) | No | No | No | No | No |
 | Drone CI | Yes (22) | No | No | No | No | No |
 | Tekton | Yes (19) | No | Partial | No | No | No |

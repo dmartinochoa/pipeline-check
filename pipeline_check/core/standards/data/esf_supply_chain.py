@@ -328,12 +328,16 @@ STANDARD = Standard(
         "BK-007":   ["ESF-C-APPROVAL"],                            # deploy not gated
         "BK-008":   ["ESF-S-TRUSTED-REG"],                         # TLS bypass
         "BK-009":   ["ESF-D-SIGN-ARTIFACTS"],                      # artifact signing
+        "HARNESS-015":  ["ESF-D-SIGN-ARTIFACTS"],  # Harness artifacts not signed
         "DR-019":  ["ESF-D-SIGN-ARTIFACTS"],  # Drone artifacts not signed
         "BK-010":   ["ESF-D-SBOM"],                                # SBOM
+        "HARNESS-016":  ["ESF-D-SBOM"],  # Harness no SBOM
         "DR-020":  ["ESF-D-SBOM"],  # Drone no SBOM
         "BK-011":   ["ESF-S-PROVENANCE", "ESF-D-SIGN-ARTIFACTS"],  # SLSA provenance
+        "HARNESS-017":  ["ESF-S-PROVENANCE", "ESF-D-SIGN-ARTIFACTS"],  # Harness no SLSA provenance
         "DR-021":  ["ESF-S-PROVENANCE", "ESF-D-SIGN-ARTIFACTS"],  # Drone no SLSA provenance
         "BK-012":   ["ESF-S-VULN-MGMT"],                           # vuln scanning
+        "HARNESS-018":  ["ESF-S-VULN-MGMT"],  # Harness no vuln scan
         "DR-022":  ["ESF-S-VULN-MGMT"],  # Drone no vuln scan
         "BK-013":   ["ESF-C-ENV-SEP"],                             # deploy without branch filter
         # ── Tekton ────────────────────────────────────────────────

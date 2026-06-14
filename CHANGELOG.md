@@ -66,6 +66,17 @@ release commit collapses this section into `## [X.Y.Z] - <date>`.
 
 ### Added
 
+- **HARNESS-015..018: supply-chain hygiene gates brought to Harness
+  (MEDIUM).** The Harness counterpart of the Drone gates below: HARNESS-015
+  (no signing), HARNESS-016 (no SBOM), HARNESS-017 (no SLSA provenance),
+  HARNESS-018 (no vuln scanner), reusing the same shared `tokens.py`
+  detectors over the Harness pipeline document. Signing / SBOM / provenance
+  are scoped to artifact-producing pipelines; the vuln-scan gate fires on
+  any pipeline with no scanner. All four registered in `BEST_PRACTICE_IDS`
+  (demoted to LOW by the confidence-tiering). With this, **both Harness and
+  Drone reach parity** with the other ten CI providers on the
+  signing / SBOM / provenance / vuln-scan family. Standards cloned from the
+  Buildkite analogs. `harness` 14 -> 18.
 - **DR-019..022: supply-chain hygiene gates brought to Drone (MEDIUM).**
   Drone lacked the artifact-signing / SBOM / SLSA-provenance / vuln-scan
   gate family that the other ten CI providers carry. DR-019 (no
