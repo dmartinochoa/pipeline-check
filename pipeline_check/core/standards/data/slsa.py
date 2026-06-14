@@ -427,6 +427,7 @@ STANDARD = Standard(
         "HARNESS-008":   ["Build.L3.Isolated"],  # Harness agentic-CLI prompt injection
         "HARNESS-010":   ["Build.L3.Isolated"],  # Harness model trust_remote_code (code exec)
         "HARNESS-011":   ["Build.L3.Isolated"],  # Harness unsafe model deser (pickle RCE)
+        "HARNESS-013":   ["Build.L3.NonFalsifiable"],  # Harness secret echoed to step log
         "HARNESS-009":   ["Build.L3.NonFalsifiable"],  # Harness agentic-CLI output autolands without review
         "DR-002":   ["Build.L3.Isolated"],                         # privileged step
         "DR-003":   ["Build.L3.Isolated"],                         # Drone variable injection

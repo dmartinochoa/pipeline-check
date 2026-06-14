@@ -636,6 +636,7 @@ STANDARD = Standard(
         "HARNESS-010":   ["PR.PS-05"],  # Harness model trust_remote_code (code exec)
         "HARNESS-011":   ["PR.PS-05"],  # Harness unsafe model deser (pickle RCE)
         "HARNESS-012":   ["GV.SC-05"],  # Harness model pulled without a pinned revision
+        "HARNESS-013":   ["PR.AA-01", "PR.DS-01"],  # Harness secret echoed to step log
         "HARNESS-009":   ["PR.PS-06"],  # Harness agentic-CLI output autolands without review
         "DR-002":  ["PR.PS-01"],                # privileged step
         "DR-003":  ["PR.PS-05"],                # Drone variable injection
