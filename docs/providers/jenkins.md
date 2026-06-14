@@ -27,7 +27,7 @@ expression.
 
 ## What it covers
 
-39 checks · 12 have an autofix patch (``--fix``).
+41 checks · 12 have an autofix patch (``--fix``).
 
 | Check | Title | Severity | Fix |
 |-------|-------|----------|-----|
@@ -70,6 +70,8 @@ expression.
 | [JF-037](#jf-037) | Untrusted PR/build context reaches an agentic AI CLI (prompt injection) | <span class="pg-sev pg-sev--high">HIGH</span> |  |
 | [JF-038](#jf-038) | Agentic CLI output lands without human review | <span class="pg-sev pg-sev--high">HIGH</span> |  |
 | [JF-039](#jf-039) | ML model loaded with trust_remote_code (code execution) | <span class="pg-sev pg-sev--high">HIGH</span> |  |
+| [JF-040](#jf-040) | AI model pulled without a pinned revision | <span class="pg-sev pg-sev--medium">MEDIUM</span> |  |
+| [JF-041](#jf-041) | Unsafe deserialization of a fetched artifact (pickle RCE) | <span class="pg-sev pg-sev--high">HIGH</span> |  |
 
 ---
 
@@ -891,6 +893,52 @@ Fires on ``trust_remote_code=True`` / ``--trust-remote-code`` in a ``sh`` / ``ba
 **Recommended action**
 
 Load models with ``trust_remote_code=False`` (the library default). If a model genuinely needs custom code, vet it and pin an exact revision (a commit SHA, not a tag or branch), run the load in a stage with no production credentials bound, and prefer safetensors weights over pickle.
+
+</div>
+
+</div>
+
+<div class="pg-rule pg-rule--medium" markdown>
+
+## JF-040: AI model pulled without a pinned revision { #jf-040 }
+
+<div class="pg-rule__tags">
+<span class="pg-sev pg-sev--medium">MEDIUM</span> <span class="pg-tag pg-tag--owasp">CICD-SEC-3</span> <span class="pg-tag pg-tag--esf">ESF-S-PIN-DEPS</span> <span class="pg-tag pg-tag--esf">ESF-S-VERIFY-DEPS</span> <span class="pg-tag pg-tag--cwe">CWE-494</span> <span class="pg-tag pg-tag--cwe">CWE-829</span>
+</div>
+
+Fires on a ``sh`` / ``bat`` / ``powershell`` step that fetches a model by a mutable registry reference and supplies no revision pin (the shared ``model_ref`` detector, with GHA-121 / GL-046 / BB-038 / ADO-037 / HARNESS-012). Detected fetch forms: ``from_pretrained("org/model")``, ``hf_hub_download`` / ``snapshot_download`` with a ``org/model`` repo id, and ``huggingface-cli download org/model``.
+
+Does NOT fire when a revision is pinned in the same step (``revision='<sha>'`` / ``--revision <sha>``), when the reference is a local path or a variable interpolation (the value can't be judged statically), or on a bare single-segment canonical hub name (``bert-base-uncased``) with no ``org/`` namespace, since those are first-party and the org-scoped third-party models are the higher-risk surface.
+
+**Known false-positive modes**
+
+- A team that re-pulls its own org's model on every run may treat the latest revision as intentional. The right fix is still to pin the revision (it makes an upstream compromise visible); if a rolling pull is genuinely wanted, suppress on the specific step with a rationale naming the model and who controls it.
+
+<div class="pg-rule__rec" markdown>
+
+**Recommended action**
+
+Pin the model to an immutable revision. Pass an exact commit ``revision=`` to ``from_pretrained`` / ``hf_hub_download`` / ``snapshot_download`` (a 40-char commit SHA, not a branch or a tag, both of which the owner can move), or ``--revision <sha>`` to ``huggingface-cli download``. A pinned revision is what makes a swapped-weights or swapped-loader-code attack show up as a diff in your repo instead of silently landing on the next build. Pair with ``trust_remote_code=False`` (JF-039) and prefer safetensors weights over pickle.
+
+</div>
+
+</div>
+
+<div class="pg-rule pg-rule--high" markdown>
+
+## JF-041: Unsafe deserialization of a fetched artifact (pickle RCE) { #jf-041 }
+
+<div class="pg-rule__tags">
+<span class="pg-sev pg-sev--high">HIGH</span> <span class="pg-tag pg-tag--owasp">CICD-SEC-4</span> <span class="pg-tag pg-tag--esf">ESF-D-INJECTION</span> <span class="pg-tag pg-tag--cwe">CWE-502</span> <span class="pg-tag pg-tag--cwe">CWE-494</span> <span class="pg-tag pg-tag--cwe">CWE-829</span>
+</div>
+
+Reuses the shared ``unsafe_deser`` detector (with GHA-122 / GL-047 / BB-037 / ADO-036 / HARNESS-011) over each ``sh`` / ``bat`` / ``powershell`` step body. Fires in two shapes: (A) an explicit unsafe opt-in (``weights_only=False`` on a load, or ``allow_pickle=True`` on ``numpy.load``), always; and (B) a remote fetch (``curl`` / ``wget`` / ``hf_hub_download`` / ``snapshot_download`` / ``huggingface-cli download`` / ``requests.get`` / ``urlretrieve``) together with a pickle-backed loader (``torch.load`` / ``pickle.load(s)`` / ``joblib.load``) in the same step, with no safe path (``weights_only=True`` / safetensors). A bare local unpickle with no fetch does not fire.
+
+<div class="pg-rule__rec" markdown>
+
+**Recommended action**
+
+Don't deserialize a downloaded artifact through pickle. Load weights with safetensors, or pass ``weights_only=True`` to ``torch.load`` (the PyTorch 2.6+ default) so only tensors, not arbitrary Python, are unpickled. Drop ``allow_pickle=True`` from ``numpy.load``. If a pickle / joblib artifact is unavoidable, pin and verify its source (a pinned revision, a checksum, a signature) and load it in a stage with no production credentials bound.
 
 </div>
 

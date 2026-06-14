@@ -139,6 +139,10 @@ spec:
                 sh 'pip install git+https://example.com/internal/helper.git'
                 // JF-039: model loaded with trust_remote_code (RCE on the agent).
                 sh 'huggingface-cli download acme/llm --trust-remote-code'
+                // JF-040: model pulled without a pinned revision (swappable weights).
+                sh "python -c 'from transformers import AutoModel; AutoModel.from_pretrained(\"acme/llm\")'"
+                // JF-041: fetch + pickle-backed load of a model checkpoint (RCE).
+                sh 'curl -fsSL -o m.pt https://models.example.com/m.pt && python -c "import torch; torch.load(1)"'
                 script {
                     def proc = Runtime.getRuntime().exec("id")
                 }

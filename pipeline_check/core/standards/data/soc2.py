@@ -175,6 +175,8 @@ STANDARD = Standard(
         "BB-039":   ["CC8.1"],   # agentic CLI output lands without review
         "JF-038":   ["CC8.1"],   # agentic CLI output lands without review
         "JF-039":   ["CC6.8"],   # trust_remote_code model load = code exec
+        "JF-040":   ["CC8.1"],   # model pulled without a pinned revision
+        "JF-041":   ["CC6.8"],   # unsafe pickle deser of fetched artifact = code exec
         "BB-012":   ["CC6.8"],
         "BB-015":   ["CC6.8"],
         "BB-025":   ["CC6.8"],
