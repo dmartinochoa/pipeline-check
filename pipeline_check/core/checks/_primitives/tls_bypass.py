@@ -70,13 +70,19 @@ _PATTERNS: tuple[tuple[str, str, re.Pattern[str]], ...] = (
      re.compile(r"\bGOINSECURE\s*=", re.IGNORECASE)),
 
     # ── curl / wget ──
-    # ``-k`` is case-sensitive: uppercase ``-K`` is curl's ``--config``
-    # flag and is unrelated to TLS.  ``--insecure`` is kept
-    # case-insensitive because it is a long flag with no ambiguous
-    # uppercase sibling.  The two patterns share the "curl-insecure"
-    # kind tag so downstream consumers get a single label for both.
+    # ``-k`` is case-sensitive: lowercase ``-k`` is ``--insecure`` while
+    # uppercase ``-K`` is curl's ``--config`` flag and is unrelated to
+    # TLS.  The ``k`` may sit anywhere inside a bundled short-flag
+    # cluster (``curl -sk``, ``curl -fsSLk``, ``curl -kL``), the dominant
+    # real-world form, so match a single-dash letter run that contains a
+    # lowercase ``k``.  ``--insecure`` and other long flags begin with
+    # ``--`` (an empty letter run before a second dash) and so are left
+    # to the dedicated long-flag pattern below.  ``--insecure`` is kept
+    # case-insensitive because it has no ambiguous uppercase sibling.
+    # Both patterns share the "curl-insecure" kind tag so downstream
+    # consumers get a single label.
     ("curl-insecure", "curl",
-     re.compile(r"\bcurl\b[^\n]*\s-k\b")),                 # case-sensitive
+     re.compile(r"\bcurl\b[^\n]*\s-[A-Za-z]*k[A-Za-z]*\b")),  # case-sensitive
     ("curl-insecure", "curl",
      re.compile(r"\bcurl\b[^\n]*\s--insecure\b", re.IGNORECASE)),
     ("wget-no-check-certificate", "wget",

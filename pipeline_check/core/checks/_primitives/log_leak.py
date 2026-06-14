@@ -29,9 +29,15 @@ _ENV_DUMP_RE = re.compile(
     re.MULTILINE,
 )
 
+# ``set -x`` (and bundled forms like ``set -euxo``) ENABLE xtrace, which
+# echoes every expanded command, secrets included, to the log. ``set +x``
+# DISABLES it and is the standard idiom for muting trace right before a
+# secret-handling line, so the leading sign must be ``-`` only. The
+# long-form alternative already gets this right (``set +o xtrace`` does
+# not match, only ``set -o xtrace`` does).
 _SHELL_TRACE_RE = re.compile(
     r"(?:^|;|&&|\|\|)\s*set\s+"
-    r"(?:[-+][a-zA-Z]*x[a-zA-Z]*\b|-o\s+xtrace\b)",
+    r"(?:-[a-zA-Z]*x[a-zA-Z]*\b|-o\s+xtrace\b)",
     re.MULTILINE,
 )
 
