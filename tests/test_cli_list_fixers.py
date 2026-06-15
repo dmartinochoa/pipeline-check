@@ -85,3 +85,26 @@ def test_cli_invalid_safety_value_is_rejected():
     result = CliRunner().invoke(scan, ["--list-fixers", "--safety", "bogus"])
     assert result.exit_code == 2
     assert "Invalid value for '--safety'" in result.output
+
+
+def test_color_flag_wraps_severity_in_markup():
+    """``color=True`` wraps the SEV column in the design-system style;
+    the default stays plain so piped output is greppable."""
+    from pipeline_check.core.reporter import severity_style_for
+
+    plain, _ = render_fixers("all")
+    colored, _ = render_fixers("all", color=True)
+    assert plain != colored
+    # A HIGH fixer (GHA-004) is registered, so the HIGH style tag shows
+    # up in the colored body and never in the plain one.
+    high_open = f"[{severity_style_for('HIGH')}]"
+    assert high_open in colored
+    assert high_open not in plain
+
+
+def test_cli_list_fixers_is_plain_when_piped():
+    """CliRunner captures a non-tty stream, so no ANSI escapes leak into
+    piped / redirected output."""
+    result = CliRunner().invoke(scan, ["--list-fixers"])
+    assert result.exit_code == 0
+    assert "\x1b[" not in result.output

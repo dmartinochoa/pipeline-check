@@ -25,16 +25,42 @@ def test_explain_rule_based_check_renders_all_sections():
     # Standards block
     assert "owasp_cicd_top_10" in body
     # Docs note section
-    assert "[What it checks]" in body
+    assert "// what it checks" in body
     # Fix section
-    assert "[How to fix]" in body
+    assert "// how to fix" in body
+
+
+def test_explain_orders_compliance_after_plain_english():
+    # The body must lead with the what/how an operator opened explain
+    # for; the control crosswalk + CWE are reference material at the foot.
+    body, code = render("GHA-001")
+    assert code == 0
+    assert "// compliance & standards" in body
+    assert body.index("// what it checks") < body.index("// compliance & standards")
+    assert body.index("// how to fix") < body.index("// compliance & standards")
+    assert body.index("// how to fix") < body.index("owasp_cicd_top_10")
+    # CWE now rides inside the compliance block, not at the top.
+    assert body.index("// compliance & standards") < body.index("CWE: CWE-829")
+
+
+def test_explain_uses_brand_eyebrow_section_headers():
+    # Section headers follow the brand's "// section" eyebrow convention
+    # (lowercase, no brackets), matching the docs site and HTML report.
+    body, code = render("GHA-001")
+    assert code == 0
+    assert "// what it checks" in body
+    assert "// how to fix" in body
+    assert "// compliance & standards" in body
+    # The old bracketed header style is gone.
+    assert "[What it checks]" not in body
+    assert "[How to fix]" not in body
 
 
 def test_explain_rule_based_check_shows_known_fp_when_present():
     body, code = render("GHA-016")
     assert code == 0
     assert "LOW confidence" in body  # demoted
-    assert "[Known false-positive modes]" in body
+    assert "// known false-positive modes" in body
     # The curl-pipe known_fp mentions vendor installers.
     assert "installer" in body.lower()
 
@@ -43,7 +69,7 @@ def test_explain_rule_without_known_fp_omits_section():
     body, code = render("GHA-024")
     assert code == 0
     # GHA-024 has no known_fp — the section should be absent.
-    assert "[Known false-positive modes]" not in body
+    assert "// known false-positive modes" not in body
 
 
 def test_explain_renders_incident_refs_when_present():
@@ -51,7 +77,7 @@ def test_explain_renders_incident_refs_when_present():
     ``--explain`` surfaces under a "Seen in the wild" section."""
     body, code = render("GHA-001")
     assert code == 0
-    assert "[Seen in the wild]" in body
+    assert "// seen in the wild" in body
     # GHA-001 cites tj-actions/changed-files (CVE-2025-30066).
     assert "tj-actions" in body
     assert "CVE-2025-30066" in body
@@ -63,7 +89,7 @@ def test_explain_omits_seen_in_the_wild_section_when_no_refs():
     # GHA-024 has no incident_refs populated.
     body, code = render("GHA-024")
     assert code == 0
-    assert "[Seen in the wild]" not in body
+    assert "// seen in the wild" not in body
 
 
 def test_explain_renders_proof_of_exploit_when_present():
@@ -72,7 +98,7 @@ def test_explain_renders_proof_of_exploit_when_present():
     see the concrete attack rather than inferring from prose."""
     body, code = render("GHA-001")
     assert code == 0
-    assert "[Proof of exploit]" in body
+    assert "// proof of exploit" in body
     # GHA-001's example shows the tag-pinned vulnerable form and the
     # SHA-pinned safe form back-to-back.
     assert "tj-actions/changed-files@v45" in body
@@ -85,7 +111,7 @@ def test_explain_proof_of_exploit_preserves_multi_line_layout():
     indented to match the section body)."""
     body, code = render("K8S-013")
     assert code == 0
-    assert "[Proof of exploit]" in body
+    assert "// proof of exploit" in body
     # The K8S-013 sample includes a manifest fragment with hostPath at /
     assert "hostPath:" in body
     assert "path: /" in body
@@ -96,7 +122,7 @@ def test_explain_omits_proof_of_exploit_when_unset():
     the section header at all."""
     body, code = render("GHA-024")
     assert code == 0
-    assert "[Proof of exploit]" not in body
+    assert "// proof of exploit" not in body
 
 
 def test_explain_renders_proof_of_exploit_for_pwn_request():
@@ -106,7 +132,7 @@ def test_explain_renders_proof_of_exploit_for_pwn_request():
     the safe split-workflow remediation."""
     body, code = render("GHA-002")
     assert code == 0
-    assert "[Proof of exploit]" in body
+    assert "// proof of exploit" in body
     # Vulnerable form: single workflow with both pull_request_target
     # and the PR-head checkout.
     assert "pull_request_target" in body
@@ -122,7 +148,7 @@ def test_explain_renders_proof_of_exploit_for_script_injection():
     must show the title-injection payload pattern."""
     body, code = render("GHA-003")
     assert code == 0
-    assert "[Proof of exploit]" in body
+    assert "// proof of exploit" in body
     # Vulnerable interpolation pattern.
     assert "github.event.pull_request.title" in body
     # Safe env-routing pattern.
@@ -134,7 +160,7 @@ def test_explain_renders_proof_of_exploit_for_token_persistence():
     must show the artifact-exfil loop the chain is built around."""
     body, code = render("GHA-019")
     assert code == 0
-    assert "[Proof of exploit]" in body
+    assert "// proof of exploit" in body
     # Vulnerable persistence pattern.
     assert "GITHUB_TOKEN" in body
     # Reference to the artifact-download exfil mechanism.
@@ -155,8 +181,8 @@ def test_explain_cb001_renders_full_rule_sections():
     assert "CB-001" in body
     assert "CRITICAL" in body
     # Rule-based rendering includes the docs note and fix sections.
-    assert "[What it checks]" in body
-    assert "[How to fix]" in body
+    assert "// what it checks" in body
+    assert "// how to fix" in body
 
 
 def test_explain_iam002_shows_standards():
@@ -203,7 +229,7 @@ def test_cli_explain_exit_zero_for_known_id():
     result = CliRunner().invoke(scan, ["--explain", "GHA-024"])
     assert result.exit_code == 0
     assert "GHA-024" in result.output
-    assert "[How to fix]" in result.output
+    assert "// how to fix" in result.output
 
 
 def test_cli_explain_exit_three_for_unknown_id():
@@ -400,7 +426,7 @@ def test_explain_surfaces_triggering_attack_chains_section():
     """``--explain GHA-001`` should list AC-* chains it triggers."""
     body, code = render("GHA-001")
     assert code == 0
-    assert "[Triggers attack chains]" in body
+    assert "// triggers attack chains" in body
     # GHA-001 is in AC-003, AC-009, AC-018 — confirm at least the
     # AC-009 link is rendered.
     assert "AC-009" in body
@@ -413,7 +439,7 @@ def test_explain_omits_chain_section_for_check_id_with_no_chains():
     # its triggering set as of this round.
     body, code = render("GHA-022")
     assert code == 0
-    assert "[Triggers attack chains]" not in body
+    assert "// triggers attack chains" not in body
 
 
 def test_chains_for_check_id_helper_caches():
@@ -491,7 +517,7 @@ def test_explain_renders_related_rules_section():
     """``--explain K8S-005`` lists its securityContext siblings."""
     body, code = render("K8S-005")
     assert code == 0
-    assert "[Related rules]" in body
+    assert "// related rules" in body
     # K8S-005 is in the k8s_security_context cluster with K8S-006/007/035.
     assert "K8S-006" in body
     assert "K8S-007" in body
@@ -501,14 +527,14 @@ def test_explain_omits_related_rules_section_when_no_cluster():
     """A rule no cluster contains shouldn't render the section."""
     body, code = render("GHA-022")
     assert code == 0
-    assert "[Related rules]" not in body
+    assert "// related rules" not in body
 
 
 # ─── Autofixable cross-reference ──────────────────────────────────────
 
 
 def test_explain_renders_autofixable_section_for_registered_fixer():
-    """A check with a registered fixer surfaces an `[Autofixable]` line."""
+    """A check with a registered fixer surfaces an `// autofixable` line."""
     from pipeline_check.core.autofix import available_fixers
 
     fixers = set(available_fixers())
@@ -516,7 +542,7 @@ def test_explain_renders_autofixable_section_for_registered_fixer():
     sample = next(iter(sorted(fixers)))
     body, code = render(sample)
     assert code == 0, body
-    assert "[Autofixable]" in body
+    assert "// autofixable" in body
     assert "--fix" in body
 
 
@@ -531,4 +557,4 @@ def test_explain_omits_autofixable_section_when_no_fixer():
     assert no_fix, "expected at least one check with no fixer"
     body, code = render(no_fix[0])
     assert code == 0
-    assert "[Autofixable]" not in body
+    assert "// autofixable" not in body

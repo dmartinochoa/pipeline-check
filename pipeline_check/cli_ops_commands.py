@@ -320,17 +320,36 @@ def _print_init_summary(result: Any, config_path: str) -> None:
 
     # 3. The shortlist, severity-colored, with forward-slashed paths.
     if result.top:
+        from rich.padding import Padding
+        from rich.table import Table
+
         console.print("\n" + r"\[init] top to fix first:")
-        id_w = max(len(t.check_id) for t in result.top)
+        # A borderless table so the columns align and a long title wraps
+        # *under* its column. The previous hand-padded f-string spilled
+        # the wrapped remainder to the start of the next line on a narrow
+        # terminal, which read as a broken row.
+        shortlist = Table(box=None, show_header=False, pad_edge=False)
+        shortlist.add_column(style="bold", no_wrap=True)   # check id
+        shortlist.add_column(no_wrap=True)                 # severity
+        shortlist.add_column()                             # title
+        shortlist.add_column(style="dim")                  # resource
+        shortlist.add_column(style="dim", no_wrap=True)    # autofix tag
         for t in result.top:
             sev_style = _SEVERITY_STYLE.get(t.severity, "white")
-            tag = "  [dim](autofix)[/dim]" if t.fixable else ""
-            resource = _esc(t.resource.replace("\\", "/"))
-            console.print(
-                f"    [bold]{t.check_id:<{id_w}}[/bold]  "
-                f"[{sev_style}]{t.severity.value:<8}[/{sev_style}]  "
-                f"{_esc(t.title)}  [dim]{resource}[/dim]{tag}"
+            # Basename only: this guided summary is a teaser, and the
+            # full path would crop its filename off the right edge on a
+            # narrow terminal. ``pipeline_check`` (the next step) shows
+            # the full path for every finding.
+            resource = t.resource.replace("\\", "/").rsplit("/", 1)[-1]
+            shortlist.add_row(
+                t.check_id,
+                f"[{sev_style}]{t.severity.value}[/{sev_style}]",
+                _esc(t.title),
+                _esc(resource),
+                "(autofix)" if t.fixable else "",
             )
+        # Indent the whole table to nest it under the ``[init]`` line.
+        console.print(Padding(shortlist, (0, 0, 0, 4)))
 
     # 4. The guided "now what". Commit the artifacts; fix-oriented steps
     # only when there's something to fix.

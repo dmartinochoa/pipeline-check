@@ -58,6 +58,20 @@ _SEVERITY_STYLE: dict[Severity, str] = {
     Severity.INFO: "#6c757d",
 }
 
+def severity_style_for(sev: str) -> str:
+    """Rich style for a severity *string* (the enum ``.value``), or
+    "white" when unrecognized.
+
+    Lets the listing commands (``--list-checks`` / ``--list-chains`` /
+    ``--list-fixers``) color the severity column with the same scale the
+    scan report uses, without each one re-deriving the map.
+    """
+    try:
+        return _SEVERITY_STYLE.get(Severity(sev), "white")
+    except ValueError:
+        return "white"
+
+
 _GRADE_STYLE: dict[str, str] = {
     "A": "bold green",
     "B": "green",
@@ -93,6 +107,23 @@ def _display_path(text: str, limit: int = 50) -> str:
     if len(text) <= limit:
         return text
     return "…" + text[-(limit - 1):]
+
+
+def _resource_cell(f: Finding, limit: int) -> str:
+    """The Resource-column display string for *f*.
+
+    The resource with the primary line number appended (when the rule
+    emitted a Location), forward-slashed, and head-truncated to *limit*
+    so the filename and line, the part the operator acts on, always
+    survive. Shared by the column-width precompute and ``_render_row``
+    so both agree on the rendered width.
+    """
+    resource_full = f.resource
+    if f.locations:
+        primary = f.locations[0]
+        if primary.start_line is not None:
+            resource_full = f"{f.resource}:{primary.start_line}"
+    return _display_path(resource_full, limit)
 
 
 def _visible(findings: list[Finding], threshold: Severity) -> list[Finding]:
@@ -239,16 +270,49 @@ def report_terminal(
     if incomplete:
         reason = rich_escape(incomplete_reason or "")
         header_lines.append(f"[yellow]incomplete scan: {reason}[/yellow]")
-
-    console.print(
-        Panel(
-            "\n".join(header_lines),
-            title="[bold]Pipeline-Check[/bold]",
-            border_style="yellow" if incomplete else "blue",
-            padding=(0, 2),
+    elif failed and grade in ("A", "B"):
+        # A strong grade sitting on top of real failures is the most
+        # confusing headline a first-time reader hits: "Grade A" scans
+        # as "all clear" while HIGH findings wait in the table below.
+        # The score is severity-weighted, so a stack of LOW/MEDIUM
+        # findings barely dents it. Spell that out so the grade can't be
+        # mistaken for a clean bill of health. (The gate summary makes
+        # the same point when a gate is configured; this covers the
+        # plain scan, which far more users see.)
+        header_lines.append(
+            f"[dim]Grade is a severity-weighted posture score; "
+            f"{failed} check(s) still failed (listed below).[/dim]"
         )
-    )
-    console.print()
+
+    def _print_headline(table_width: int | None = None) -> None:
+        # Match the header box to the findings table so the two read as
+        # one unit, rather than a full-terminal-width box floating over a
+        # content-width table. When the table is narrower than the
+        # header's own text (a tiny scan), keep the header at its natural
+        # width so the prose doesn't wrap. With no table (the no-findings
+        # path) the header sizes to its content. ``width`` must be passed
+        # to the constructor; Rich ignores it set as an attribute.
+        body = "\n".join(header_lines)
+        title = "[bold]Pipeline-Check[/bold]"
+        border = "yellow" if incomplete else "blue"
+        if table_width is None:
+            # No table to match: size the box to its content. (Rich's
+            # ``expand=False`` overrides any explicit width, so the two
+            # are mutually exclusive.)
+            panel = Panel(body, title=title, border_style=border,
+                          padding=(0, 2), expand=False)
+        else:
+            # Match the table, but never below the header's natural width
+            # or the prose wraps. An explicit ``width`` (without
+            # ``expand=False``) pins the box to exactly that width.
+            natural = console.measure(
+                Panel(body, title=title, border_style=border,
+                      padding=(0, 2), expand=False)
+            ).maximum
+            width = max(table_width, min(natural, console.width))
+            panel = Panel(body, title=title, border_style=border,
+                          padding=(0, 2), width=width)
+        console.print(panel)
 
     # Findings table. Passing findings render only when explicitly
     # requested — they're noise in the everyday "what's broken?"
@@ -258,6 +322,9 @@ def report_terminal(
         visible = [f for f in visible if not f.passed]
 
     if not visible:
+        # No table to match, so the header box is content-sized.
+        _print_headline()
+        console.print()
         if any(not f.passed for f in findings):
             # Failures exist but were filtered out by severity threshold.
             console.print(
@@ -293,19 +360,37 @@ def report_terminal(
     conf_pool = visible_failures + (visible_passes if show_passed else [])
     show_conf = any(f.confidence != Confidence.HIGH for f in conf_pool)
 
+    # Resource-column budget, scaled to the actual console width so the
+    # path stays on one line instead of folding mid-filename on a narrow
+    # terminal (``release.ym`` / ``l:172``). ``_resource_cell`` head-
+    # truncates each path to this cap, keeping the filename and line; the
+    # column is then sized to the longest surviving cell so a short scan
+    # stays compact and a long path still renders on one line. ~1/3 of
+    # the width, floored at 18 (room for ``…/file.yml:NN``) and capped at
+    # 50 (a wide terminal gains nothing past that).
+    res_cap = max(18, min(50, console.width // 3))
+    width_pool = [rep for rep, _ in groups] + (
+        visible_passes if show_passed else []
+    )
+    res_cells = [_resource_cell(f, res_cap) for f in width_pool]
+    res_width = max([len("Resource")] + [len(c) for c in res_cells])
+
     # No ``expand=True``: the table sizes to its content rather than
     # padding out to the full terminal width, so a scan on a 200-column
     # terminal doesn't leave a lake of empty space to the right. The
-    # short columns never wrap; Resource and Title fold (and Resource is
-    # head-truncated by ``_display_path``) so a narrow terminal degrades
-    # to wrapped text instead of one-word-per-line truncation.
+    # short columns never wrap; Resource is fixed to the width-aware
+    # budget above (no_wrap, head-truncated) so it never breaks a
+    # filename across lines, and Title folds to absorb the remaining
+    # width on a narrow terminal.
     table = Table(box=box.SIMPLE_HEAVY, pad_edge=False)
     table.add_column("", no_wrap=True)
     table.add_column("Check", style="bold", no_wrap=True)
     table.add_column("Severity", no_wrap=True)
     if show_conf:
         table.add_column("Conf.", no_wrap=True)
-    table.add_column("Resource", overflow="fold", max_width=50)
+    table.add_column(
+        "Resource", width=res_width, no_wrap=True, overflow="ellipsis",
+    )
     # No max_width on Title: it's the flexible column. On a wide
     # terminal it takes its natural width (no wrap); on a narrow one
     # Rich shrinks it to fit and folds the text. Capping it would only
@@ -316,20 +401,14 @@ def report_terminal(
         """Add one finding to the table as a status/severity/resource row."""
         sev_style = _SEVERITY_STYLE.get(f.severity, "white")
         status = "[red]FAIL[/red]" if not f.passed else "[green]PASS[/green]"
-        # Build the resource cell: append the primary line number when
-        # the rule emitted a Location, then forward-slash and
-        # head-truncate via ``_display_path``. Escape through
-        # ``rich.markup.escape`` because real content carries literal
-        # ``[...]`` tokens (YAML lists, TF refs like
+        # ``_resource_cell`` appends the primary line number, forward-
+        # slashes, and head-truncates to the width-aware ``res_cap``.
+        # Escape through ``rich.markup.escape`` because real content
+        # carries literal ``[...]`` tokens (YAML lists, TF refs like
         # ``[aws_subnet.foo.id]``, capabilities ``[ALL]``) that the
         # table renderer would otherwise parse as Rich style markup and
         # silently strip.
-        resource_full = f.resource
-        if f.locations:
-            primary = f.locations[0]
-            if primary.start_line is not None:
-                resource_full = f"{f.resource}:{primary.start_line}"
-        resource_cell = rich_escape(_display_path(resource_full))
+        resource_cell = rich_escape(_resource_cell(f, res_cap))
         cells = [
             status,
             f.check_id,
@@ -388,14 +467,25 @@ def report_terminal(
     for f in visible_passes:
         _render_row(f)
 
+    # Now that every row is in, measure the table and size the header box
+    # to match it (clamped to the console) so the two read as one unit.
+    table_width = min(console.measure(table).maximum, console.width)
+    _print_headline(table_width)
+    console.print()
     console.print(table)
 
     if not visible_failures:
         return
 
     console.print()
-    for representative, followers in groups:
-        f = representative
+
+    def _render_detail_panel(f: Finding, followers: list[Finding]) -> None:
+        """Render one finding's detail panel for a single resource.
+
+        Description, recommendation, CWE, optional controls, a Locations
+        line when the rule hit more than one line of the resource, and
+        the optional inline-exploit block.
+        """
         style = _SEVERITY_STYLE.get(f.severity, "white")
         cwe_line = ""
         if f.cwe:
@@ -468,6 +558,114 @@ def report_terminal(
                 padding=(0, 2),
             )
         )
+
+    def _render_merged_detail_panel(
+        members: list[tuple[Finding, list[Finding]]],
+    ) -> None:
+        """Render one panel for several resources that share identical prose.
+
+        When the same rule fires across multiple resources with a
+        byte-identical description / recommendation / CWE / exploit, the
+        per-resource panels say nothing new each time (four "Artifacts
+        not signed" panels, one per workflow). Collapse them into a
+        single panel that carries the shared prose once and lists every
+        affected resource (with its offending line numbers) under an
+        "Affected resources" block. Panels whose prose differs per file
+        never reach here, so no per-file detail is lost.
+        """
+        f = members[0][0]
+        style = _SEVERITY_STYLE.get(f.severity, "white")
+        cwe_line = ""
+        if f.cwe:
+            cwe_line = f"\n[dim]CWE: {rich_escape(', '.join(f.cwe))}[/dim]"
+        controls_text = ""
+        if f.controls and show_controls:
+            controls_text = "\n[bold]Controls:[/bold]\n" + "\n".join(
+                f"  {rich_escape('[' + c.standard_title + '] ' + c.label())}"
+                for c in f.controls
+            )
+        # One line per affected resource, forward-slashed, with the
+        # offending line numbers folded in (capped like the table's
+        # follower list so a rule that fires on dozens of files doesn't
+        # run off the panel).
+        resource_lines: list[str] = []
+        for rep, foll in members:
+            lines = [
+                loc.start_line for loc in rep.locations
+                if loc.start_line is not None
+            ]
+            for follower in foll:
+                if follower.locations and follower.locations[0].start_line is not None:
+                    lines.append(follower.locations[0].start_line)
+            label = rich_escape(rep.resource.replace("\\", "/"))
+            if lines:
+                shown = lines[:_FOLLOWER_LINES_CAP]
+                extra = len(lines) - len(shown)
+                csv = ", ".join(str(n) for n in shown)
+                if extra:
+                    csv += f" (and {extra} more)"
+                resource_lines.append(f"  {label}:{csv}")
+            else:
+                resource_lines.append(f"  {label}")
+        shown_resources = resource_lines[:_FOLLOWER_LINES_CAP]
+        hidden = len(resource_lines) - len(shown_resources)
+        if hidden:
+            shown_resources.append(f"  [dim](and {hidden} more)[/dim]")
+        resources_text = (
+            f"\n[bold]Affected resources ({len(members)}):[/bold]\n"
+            + "\n".join(shown_resources)
+        )
+        # Same escaping rationale as the single-resource panel above.
+        exploit_text = ""
+        exploit = inline_exploit(f, inline_explain)
+        if exploit:
+            exploit_text = (
+                f"\n[bold]Proof of exploit:[/bold]\n{rich_escape(exploit)}"
+            )
+        console.print(
+            Panel(
+                f"{rich_escape(f.description)}\n\n"
+                f"[bold]Recommendation:[/bold] {rich_escape(f.recommendation)}"
+                f"{cwe_line}{controls_text}{resources_text}{exploit_text}",
+                title=(
+                    f"[{style}]{f.check_id}[/{style}]  "
+                    f"{rich_escape(f.title)}  "
+                    f"[dim]{len(members)} resources[/dim]"
+                ),
+                border_style="dim",
+                padding=(0, 2),
+            )
+        )
+
+    # Roll up byte-identical panels that differ only by resource. The
+    # findings table above stays per-file; this collapses only the
+    # repeated detail panels. The bucket key is everything the panel
+    # body renders except the resource and line numbers, so two findings
+    # land together only when their panel would otherwise be identical.
+    panel_buckets: dict[tuple[Any, ...], list[tuple[Finding, list[Finding]]]] = {}
+    panel_order: list[tuple[Any, ...]] = []
+    for representative, followers in groups:
+        key = (
+            representative.check_id.upper(),
+            representative.title,
+            representative.description,
+            representative.recommendation,
+            tuple(representative.cwe or ()),
+            inline_exploit(representative, inline_explain) or "",
+        )
+        bucket = panel_buckets.get(key)
+        if bucket is None:
+            panel_buckets[key] = bucket = []
+            panel_order.append(key)
+        bucket.append((representative, followers))
+
+    for key in panel_order:
+        members = panel_buckets[key]
+        if len(members) == 1:
+            representative, followers = members[0]
+            _render_detail_panel(representative, followers)
+        else:
+            _render_merged_detail_panel(members)
 
 
 def next_steps_tip(

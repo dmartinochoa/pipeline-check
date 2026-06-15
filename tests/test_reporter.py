@@ -385,6 +385,165 @@ class TestInlineExplain:
         assert "[aws_subnet.build.id]" in out
 
 
+class TestHeadlineReconciler:
+    """A strong grade (A/B) on top of real failures must say so in the
+    headline, so "Grade A" can't be read as a clean bill of health."""
+
+    def _render(self, findings, score_result) -> str:
+        import io
+        buf = io.StringIO()
+        console = Console(file=buf, highlight=False, width=120)
+        report_terminal(findings, score_result, console=console)
+        return buf.getvalue()
+
+    def test_grade_a_with_failures_explains_the_gap(self):
+        out = self._render(
+            [_f("CB-001", Severity.LOW, False)],
+            {"grade": "A", "score": 99, "summary": {}},
+        )
+        assert "severity-weighted posture" in out
+        assert "1 check(s) still failed" in out
+
+    def test_grade_a_clean_has_no_reconciler(self):
+        out = self._render(
+            [_f("CB-001", Severity.LOW, True)],
+            {"grade": "A", "score": 100, "summary": {}},
+        )
+        assert "severity-weighted posture" not in out
+
+    def test_grade_d_omits_reconciler(self):
+        # A failing grade already signals trouble; the note would be noise.
+        out = self._render(
+            [_f("CB-001", Severity.CRITICAL, False)],
+            {"grade": "D", "score": 10, "summary": {}},
+        )
+        assert "severity-weighted posture" not in out
+
+    def test_incomplete_scan_skips_reconciler(self):
+        # The incomplete banner owns the headline's second line; the
+        # grade-vs-failures note must not stack on top of it.
+        out = self._render_incomplete()
+        assert "severity-weighted posture" not in out
+
+    def _render_incomplete(self) -> str:
+        import io
+        buf = io.StringIO()
+        console = Console(file=buf, highlight=False, width=120)
+        report_terminal(
+            [_f("CB-001", Severity.LOW, False)],
+            {"grade": "A", "score": 99, "summary": {}},
+            console=console,
+            incomplete_reason="1 file(s) could not be parsed.",
+        )
+        return buf.getvalue()
+
+
+class TestPanelRollup:
+    """Detail panels that differ only by resource collapse into a single
+    panel; panels carrying per-file prose stay separate."""
+
+    def _finding(self, resource, description="generic finding"):
+        return Finding(
+            check_id="GHA-006",
+            title="Artifacts not signed",
+            severity=Severity.MEDIUM,
+            resource=resource,
+            description=description,
+            recommendation="sign the artifact",
+            passed=False,
+        )
+
+    def _render(self, findings) -> str:
+        import io
+        buf = io.StringIO()
+        console = Console(file=buf, highlight=False, width=120)
+        report_terminal(findings, score(findings), console=console)
+        return buf.getvalue()
+
+    def test_identical_prose_across_files_collapses_to_one_panel(self):
+        findings = [
+            self._finding(".github/workflows/a.yml"),
+            self._finding(".github/workflows/b.yml"),
+            self._finding(".github/workflows/c.yml"),
+        ]
+        out = self._render(findings)
+        assert "Affected resources (3):" in out
+        # The shared description renders once, not three times.
+        assert out.count("generic finding") == 1
+        for name in ("a.yml", "b.yml", "c.yml"):
+            assert name in out
+
+    def test_differing_prose_keeps_separate_panels(self):
+        findings = [
+            self._finding(".github/workflows/a.yml", description="a-only detail"),
+            self._finding(".github/workflows/b.yml", description="b-only detail"),
+        ]
+        out = self._render(findings)
+        assert "Affected resources" not in out
+        assert "a-only detail" in out
+        assert "b-only detail" in out
+
+    def test_single_resource_is_not_a_merge(self):
+        # One resource group renders the long-standing single-panel
+        # layout (resource in the title), never the merged variant.
+        out = self._render([self._finding(".github/workflows/a.yml")])
+        assert "Affected resources" not in out
+        assert "generic finding" in out
+
+
+class TestSeverityStyleFor:
+    """The listing commands color the SEV column through this shared
+    helper, so it must mirror the report's severity scale."""
+
+    def test_known_severities_map_to_design_styles(self):
+        from pipeline_check.core.reporter import (
+            _SEVERITY_STYLE,
+            severity_style_for,
+        )
+        for sev in Severity:
+            assert severity_style_for(sev.value) == _SEVERITY_STYLE[sev]
+
+    def test_unknown_severity_defaults_to_white(self):
+        from pipeline_check.core.reporter import severity_style_for
+        assert severity_style_for("NOPE") == "white"
+
+
+class TestResourceColumnWidth:
+    """The Resource column scales to the console width so the filename
+    and line survive on one cell instead of folding mid-path."""
+
+    def _render(self, width: int) -> str:
+        import io
+
+        from pipeline_check.core.checks.base import Location
+        finding = Finding(
+            check_id="GHA-025",
+            title="Reusable workflow not pinned",
+            severity=Severity.HIGH,
+            resource=".github/workflows/release.yml",
+            description="d",
+            recommendation="rec",
+            passed=False,
+            locations=[Location(path=".github/workflows/release.yml",
+                                start_line=172)],
+        )
+        buf = io.StringIO()
+        console = Console(file=buf, highlight=False, width=width)
+        report_terminal([finding], score([finding]), console=console)
+        return buf.getvalue()
+
+    def test_narrow_keeps_filename_and_line_intact(self):
+        out = self._render(80)
+        # The filename:line stays contiguous (no mid-token fold) at the
+        # cost of a head-truncation marker on the directory prefix.
+        assert "…workflows/release.yml:172" in out
+
+    def test_wide_shows_full_path_untruncated(self):
+        out = self._render(200)
+        assert ".github/workflows/release.yml:172" in out
+        assert "…workflows/release.yml" not in out
+
+
 class TestReportJsonScanStatus:
     """JSON output carries scan_status so CI consumers can detect a scan
     that parsed only part of what it was given."""

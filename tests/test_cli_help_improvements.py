@@ -209,6 +209,37 @@ def test_list_checks_cloudformation_provider():
     assert "CB-001" in result.output
 
 
+def test_list_checks_plain_when_piped():
+    # CliRunner captures a non-tty stream: no ANSI escapes, and the
+    # leading token stays the check id so the listing is greppable.
+    result = CliRunner().invoke(scan, ["--pipeline", "github", "--list-checks"])
+    assert result.exit_code == 0
+    assert "\x1b[" not in result.output
+    assert result.output.splitlines()[0].split()[0] == "GHA-001"
+
+
+def test_list_rows_colored_on_a_terminal():
+    # On a real terminal the SEV column is wrapped in ANSI color codes.
+    import io
+
+    from rich.console import Console
+
+    from pipeline_check.cli_info_commands import _emit_id_sev_rows
+
+    buf = io.StringIO()
+    console = Console(
+        file=buf, force_terminal=True, color_system="truecolor", width=200,
+    )
+    _emit_id_sev_rows(
+        [("GHA-001", "HIGH", "Action not pinned to commit SHA")],
+        7, 8, console=console,
+    )
+    out = buf.getvalue()
+    assert "\x1b[" in out
+    assert "GHA-001" in out
+    assert "Action not pinned to commit SHA" in out
+
+
 def test_pipeline_help_lists_available_values():
     """The --help output for --pipeline must enumerate the choices so
     new users don't have to guess."""

@@ -10,10 +10,50 @@ registries (rule packs, chains, standards) and is re-imported into
 from __future__ import annotations
 
 import re
+from typing import TYPE_CHECKING
 
 import click
 
 from .core import standards as _standards
+
+if TYPE_CHECKING:
+    from rich.console import Console
+
+
+def _emit_id_sev_rows(
+    rows: list[tuple[str, str, str]],
+    id_w: int,
+    sev_w: int,
+    console: Console | None = None,
+) -> None:
+    """Emit ``ID  SEV  TITLE`` rows to stdout.
+
+    The SEV column is colored when stdout is a terminal; piped or
+    redirected output stays plain so it remains greppable and the format
+    tests still see the literal ``ID  SEV  TITLE`` layout (the leading
+    token is the check / chain id). Titles are escaped on the colored
+    path because some carry literal ``[...]`` tokens the Rich markup
+    parser would otherwise eat. *console* is injectable for tests; the
+    CLI lets it default to a stdout console.
+    """
+    from rich.console import Console
+    from rich.markup import escape
+
+    from .core.reporter import severity_style_for
+
+    if console is None:
+        console = Console()
+    if not console.is_terminal:
+        for cid, sev, title in rows:
+            click.echo(f"{cid:<{id_w}}  {sev:<{sev_w}}  {title}")
+        return
+    for cid, sev, title in rows:
+        style = severity_style_for(sev)
+        console.print(
+            f"{cid:<{id_w}}  [{style}]{sev:<{sev_w}}[/{style}]  {escape(title)}",
+            highlight=False,
+            soft_wrap=True,
+        )
 
 
 def _list_checks_for_pipeline(pipeline: str) -> None:
@@ -99,9 +139,10 @@ def _list_checks_for_pipeline(pipeline: str) -> None:
         dedup.setdefault(row[0], row)
     id_width = max(len(i) for i in dedup) if dedup else 0
     sev_width = max(len(r[1]) for r in dedup.values()) if dedup else 0
-    for cid in sorted(dedup):
-        _, sev, title = dedup[cid]
-        click.echo(f"{cid:<{id_width}}  {sev:<{sev_width}}  {title}")
+    listing_rows = [
+        (cid, dedup[cid][1], dedup[cid][2]) for cid in sorted(dedup)
+    ]
+    _emit_id_sev_rows(listing_rows, id_width, sev_width)
 
 
 def _eager_print_list_chains() -> int:
@@ -114,8 +155,11 @@ def _eager_print_list_chains() -> int:
         return 3
     id_w = max(len(r.id) for r in rules)
     sev_w = max(len(r.severity.value) for r in rules)
-    for r in sorted(rules, key=lambda x: x.id):
-        click.echo(f"{r.id:<{id_w}}  {r.severity.value:<{sev_w}}  {r.title}")
+    listing_rows = [
+        (r.id, r.severity.value, r.title)
+        for r in sorted(rules, key=lambda x: x.id)
+    ]
+    _emit_id_sev_rows(listing_rows, id_w, sev_w)
     return 0
 
 

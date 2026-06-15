@@ -10,6 +10,51 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 PRs landing on `dev` between releases append entries below. The
 release commit collapses this section into `## [X.Y.Z] - <date>`.
 
+### Changed
+
+- **Terminal scan headline now reconciles a strong grade with open
+  failures.** When the grade is A or B but the scan still has failing
+  checks, the headline adds one line ("Grade is a severity-weighted
+  posture score; N check(s) still failed (listed below)") so a green
+  "Grade A" can't be read as a clean bill of health. The gate summary
+  already made this point when a gate was configured; this covers the
+  plain scan, which far more users see.
+- **Scan headline box matches the findings-table width.** The header
+  panel previously expanded to the full terminal width while the table
+  sized to its content, leaving a wide empty box over a narrow table on a
+  big terminal. The header now sizes to the table (and never below its own
+  text, so the prose doesn't wrap on a tiny scan).
+- **Repeated detail panels collapse across files.** When the same rule
+  fires on several resources with byte-identical prose (a generic
+  "Artifacts not signed" on four workflows), the per-resource panels now
+  collapse into one panel that lists every affected resource under an
+  "Affected resources" block. Panels whose text differs per file stay
+  separate, so no per-file detail is lost. The findings table is
+  unchanged (still one row per file).
+- **Findings-table Resource column is width-aware.** The path now scales
+  to the console width and head-truncates so the filename and line number
+  stay on one line ("…workflows/release.yml:172") instead of folding
+  mid-filename on a narrow terminal. A wide terminal still shows the full
+  path.
+- **`pipeline_check init` "top to fix first" shortlist renders as an
+  aligned table.** The previous hand-padded layout spilled a long title
+  onto an unindented second line on a narrow terminal; it now wraps under
+  its column. The resource shows the filename only (the full path is one
+  step away via `pipeline_check`).
+- **`pipeline_check explain` leads with the plain-English explanation,
+  and its section headers adopt the brand `// section` eyebrow style.**
+  The compliance crosswalk and CWE moved from the top of the output to a
+  `// compliance & standards` block at the foot, so what-it-checks /
+  how-to-fix / proof-of-exploit come first. Section labels now read
+  `// what it checks`, `// how to fix`, and so on (matching the docs site
+  and HTML report) instead of `[What it checks]`. The JSON and SARIF
+  outputs still carry the full control mappings for auditors.
+- **`--list-checks`, `--list-chains`, and `--list-fixers` color the
+  severity column on a terminal.** The listings now use the same severity
+  scale as the scan report when stdout is a TTY. Piped or redirected
+  output stays plain (no ANSI), so the listings remain greppable and
+  byte-identical for scripts.
+
 ## [1.16.0] - 2026-06-14
 
 ### Added
