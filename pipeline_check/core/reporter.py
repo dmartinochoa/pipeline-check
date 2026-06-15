@@ -210,7 +210,9 @@ def report_terminal(
     visible row plus a "+N similar" follower row that lists the
     extra line numbers. Detail panels still render for the
     representative; the followers' line numbers are folded into its
-    panel. Pass ``group_similar=False`` to render every row
+    panel, and panels whose prose is byte-identical across different
+    resources roll up into a single "Affected resources" panel. Pass
+    ``group_similar=False`` to render every row and every panel
     individually (matches the pre-1.x behavior).
     """
     if console is None:
@@ -637,11 +639,23 @@ def report_terminal(
             )
         )
 
-    # Roll up byte-identical panels that differ only by resource. The
-    # findings table above stays per-file; this collapses only the
-    # repeated detail panels. The bucket key is everything the panel
-    # body renders except the resource and line numbers, so two findings
-    # land together only when their panel would otherwise be identical.
+    if not group_similar:
+        # ``--no-group`` means "show me everything, unrolled". The table
+        # above already renders one row per finding; render one panel per
+        # finding too, in findings order, rather than rolling identical
+        # prose up into a merged panel. Collapsing here would contradict
+        # the flag (and the "+N similar (rerun with --no-group to
+        # expand)" hint the grouped table prints).
+        for representative, followers in groups:
+            _render_detail_panel(representative, followers)
+        return
+
+    # Default path: roll up byte-identical panels that differ only by
+    # resource. The findings table above stays per-file; this collapses
+    # only the repeated detail panels. The bucket key is everything the
+    # panel body renders except the resource and line numbers, so two
+    # findings land together only when their panel would otherwise be
+    # identical.
     panel_buckets: dict[tuple[Any, ...], list[tuple[Finding, list[Finding]]]] = {}
     panel_order: list[tuple[Any, ...]] = []
     for representative, followers in groups:

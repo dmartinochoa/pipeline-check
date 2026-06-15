@@ -453,11 +453,14 @@ class TestPanelRollup:
             passed=False,
         )
 
-    def _render(self, findings) -> str:
+    def _render(self, findings, *, group_similar=True) -> str:
         import io
         buf = io.StringIO()
         console = Console(file=buf, highlight=False, width=120)
-        report_terminal(findings, score(findings), console=console)
+        report_terminal(
+            findings, score(findings), console=console,
+            group_similar=group_similar,
+        )
         return buf.getvalue()
 
     def test_identical_prose_across_files_collapses_to_one_panel(self):
@@ -489,6 +492,20 @@ class TestPanelRollup:
         out = self._render([self._finding(".github/workflows/a.yml")])
         assert "Affected resources" not in out
         assert "generic finding" in out
+
+    def test_no_group_keeps_panels_separate(self):
+        # ``group_similar=False`` (the --no-group flag) means "unrolled":
+        # identical prose across files must render one panel per file, not
+        # a merged "Affected resources" panel.
+        findings = [
+            self._finding(".github/workflows/a.yml"),
+            self._finding(".github/workflows/b.yml"),
+            self._finding(".github/workflows/c.yml"),
+        ]
+        out = self._render(findings, group_similar=False)
+        assert "Affected resources" not in out
+        # One panel per file -> the shared description renders three times.
+        assert out.count("generic finding") == 3
 
 
 class TestSeverityStyleFor:

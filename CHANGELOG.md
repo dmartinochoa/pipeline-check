@@ -30,7 +30,8 @@ release commit collapses this section into `## [X.Y.Z] - <date>`.
   collapse into one panel that lists every affected resource under an
   "Affected resources" block. Panels whose text differs per file stay
   separate, so no per-file detail is lost. The findings table is
-  unchanged (still one row per file).
+  unchanged (still one row per file), and `--no-group` keeps every panel
+  unrolled (one per finding) to match the unrolled table.
 - **Findings-table Resource column is width-aware.** The path now scales
   to the console width and head-truncates so the filename and line number
   stay on one line ("…workflows/release.yml:172") instead of folding
