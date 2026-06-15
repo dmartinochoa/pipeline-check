@@ -48,6 +48,19 @@ def _strip_markdown_links(text: str) -> str:
     return _MD_LINK_RE.sub(r"\1 (\2)", text)
 
 
+def _eyebrow(label: str) -> str:
+    """A section label in the brand's eyebrow style: a ``//`` prefix in
+    lowercase.
+
+    This is the CLI's plain-text take on the ``// section-name`` mono
+    eyebrows the docs site and HTML report use, so a screenshot of
+    ``explain`` reads as the same product. Kept plain (no ANSI), like the
+    rest of this module's output, so it survives ``less``, a pipe, or a
+    pasted PR comment.
+    """
+    return f"// {label}"
+
+
 @dataclass(frozen=True, slots=True)
 class _CheckMeta:
     """Everything ``explain`` needs to render a check, either derived
@@ -456,34 +469,34 @@ def _render_meta(meta: _CheckMeta) -> str:
     if meta.source == "rule" and meta.rule is not None:
         rule = meta.rule
         if rule.docs_note:
-            lines.append("[What it checks]")
+            lines.append(_eyebrow("what it checks"))
             for para in rule.docs_note.strip().splitlines():
                 lines.append(f"  {para}" if para else "")
             lines.append("")
         if rule.known_fp:
-            lines.append("[Known false-positive modes]")
+            lines.append(_eyebrow("known false-positive modes"))
             for mode in rule.known_fp:
                 lines.append(f"  * {mode}")
             lines.append("")
         if rule.recommendation:
-            lines.append("[How to fix]")
+            lines.append(_eyebrow("how to fix"))
             for para in rule.recommendation.strip().splitlines():
                 lines.append(f"  {para}" if para else "")
             lines.append("")
         if rule.incident_refs:
-            lines.append("[Seen in the wild]")
+            lines.append(_eyebrow("seen in the wild"))
             for ref in rule.incident_refs:
                 lines.append(f"  * {_strip_markdown_links(ref)}")
             lines.append("")
         if rule.exploit_example:
-            lines.append("[Proof of exploit]")
+            lines.append(_eyebrow("proof of exploit"))
             for line in rule.exploit_example.strip().splitlines():
                 lines.append(f"  {line}" if line else "")
             lines.append("")
     else:
         # Class-based fallback, the docstring table we matched the
         # row from is the most reliable thing we have.
-        lines.append("[What it checks]")
+        lines.append(_eyebrow("what it checks"))
         lines.append(
             "  Reference implementation lives in a class-based check "
             "module; run the scanner to see the exact resource match "
@@ -497,7 +510,7 @@ def _render_meta(meta: _CheckMeta) -> str:
     # finding feeds into AC-009 / AC-018 / AC-003 etc.
     triggering_chains = _chains_for_check_id(meta.id)
     if triggering_chains:
-        lines.append("[Triggers attack chains]")
+        lines.append(_eyebrow("triggers attack chains"))
         for chain_rule in triggering_chains:
             lines.append(
                 f"  {chain_rule.id}  {chain_rule.title}  "
@@ -522,7 +535,7 @@ def _render_meta(meta: _CheckMeta) -> str:
         # the same drift at CI time.
         known = [cid for cid in related if cid in index]
         if known:
-            lines.append("[Related rules]")
+            lines.append(_eyebrow("related rules"))
             for cid in known:
                 title = index[cid].title
                 sev = index[cid].severity.value
@@ -541,7 +554,7 @@ def _render_meta(meta: _CheckMeta) -> str:
     # above the line) where text rewriting can't safely synthesize
     # the structural fix. The exact shape is visible in the patch.
     if meta.id.upper() in available_fixers():
-        lines.append("[Autofixable]")
+        lines.append(_eyebrow("autofixable"))
         lines.append(
             "  Yes, run ``pipeline_check --fix`` to emit the patch, "
             "or ``--fix --apply`` to write it in place."
@@ -558,7 +571,7 @@ def _render_meta(meta: _CheckMeta) -> str:
     if meta.source == "rule" and meta.rule is not None and meta.rule.cwe:
         rule_cwe = meta.rule.cwe
     if refs or rule_cwe:
-        lines.append("[Compliance & standards]")
+        lines.append(_eyebrow("compliance & standards"))
         if rule_cwe:
             lines.append(f"  CWE: {', '.join(rule_cwe)}")
         if refs:
@@ -572,7 +585,7 @@ def _render_meta(meta: _CheckMeta) -> str:
         lines.append("")
 
     # Cross-references surfaced at the end so the body stays skimmable.
-    lines.append("[See also]")
+    lines.append(_eyebrow("see also"))
     lines.append(
         "  pipeline_check --pipeline <provider> --list-checks  "
         "(every check for the provider)"

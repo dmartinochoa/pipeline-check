@@ -284,15 +284,35 @@ def report_terminal(
             f"{failed} check(s) still failed (listed below).[/dim]"
         )
 
-    console.print(
-        Panel(
-            "\n".join(header_lines),
-            title="[bold]Pipeline-Check[/bold]",
-            border_style="yellow" if incomplete else "blue",
-            padding=(0, 2),
-        )
-    )
-    console.print()
+    def _print_headline(table_width: int | None = None) -> None:
+        # Match the header box to the findings table so the two read as
+        # one unit, rather than a full-terminal-width box floating over a
+        # content-width table. When the table is narrower than the
+        # header's own text (a tiny scan), keep the header at its natural
+        # width so the prose doesn't wrap. With no table (the no-findings
+        # path) the header sizes to its content. ``width`` must be passed
+        # to the constructor; Rich ignores it set as an attribute.
+        body = "\n".join(header_lines)
+        title = "[bold]Pipeline-Check[/bold]"
+        border = "yellow" if incomplete else "blue"
+        if table_width is None:
+            # No table to match: size the box to its content. (Rich's
+            # ``expand=False`` overrides any explicit width, so the two
+            # are mutually exclusive.)
+            panel = Panel(body, title=title, border_style=border,
+                          padding=(0, 2), expand=False)
+        else:
+            # Match the table, but never below the header's natural width
+            # or the prose wraps. An explicit ``width`` (without
+            # ``expand=False``) pins the box to exactly that width.
+            natural = console.measure(
+                Panel(body, title=title, border_style=border,
+                      padding=(0, 2), expand=False)
+            ).maximum
+            width = max(table_width, min(natural, console.width))
+            panel = Panel(body, title=title, border_style=border,
+                          padding=(0, 2), width=width)
+        console.print(panel)
 
     # Findings table. Passing findings render only when explicitly
     # requested — they're noise in the everyday "what's broken?"
@@ -302,6 +322,9 @@ def report_terminal(
         visible = [f for f in visible if not f.passed]
 
     if not visible:
+        # No table to match, so the header box is content-sized.
+        _print_headline()
+        console.print()
         if any(not f.passed for f in findings):
             # Failures exist but were filtered out by severity threshold.
             console.print(
@@ -444,6 +467,11 @@ def report_terminal(
     for f in visible_passes:
         _render_row(f)
 
+    # Now that every row is in, measure the table and size the header box
+    # to match it (clamped to the console) so the two read as one unit.
+    table_width = min(console.measure(table).maximum, console.width)
+    _print_headline(table_width)
+    console.print()
     console.print(table)
 
     if not visible_failures:

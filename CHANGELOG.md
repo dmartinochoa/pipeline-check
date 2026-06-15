@@ -19,6 +19,11 @@ release commit collapses this section into `## [X.Y.Z] - <date>`.
   "Grade A" can't be read as a clean bill of health. The gate summary
   already made this point when a gate was configured; this covers the
   plain scan, which far more users see.
+- **Scan headline box matches the findings-table width.** The header
+  panel previously expanded to the full terminal width while the table
+  sized to its content, leaving a wide empty box over a narrow table on a
+  big terminal. The header now sizes to the table (and never below its own
+  text, so the prose doesn't wrap on a tiny scan).
 - **Repeated detail panels collapse across files.** When the same rule
   fires on several resources with byte-identical prose (a generic
   "Artifacts not signed" on four workflows), the per-resource panels now
@@ -36,11 +41,14 @@ release commit collapses this section into `## [X.Y.Z] - <date>`.
   onto an unindented second line on a narrow terminal; it now wraps under
   its column. The resource shows the filename only (the full path is one
   step away via `pipeline_check`).
-- **`pipeline_check explain` leads with the plain-English explanation.**
+- **`pipeline_check explain` leads with the plain-English explanation,
+  and its section headers adopt the brand `// section` eyebrow style.**
   The compliance crosswalk and CWE moved from the top of the output to a
-  "Compliance & standards" block at the foot, so what-it-checks /
-  how-to-fix / proof-of-exploit come first. The JSON and SARIF outputs
-  still carry the full control mappings for auditors.
+  `// compliance & standards` block at the foot, so what-it-checks /
+  how-to-fix / proof-of-exploit come first. Section labels now read
+  `// what it checks`, `// how to fix`, and so on (matching the docs site
+  and HTML report) instead of `[What it checks]`. The JSON and SARIF
+  outputs still carry the full control mappings for auditors.
 - **`--list-checks`, `--list-chains`, and `--list-fixers` color the
   severity column on a terminal.** The listings now use the same severity
   scale as the scan report when stdout is a TTY. Piped or redirected
