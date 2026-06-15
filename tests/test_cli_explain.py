@@ -30,6 +30,19 @@ def test_explain_rule_based_check_renders_all_sections():
     assert "[How to fix]" in body
 
 
+def test_explain_orders_compliance_after_plain_english():
+    # The body must lead with the what/how an operator opened explain
+    # for; the control crosswalk + CWE are reference material at the foot.
+    body, code = render("GHA-001")
+    assert code == 0
+    assert "[Compliance & standards]" in body
+    assert body.index("[What it checks]") < body.index("[Compliance & standards]")
+    assert body.index("[How to fix]") < body.index("[Compliance & standards]")
+    assert body.index("[How to fix]") < body.index("owasp_cicd_top_10")
+    # CWE now rides inside the compliance block, not at the top.
+    assert body.index("[Compliance & standards]") < body.index("CWE: CWE-829")
+
+
 def test_explain_rule_based_check_shows_known_fp_when_present():
     body, code = render("GHA-016")
     assert code == 0

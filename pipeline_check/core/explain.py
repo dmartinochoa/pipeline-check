@@ -371,7 +371,7 @@ def render(check_id: str) -> tuple[str, int]:
     return _render_meta(meta), 0
 
 
-def render_fixers(tier: str = "all") -> tuple[str, int]:
+def render_fixers(tier: str = "all", *, color: bool = False) -> tuple[str, int]:
     """Render the ``--list-fixers`` table.
 
     *tier* filters the listing: ``"safe"`` (safe fixers only),
@@ -380,6 +380,12 @@ def render_fixers(tier: str = "all") -> tuple[str, int]:
     sorted by check ID so a provider's rules group together. Severity
     and title come from the same index ``--explain`` uses; a fixer whose
     check ID has no rule metadata still lists, with placeholders.
+
+    With *color* the severity column is wrapped in Rich markup (the
+    caller must render the result through a ``rich`` Console) and titles
+    are escaped so a literal ``[...]`` in a title survives. The CLI sets
+    it only when stdout is a terminal; the default returns plain text, so
+    piped / redirected output stays greppable and byte-identical.
 
     Returns ``(text, exit_code)``. The code is 3 only when no fixer at
     all is registered (the autofix package failed to import); an empty
@@ -406,14 +412,26 @@ def render_fixers(tier: str = "all") -> tuple[str, int]:
     )
     tier_w = max(len(safety) for _, safety in rows)
 
+    if color:
+        from rich.markup import escape
+
+        from .reporter import severity_style_for
+
     lines: list[str] = []
     for cid, safety in rows:
         meta = index.get(cid)
         sev = meta.severity.value if meta is not None else "?"
         title = meta.title if meta is not None else "(no rule metadata)"
-        lines.append(
-            f"{cid:<{id_w}}  {sev:<{sev_w}}  {safety:<{tier_w}}  {title}"
-        )
+        if color:
+            style = severity_style_for(sev)
+            lines.append(
+                f"{cid:<{id_w}}  [{style}]{sev:<{sev_w}}[/{style}]  "
+                f"{safety:<{tier_w}}  {escape(title)}"
+            )
+        else:
+            lines.append(
+                f"{cid:<{id_w}}  {sev:<{sev_w}}  {safety:<{tier_w}}  {title}"
+            )
     return "\n".join(lines) + "\n", 0
 
 
@@ -429,26 +447,14 @@ def _render_meta(meta: _CheckMeta) -> str:
     lines.append(meta.title)
     lines.append("")
 
-    # Compliance cross-references, grouped by standard.
-    refs = resolve_for_check(meta.id)
-    if refs:
-        by_std: dict[str, list[str]] = {}
-        std_titles: dict[str, str] = {}
-        for r in refs:
-            by_std.setdefault(r.standard, []).append(r.control_id)
-            std_titles[r.standard] = r.standard_title
-        col_width = max(len(s) for s in by_std) + 2
-        for std in sorted(by_std):
-            ctrls = ", ".join(sorted(set(by_std[std])))
-            lines.append(f"  {std:<{col_width}}{ctrls}")
-        lines.append("")
-
-    # Rule-based content, the fully-populated path.
+    # Rule-based content, the fully-populated path. The human-facing
+    # sections (what / fix / seen-in-the-wild / proof) lead; the
+    # compliance crosswalk and CWE are reference material and render at
+    # the foot of the body (see below), so an engineer who ran
+    # ``explain`` to understand and fix a finding reads the plain-English
+    # explanation first, not a 16-framework control wall.
     if meta.source == "rule" and meta.rule is not None:
         rule = meta.rule
-        if rule.cwe:
-            lines.append(f"  CWE: {', '.join(rule.cwe)}")
-            lines.append("")
         if rule.docs_note:
             lines.append("[What it checks]")
             for para in rule.docs_note.strip().splitlines():
@@ -540,6 +546,29 @@ def _render_meta(meta: _CheckMeta) -> str:
             "  Yes, run ``pipeline_check --fix`` to emit the patch, "
             "or ``--fix --apply`` to write it in place."
         )
+        lines.append("")
+
+    # Compliance crosswalk + CWE: the taxonomy / reference layer. Kept
+    # at the foot so the body leads with the plain-English "what / how /
+    # proof" an operator opened ``explain`` for, rather than a wall of
+    # framework control IDs. The same mappings always ride along in the
+    # JSON / SARIF outputs for auditors who need them up front.
+    refs = resolve_for_check(meta.id)
+    rule_cwe = None
+    if meta.source == "rule" and meta.rule is not None and meta.rule.cwe:
+        rule_cwe = meta.rule.cwe
+    if refs or rule_cwe:
+        lines.append("[Compliance & standards]")
+        if rule_cwe:
+            lines.append(f"  CWE: {', '.join(rule_cwe)}")
+        if refs:
+            by_std: dict[str, list[str]] = {}
+            for r in refs:
+                by_std.setdefault(r.standard, []).append(r.control_id)
+            col_width = max(len(s) for s in by_std) + 2
+            for std in sorted(by_std):
+                ctrls = ", ".join(sorted(set(by_std[std])))
+                lines.append(f"  {std:<{col_width}}{ctrls}")
         lines.append("")
 
     # Cross-references surfaced at the end so the body stays skimmable.
