@@ -280,10 +280,13 @@ def report_terminal(
         # findings barely dents it. Spell that out so the grade can't be
         # mistaken for a clean bill of health. (The gate summary makes
         # the same point when a gate is configured; this covers the
-        # plain scan, which far more users see.)
+        # plain scan, which far more users see.) We don't claim the
+        # failures are "listed below": a raised --severity-threshold can
+        # filter some (or all) of them out of the table, so the count is
+        # the honest total, not a promise about what the table shows.
         header_lines.append(
             f"[dim]Grade is a severity-weighted posture score; "
-            f"{failed} check(s) still failed (listed below).[/dim]"
+            f"{failed} check(s) still failed.[/dim]"
         )
 
     def _print_headline(table_width: int | None = None) -> None:

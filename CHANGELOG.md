@@ -15,10 +15,10 @@ release commit collapses this section into `## [X.Y.Z] - <date>`.
 - **Terminal scan headline now reconciles a strong grade with open
   failures.** When the grade is A or B but the scan still has failing
   checks, the headline adds one line ("Grade is a severity-weighted
-  posture score; N check(s) still failed (listed below)") so a green
-  "Grade A" can't be read as a clean bill of health. The gate summary
-  already made this point when a gate was configured; this covers the
-  plain scan, which far more users see.
+  posture score; N check(s) still failed") so a green "Grade A" can't be
+  read as a clean bill of health. The gate summary already made this
+  point when a gate was configured; this covers the plain scan, which
+  far more users see.
 - **Scan headline box matches the findings-table width.** The header
   panel previously expanded to the full terminal width while the table
   sized to its content, leaving a wide empty box over a narrow table on a
