@@ -944,31 +944,34 @@ provider reference doc.
 What it shows
 -------------
   * Check ID, severity, and confidence (HIGH / MEDIUM / LOW).
-  * Compliance cross-references for every standard this check
-    evidences (OWASP Top 10 CI/CD, SLSA, NIST SSDF, ESF, ...).
-  * CWE identifiers when the rule is tagged with them.
-  * ``[What it checks]`` — the rule's docs note (rule-based
+  * ``// what it checks`` — the rule's docs note (rule-based
     providers) or a pointer to the provider doc (class-based
     modules like AWS core services).
-  * ``[Known false-positive modes]`` — populated for rules whose
+  * ``// known false-positive modes`` — populated for rules whose
     heuristic shape is known to misfire on specific legitimate
     patterns. Use this to decide whether to dismiss a finding.
-  * ``[How to fix]`` — the rule's recommendation string verbatim.
-  * ``[Seen in the wild]`` — links to public incidents the rule
+  * ``// how to fix`` — the rule's recommendation string verbatim.
+  * ``// seen in the wild`` — links to public incidents the rule
     would have caught, when the rule carries ``incident_refs``.
-  * ``[Proof of exploit]`` — a minimal reproduction of the threat
+  * ``// proof of exploit`` — a minimal reproduction of the threat
     when the rule defines ``exploit_example``.
-  * ``[Triggers attack chains]`` — every ``AC-NNN`` /
+  * ``// triggers attack chains`` — every ``AC-NNN`` /
     ``XPC-NNN`` chain whose ``triggering_check_ids`` include this
     rule, so you can see how a single finding feeds a multi-step
     attack narrative.
-  * ``[Related rules]`` — cross-references to checks in the same
+  * ``// related rules`` — cross-references to checks in the same
     topic cluster (same threat / different layer, or same control
     / different provider). Fixing only the rule you opened often
     leaves siblings uncovered.
-  * ``[Autofixable]`` — present when a fixer is registered for
+  * ``// autofixable`` — present when a fixer is registered for
     the rule. Run ``--fix`` to emit the patch and ``--apply`` to
     write it in place.
+  * ``// compliance & standards`` — CWE identifiers (when the rule
+    is tagged with them) and the compliance crosswalk for every
+    standard this check evidences (OWASP Top 10 CI/CD, SLSA, NIST
+    SSDF, ESF, ...). Kept at the foot so the plain-English
+    explanation leads; the JSON and SARIF outputs carry the same
+    mappings for auditors who need them up front.
 
 Sibling flag
 ------------

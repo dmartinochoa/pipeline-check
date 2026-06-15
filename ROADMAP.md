@@ -6,6 +6,21 @@ What's planned, what's shipped, and what's deliberately out of scope.
 
 ### Unreleased (on ``dev``)
 
+- **CLI output polish (terminal scan, ``explain``, ``init``,
+  ``--list-*``)** — A pass over the terminal surfaces so a screenshot
+  reads as the same product as the docs site. The scan headline
+  reconciles a strong grade with open failures and sizes its box to the
+  findings table; repeated detail panels collapse across files that
+  share identical prose (``--no-group`` keeps them unrolled); the
+  Resource column is width-aware; ``init``'s shortlist renders as an
+  aligned table; ``explain`` leads with the plain-English explanation
+  under ``// section`` eyebrows (the compliance crosswalk and CWE move
+  to the foot); and ``--list-checks`` / ``--list-chains`` /
+  ``--list-fixers`` color the severity column on a terminal. See the
+  CHANGELOG ``[Unreleased]`` section for the per-change list.
+
+### Recently shipped (see CHANGELOG for exact versions and dates)
+
 - **``devenv`` provider: developer-environment auto-execution scanner
   (DEV-001..005)** — Crosses the "scan pipeline definitions, not the dev
   environment" line deliberately (the boundary the npm-theme adjacent
