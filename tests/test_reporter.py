@@ -442,15 +442,23 @@ class TestPanelRollup:
     """Detail panels that differ only by resource collapse into a single
     panel; panels carrying per-file prose stay separate."""
 
-    def _finding(self, resource, description="generic finding"):
+    def _finding(
+        self, resource, description="generic finding",
+        severity=Severity.MEDIUM, line=None,
+    ):
+        from pipeline_check.core.checks.base import Location
         return Finding(
             check_id="GHA-006",
             title="Artifacts not signed",
-            severity=Severity.MEDIUM,
+            severity=severity,
             resource=resource,
             description=description,
             recommendation="sign the artifact",
             passed=False,
+            locations=(
+                [Location(path=resource, start_line=line)]
+                if line is not None else []
+            ),
         )
 
     def _render(self, findings, *, group_similar=True) -> str:
@@ -506,6 +514,46 @@ class TestPanelRollup:
         assert "Affected resources" not in out
         # One panel per file -> the shared description renders three times.
         assert out.count("generic finding") == 3
+
+    def test_differing_severity_keeps_separate_panels(self):
+        # Severity colors the merged panel's border/title, so it's part of
+        # the bucket key: identical prose at two severities must NOT merge
+        # (else one panel would silently wear the other's color).
+        findings = [
+            self._finding(".github/workflows/a.yml", severity=Severity.HIGH),
+            self._finding(".github/workflows/b.yml", severity=Severity.LOW),
+        ]
+        out = self._render(findings)
+        assert "Affected resources" not in out
+        # Two separate panels -> the shared description renders twice.
+        assert out.count("generic finding") == 2
+
+    def test_many_resources_caps_the_affected_list(self):
+        # A rule firing on dozens of files lists the first N and folds the
+        # rest into "(and N more)" so the panel can't run off the screen.
+        findings = [
+            self._finding(f".github/workflows/wf{i:02d}.yml")
+            for i in range(12)
+        ]
+        out = self._render(findings)
+        assert "Affected resources (12):" in out
+        # _FOLLOWER_LINES_CAP is 10, so 2 of the 12 fold away in the
+        # panel's resource list. (The findings table still shows every
+        # row; the cap only bounds the merged panel.) No followers exist
+        # here, so this "(and N more)" can only come from that cap.
+        assert "(and 2 more)" in out
+
+    def test_merged_panel_folds_in_line_numbers(self):
+        # Each affected resource carries its offending line number in the
+        # merged "Affected resources" block.
+        findings = [
+            self._finding(".github/workflows/a.yml", line=7),
+            self._finding(".github/workflows/b.yml", line=9),
+        ]
+        out = self._render(findings)
+        assert "Affected resources (2):" in out
+        assert ".github/workflows/a.yml:7" in out
+        assert ".github/workflows/b.yml:9" in out
 
 
 class TestSeverityStyleFor:

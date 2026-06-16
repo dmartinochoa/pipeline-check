@@ -171,7 +171,7 @@ def _chains_for_check_id(check_id: str) -> list[ChainRule]:
     return _CHAINS_BY_CHECK_ID.get(check_id, [])
 
 
-#: Topic clusters for the ``[Related rules]`` cross-reference. Each
+#: Topic clusters for the ``// related rules`` cross-reference. Each
 #: entry groups checks that an operator landing on one ID is likely
 #: to also want to know about, same threat / different layer or same
 #: control / different provider.

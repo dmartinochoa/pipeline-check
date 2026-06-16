@@ -484,12 +484,17 @@ def report_terminal(
 
     console.print()
 
-    def _render_detail_panel(f: Finding, followers: list[Finding]) -> None:
-        """Render one finding's detail panel for a single resource.
+    def _emit_detail_panel(f: Finding, middle: str, title_suffix: str) -> None:
+        """Print one detail Panel, the shell both variants share.
 
-        Description, recommendation, CWE, optional controls, a Locations
-        line when the rule hit more than one line of the resource, and
-        the optional inline-exploit block.
+        Body order is fixed: description, recommendation, the CWE line,
+        the optional Controls block, then the variant-specific *middle*
+        block (the single panel's Locations line vs. the merged panel's
+        "Affected resources" list), then the optional Proof-of-exploit
+        block. *title_suffix* is the trailing ``[dim]...[/dim]`` (a
+        resource path, or the resource count). Funneling both callers
+        through here keeps them from drifting on the escaping rules or
+        the body order.
         """
         style = _SEVERITY_STYLE.get(f.severity, "white")
         cwe_line = ""
@@ -501,6 +506,47 @@ def report_terminal(
                 f"  {rich_escape('[' + c.standard_title + '] ' + c.label())}"
                 for c in f.controls
             )
+        # ``--inline-explain`` surfaces the rule's ``exploit_example``
+        # (when one is recorded) right under the recommendation so the
+        # operator doesn't need a separate ``--explain CHECK_ID``
+        # round-trip. The gate lives in ``inline_exploit`` so SARIF,
+        # JUnit, markdown, and codequality make the same decision. The
+        # example is escaped through ``rich.markup.escape`` because real
+        # exploit snippets contain literal ``[...]`` tokens (YAML lists
+        # like ``types: [opened, edited]``, Terraform refs like
+        # ``subnets = [aws_subnet.foo.id]``, K8s capabilities ``[ALL]``)
+        # that the Panel renderer would otherwise parse as Rich style
+        # markup and silently strip. Label matches ``--explain`` and the
+        # HTML report so the same field reads the same on every surface.
+        exploit_text = ""
+        exploit = inline_exploit(f, inline_explain)
+        if exploit:
+            exploit_text = (
+                f"\n[bold]Proof of exploit:[/bold]\n{rich_escape(exploit)}"
+            )
+        console.print(
+            Panel(
+                f"{rich_escape(f.description)}\n\n"
+                f"[bold]Recommendation:[/bold] {rich_escape(f.recommendation)}"
+                f"{cwe_line}{controls_text}{middle}{exploit_text}",
+                title=(
+                    f"[{style}]{f.check_id}[/{style}]  "
+                    f"{rich_escape(f.title)}  "
+                    f"{title_suffix}"
+                ),
+                border_style="dim",
+                padding=(0, 2),
+            )
+        )
+
+    def _render_detail_panel(f: Finding, followers: list[Finding]) -> None:
+        """Render one finding's detail panel for a single resource.
+
+        Builds the per-resource Locations block (every offending line
+        when the rule hit more than one, or a "grouped with N similar"
+        note), then hands the shared shell the resource path as the
+        title suffix.
+        """
         # When the rule emitted >1 location OR there are grouped
         # followers with locations, list every offending line in the
         # panel so users see every hit at a glance.
@@ -527,42 +573,11 @@ def report_terminal(
                 f"\n[dim]Grouped with {len(followers)} similar finding(s) "
                 f"on the same resource.[/dim]"
             )
-        # ``--inline-explain`` surfaces the rule's ``exploit_example``
-        # (when one is recorded) right under the recommendation so the
-        # operator doesn't need a separate ``--explain CHECK_ID``
-        # round-trip. The gate lives in ``inline_exploit`` so SARIF,
-        # JUnit, markdown, and codequality make the same decision. The
-        # example is escaped through ``rich.markup.escape`` because real
-        # exploit snippets contain literal ``[...]`` tokens (YAML lists
-        # like ``types: [opened, edited]``, Terraform refs like
-        # ``subnets = [aws_subnet.foo.id]``, K8s capabilities ``[ALL]``)
-        # that the Panel renderer would otherwise parse as Rich style
-        # markup and silently strip. Label matches ``--explain`` and the
-        # HTML report so the same field reads the same on every surface.
-        exploit_text = ""
-        exploit = inline_exploit(f, inline_explain)
-        if exploit:
-            exploit_text = (
-                f"\n[bold]Proof of exploit:[/bold]\n{rich_escape(exploit)}"
-            )
         # Forward-slash the panel-title resource so a Windows scan reads
         # like the docs (the table cell already does this via
         # ``_display_path``).
         panel_resource = rich_escape(f.resource.replace("\\", "/"))
-        console.print(
-            Panel(
-                f"{rich_escape(f.description)}\n\n"
-                f"[bold]Recommendation:[/bold] {rich_escape(f.recommendation)}"
-                f"{cwe_line}{controls_text}{locations_text}{exploit_text}",
-                title=(
-                    f"[{style}]{f.check_id}[/{style}]  "
-                    f"{rich_escape(f.title)}  "
-                    f"[dim]{panel_resource}[/dim]"
-                ),
-                border_style="dim",
-                padding=(0, 2),
-            )
-        )
+        _emit_detail_panel(f, locations_text, f"[dim]{panel_resource}[/dim]")
 
     def _render_merged_detail_panel(
         members: list[tuple[Finding, list[Finding]]],
@@ -579,16 +594,6 @@ def report_terminal(
         never reach here, so no per-file detail is lost.
         """
         f = members[0][0]
-        style = _SEVERITY_STYLE.get(f.severity, "white")
-        cwe_line = ""
-        if f.cwe:
-            cwe_line = f"\n[dim]CWE: {rich_escape(', '.join(f.cwe))}[/dim]"
-        controls_text = ""
-        if f.controls and show_controls:
-            controls_text = "\n[bold]Controls:[/bold]\n" + "\n".join(
-                f"  {rich_escape('[' + c.standard_title + '] ' + c.label())}"
-                for c in f.controls
-            )
         # One line per affected resource, forward-slashed, with the
         # offending line numbers folded in (capped like the table's
         # follower list so a rule that fires on dozens of files doesn't
@@ -620,27 +625,7 @@ def report_terminal(
             f"\n[bold]Affected resources ({len(members)}):[/bold]\n"
             + "\n".join(shown_resources)
         )
-        # Same escaping rationale as the single-resource panel above.
-        exploit_text = ""
-        exploit = inline_exploit(f, inline_explain)
-        if exploit:
-            exploit_text = (
-                f"\n[bold]Proof of exploit:[/bold]\n{rich_escape(exploit)}"
-            )
-        console.print(
-            Panel(
-                f"{rich_escape(f.description)}\n\n"
-                f"[bold]Recommendation:[/bold] {rich_escape(f.recommendation)}"
-                f"{cwe_line}{controls_text}{resources_text}{exploit_text}",
-                title=(
-                    f"[{style}]{f.check_id}[/{style}]  "
-                    f"{rich_escape(f.title)}  "
-                    f"[dim]{len(members)} resources[/dim]"
-                ),
-                border_style="dim",
-                padding=(0, 2),
-            )
-        )
+        _emit_detail_panel(f, resources_text, f"[dim]{len(members)} resources[/dim]")
 
     if not group_similar:
         # ``--no-group`` means "show me everything, unrolled". The table
@@ -664,6 +649,12 @@ def report_terminal(
     for representative, followers in groups:
         key = (
             representative.check_id.upper(),
+            # ``severity`` colors the merged panel's border and title via
+            # ``members[0]``; keying on it too means findings only merge
+            # when that color is shared (deterministic per check_id today,
+            # so this is belt-and-suspenders). ``controls`` rides along
+            # with check_id the same way, so it needs no separate key.
+            representative.severity,
             representative.title,
             representative.description,
             representative.recommendation,
