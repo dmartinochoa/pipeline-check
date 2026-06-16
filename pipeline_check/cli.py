@@ -3543,11 +3543,24 @@ def _run_informational_commands(
         return True
 
     if list_fixers:
+        from rich.console import Console
+
         from .core.autofix import iter_fixers
         from .core.explain import render_fixers
 
-        fixers_body, fixers_code = render_fixers(fixer_safety_filter)
-        click.echo(fixers_body, nl=False)
+        # Color the severity column on a terminal; piped / redirected
+        # output stays plain (greppable, byte-identical to before).
+        _fixers_console = Console()
+        _fixers_color = _fixers_console.is_terminal
+        fixers_body, fixers_code = render_fixers(
+            fixer_safety_filter, color=_fixers_color,
+        )
+        if _fixers_color:
+            _fixers_console.print(
+                fixers_body, highlight=False, soft_wrap=True, end="",
+            )
+        else:
+            click.echo(fixers_body, nl=False)
         if fixers_code == 0:
             all_fixers = iter_fixers()
             safe_n = sum(1 for _, s in all_fixers if s == "safe")

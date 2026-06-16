@@ -77,6 +77,12 @@ class TestSmartInit:
         # Summary lands on stderr.
         assert "[init] top to fix first:" in result.stderr
         assert "GHA-001" in result.stderr
+        # The shortlist renders as the aligned table: GHA-001 has a
+        # registered fixer, so its row carries the "(autofix)" tag (a
+        # string only this shortlist emits), and the resource shows the
+        # basename, not the full ``.github/workflows/`` path.
+        assert "(autofix)" in result.stderr
+        assert "ci.yml" in result.stderr
 
     def test_smart_init_skips_baseline_when_no_failures(
         self, runner, tmp_path, monkeypatch

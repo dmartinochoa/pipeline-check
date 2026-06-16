@@ -284,7 +284,7 @@ def _all_rule_packs() -> list[str]:
 
 class TestEveryRuleHasDocsNote:
     """Every rule must populate ``Rule.docs_note`` so ``--explain``
-    has a body to render in the [What it checks] section.
+    has a body to render in the ``// what it checks`` section.
 
     Pre-2026-05 history: the AWS rule pack shipped 58 rules with an
     empty ``docs_note`` field — a migration artifact from the
