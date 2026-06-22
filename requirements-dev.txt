@@ -43,13 +43,13 @@ attrs==26.1.0 \
     # via
     #   jsonschema
     #   referencing
-boto3==1.43.30 \
-    --hash=sha256:6b1ee360f363a457f67a8f5702f522043d8a32d67a97c362ad12075d8b5b531e \
-    --hash=sha256:89e982463d94773136ccf69be77cccd54ff1ce351a6aadd1d3437fcb693681b5
+boto3==1.43.34 \
+    --hash=sha256:42595057324606928c6e2432b3093978e4d722e0d432bce942f2a385702c0a43 \
+    --hash=sha256:444207c6c883d4df3ea3b2c36df43ad492b86e0b889eebd2fc1d5ea8db0a8a1a
     # via -r requirements.txt
-botocore==1.43.30 \
-    --hash=sha256:19ed560cb35ae43bf010d37da429a553c07063bf7efea0f2cb53be8a78d3e3d5 \
-    --hash=sha256:26b1dded84d89b396180916f56900bd2ab1c0d545a66d1d2c3eeb40f772935b2
+botocore==1.43.34 \
+    --hash=sha256:238a0269f33c5914b9343900b44767e783b3e8b6dcb6e065eac8b4495601c5df \
+    --hash=sha256:ccc973cf30c6445b30afe5760f6dc949a80f1f862cb23d9c45747f2c814ece77
     # via
     #   -r requirements.txt
     #   boto3
@@ -622,9 +622,9 @@ ruff==0.15.17 \
     --hash=sha256:f3be1fbb34bcdfd146240d8fb92a709d4c2c8191348580a3c044ec60fa0b4456 \
     --hash=sha256:f6ad73b14c2d18a3bf8ad7cb6974294d7f613a7898604826058e6ac64918ef4d
     # via -r requirements-dev.in
-s3transfer==0.18.0 \
-    --hash=sha256:239c13b09e65ad0346e1be7348b8a202dcad44ac7ea7c6eb858fc881dce739b6 \
-    --hash=sha256:3760b8b7ec1315da54048b2d626276732bee4300d054d492d4e1d43e20d4ecbd
+s3transfer==0.19.0 \
+    --hash=sha256:777cc2415536f1debadb5c2ef7779275d0fc0fe0e042411cdd6caebeb2685262 \
+    --hash=sha256:ce436931687addc4c1712d52d40b32f53e88315723f107ffa20ba82b05a0f685
     # via
     #   -r requirements.txt
     #   boto3
