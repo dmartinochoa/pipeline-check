@@ -2,4 +2,4 @@ mkdocs==1.6.1
 mkdocs-material==9.7.6
 # 10.12 has a parser bug that swallows the language tag of fenced code
 # blocks when paired with Python-Markdown >= 3.6. 10.21.2 fixes it.
-pymdown-extensions==10.21.3
+pymdown-extensions==11.0
