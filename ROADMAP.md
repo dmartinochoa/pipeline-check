@@ -6,7 +6,22 @@ What's planned, what's shipped, and what's deliberately out of scope.
 
 ### Unreleased (on ``dev``)
 
-- _Nothing queued for the next release yet._
+- **MCP-config security pack (``devenv`` DEV-009, DEV-010, plus Zed and
+  Continue config surfaces)** — Extends the MCP-config coverage past
+  DEV-007's stdio command servers. ``DEV-009`` flags a committed MCP
+  config that reaches a remote server over plaintext ``http://`` to a
+  non-loopback host (loopback and ``https`` pass); ``DEV-010`` flags a
+  blanket tool auto-approval (``autoApprove: true`` / ``["*"]``,
+  ``alwaysAllow: ["*"]``) that removes the human confirmation. Both also
+  read two new committed surfaces: Zed's ``.zed/settings.json``
+  ``context_servers`` and Continue's ``.continue/config.yaml`` /
+  ``.continue/mcpServers/*.yaml`` (the devenv loader gained a YAML path,
+  and the shared server-spec walker now handles Continue's list-shaped
+  ``mcpServers``). The "own the AI-pipeline surface" item from the
+  2026-07-02 sweep below, shipped as PR #381 (rules + Zed) and #382
+  (Continue). Scope narrowed on the build: the env-block-secrets idea
+  was dropped (DEV-008 already scans the MCP ``env`` block) and
+  Cline / Windsurf were dropped (user-global configs, never committed).
 
 ### Recently shipped (see CHANGELOG for exact versions and dates)
 
@@ -740,7 +755,13 @@ extends an existing thread it says so.
 
 **Own the AI-pipeline surface (the clean category-leadership play):**
 
-- **MCP-server configuration security pack (M, very high, timing).** The
+- **MCP-server configuration security pack (M, very high, timing). —
+  SHIPPED 2026-07-02 (PR #381: DEV-009 plaintext remote + DEV-010
+  blanket auto-approve + Zed surface; PR #382: Continue surface). Scope
+  trimmed on the build: the env-block-secrets rule was dropped (DEV-008
+  already scans the MCP ``env`` block) and Cline / Windsurf were dropped
+  (user-global configs, never committed). See the Unreleased section
+  above.** The
   concrete build-out of the "MCP-config beyond DEV-007" NEXT option, now
   matched to the market: Cisco shipped an open-source MCP Scanner, poutine
   added an MCP surface, and MCP servers are a named supply-chain risk
