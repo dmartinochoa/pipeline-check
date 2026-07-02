@@ -37,11 +37,12 @@ RULE = Rule(
     ),
     docs_note=(
         "Fires when a committed MCP config (``.mcp.json``, "
-        "``.cursor/mcp.json``, ``.vscode/mcp.json``, or Zed's "
-        "``.zed/settings.json``) sets a *blanket* tool auto-approval on a "
-        "server: ``autoApprove: true`` / ``[\"*\"]`` or ``alwaysAllow`` "
-        "containing ``\"*\"``. A grant scoped to specific named tools is a "
-        "bounded choice and passes."
+        "``.cursor/mcp.json``, ``.vscode/mcp.json``, Zed's "
+        "``.zed/settings.json``, or Continue's ``.continue/config.yaml`` / "
+        "``.continue/mcpServers/*.yaml``) sets a *blanket* tool "
+        "auto-approval on a server: ``autoApprove: true`` / ``[\"*\"]`` or "
+        "``alwaysAllow`` containing ``\"*\"``. A grant scoped to specific "
+        "named tools is a bounded choice and passes."
     ),
     known_fp=(
         "A blanket grant on a first-party, fully trusted local server may "

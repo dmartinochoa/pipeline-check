@@ -186,7 +186,7 @@ Don't commit a workspace ``.vscode/settings.json`` that points an executable-pat
 <span class="pg-sev pg-sev--medium">MEDIUM</span> <span class="pg-tag pg-tag--owasp">CICD-SEC-4</span> <span class="pg-tag pg-tag--esf">ESF-D-INJECTION</span> <span class="pg-tag pg-tag--cwe">CWE-829</span> <span class="pg-tag pg-tag--cwe">CWE-94</span>
 </div>
 
-Fires when a committed MCP config (``.mcp.json``, ``.cursor/mcp.json``, ``.vscode/mcp.json``, or Zed's ``.zed/settings.json``) defines a server with a ``command`` (a stdio server the editor / agent launches as a local process on project open). The ``mcpServers`` (Claude / Cursor), ``servers`` (VS Code), and ``context_servers`` (Zed) block names are all read. ``url``-only servers (``type: http`` / ``sse``) don't spawn a local process and don't fire here (DEV-009 checks their transport). Commands that fetch an unpinned remote package (``npx -y`` / ``uvx`` / ``pnpm dlx`` / ``bunx`` / ``pipx run``) are called out as the sharpest case.
+Fires when a committed MCP config (``.mcp.json``, ``.cursor/mcp.json``, ``.vscode/mcp.json``, Zed's ``.zed/settings.json``, or Continue's ``.continue/config.yaml`` / ``.continue/mcpServers/*.yaml``) defines a server with a ``command`` (a stdio server the editor / agent launches as a local process on project open). The ``mcpServers`` (Claude / Cursor object, Continue list), ``servers`` (VS Code), and ``context_servers`` (Zed) block names are all read. ``url``-only servers (``type: http`` / ``sse``) don't spawn a local process and don't fire here (DEV-009 checks their transport). Commands that fetch an unpinned remote package (``npx -y`` / ``uvx`` / ``pnpm dlx`` / ``bunx`` / ``pipx run``) are called out as the sharpest case.
 
 **Known false-positive modes**
 
@@ -210,7 +210,7 @@ Treat a committed MCP server config as code that runs on project open. Prefer a 
 <span class="pg-sev pg-sev--critical">CRITICAL</span> <span class="pg-tag pg-tag--owasp">CICD-SEC-6</span> <span class="pg-tag pg-tag--esf">ESF-D-SECRETS</span> <span class="pg-tag pg-tag--cwe">CWE-798</span>
 </div>
 
-Scans every string in a developer-environment config (``.vscode/`` tasks / settings, ``.devcontainer``, ``.claude/settings.json``, and MCP configs ``.mcp.json`` / ``.cursor/mcp.json`` / ``.vscode/mcp.json``) against the cross-provider credential-shape catalog. The common hit is a token in an MCP server's ``env`` block or a devcontainer ``remoteEnv`` / ``containerEnv``.
+Scans every string in a developer-environment config (``.vscode/`` tasks / settings, ``.devcontainer``, ``.claude/settings.json``, and MCP configs ``.mcp.json`` / ``.cursor/mcp.json`` / ``.vscode/mcp.json`` / Zed's ``.zed/settings.json`` / Continue's ``.continue/`` YAML) against the cross-provider credential-shape catalog. The common hit is a token in an MCP server's ``env`` block or a devcontainer ``remoteEnv`` / ``containerEnv``.
 
 **Known false-positive modes**
 
@@ -234,7 +234,7 @@ Rotate the exposed credential immediately, it is in the repo's history. Don't co
 <span class="pg-sev pg-sev--medium">MEDIUM</span> <span class="pg-tag pg-tag--owasp">CICD-SEC-4</span> <span class="pg-tag pg-tag--esf">ESF-D-INJECTION</span> <span class="pg-tag pg-tag--cwe">CWE-319</span> <span class="pg-tag pg-tag--cwe">CWE-829</span>
 </div>
 
-Fires when a committed MCP config (``.mcp.json``, ``.cursor/mcp.json``, ``.vscode/mcp.json``, or Zed's ``.zed/settings.json``) defines a remote server whose ``url`` is plaintext ``http://`` to a non-loopback host. Loopback URLs (``localhost`` / ``127.0.0.0/8`` / ``::1``) and ``https://`` endpoints pass. Stdio (``command``) servers are DEV-007's concern, not this rule's.
+Fires when a committed MCP config (``.mcp.json``, ``.cursor/mcp.json``, ``.vscode/mcp.json``, Zed's ``.zed/settings.json``, or Continue's ``.continue/config.yaml`` / ``.continue/mcpServers/*.yaml``) defines a remote server whose ``url`` is plaintext ``http://`` to a non-loopback host (any ``sse`` / ``streamable-http`` transport included). Loopback URLs (``localhost`` / ``127.0.0.0/8`` / ``::1``) and ``https://`` endpoints pass. Stdio (``command``) servers are DEV-007's concern, not this rule's.
 
 **Known false-positive modes**
 
@@ -258,7 +258,7 @@ Point the MCP server at an ``https://`` endpoint so the tool stream is authentic
 <span class="pg-sev pg-sev--medium">MEDIUM</span> <span class="pg-tag pg-tag--owasp">CICD-SEC-4</span> <span class="pg-tag pg-tag--esf">ESF-D-INJECTION</span> <span class="pg-tag pg-tag--cwe">CWE-284</span> <span class="pg-tag pg-tag--cwe">CWE-269</span>
 </div>
 
-Fires when a committed MCP config (``.mcp.json``, ``.cursor/mcp.json``, ``.vscode/mcp.json``, or Zed's ``.zed/settings.json``) sets a *blanket* tool auto-approval on a server: ``autoApprove: true`` / ``["*"]`` or ``alwaysAllow`` containing ``"*"``. A grant scoped to specific named tools is a bounded choice and passes.
+Fires when a committed MCP config (``.mcp.json``, ``.cursor/mcp.json``, ``.vscode/mcp.json``, Zed's ``.zed/settings.json``, or Continue's ``.continue/config.yaml`` / ``.continue/mcpServers/*.yaml``) sets a *blanket* tool auto-approval on a server: ``autoApprove: true`` / ``["*"]`` or ``alwaysAllow`` containing ``"*"``. A grant scoped to specific named tools is a bounded choice and passes.
 
 **Known false-positive modes**
 

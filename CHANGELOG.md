@@ -26,6 +26,14 @@ release commit collapses this section into `## [X.Y.Z] - <date>`.
   `context_servers` block, a new committed surface all the MCP rules
   (DEV-007/008/009/010) now cover, including Zed's nested
   `command: {path, args}` shape.
+- **Continue config surface for the MCP rules (devenv).** The
+  developer-environment scanner now reads Continue's YAML configs
+  (`.continue/config.yaml` and `.continue/mcpServers/*.yaml`), so the MCP
+  rules (DEV-007/008/009/010) cover them. Continue declares `mcpServers`
+  as a YAML *list* of objects (each with a `name`), which the shared
+  server-spec walker now handles alongside the JSON object shape used by
+  Claude / Cursor / VS Code / Zed. The devenv loader gained a YAML path
+  (via the repo's duplicate-key-rejecting loader) for these files.
 
 ## [1.17.0] - 2026-06-16
 

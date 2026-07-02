@@ -41,9 +41,11 @@ RULE = Rule(
     ),
     docs_note=(
         "Fires when a committed MCP config (``.mcp.json``, "
-        "``.cursor/mcp.json``, ``.vscode/mcp.json``, or Zed's "
-        "``.zed/settings.json``) defines a remote server whose ``url`` is "
-        "plaintext ``http://`` to a non-loopback host. Loopback URLs "
+        "``.cursor/mcp.json``, ``.vscode/mcp.json``, Zed's "
+        "``.zed/settings.json``, or Continue's ``.continue/config.yaml`` / "
+        "``.continue/mcpServers/*.yaml``) defines a remote server whose "
+        "``url`` is plaintext ``http://`` to a non-loopback host (any "
+        "``sse`` / ``streamable-http`` transport included). Loopback URLs "
         "(``localhost`` / ``127.0.0.0/8`` / ``::1``) and ``https://`` "
         "endpoints pass. Stdio (``command``) servers are DEV-007's "
         "concern, not this rule's."
