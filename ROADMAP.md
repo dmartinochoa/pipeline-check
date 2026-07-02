@@ -22,6 +22,18 @@ What's planned, what's shipped, and what's deliberately out of scope.
   (Continue). Scope narrowed on the build: the env-block-secrets idea
   was dropped (DEV-008 already scans the MCP ``env`` block) and
   Cline / Windsurf were dropped (user-global configs, never committed).
+- **Committed unsafe-serialization model artifact (``modelfile``
+  MODEL-006)** — Flags a committed model-weight file, anywhere in the
+  scanned tree, whose format deserializes arbitrary code at load:
+  ``.pkl`` / ``.pickle`` / ``.pt`` / ``.pth`` / ``.ckpt`` / ``.joblib`` /
+  ``.dill`` / ``.keras`` on the extension alone, and the ambiguous
+  ``.bin`` / ``.h5`` / ``.hdf5`` only with model context (a model-ish
+  name or a sibling model config / Modelfile). ``.safetensors`` /
+  ``.gguf`` / ``.onnx`` are the safe formats and never fire. LOW
+  severity, the tree-wide complement to MODEL-003's Modelfile ``FROM``
+  reference. A format / provenance check, not pickle-opcode analysis
+  (ModelScan / ModelAudit own that). The second "own the AI-pipeline
+  surface" item from the 2026-07-02 sweep below, shipped as PR #383.
 
 ### Recently shipped (see CHANGELOG for exact versions and dates)
 
@@ -780,7 +792,10 @@ extends an existing thread it says so.
   (``.continue``, Windsurf, Cline, Zed) past the three DEV-007 reads. Clean
   static-config work, category-leading, rides a live threat. Strongest
   single new item.
-- **Committed unsafe-serialization model artifact (S-M, med).** The
+- **Committed unsafe-serialization model artifact (S-M, med). —
+  SHIPPED 2026-07-02 (PR #383) as MODEL-006, LOW severity, with the
+  ambiguous ``.bin`` / ``.h5`` / ``.hdf5`` extensions gated on model
+  context for precision. See the Unreleased section above.** The
   poisoned-model threat that PickleScan / ModelScan / ModelAudit chase
   (roughly 45% of Hugging Face repos still ship pickle weights, and
   PickleScan itself picked up bypass CVEs in 2025). Extend the
