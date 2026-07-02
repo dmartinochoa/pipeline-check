@@ -4,6 +4,7 @@ from __future__ import annotations
 from pipeline_check.core.checks.base import Severity
 from pipeline_check.core.checks.devenv.base import (
     KIND_CLAUDE_SETTINGS,
+    KIND_CONTINUE_CONFIG,
     KIND_DEVCONTAINER,
     KIND_MCP_CONFIG,
     KIND_VSCODE_SETTINGS,
@@ -508,3 +509,89 @@ class TestZedSurface:
         )
         assert not f.passed
         assert "remote package" in f.description  # uvx flagged
+
+
+class TestContinueSurface:
+    """Continue's YAML `mcpServers` list feeds the MCP rules."""
+
+    _CONFIG = """\
+        name: my-assistant
+        version: 0.0.1
+        schema: v1
+        mcpServers:
+          - name: SQLite MCP
+            command: npx
+            args: ["-y", "mcp-sqlite"]
+          - name: Remote Tools
+            type: streamable-http
+            url: http://tools.example.com/mcp
+    """
+
+    def test_dev007_fires_on_continue_list_command_server(self):
+        f = run_check(self._CONFIG, KIND_CONTINUE_CONFIG, "DEV-007")
+        assert not f.passed
+        assert "SQLite MCP" in f.description  # list-item name resolved
+        assert "remote package" in f.description  # npx -y flagged
+
+    def test_dev009_fires_on_continue_plaintext_remote(self):
+        f = run_check(self._CONFIG, KIND_CONTINUE_CONFIG, "DEV-009")
+        assert not f.passed
+        assert "Remote Tools" in f.description
+
+    def test_dev010_passes_no_autoapprove_key_in_continue(self):
+        # Continue has no autoApprove/alwaysAllow key; nothing to flag.
+        f = run_check(self._CONFIG, KIND_CONTINUE_CONFIG, "DEV-010")
+        assert f.passed
+
+    def test_dev008_scans_continue_env_secret(self):
+        raw = """\
+            mcpServers:
+              - name: gh
+                command: npx
+                env:
+                  GITHUB_TOKEN: ghp_abcdef1234567890abcdef1234567890abcd
+        """
+        f = run_check(raw, KIND_CONTINUE_CONFIG, "DEV-008")
+        assert not f.passed
+        assert f.severity is Severity.CRITICAL
+
+    def test_kind_classification(self):
+        from pathlib import Path
+
+        from pipeline_check.core.checks.devenv.base import _kind_for
+
+        assert _kind_for(Path(".continue/config.yaml")) == KIND_CONTINUE_CONFIG
+        assert (
+            _kind_for(Path(".continue/mcpServers/playwright.yaml"))
+            == KIND_CONTINUE_CONFIG
+        )
+
+    def test_from_path_discovers_and_parses_continue(self, tmp_path):
+        # End-to-end: discover + YAML-parse the two Continue surfaces.
+        from pipeline_check.core.checks.devenv.base import DevEnvContext
+
+        cont = tmp_path / ".continue"
+        (cont / "mcpServers").mkdir(parents=True)
+        (cont / "config.yaml").write_text(self._CONFIG, encoding="utf-8")
+        (cont / "mcpServers" / "pw.yaml").write_text(
+            "mcpServers:\n  - name: Browser\n    command: uvx\n    args: [pw]\n",
+            encoding="utf-8",
+        )
+        ctx = DevEnvContext.from_path(tmp_path)
+        kinds = {f.kind for f in ctx.files}
+        assert kinds == {KIND_CONTINUE_CONFIG}
+        assert len(ctx.files) == 2
+        assert not ctx.warnings
+
+    def test_from_path_warns_on_malformed_yaml(self, tmp_path):
+        from pipeline_check.core.checks.devenv.base import DevEnvContext
+
+        cont = tmp_path / ".continue"
+        cont.mkdir()
+        # Duplicate mapping key: safe_load_strict rejects it.
+        (cont / "config.yaml").write_text(
+            "mcpServers: []\nmcpServers: []\n", encoding="utf-8",
+        )
+        ctx = DevEnvContext.from_path(tmp_path)
+        assert not ctx.files
+        assert any("YAML" in w for w in ctx.warnings)

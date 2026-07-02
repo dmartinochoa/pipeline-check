@@ -19,6 +19,9 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import Any
 
+import yaml
+
+from ..._yaml_strict import safe_load_strict
 from ..base import BaseCheck, Location
 
 # ── Document kinds ───────────────────────────────────────────────────────
@@ -29,18 +32,22 @@ KIND_DEVCONTAINER = "devcontainer"
 KIND_CLAUDE_SETTINGS = "claude_settings"
 KIND_MCP_CONFIG = "mcp_config"
 KIND_ZED_SETTINGS = "zed_settings"
+KIND_CONTINUE_CONFIG = "continue_config"
 
 #: Config kinds that carry MCP server definitions the MCP rules
 #: (DEV-007 / DEV-009 / DEV-010) inspect. A dedicated ``.mcp.json`` /
 #: ``.cursor/mcp.json`` / ``.vscode/mcp.json`` is all MCP; Zed's
 #: ``.zed/settings.json`` mixes editor settings with a
-#: ``context_servers`` block, but the MCP rules only read the server
-#: blocks so the same helpers apply.
-MCP_KINDS: tuple[str, ...] = (KIND_MCP_CONFIG, KIND_ZED_SETTINGS)
+#: ``context_servers`` block, and Continue's ``.continue/`` YAML mixes
+#: editor config with an ``mcpServers`` list, but the MCP rules only
+#: read the server blocks so the same helpers apply.
+MCP_KINDS: tuple[str, ...] = (
+    KIND_MCP_CONFIG, KIND_ZED_SETTINGS, KIND_CONTINUE_CONFIG,
+)
 
 #: Top-level object keys under which the various clients declare MCP
-#: servers: ``mcpServers`` (Claude / Cursor), ``servers`` (VS Code),
-#: ``context_servers`` (Zed).
+#: servers: ``mcpServers`` (Claude / Cursor, an object; Continue, a
+#: list), ``servers`` (VS Code), ``context_servers`` (Zed).
 MCP_SERVER_BLOCKS: tuple[str, ...] = ("mcpServers", "servers", "context_servers")
 
 #: devcontainer lifecycle keys that run inside the container on
@@ -175,6 +182,17 @@ def _kind_for(path: Path) -> str | None:
     # ``mcp.json`` names below since it shares the ``settings.json`` name).
     if name == "settings.json" and parent == ".zed":
         return KIND_ZED_SETTINGS
+    # Continue: the project-level ``.continue/config.yaml`` and any
+    # ``.continue/mcpServers/<name>.yaml`` block file carry an
+    # ``mcpServers`` list.
+    if name in {"config.yaml", "config.yml"} and parent == ".continue":
+        return KIND_CONTINUE_CONFIG
+    if (
+        name.endswith((".yaml", ".yml"))
+        and parent == "mcpServers"
+        and path.parent.parent.name == ".continue"
+    ):
+        return KIND_CONTINUE_CONFIG
     # MCP server configs: Claude Code (``.mcp.json`` at the repo root),
     # Cursor (``.cursor/mcp.json``), VS Code (``.vscode/mcp.json``).
     if name == ".mcp.json":
@@ -198,6 +216,8 @@ def _discover(root: Path) -> list[Path]:
         root / ".cursor" / "mcp.json",
         root / ".vscode" / "mcp.json",
         root / ".zed" / "settings.json",
+        root / ".continue" / "config.yaml",
+        root / ".continue" / "config.yml",
     ]
     out.extend(p for p in candidates if p.is_file())
     # devcontainer supports a per-config subfolder layout:
@@ -206,6 +226,15 @@ def _discover(root: Path) -> list[Path]:
     if dc_dir.is_dir():
         out.extend(
             p for p in sorted(dc_dir.glob("*/devcontainer.json")) if p.is_file()
+        )
+    # Continue drops one MCP server per file under
+    # ``.continue/mcpServers/<name>.yaml``.
+    mcp_dir = root / ".continue" / "mcpServers"
+    if mcp_dir.is_dir():
+        out.extend(
+            p
+            for p in sorted(mcp_dir.glob("*"))
+            if p.is_file() and p.suffix in {".yaml", ".yml"}
         )
     # Stable order, de-duplicated.
     seen: set[str] = set()
@@ -253,10 +282,17 @@ class DevEnvContext:
             except (OSError, UnicodeDecodeError):
                 skipped += 1
                 continue
+            is_yaml = p.suffix in {".yaml", ".yml"}
             try:
-                data = loads_jsonc(raw)
-            except (json.JSONDecodeError, ValueError, RecursionError, MemoryError):
-                warnings.append(f"could not parse {p} as JSON(C); skipped")
+                data = (
+                    safe_load_strict(raw) if is_yaml else loads_jsonc(raw)
+                )
+            except (
+                json.JSONDecodeError, ValueError, RecursionError, MemoryError,
+                yaml.YAMLError,
+            ):
+                fmt = "YAML" if is_yaml else "JSON(C)"
+                warnings.append(f"could not parse {p} as {fmt}; skipped")
                 skipped += 1
                 continue
             if not isinstance(data, dict):
@@ -394,18 +430,35 @@ def claude_command_hooks(data: dict[str, Any]) -> list[tuple[str, str]]:
 def iter_mcp_specs(data: dict[str, Any]) -> list[tuple[str, dict[str, Any]]]:
     """Return ``(server_name, spec)`` for every MCP server in *data*.
 
-    Walks all three top-level block names (:data:`MCP_SERVER_BLOCKS`):
-    ``mcpServers`` (Claude / Cursor), ``servers`` (VS Code), and
-    ``context_servers`` (Zed). Non-object specs are dropped.
+    Walks all top-level block names (:data:`MCP_SERVER_BLOCKS`) and
+    tolerates both server-block shapes:
+
+      * a **mapping** keyed by server name (``mcpServers`` in
+        Claude / Cursor, ``servers`` in VS Code, ``context_servers``
+        in Zed), where each value is the spec; and
+      * a **list** of spec objects each carrying its own ``name``
+        (``mcpServers`` in Continue's YAML config).
+
+    Non-object specs are dropped; a list item with no usable ``name``
+    falls back to its position (``mcpServers[0]``).
     """
     out: list[tuple[str, dict[str, Any]]] = []
     for block_key in MCP_SERVER_BLOCKS:
         block = data.get(block_key)
-        if not isinstance(block, dict):
-            continue
-        for name, spec in block.items():
-            if isinstance(spec, dict):
-                out.append((str(name), spec))
+        if isinstance(block, dict):
+            for name, spec in block.items():
+                if isinstance(spec, dict):
+                    out.append((str(name), spec))
+        elif isinstance(block, list):
+            for idx, spec in enumerate(block):
+                if not isinstance(spec, dict):
+                    continue
+                raw_name = spec.get("name")
+                name = (
+                    raw_name if isinstance(raw_name, str) and raw_name.strip()
+                    else f"{block_key}[{idx}]"
+                )
+                out.append((name, spec))
     return out
 
 

@@ -39,8 +39,9 @@ RULE = Rule(
         "Scans every string in a developer-environment config "
         "(``.vscode/`` tasks / settings, ``.devcontainer``, "
         "``.claude/settings.json``, and MCP configs ``.mcp.json`` / "
-        "``.cursor/mcp.json`` / ``.vscode/mcp.json``) against the "
-        "cross-provider credential-shape catalog. The common hit is a "
+        "``.cursor/mcp.json`` / ``.vscode/mcp.json`` / Zed's "
+        "``.zed/settings.json`` / Continue's ``.continue/`` YAML) against "
+        "the cross-provider credential-shape catalog. The common hit is a "
         "token in an MCP server's ``env`` block or a devcontainer "
         "``remoteEnv`` / ``containerEnv``."
     ),
