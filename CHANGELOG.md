@@ -12,6 +12,16 @@ release commit collapses this section into `## [X.Y.Z] - <date>`.
 
 ### Added
 
+- **Committed unsafe-serialization model artifact (modelfile `MODEL-006`).**
+  Flags a committed model-weight file, anywhere in the scanned tree, whose
+  format deserializes arbitrary code at load: `.pkl` / `.pickle` / `.pt` /
+  `.pth` / `.ckpt` / `.joblib` / `.dill` / `.keras` on the extension alone,
+  and the ambiguous `.bin` / `.h5` / `.hdf5` only when the name looks like a
+  model (`pytorch_model.bin`) or a model config / Modelfile sits alongside.
+  `.safetensors` / `.gguf` / `.onnx` are the safe formats and never fire.
+  The tree-wide complement to `MODEL-003`, which only fires on a Modelfile
+  `FROM` reference. A format / provenance check, not pickle-opcode analysis
+  (ModelScan / ModelAudit own that).
 - **MCP-config security pack (devenv `DEV-009`, `DEV-010`, Zed surface).**
   Two new rules extend the MCP-config coverage past DEV-007's stdio
   command servers. `DEV-009` flags a committed MCP config that reaches a

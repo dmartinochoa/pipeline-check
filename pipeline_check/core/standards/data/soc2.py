@@ -352,6 +352,7 @@ STANDARD = Standard(
         "MODEL-001": ["CC8.1"],             # unpinned base model
         "MODEL-002": ["CC8.1"],             # third-party hub base model
         "MODEL-003": ["CC8.1"],             # local unverified weights blob
+        "MODEL-006": ["CC8.1"],             # committed unsafe-serialization model artifact
         "MODEL-004": ["CC8.1"],             # remote LoRA adapter
         "MODEL-005": ["CC8.1"],             # config auto_map = custom loader code
         "DF-031": ["CC8.1"],                # COPY --from external image not digest-pinned

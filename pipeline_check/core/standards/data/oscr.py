@@ -314,6 +314,7 @@ STANDARD = Standard(
         "MODEL-001": ["IA-11"],   # unpinned base model
         "MODEL-002": ["IA-11"],   # third-party hub base model
         "MODEL-003": ["IA-11"],   # local unverified weights blob
+        "MODEL-006": ["IA-11"],   # committed unsafe-serialization model artifact
         "MODEL-004": ["IA-11"],   # remote LoRA adapter
         "MODEL-005": ["IA-11"],   # config auto_map = custom loader code
         "DF-031":   ["IA-11"],
