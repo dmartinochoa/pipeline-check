@@ -8,6 +8,7 @@ from pipeline_check.core.checks.devenv.base import (
     KIND_MCP_CONFIG,
     KIND_VSCODE_SETTINGS,
     KIND_VSCODE_TASKS,
+    KIND_ZED_SETTINGS,
     _strip_jsonc,
     loads_jsonc,
 )
@@ -365,3 +366,145 @@ class TestDEV008:
     def test_passes_on_unrelated_settings(self):
         f = run_check('{"editor.tabSize": 2}', KIND_VSCODE_SETTINGS, "DEV-008")
         assert f.passed
+
+
+class TestDEV009:
+    """Committed MCP config uses a remote server over plaintext HTTP."""
+
+    def test_fires_on_plaintext_remote(self):
+        f = run_check(
+            '{"mcpServers": {"api": '
+            '{"type": "http", "url": "http://tools.example.com/mcp"}}}',
+            KIND_MCP_CONFIG, "DEV-009",
+        )
+        assert not f.passed
+        assert f.severity is Severity.MEDIUM
+        assert "api" in f.description
+
+    def test_fires_on_sse_over_http(self):
+        f = run_check(
+            '{"mcpServers": {"stream": '
+            '{"type": "sse", "url": "http://sse.example.com/mcp"}}}',
+            KIND_MCP_CONFIG, "DEV-009",
+        )
+        assert not f.passed
+
+    def test_passes_on_https_remote(self):
+        f = run_check(
+            '{"mcpServers": {"api": '
+            '{"type": "http", "url": "https://tools.example.com/mcp"}}}',
+            KIND_MCP_CONFIG, "DEV-009",
+        )
+        assert f.passed
+
+    def test_passes_on_loopback_http(self):
+        # A local dev server over http is fine.
+        f = run_check(
+            '{"mcpServers": {"local": {"url": "http://localhost:3000/mcp"}}}',
+            KIND_MCP_CONFIG, "DEV-009",
+        )
+        assert f.passed
+
+    def test_passes_on_127_loopback(self):
+        f = run_check(
+            '{"mcpServers": {"local": {"url": "http://127.0.0.1:8080/mcp"}}}',
+            KIND_MCP_CONFIG, "DEV-009",
+        )
+        assert f.passed
+
+    def test_passes_on_stdio_command_server(self):
+        # A command (stdio) server is DEV-007's concern, not DEV-009's.
+        f = run_check(
+            '{"mcpServers": {"weather": {"command": "npx", "args": ["-y", "x"]}}}',
+            KIND_MCP_CONFIG, "DEV-009",
+        )
+        assert f.passed
+
+    def test_fires_on_zed_context_server(self):
+        f = run_check(
+            '{"context_servers": {"z": '
+            '{"url": "http://tools.example.com/mcp"}}}',
+            KIND_ZED_SETTINGS, "DEV-009",
+        )
+        assert not f.passed
+
+    def test_passes_on_non_mcp_kind(self):
+        f = run_check('{"version": "2.0.0"}', KIND_VSCODE_TASKS, "DEV-009")
+        assert f.passed
+
+
+class TestDEV010:
+    """Committed MCP config blanket-auto-approves a server's tools."""
+
+    def test_fires_on_autoapprove_true(self):
+        f = run_check(
+            '{"mcpServers": {"gh": {"command": "npx", "autoApprove": true}}}',
+            KIND_MCP_CONFIG, "DEV-010",
+        )
+        assert not f.passed
+        assert f.severity is Severity.MEDIUM
+        assert "gh" in f.description
+
+    def test_fires_on_wildcard_autoapprove(self):
+        f = run_check(
+            '{"mcpServers": {"gh": {"command": "npx", "autoApprove": ["*"]}}}',
+            KIND_MCP_CONFIG, "DEV-010",
+        )
+        assert not f.passed
+
+    def test_fires_on_wildcard_alwaysallow(self):
+        f = run_check(
+            '{"mcpServers": {"gh": {"command": "npx", "alwaysAllow": ["*"]}}}',
+            KIND_MCP_CONFIG, "DEV-010",
+        )
+        assert not f.passed
+
+    def test_passes_on_named_allowlist(self):
+        # A scoped, named-tool grant is an intentional bounded choice.
+        f = run_check(
+            '{"mcpServers": {"gh": '
+            '{"command": "npx", "alwaysAllow": ["read_file", "list_dir"]}}}',
+            KIND_MCP_CONFIG, "DEV-010",
+        )
+        assert f.passed
+
+    def test_passes_without_auto_approve(self):
+        f = run_check(
+            '{"mcpServers": {"gh": {"command": "npx"}}}',
+            KIND_MCP_CONFIG, "DEV-010",
+        )
+        assert f.passed
+
+    def test_fires_on_zed_context_server(self):
+        f = run_check(
+            '{"context_servers": {"z": '
+            '{"command": {"path": "npx"}, "autoApprove": true}}}',
+            KIND_ZED_SETTINGS, "DEV-010",
+        )
+        assert not f.passed
+
+    def test_passes_on_non_mcp_kind(self):
+        f = run_check('{"version": "2.0.0"}', KIND_VSCODE_TASKS, "DEV-010")
+        assert f.passed
+
+
+class TestZedSurface:
+    """`.zed/settings.json` context_servers feed the MCP rules."""
+
+    def test_zed_settings_classified_as_zed_kind(self):
+        from pathlib import Path
+
+        from pipeline_check.core.checks.devenv.base import _kind_for
+
+        assert _kind_for(Path(".zed/settings.json")) == KIND_ZED_SETTINGS
+
+    def test_dev007_reads_zed_nested_command(self):
+        # Zed's nested command object {path, args} resolves like a
+        # flat command + args.
+        f = run_check(
+            '{"context_servers": {"z": '
+            '{"command": {"path": "uvx", "args": ["mcp-db"]}}}}',
+            KIND_ZED_SETTINGS, "DEV-007",
+        )
+        assert not f.passed
+        assert "remote package" in f.description  # uvx flagged

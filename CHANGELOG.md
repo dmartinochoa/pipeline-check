@@ -10,6 +10,23 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 PRs landing on `dev` between releases append entries below. The
 release commit collapses this section into `## [X.Y.Z] - <date>`.
 
+### Added
+
+- **MCP-config security pack (devenv `DEV-009`, `DEV-010`, Zed surface).**
+  Two new rules extend the MCP-config coverage past DEV-007's stdio
+  command servers. `DEV-009` flags a committed MCP config that reaches a
+  *remote* server over plaintext `http://` to a non-loopback host (the
+  tool stream crosses the network in the clear, so an on-path attacker
+  can read or rewrite the tools the agent is offered); loopback and
+  `https://` endpoints pass. `DEV-010` flags a *blanket* tool
+  auto-approval (`autoApprove: true` / `["*"]`, Cline's
+  `alwaysAllow: ["*"]`), which removes the human confirmation so a
+  poisoned or rug-pulled tool runs silently; a scoped named-tool
+  allow-list passes. Both also read Zed's `.zed/settings.json`
+  `context_servers` block, a new committed surface all the MCP rules
+  (DEV-007/008/009/010) now cover, including Zed's nested
+  `command: {path, args}` shape.
+
 ## [1.17.0] - 2026-06-16
 
 ### Changed

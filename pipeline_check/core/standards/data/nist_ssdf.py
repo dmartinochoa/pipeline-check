@@ -1125,6 +1125,8 @@ STANDARD = Standard(
         "DEV-001":   ["PW.6.1", "PW.9.1"],
         "DEV-006":   ["PW.6.1", "PW.9.1"],
         "DEV-007":   ["PW.6.1", "PW.9.1"],   # committed MCP config auto-launches a command server
+        "DEV-009":   ["PW.6.1", "PW.9.1"],   # remote MCP config over plaintext HTTP
+        "DEV-010":   ["PW.6.1", "PW.9.1"],   # committed MCP config blanket tool auto-approve
         "DEV-002":   ["PW.6.1", "PW.9.1"],
         "DEV-003":   ["PW.6.1", "PW.9.1"],
         "DEV-004":   ["PW.4.1", "PW.4.4"],

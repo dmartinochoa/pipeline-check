@@ -277,6 +277,8 @@ STANDARD = Standard(
         "GL-037": ["1.4.1"],  # CI env disables Go module verification
         "GL-002":   ["2.1.3", "2.3.8"],
         "DEV-007":  ["2.1.3"],   # committed MCP config auto-launches a command server
+        "DEV-009":  ["2.1.3"],  # remote MCP config over plaintext HTTP
+        "DEV-010":  ["2.1.3"],  # committed MCP config blanket tool auto-approve
         "GL-045":   ["2.1.3"],   # trust_remote_code model load = code exec
         "GL-046":   ["1.4.1", "3.1.5"],   # model pulled without a pinned revision
         "GL-047":   ["2.1.3"],   # unsafe pickle deser of fetched artifact = code exec

@@ -28,6 +28,20 @@ KIND_VSCODE_SETTINGS = "vscode_settings"
 KIND_DEVCONTAINER = "devcontainer"
 KIND_CLAUDE_SETTINGS = "claude_settings"
 KIND_MCP_CONFIG = "mcp_config"
+KIND_ZED_SETTINGS = "zed_settings"
+
+#: Config kinds that carry MCP server definitions the MCP rules
+#: (DEV-007 / DEV-009 / DEV-010) inspect. A dedicated ``.mcp.json`` /
+#: ``.cursor/mcp.json`` / ``.vscode/mcp.json`` is all MCP; Zed's
+#: ``.zed/settings.json`` mixes editor settings with a
+#: ``context_servers`` block, but the MCP rules only read the server
+#: blocks so the same helpers apply.
+MCP_KINDS: tuple[str, ...] = (KIND_MCP_CONFIG, KIND_ZED_SETTINGS)
+
+#: Top-level object keys under which the various clients declare MCP
+#: servers: ``mcpServers`` (Claude / Cursor), ``servers`` (VS Code),
+#: ``context_servers`` (Zed).
+MCP_SERVER_BLOCKS: tuple[str, ...] = ("mcpServers", "servers", "context_servers")
 
 #: devcontainer lifecycle keys that run inside the container on
 #: create / attach. ``initializeCommand`` is deliberately excluded:
@@ -156,6 +170,11 @@ def _kind_for(path: Path) -> str | None:
         return KIND_DEVCONTAINER
     if name in {"settings.json", "settings.local.json"} and parent == ".claude":
         return KIND_CLAUDE_SETTINGS
+    # Zed keeps its MCP servers under a ``context_servers`` block in the
+    # project-level ``.zed/settings.json`` (checked before the bare
+    # ``mcp.json`` names below since it shares the ``settings.json`` name).
+    if name == "settings.json" and parent == ".zed":
+        return KIND_ZED_SETTINGS
     # MCP server configs: Claude Code (``.mcp.json`` at the repo root),
     # Cursor (``.cursor/mcp.json``), VS Code (``.vscode/mcp.json``).
     if name == ".mcp.json":
@@ -178,6 +197,7 @@ def _discover(root: Path) -> list[Path]:
         root / ".mcp.json",
         root / ".cursor" / "mcp.json",
         root / ".vscode" / "mcp.json",
+        root / ".zed" / "settings.json",
     ]
     out.extend(p for p in candidates if p.is_file())
     # devcontainer supports a per-config subfolder layout:
@@ -371,6 +391,46 @@ def claude_command_hooks(data: dict[str, Any]) -> list[tuple[str, str]]:
     return out
 
 
+def iter_mcp_specs(data: dict[str, Any]) -> list[tuple[str, dict[str, Any]]]:
+    """Return ``(server_name, spec)`` for every MCP server in *data*.
+
+    Walks all three top-level block names (:data:`MCP_SERVER_BLOCKS`):
+    ``mcpServers`` (Claude / Cursor), ``servers`` (VS Code), and
+    ``context_servers`` (Zed). Non-object specs are dropped.
+    """
+    out: list[tuple[str, dict[str, Any]]] = []
+    for block_key in MCP_SERVER_BLOCKS:
+        block = data.get(block_key)
+        if not isinstance(block, dict):
+            continue
+        for name, spec in block.items():
+            if isinstance(spec, dict):
+                out.append((str(name), spec))
+    return out
+
+
+def _spec_command_and_args(spec: dict[str, Any]) -> tuple[str, list[str]] | None:
+    """Return ``(command, args)`` for a stdio spec, or ``None``.
+
+    Handles the flat shape (``command`` is a string, ``args`` a sibling
+    array) used by Claude / Cursor / VS Code, and Zed's nested shape
+    (``command`` is an object ``{path, args, env}``).
+    """
+    cmd = spec.get("command")
+    if isinstance(cmd, dict):  # Zed nested form
+        path = cmd.get("path")
+        if not isinstance(path, str) or not path.strip():
+            return None
+        raw_args = cmd.get("args")
+        args = [a for a in raw_args if isinstance(a, str)] if isinstance(raw_args, list) else []
+        return path, args
+    if isinstance(cmd, str) and cmd.strip():
+        raw_args = spec.get("args")
+        args = [a for a in raw_args if isinstance(a, str)] if isinstance(raw_args, list) else []
+        return cmd, args
+    return None
+
+
 def mcp_command_servers(data: dict[str, Any]) -> list[tuple[str, str]]:
     """Return ``(server_name, command_line)`` for every stdio MCP server.
 
@@ -378,28 +438,62 @@ def mcp_command_servers(data: dict[str, Any]) -> list[tuple[str, str]]:
     is a *stdio* server: the editor / agent launches that command as a
     local child process when the project opens. ``url``-only specs
     (``type: http`` / ``sse``) talk to a remote endpoint and don't spawn
-    a local process, so they are not returned.
+    a local process, so they are not returned (:func:`mcp_remote_servers`
+    covers those).
 
-    Both the Claude / Cursor (``mcpServers``) and VS Code (``servers``)
-    top-level block names are accepted.
+    All three block names (:data:`MCP_SERVER_BLOCKS`) are accepted, and
+    both the flat and Zed-nested ``command`` shapes are resolved.
     """
     out: list[tuple[str, str]] = []
-    for block_key in ("mcpServers", "servers"):
-        block = data.get(block_key)
-        if not isinstance(block, dict):
+    for name, spec in iter_mcp_specs(data):
+        resolved = _spec_command_and_args(spec)
+        if resolved is None:
             continue
-        for name, spec in block.items():
-            if not isinstance(spec, dict):
-                continue
-            cmd = spec.get("command")
-            if not isinstance(cmd, str) or not cmd.strip():
-                continue
-            parts = [cmd]
-            args = spec.get("args")
-            if isinstance(args, list):
-                parts.extend(a for a in args if isinstance(a, str))
-            out.append((str(name), " ".join(parts).strip()))
+        cmd, args = resolved
+        out.append((name, " ".join([cmd, *args]).strip()))
     return out
+
+
+def mcp_remote_servers(data: dict[str, Any]) -> list[tuple[str, str]]:
+    """Return ``(server_name, url)`` for every remote (url-bearing) MCP server.
+
+    A ``url``-bearing spec (``type: http`` / ``sse``, or a bare ``url``)
+    talks to a remote endpoint rather than spawning a local process.
+    DEV-007 skips these; DEV-009 inspects their transport.
+    """
+    out: list[tuple[str, str]] = []
+    for name, spec in iter_mcp_specs(data):
+        url = spec.get("url")
+        if isinstance(url, str) and url.strip():
+            out.append((name, url.strip()))
+    return out
+
+
+def mcp_blanket_auto_approvals(data: dict[str, Any]) -> list[tuple[str, str]]:
+    """Return ``(server_name, key)`` for servers that blanket auto-approve.
+
+    A *blanket* grant removes the human-in-the-loop confirmation for
+    every tool the server exposes: ``autoApprove: true`` / ``["*"]``
+    (Cursor / VS Code) or ``alwaysAllow: ["*"]`` (Cline). A specific
+    named-tool allow-list (``alwaysAllow: ["read_file"]``) is a scoped,
+    intentional grant and is deliberately not returned.
+    """
+    out: list[tuple[str, str]] = []
+    for name, spec in iter_mcp_specs(data):
+        for key in ("autoApprove", "alwaysAllow"):
+            if _is_blanket_approval(spec.get(key)):
+                out.append((name, key))
+                break
+    return out
+
+
+def _is_blanket_approval(value: Any) -> bool:
+    """True for ``True`` or a list containing a ``"*"`` wildcard."""
+    if value is True:
+        return True
+    if isinstance(value, list):
+        return any(isinstance(x, str) and x.strip() == "*" for x in value)
+    return False
 
 
 def line_of(raw: str, needle: str) -> int | None:

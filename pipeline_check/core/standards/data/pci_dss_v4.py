@@ -1123,6 +1123,8 @@ STANDARD = Standard(
         "DEV-001":   ["6.5.1"],
         "DEV-006":   ["6.5.1"],
         "DEV-007":   ["6.5.1"],   # committed MCP config auto-launches a command server
+        "DEV-009":   ["6.5.1"],   # remote MCP config over plaintext HTTP
+        "DEV-010":   ["6.5.1"],   # committed MCP config blanket tool auto-approve
         "DEV-002":   ["6.5.1"],
         "DEV-003":   ["6.5.1"],
         "DEV-004":   ["6.3.3", "6.5.1"],
