@@ -1097,6 +1097,8 @@ STANDARD = Standard(
         "DEV-001":   ["CICD-SEC-4"],                # vscode folderOpen task
         "DEV-006":   ["CICD-SEC-4"],                # vscode settings exec-path / env injection
         "DEV-007":   ["CICD-SEC-4"],                # committed MCP config auto-launches a command server
+        "DEV-009":   ["CICD-SEC-4"],   # remote MCP config over plaintext HTTP
+        "DEV-010":   ["CICD-SEC-4"],   # committed MCP config blanket tool auto-approve
         "DEV-002":   ["CICD-SEC-4"],                # devcontainer lifecycle
         "DEV-003":   ["CICD-SEC-4"],                # committed claude hook
         "DEV-004":   ["CICD-SEC-3", "CICD-SEC-4"],  # auto-run remote fetch+exec

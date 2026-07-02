@@ -1181,6 +1181,8 @@ STANDARD = Standard(
         "DEV-001":   ["PR.PS-05"],
         "DEV-006":   ["PR.PS-05"],
         "DEV-007":   ["PR.PS-05"],   # committed MCP config auto-launches a command server
+        "DEV-009":   ["PR.PS-05"],   # remote MCP config over plaintext HTTP
+        "DEV-010":   ["PR.PS-05"],   # committed MCP config blanket tool auto-approve
         "DEV-002":   ["PR.PS-05"],
         "DEV-003":   ["PR.PS-05"],
         "DEV-004":   ["PR.PS-05"],

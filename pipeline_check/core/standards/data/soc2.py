@@ -1149,6 +1149,8 @@ STANDARD = Standard(
         "DEV-001":   ["CC6.8"],
         "DEV-006":   ["CC6.8"],
         "DEV-007":   ["CC6.8"],   # committed MCP config auto-launches a command server
+        "DEV-009":   ["CC6.8"],   # remote MCP config over plaintext HTTP
+        "DEV-010":   ["CC6.8"],   # committed MCP config blanket tool auto-approve
         "DEV-002":   ["CC6.8"],
         "DEV-003":   ["CC6.8"],
         "DEV-004":   ["CC6.8"],

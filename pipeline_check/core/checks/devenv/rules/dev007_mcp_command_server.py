@@ -22,7 +22,7 @@ import re
 
 from ...base import Finding, Severity, summarize_offenders
 from ...rule import Rule
-from ..base import KIND_MCP_CONFIG, WorkspaceFile, location_for, mcp_command_servers
+from ..base import MCP_KINDS, WorkspaceFile, location_for, mcp_command_servers
 
 RULE = Rule(
     id="DEV-007",
@@ -43,14 +43,16 @@ RULE = Rule(
     ),
     docs_note=(
         "Fires when a committed MCP config (``.mcp.json``, "
-        "``.cursor/mcp.json``, ``.vscode/mcp.json``) defines a server with "
-        "a ``command`` (a stdio server the editor / agent launches as a "
-        "local process on project open). Both the ``mcpServers`` "
-        "(Claude / Cursor) and ``servers`` (VS Code) block names are read. "
+        "``.cursor/mcp.json``, ``.vscode/mcp.json``, or Zed's "
+        "``.zed/settings.json``) defines a server with a ``command`` (a "
+        "stdio server the editor / agent launches as a local process on "
+        "project open). The ``mcpServers`` (Claude / Cursor), ``servers`` "
+        "(VS Code), and ``context_servers`` (Zed) block names are all read. "
         "``url``-only servers (``type: http`` / ``sse``) don't spawn a "
-        "local process and don't fire. Commands that fetch an unpinned "
-        "remote package (``npx -y`` / ``uvx`` / ``pnpm dlx`` / ``bunx`` / "
-        "``pipx run``) are called out as the sharpest case."
+        "local process and don't fire here (DEV-009 checks their "
+        "transport). Commands that fetch an unpinned remote package "
+        "(``npx -y`` / ``uvx`` / ``pnpm dlx`` / ``bunx`` / ``pipx run``) "
+        "are called out as the sharpest case."
     ),
     known_fp=(
         "A first-party MCP server invoked from a checked-in, reviewed "
@@ -69,7 +71,7 @@ _REMOTE_RUNNER_RE = re.compile(
 
 
 def check(path: str, wf: WorkspaceFile) -> Finding:
-    if wf.kind != KIND_MCP_CONFIG:
+    if wf.kind not in MCP_KINDS:
         return RULE.finding(
             path, "Not an MCP server config.", passed=True,
         )

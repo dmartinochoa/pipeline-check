@@ -14,6 +14,7 @@ from pipeline_check.core.checks.devenv.base import (
     KIND_MCP_CONFIG,
     KIND_VSCODE_SETTINGS,
     KIND_VSCODE_TASKS,
+    KIND_ZED_SETTINGS,
     DevEnvContext,
     WorkspaceFile,
     loads_jsonc,
@@ -26,6 +27,7 @@ _DEFAULT_PATH = {
     KIND_DEVCONTAINER: ".devcontainer/devcontainer.json",
     KIND_CLAUDE_SETTINGS: ".claude/settings.json",
     KIND_MCP_CONFIG: ".mcp.json",
+    KIND_ZED_SETTINGS: ".zed/settings.json",
 }
 
 
