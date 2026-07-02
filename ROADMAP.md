@@ -720,6 +720,118 @@ is summarized in the ``### Fixed`` block in ``CHANGELOG.md``.
 Larger items not yet scoped to a specific release. Landing order
 is open.
 
+### Competitive-landscape sweep (2026-07-02)
+
+A fresh pass over the CI/CD-security and supply-chain tooling market
+(zizmor, poutine, octoscan, Raven, Cisco MCP Scanner, StepSecurity,
+OSV-Scanner V2, ModelScan / ModelAudit, Legitify / Allstar) plus
+GitHub's own published 2026 security roadmap. The read confirms the
+existing thesis: net-new static rules are diminishing returns, and the
+open frontier is the AI-pipeline surface plus converting breadth into
+adoption-posture and product. Two market shifts are new since the
+2026-06-08 investigation and drive the items below: (1) GitHub is now
+shipping native pipeline-security controls, so the scanner's job is
+shifting from "find the missing control" to "verify the native control
+is on and enforced"; (2) MCP servers have become a named supply-chain
+risk with dedicated scanners (Cisco, poutine), which the tool's existing
+DEV-007 / modelfile work is one rule short of leading on. Effort (S/M/L)
+and impact noted. None of these duplicate a candidate below; where one
+extends an existing thread it says so.
+
+**Own the AI-pipeline surface (the clean category-leadership play):**
+
+- **MCP-server configuration security pack (M, very high, timing).** The
+  concrete build-out of the "MCP-config beyond DEV-007" NEXT option, now
+  matched to the market: Cisco shipped an open-source MCP Scanner, poutine
+  added an MCP surface, and MCP servers are a named supply-chain risk
+  (tool-poisoning, rug-pull). DEV-007 already flags a committed MCP config
+  that auto-launches a *command* (stdio) server and calls out unpinned
+  ``npx -y`` / ``uvx`` runners, but by design it skips remote servers and
+  does not read tool-grant breadth. New rules extending the devenv / MCP
+  area: a remote MCP server bound over plaintext ``http://`` or from an
+  unpinned / untrusted origin (``type: http`` / ``sse``, the rug-pull
+  surface DEV-007 deliberately passes on); an MCP config that blanket
+  auto-approves a server's tools (``autoApprove`` / ``alwaysAllow`` and the
+  Cursor / Cline / Windsurf equivalents), so the agent runs those tools
+  with no confirmation; plaintext credentials handed to an MCP server via
+  its ``env:`` block (only if DEV-008's literal-secret pass does not
+  already reach the MCP ``env`` path); and broadened config surfaces
+  (``.continue``, Windsurf, Cline, Zed) past the three DEV-007 reads. Clean
+  static-config work, category-leading, rides a live threat. Strongest
+  single new item.
+- **Committed unsafe-serialization model artifact (S-M, med).** The
+  poisoned-model threat that PickleScan / ModelScan / ModelAudit chase
+  (roughly 45% of Hugging Face repos still ship pickle weights, and
+  PickleScan itself picked up bypass CVEs in 2025). Extend the
+  ``modelfile`` provider past its ``FROM`` / ``ADAPTER`` declaration scope
+  to flag a committed model-weight file in a code-carrying format anywhere
+  in the tree (``.pkl`` / ``.pickle`` / ``.pt`` / ``.pth`` / ``.bin`` /
+  ``.h5`` / ``.keras`` / ``.joblib`` / ``.dill``), recommend safetensors /
+  GGUF, and name the load-time arbitrary-code risk. Deliberately a
+  format / provenance check (the axis MODEL-003 and the OCI-manifest rules
+  already use), not pickle-opcode disassembly. Deep opcode scanning stays
+  out of scope on the same boundary as "no CVE layer scanning": ModelScan
+  and ModelAudit own that, the way Trivy owns image CVEs.
+- **``analyze_manifest`` pre-commit MCP tool (S, med).** poutine's MCP
+  surface exposes an ``analyze_manifest`` tool so an AI coding assistant
+  validates the pipeline YAML it just generated before the human commits
+  it. The tool's own MCP ``scan`` needs a file path. Add a companion tool
+  that scans a raw pipeline snippet passed as text (provider hinted or
+  auto-detected via ``core/detect.py``) and returns findings plus fix
+  suggestions, making pipeline-check the guardrail on AI-generated
+  pipelines. Tiny lift on the existing ``mcp_server/tools.py``, squarely on
+  the "own the AI surface" theme.
+
+**Verify the platform's native controls are on (adoption posture):**
+
+- **Native platform-control adoption posture (M, high).** GitHub is
+  shipping native pipeline-security controls through 2025-2026: an Actions
+  policy that blocks actions and enforces SHA pinning (2025-08), immutable
+  releases plus release attestations (public preview 2025-08), org-level
+  artifact-attestation policies and a Kubernetes admission controller, and
+  a published 2026 roadmap of workflow dependency locking, a native egress
+  firewall, and execution-policy rulesets. As the platform hardens, the
+  highest-value check is no longer "you should sign / pin / gate" but "the
+  native control exists and is enforced." New API-driven posture checks on
+  the SCM / ORG providers: immutable releases not enabled on a repo; the
+  latest release carries no release attestation; the org has no Actions
+  SHA-pinning policy or execution-policy ruleset; no native egress firewall
+  policy (the platform-native complement to the harden-runner GHA-107 /
+  GHA-108 egress signals). Rides GitHub's own announcements, maps cleanly
+  to the existing compliance frameworks, needs no engine change. Extends
+  the SCM / ORG governance pack. The workflow-dependency-locking piece is
+  already reserved by the "GitHub Actions dependency locking support"
+  candidate below; this is the rest of the 2026 control set.
+- **OpenVEX ingest and emit (M, med).** The SCA world is converging on VEX
+  (OSV-Scanner V2, Trivy, and Sigstore all ship OpenVEX / CSAF). The tool
+  already emits OSV-backed advisory findings (NPM-010 / PYPI-009 /
+  MVN-009 / NUGET-009) and CycloneDX + SPDX SBOMs. Add: consume an OpenVEX
+  document to suppress the advisory findings a maintainer has marked
+  ``not_affected`` / ``fixed`` (a governance escape hatch scoped to the
+  CVE-shaped subset, not the misconfig findings), and emit an OpenVEX
+  statement for the tool's own advisory findings so a downstream consumer
+  can carry the same exchange. Slots into the existing reporter / SBOM
+  plumbing. Value is scoped to the OSV subset, so it is a smaller bet than
+  it first looks.
+
+**Credibility:**
+
+- **Answer the academic scanner comparison (S, low).** A January 2026
+  arXiv paper, "Unpacking Security Scanners for GitHub Actions Workflows"
+  (arXiv:2601.14455), benchmarks the GHA scanners academically. Read its
+  corpus and methodology against the cicd-goat matrix, fold any genuine
+  gap it surfaces into the rule pack, and cite it in ``docs/comparison.md``
+  for external credibility. Complements the already-open "broader
+  cross-scanner comparison benchmark" candidate rather than replacing it.
+
+Sources for this sweep (verify before acting, tools move fast):
+GitHub 2026 security roadmap and the Actions-policy / immutable-releases
+changelog entries (github.blog); Cisco MCP Scanner (blogs.cisco.com) and
+poutine MCP (org.boostsecurity.io); OSV-Scanner V2 (blog.google);
+ModelScan (protectai/modelscan) and the PickleScan bypass CVEs
+(jfrog.com); zizmor audits (docs.zizmor.sh); Legitify / Allstar / OpenSSF
+Scorecard (openssf.org).
+
 ### Strategic improvement investigation (2026-06-08)
 
 A multi-angle investigation (feature / competitive gaps, architecture,
