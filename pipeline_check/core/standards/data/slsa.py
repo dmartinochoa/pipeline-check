@@ -596,6 +596,7 @@ STANDARD = Standard(
         "MODEL-001": ["Build.L3.NonFalsifiable"],                  # unpinned base model
         "MODEL-002": ["Build.L3.NonFalsifiable"],                  # third-party hub base model
         "MODEL-003": ["Build.L3.NonFalsifiable"],                  # local unverified weights blob
+        "MODEL-006": ["Build.L3.NonFalsifiable"],                  # committed unsafe-serialization model artifact
         "MODEL-004": ["Build.L3.NonFalsifiable"],                  # remote LoRA adapter
         "MODEL-005": ["Build.L3.NonFalsifiable"],                  # config auto_map = custom loader code
         "DF-031": ["Build.L3.NonFalsifiable"],                     # COPY --from external image not digest-pinned

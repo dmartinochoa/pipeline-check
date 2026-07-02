@@ -381,6 +381,7 @@ STANDARD = Standard(
         "MODEL-001": ["ING-1", "UPD-1"],  # unpinned base model
         "MODEL-002": ["ING-1", "UPD-1"],  # third-party hub base model
         "MODEL-003": ["ING-1", "UPD-1"],  # local unverified weights blob
+        "MODEL-006": ["ING-1", "UPD-1"],  # committed unsafe-serialization model artifact
         "MODEL-004": ["ING-1", "UPD-1"],  # remote LoRA adapter
         "MODEL-005": ["ING-1", "UPD-1"],  # config auto_map = custom loader code
         "DF-031":  ["ING-1", "UPD-1"],   # COPY --from external image not digest-pinned

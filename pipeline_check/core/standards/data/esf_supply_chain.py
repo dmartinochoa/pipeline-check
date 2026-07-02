@@ -398,6 +398,7 @@ STANDARD = Standard(
         "MODEL-001": ["ESF-S-PIN-DEPS", "ESF-S-VERIFY-DEPS"],      # unpinned base model
         "MODEL-002": ["ESF-S-TRUSTED-REG", "ESF-S-VERIFY-DEPS"],   # third-party hub base model
         "MODEL-003": ["ESF-S-VERIFY-DEPS"],                        # local unverified weights blob
+        "MODEL-006": ["ESF-S-VERIFY-DEPS"],                        # committed unsafe-serialization model artifact
         "MODEL-004": ["ESF-S-PIN-DEPS", "ESF-S-VERIFY-DEPS"],      # remote LoRA adapter
         "MODEL-005": ["ESF-S-VERIFY-DEPS"],                        # config auto_map = custom loader code
         "DF-031": ["ESF-S-PIN-DEPS", "ESF-S-VERIFY-DEPS"],         # COPY --from external image not digest-pinned

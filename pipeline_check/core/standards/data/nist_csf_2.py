@@ -471,6 +471,7 @@ STANDARD = Standard(
         "MODEL-001": ["GV.SC-05"],              # unpinned base model
         "MODEL-002": ["GV.SC-05"],              # third-party hub base model
         "MODEL-003": ["GV.SC-05"],              # local unverified weights blob
+        "MODEL-006": ["GV.SC-05"],              # committed unsafe-serialization model artifact
         "MODEL-004": ["GV.SC-05"],              # remote LoRA adapter
         "MODEL-005": ["GV.SC-05"],              # config auto_map = custom loader code
         "DF-031": ["GV.SC-05"],                 # COPY --from external image not digest-pinned
