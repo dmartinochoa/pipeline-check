@@ -7,6 +7,7 @@ from pipeline_check.core.checks._primitives import tls_bypass
 from pipeline_check.core.checks.azure.rules import ado001_task_pinning as ado001
 from pipeline_check.core.checks.azure.rules import ado002_script_injection as ado002
 from pipeline_check.core.checks.azure.rules import ado003_literal_secrets as ado003
+from pipeline_check.core.checks.azure.rules import ado012_cache_pr_input as ado012
 from pipeline_check.core.checks.azure.rules import ado013_self_hosted_ephemeral as ado013
 from pipeline_check.core.checks.azure.rules import ado027_shell_eval as ado027
 from pipeline_check.core.checks.azure.rules import ado030_pool_injection as ado030
@@ -425,3 +426,21 @@ class TestADO003SecretEscalation:
         assert f.passed is False
         assert "1 variable(s)" in f.description
         assert f.description.count("DB_PASSWORD") == 1
+
+
+class TestADO012NumericCacheKey:
+    def test_numeric_key_does_not_crash(self):
+        # A numeric ``key:`` / ``restoreKeys:`` (e.g. ``key: 2024``) used to
+        # crash on ``"\n".join(... for v in <int>)``; a scalar key can't
+        # carry a PR-controlled expression, so the step must pass.
+        doc = yaml.safe_load(
+            "jobs:\n"
+            "  - job: build\n"
+            "    steps:\n"
+            "      - task: Cache@2\n"
+            "        inputs:\n"
+            "          key: 2024\n"
+            "          restoreKeys: 2023\n"
+        )
+        f = ado012.check("azure-pipelines.yml", doc)
+        assert f.check_id == "ADO-012" and f.passed is True

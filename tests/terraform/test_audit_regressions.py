@@ -11,8 +11,12 @@ import json
 
 from pipeline_check.core.checks._iam_policy import is_oidc_trust_stmt
 from pipeline_check.core.checks.terraform.base import TerraformContext
+from pipeline_check.core.checks.terraform.codebuild import _cb004_timeout
+from pipeline_check.core.checks.terraform.ecr import _ecr003_public_policy
 from pipeline_check.core.checks.terraform.iam import IAMChecks
 from pipeline_check.core.checks.terraform.rules import iam001_admin_access as iam001
+from pipeline_check.core.checks.terraform.s3 import _s3005_secure_transport
+from pipeline_check.core.checks.terraform.services import _lambda
 
 _ADMIN = "arn:aws:iam::aws:policy/AdministratorAccess"
 
@@ -86,3 +90,59 @@ class TestIsOidcTrustStmtStringPrincipal:
             "Federated": "arn:aws:iam::123456789012:oidc-provider/"
             "token.actions.githubusercontent.com"}})
         assert host == "token.actions.githubusercontent.com"
+
+
+class TestScalarPolicyAndBlockCrashes:
+    """Policy documents and nested blocks can arrive in scalar / single-dict
+    / unresolved-reference forms that used to raise and (via the per-rule
+    guard) silently drop the finding.
+    """
+
+    def test_s3005_single_dict_deny_recognized(self):
+        # A bucket policy authored with a single-dict Statement (not a
+        # list) that denies non-TLS requests must be credited, not crash.
+        doc = json.dumps({"Statement": {
+            "Effect": "Deny", "Principal": "*", "Action": "s3:*",
+            "Resource": "*",
+            "Condition": {"Bool": {"aws:SecureTransport": "false"}}}})
+        assert _s3005_secure_transport({"bucket": "b", "policy": doc}, "b").passed
+
+    def test_s3005_non_object_policy_does_not_crash(self):
+        assert _s3005_secure_transport(
+            {"bucket": "b", "policy": "[1,2,3]"}, "b").passed is False
+
+    def test_ecr003_single_dict_public_detected(self):
+        doc = json.dumps({"Statement": {
+            "Effect": "Allow", "Principal": "*", "Action": "ecr:*"}})
+        assert _ecr003_public_policy(doc, "r").passed is False
+
+    def test_ecr003_non_object_policy_does_not_crash(self):
+        assert _ecr003_public_policy("[1,2]", "r").passed is True
+
+    def test_lmb003_string_variables_does_not_crash(self):
+        # environment.variables can be an unresolved HCL reference (string)
+        # in plan mode; the check must treat it as no variables, not iterate.
+        plan = _plan([{
+            "address": "aws_lambda_function.fn", "mode": "managed",
+            "type": "aws_lambda_function", "name": "fn",
+            "values": {"function_name": "fn",
+                       "environment": {"variables": "${local.envmap}"}}}])
+        lmb003 = [f for f in _lambda(TerraformContext(plan))
+                  if f.check_id == "LMB-003"]
+        assert lmb003 and lmb003[0].passed is True
+
+    def test_cb004_string_timeout_does_not_crash(self):
+        # build_timeout as an unresolved reference string must not raise on
+        # a ``str < int`` comparison; it degrades to "unknown / not set".
+        f = _cb004_timeout({"build_timeout": "${var.t}"}, "aws_codebuild_project.p")
+        assert f.check_id == "CB-004" and f.passed is False
+
+    def test_cb004_numeric_string_parsed(self):
+        f = _cb004_timeout({"build_timeout": "60"}, "aws_codebuild_project.p")
+        assert f.passed is True
+
+    def test_cb004_integer_still_works(self):
+        assert _cb004_timeout(
+            {"build_timeout": 60}, "aws_codebuild_project.p").passed is True
+        assert _cb004_timeout(
+            {"build_timeout": 600}, "aws_codebuild_project.p").passed is False

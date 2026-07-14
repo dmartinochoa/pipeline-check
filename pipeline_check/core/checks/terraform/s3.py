@@ -11,6 +11,7 @@ from __future__ import annotations
 import json
 from typing import Any
 
+from .._iam_policy import iter_statements
 from ..base import Finding, Severity
 from .base import TerraformBaseCheck
 
@@ -182,9 +183,11 @@ def _s3005_secure_transport(values: dict[str, Any] | None, bucket: str) -> Findi
         doc = json.loads(policy_text) if isinstance(policy_text, str) else policy_text
     except (TypeError, json.JSONDecodeError):
         doc = {}
+    if not isinstance(doc, dict):
+        doc = {}
 
     has_deny = False
-    for stmt in doc.get("Statement", []):
+    for stmt in iter_statements(doc):
         if stmt.get("Effect") != "Deny":
             continue
         conditions = stmt.get("Condition", {}) or {}

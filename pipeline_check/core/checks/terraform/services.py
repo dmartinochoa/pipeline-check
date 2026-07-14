@@ -217,7 +217,11 @@ def _lambda(ctx: TerraformContext) -> list[Finding]:
             recommendation="Set code_signing_config_arn on every function that deploys release artifacts.",
             passed=bool(signing),
         ))
-        env_vars = (_first_map(fn.values.get("environment"))).get("variables", {}) or {}
+        env_vars = _first_map(fn.values.get("environment")).get("variables")
+        if not isinstance(env_vars, dict):
+            # ``variables`` can be an unresolved HCL reference (a string) in
+            # plan mode; treat anything that isn't a map as no variables.
+            env_vars = {}
         suspicious = [k for k in env_vars if isinstance(k, str) and SECRET_NAME_RE.search(k)]
         suspicious += [k for k, v in env_vars.items()
                        if isinstance(v, str) and SECRET_VALUE_RE.match(v) and k not in suspicious]

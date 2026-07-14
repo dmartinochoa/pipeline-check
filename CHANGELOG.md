@@ -59,6 +59,20 @@ release commit collapses this section into `## [X.Y.Z] - <date>`.
   shared `iter_statements` and type-guard `Principal`, so the rules
   evaluate these shapes instead of silently passing them. Found by the
   2026-07 rule audit.
+- **More scalar-shape crash-degrades fixed across the file-based
+  providers.** Same class as above: a value the format allows to be a
+  scalar, list, `null`, or unresolved plan-time reference reached a `.get`
+  that assumed a mapping, so the rule crashed and (via the per-rule guard)
+  degraded to a silent pass. Fixed Terraform `S3-005` (single-dict /
+  non-object bucket policy), `ECR-003` (single-dict / top-level-list repo
+  policy), `LMB-003` (`environment.variables` as an unresolved reference),
+  and `CB-004` (`build_timeout` as a reference string, which also corrects
+  the unset-timeout description); CloudFormation `ECR-005` and
+  `S3-001..004` (a nested config block authored as a bare scalar, via a new
+  shared `as_map` helper); Azure `ADO-012` (numeric `key:` / `restoreKeys:`);
+  Argo CD `ARGOCD-019` (ApplicationSet `spec` authored as a YAML list); and
+  Bitbucket `BB-005` (non-mapping `options:`). Found by the 2026-07 rule
+  audit.
 
 ### Changed
 

@@ -546,3 +546,37 @@ class TestIAM008StringPrincipalTrust:
                 "Action": "sts:AssumeRoleWithWebIdentity"}]}})})
         f = [x for x in iam008.check(ctx) if x.check_id == "IAM-008"]
         assert f and f[0].passed is False
+
+
+class TestScalarNestedBlockCrashes:
+    """A nested property block authored as a truthy scalar (e.g.
+    ``VersioningConfiguration: Enabled``) used to raise ``AttributeError``
+    on ``.get`` and, via the per-rule guard, drop the finding. The blocks
+    now normalize through ``as_map`` and degrade to "block absent".
+    """
+
+    def test_ecr005_scalar_encryption_config(self):
+        from pipeline_check.core.checks.cloudformation.ecr import (
+            _ecr005_kms_encryption,
+        )
+        assert _ecr005_kms_encryption(
+            {"EncryptionConfiguration": "KMS"}, "r").passed is False
+        # Regression: a proper KMS block is still credited.
+        assert _ecr005_kms_encryption({"EncryptionConfiguration": {
+            "EncryptionType": "KMS", "KmsKey": "arn:aws:kms:...:key/x"}},
+            "r").passed is True
+
+    def test_s3_scalar_blocks_do_not_crash(self):
+        from pipeline_check.core.checks.cloudformation.s3 import (
+            _s3001_pab,
+            _s3002_encryption,
+            _s3003_versioning,
+            _s3004_logging,
+        )
+        assert _s3001_pab({"PublicAccessBlockConfiguration": True}, "b").passed is False
+        assert _s3002_encryption({"BucketEncryption": "AES256"}, "b").passed is False
+        assert _s3003_versioning({"VersioningConfiguration": "Enabled"}, "b").passed is False
+        assert _s3004_logging({"LoggingConfiguration": "on"}, "b").passed is False
+        # Regression: proper nested dicts still evaluate.
+        assert _s3003_versioning(
+            {"VersioningConfiguration": {"Status": "Enabled"}}, "b").passed is True
