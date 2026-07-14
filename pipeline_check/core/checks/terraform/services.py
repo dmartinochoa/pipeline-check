@@ -10,7 +10,12 @@ from __future__ import annotations
 import json
 from typing import Any
 
-from .._iam_policy import as_list, iter_allow, public_principal
+from .._iam_policy import (
+    as_list,
+    iter_allow,
+    principal_is_only_account_root,
+    public_principal,
+)
 from .._patterns import SECRET_NAME_RE, SECRET_VALUE_RE
 from ..base import Finding, Severity
 from .base import TerraformBaseCheck, TerraformContext
@@ -310,6 +315,11 @@ def _kms(ctx: TerraformContext) -> list[Finding]:
         doc = _parse_policy(key.values.get("policy"))
         offenders: list[str] = []
         for stmt in iter_allow(doc):
+            # The AWS default key policy grants kms:* to the account root
+            # so IAM policies can govern access; that baseline is not a
+            # finding (the rule's own exploit_example labels it "Safe").
+            if principal_is_only_account_root(stmt):
+                continue
             actions = as_list(stmt.get("Action"))
             if any(a in ("*", "kms:*") for a in actions if isinstance(a, str)):
                 offenders.append(stmt.get("Sid") or "<unsid>")

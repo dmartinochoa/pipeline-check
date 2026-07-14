@@ -111,7 +111,10 @@ def test_kms001_no_rotation_fails():
 
 
 def test_kms002_wildcard_fails():
-    doc = json.dumps({"Statement": [{"Effect": "Allow", "Principal": {"AWS": "arn:aws:iam::1:root"}, "Action": "kms:*"}]})
+    # A wildcard grant to a non-root (CI) principal is the real finding.
+    # The account-root grant (arn:...:root) is the AWS default baseline and
+    # is exempt (see TestKMS002AccountRootBaseline in test_audit_regressions).
+    doc = json.dumps({"Statement": [{"Effect": "Allow", "Principal": {"AWS": "arn:aws:iam::1:role/ci"}, "Action": "kms:*"}]})
     k = _r("aws_kms_key.k", "aws_kms_key", "k", {"enable_key_rotation": True, "policy": doc})
     f = next(x for x in _run([k]) if x.check_id == "KMS-002")
     assert not f.passed

@@ -146,3 +146,33 @@ class TestScalarPolicyAndBlockCrashes:
             {"build_timeout": 60}, "aws_codebuild_project.p").passed is True
         assert _cb004_timeout(
             {"build_timeout": 600}, "aws_codebuild_project.p").passed is False
+
+
+class TestKMS002AccountRootBaseline:
+    """A4: terraform KMS-002 flagged the AWS-documented default key policy
+    (``kms:*`` to the account root); the rule's own exploit_example labels
+    that shape "Safe"."""
+
+    def _kms002(self, policy):
+        from pipeline_check.core.checks.terraform.services import _kms
+        plan = _plan([{
+            "address": "aws_kms_key.k", "mode": "managed",
+            "type": "aws_kms_key", "name": "k",
+            "values": {"customer_master_key_spec": "SYMMETRIC_DEFAULT",
+                       "policy": json.dumps(policy)}}])
+        f = [x for x in _kms(TerraformContext(plan)) if x.check_id == "KMS-002"]
+        return f[0]
+
+    def test_account_root_passes(self):
+        pol = {"Statement": [{
+            "Sid": "Enable IAM User Permissions", "Effect": "Allow",
+            "Principal": {"AWS": "arn:aws:iam::111122223333:root"},
+            "Action": "kms:*", "Resource": "*"}]}
+        assert self._kms002(pol).passed is True
+
+    def test_non_root_wildcard_fires(self):
+        pol = {"Statement": [{
+            "Sid": "CI", "Effect": "Allow",
+            "Principal": {"AWS": "arn:aws:iam::111122223333:role/CI"},
+            "Action": "kms:*", "Resource": "*"}]}
+        assert self._kms002(pol).passed is False

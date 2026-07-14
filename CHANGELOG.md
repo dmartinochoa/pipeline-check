@@ -73,6 +73,29 @@ release commit collapses this section into `## [X.Y.Z] - <date>`.
   Argo CD `ARGOCD-019` (ApplicationSet `spec` authored as a YAML list); and
   Bitbucket `BB-005` (non-mapping `options:`). Found by the 2026-07 rule
   audit.
+- **`pip install -U` is detected again (`GHA-022`, `GL-022`, and the
+  BB/ADO/CC clones).** `DEP_UPDATE_RE` matched a case-sensitive `-U`, but
+  the rules scan a lowercased command blob where it has become `-u`, so the
+  common short form of `pip install --upgrade` was never flagged (dead
+  code). The pattern (and the tooling-exemption pattern, so `pip install -U
+  pip` stays exempt) now matches `-[uU]`.
+- **`KMS-002` no longer flags the AWS default key policy (aws + Terraform).**
+  The check reported the `kms:*`-to-account-root "Enable IAM User
+  Permissions" statement that AWS creates on essentially every
+  customer-managed key. A new shared `principal_is_only_account_root`
+  helper exempts the root baseline (a role ARN ending in `:role/root` is
+  not treated as root); a wildcard grant to any non-root principal still
+  fires. CloudFormation already handled this.
+- **Jenkins shell rules now scan the `sh(script: "...")` named-argument
+  form.** The shared `SHELL_STEP_RE` only matched a body immediately after
+  the step keyword, so `sh(script: "...")`, `sh label: 'x', script: "..."`,
+  and `sh(returnStdout: true, script: "...")` (the mainstream way to write
+  a step that returns stdout) escaped `JF-002` / `JF-030` / `JF-036` /
+  `JF-037` and the model/AI shell rules. The regex also gained word
+  boundaries so a token merely ending in `sh` (`publish`, `finish`) is no
+  longer read as a shell step. Azure `ADO-027` gained the analogous fix,
+  reading the explicit-task form (`task: Bash@3` / `CmdLine@2` /
+  `PowerShell@2` with `inputs.script`). Found by the 2026-07 rule audit.
 
 ### Changed
 

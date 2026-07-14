@@ -518,7 +518,7 @@ PKG_NO_LOCKFILE_RE = _re.compile(
 
 #: Dependency-update commands that bypass lockfile pins.
 DEP_UPDATE_RE = _re.compile(
-    r"\bpip3?\s+install\s+[^\n]*(?:--upgrade|-U)\b"
+    r"\bpip3?\s+install\s+[^\n]*(?:--upgrade|-[uU])\b"
     r"|\bnpm\s+update\b"
     r"|\byarn\s+upgrade\b"
     r"|\bbundle\s+update\b"
@@ -547,7 +547,7 @@ DEP_UPDATE_RE = _re.compile(
 #:     These upgrade the build toolchain, not the shipped artifact.
 _DEP_UPDATE_TOOL_EXEMPT_RE = _re.compile(
     r"\bpip3?\s+install\s+(?:"
-    r"(?:--upgrade|-U)\s+(?:pip|setuptools|wheel|virtualenv|build"
+    r"(?:--upgrade|-[uU])\s+(?:pip|setuptools|wheel|virtualenv|build"
     r"|pip-audit|cyclonedx-bom|cyclonedx-py|safety|bandit|semgrep|ruff|mypy"
     r"|poetry|pipx|uv|twine|flit|hatch|black|isort|flake8|pylint"
     r"|pytest|tox|nox|pre-commit|commitizen)\b"
@@ -555,7 +555,7 @@ _DEP_UPDATE_TOOL_EXEMPT_RE = _re.compile(
     r"|pip-audit|cyclonedx-bom|cyclonedx-py|safety|bandit|semgrep|ruff|mypy"
     r"|poetry|pipx|uv|twine|flit|hatch|black|isort|flake8|pylint"
     r"|pytest|tox|nox|pre-commit|commitizen)"
-    r"\s+(?:--upgrade|-U))"
+    r"\s+(?:--upgrade|-[uU]))"
     # npm/yarn global installs of the package manager itself or CLI tools.
     r"|\bnpm\s+(?:install|i)\s+(?:-g|--global)\s+npm\b"
     r"|\bnpm\s+(?:install|i)\s+(?:-g|--global)\s+(?:yarn|pnpm|corepack)\b"

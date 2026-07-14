@@ -444,3 +444,28 @@ class TestADO012NumericCacheKey:
         )
         f = ado012.check("azure-pipelines.yml", doc)
         assert f.check_id == "ADO-012" and f.passed is True
+
+
+class TestADO027ExplicitTaskForm:
+    """A3: ADO-027 only read shortcut keys (script/bash/powershell/pwsh),
+    missing the explicit-task form (``task: Bash@3`` with
+    ``inputs.script``), a mainstream ADO authoring style."""
+
+    def test_bash_task_inline_eval_fires(self):
+        doc = yaml.safe_load(
+            "steps:\n"
+            "  - task: Bash@3\n"
+            "    inputs:\n"
+            "      targetType: inline\n"
+            "      script: 'eval \"$USERINPUT\"'\n"
+        )
+        assert ado027.check("azure-pipelines.yml", doc).passed is False
+
+    def test_benign_bash_task_passes(self):
+        doc = yaml.safe_load(
+            "steps:\n"
+            "  - task: Bash@3\n"
+            "    inputs:\n"
+            "      script: 'make build'\n"
+        )
+        assert ado027.check("azure-pipelines.yml", doc).passed is True

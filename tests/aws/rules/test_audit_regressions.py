@@ -829,3 +829,42 @@ class TestEB001PipelineFailureRule:
     def test_no_pipeline_rule_fires(self):
         cat = _catalog(eventbridge_rules=[])
         assert eb001.check(cat)[0].passed is False
+
+
+class TestKMS002AccountRootBaseline:
+    """A4: KMS-002 flagged the AWS default key policy (``kms:*`` to the
+    account root) on essentially every CMK; ``_wildcard_kms`` ignored the
+    principal. The account-root baseline must pass; a non-root wildcard
+    grant must still fire."""
+
+    def test_account_root_wildcard_passes(self):
+        from pipeline_check.core.checks.aws.rules.kms002_policy_wildcard import (
+            _wildcard_kms,
+        )
+        doc = {"Statement": [{
+            "Sid": "Enable IAM User Permissions", "Effect": "Allow",
+            "Principal": {"AWS": "arn:aws:iam::111122223333:root"},
+            "Action": "kms:*", "Resource": "*"}]}
+        assert _wildcard_kms(doc) == []
+
+    def test_non_root_wildcard_still_fires(self):
+        from pipeline_check.core.checks.aws.rules.kms002_policy_wildcard import (
+            _wildcard_kms,
+        )
+        doc = {"Statement": [{
+            "Sid": "CI", "Effect": "Allow",
+            "Principal": {"AWS": "arn:aws:iam::111122223333:role/CI"},
+            "Action": "kms:*", "Resource": "*"}]}
+        assert _wildcard_kms(doc) == ["CI"]
+
+    def test_role_named_root_not_exempted(self):
+        # A role ARN ending in ``:role/root`` ends with ``/root``, not
+        # ``:root``, so it must NOT be treated as the account root.
+        from pipeline_check.core.checks.aws.rules.kms002_policy_wildcard import (
+            _wildcard_kms,
+        )
+        doc = {"Statement": [{
+            "Sid": "X", "Effect": "Allow",
+            "Principal": {"AWS": "arn:aws:iam::111122223333:role/root"},
+            "Action": "kms:*", "Resource": "*"}]}
+        assert _wildcard_kms(doc) == ["X"]

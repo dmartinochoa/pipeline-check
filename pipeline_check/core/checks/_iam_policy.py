@@ -222,6 +222,25 @@ def oidc_subject_pinned(stmt: dict[str, Any]) -> bool:
     return False
 
 
+def principal_is_only_account_root(stmt: dict[str, Any]) -> bool:
+    """Return True when *stmt*'s principal is exclusively the account root
+    (``arn:*:iam::<acct>:root``).
+
+    The default / AWS-recommended KMS key policy grants ``kms:*`` to the
+    account root so IAM policies can govern key access. That baseline
+    statement is not an over-broad grant, so wildcard-action checks
+    (KMS-002) must skip it. A role whose ARN ends in ``:role/root`` does
+    not match (it ends with ``/root``, not ``:root``).
+    """
+    principal = stmt.get("Principal")
+    if not isinstance(principal, dict) or set(principal) - {"AWS"}:
+        return False
+    values = as_list(principal.get("AWS"))
+    if not values:
+        return False
+    return all(isinstance(v, str) and v.endswith(":root") for v in values)
+
+
 def public_principal(stmt: dict[str, Any]) -> bool:
     """Return True when *stmt* grants access to an anonymous / wildcard principal."""
     if stmt.get("Effect") != "Allow":
