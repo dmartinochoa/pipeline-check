@@ -45,7 +45,20 @@ release commit collapses this section into `## [X.Y.Z] - <date>`.
   Claude / Cursor / VS Code / Zed. The devenv loader gained a YAML path
   (via the repo's duplicate-key-rejecting loader) for these files.
 
-## [1.17.0] - 2026-06-16
+### Fixed
+
+- **Terraform / CloudFormation IAM checks no longer crash-degrade to a
+  silent pass on scalar policy shapes.** An `aws_iam_role` whose trust
+  policy is authored with a single-dict `Statement` (not a list) or a
+  bare string `Principal: "*"` made the shared `_role_is_cicd` /
+  `is_oidc_trust_stmt` helpers raise `AttributeError`. The per-rule
+  guard caught it, but that degraded the whole IAM-* family to a passing
+  "could not be evaluated" finding, so a genuinely CI/CD-scoped
+  `AdministratorAccess` role written in the single-dict form was never
+  flagged (IAM-001..008). The helpers now normalize `Statement` through a
+  shared `iter_statements` and type-guard `Principal`, so the rules
+  evaluate these shapes instead of silently passing them. Found by the
+  2026-07 rule audit.
 
 ### Changed
 

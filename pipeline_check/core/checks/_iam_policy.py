@@ -50,16 +50,28 @@ def parse_doc(raw: object) -> dict[str, Any]:
     return loaded if isinstance(loaded, dict) else {}
 
 
-def iter_allow(doc: dict[str, Any]) -> Iterable[dict[str, Any]]:
-    # Statement can legally be a single dict or a list; be tolerant of None
-    # and of malformed entries that aren't dicts at all.
+def iter_statements(doc: dict[str, Any]) -> Iterable[dict[str, Any]]:
+    """Yield each statement *dict* from a policy document.
+
+    ``Statement`` can legally be a single dict or a list; be tolerant of
+    ``None`` and of malformed entries that aren't dicts at all. Unlike
+    :func:`iter_allow` this does not filter on ``Effect`` (trust-policy
+    callers, e.g. deciding whether a role is CI/CD-scoped, want every
+    statement, not just ``Allow`` ones).
+    """
     stmts = doc.get("Statement") or []
     if isinstance(stmts, dict):
         stmts = [stmts]
     elif not isinstance(stmts, list):
         return
     for stmt in stmts:
-        if isinstance(stmt, dict) and stmt.get("Effect") == "Allow":
+        if isinstance(stmt, dict):
+            yield stmt
+
+
+def iter_allow(doc: dict[str, Any]) -> Iterable[dict[str, Any]]:
+    for stmt in iter_statements(doc):
+        if stmt.get("Effect") == "Allow":
             yield stmt
 
 
@@ -120,7 +132,12 @@ def is_oidc_trust_stmt(stmt: dict[str, Any]) -> str | None:
     """
     if stmt.get("Effect") != "Allow":
         return None
-    principal = stmt.get("Principal", {}) or {}
+    principal = stmt.get("Principal")
+    if not isinstance(principal, dict):
+        # A bare ``Principal: "*"`` (string) or a list is a public/anonymous
+        # trust, not a Federated OIDC one; treat it as a non-match rather
+        # than crashing on ``.get``.
+        return None
     federated = principal.get("Federated")
     if not federated:
         return None

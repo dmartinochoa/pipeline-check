@@ -39,6 +39,9 @@ from pipeline_check.core.checks.cloudformation.rules import (
     iam006_sensitive_wildcard as iam006,
 )
 from pipeline_check.core.checks.cloudformation.rules import (
+    iam008_oidc_audience as iam008,
+)
+from pipeline_check.core.checks.cloudformation.rules import (
     lmb003_plaintext_env as lmb003,
 )
 from pipeline_check.core.checks.cloudformation.rules import (
@@ -516,3 +519,30 @@ class TestPBAC003IPv6Egress:
         })})
         findings = [f for f in Phase3Checks(ctx).run() if f.check_id == "PBAC-003"]
         assert not findings or findings[0].passed is True
+
+
+class TestIAM008StringPrincipalTrust:
+    def test_public_string_principal_does_not_crash(self):
+        # A role whose trust uses ``Principal: "*"`` (a public trust,
+        # string not dict) used to crash ``is_oidc_trust_stmt`` and, via
+        # ``_guard_check``, degrade IAM-008 to a silent pass. It is not an
+        # OIDC trust, so the rule must simply pass without raising.
+        ctx = make_context({"Role": r("Role", "AWS::IAM::Role", {
+            "AssumeRolePolicyDocument": {"Statement": {
+                "Effect": "Allow", "Principal": "*",
+                "Action": "sts:AssumeRole"}}})})
+        f = [x for x in iam008.check(ctx) if x.check_id == "IAM-008"]
+        assert not f or f[0].passed is True
+
+    def test_unpinned_oidc_trust_still_fires(self):
+        # Regression guard: a GitHub Actions OIDC trust without an :aud
+        # condition must still be flagged.
+        ctx = make_context({"Role": r("Role", "AWS::IAM::Role", {
+            "AssumeRolePolicyDocument": {"Statement": [{
+                "Effect": "Allow",
+                "Principal": {"Federated":
+                    "arn:aws:iam::123456789012:oidc-provider/"
+                    "token.actions.githubusercontent.com"},
+                "Action": "sts:AssumeRoleWithWebIdentity"}]}})})
+        f = [x for x in iam008.check(ctx) if x.check_id == "IAM-008"]
+        assert f and f[0].passed is False
