@@ -20,7 +20,7 @@ import json
 from typing import Any
 
 from ..base import Finding, Severity
-from .base import CloudFormationBaseCheck, CloudFormationResource, as_str
+from .base import CloudFormationBaseCheck, CloudFormationResource, as_map, as_str
 
 
 class S3Checks(CloudFormationBaseCheck):
@@ -94,7 +94,7 @@ def _target_key(value: object) -> str:
 
 
 def _s3001_pab(props: dict[str, Any], bucket: str) -> Finding:
-    pab = props.get("PublicAccessBlockConfiguration") or {}
+    pab = as_map(props.get("PublicAccessBlockConfiguration"))
     checks = {
         "BlockPublicAcls": bool(pab.get("BlockPublicAcls")),
         "IgnorePublicAcls": bool(pab.get("IgnorePublicAcls")),
@@ -120,8 +120,10 @@ def _s3001_pab(props: dict[str, Any], bucket: str) -> Finding:
 
 
 def _s3002_encryption(props: dict[str, Any], bucket: str) -> Finding:
-    enc = props.get("BucketEncryption") or {}
+    enc = as_map(props.get("BucketEncryption"))
     rules = enc.get("ServerSideEncryptionConfiguration") or []
+    if not isinstance(rules, list):
+        rules = []
     encrypted = False
     algo = "unknown"
     if rules and isinstance(rules[0], dict):
@@ -145,7 +147,7 @@ def _s3002_encryption(props: dict[str, Any], bucket: str) -> Finding:
 
 
 def _s3003_versioning(props: dict[str, Any], bucket: str) -> Finding:
-    vcfg = props.get("VersioningConfiguration") or {}
+    vcfg = as_map(props.get("VersioningConfiguration"))
     status = as_str(vcfg.get("Status"))
     passed = status == "Enabled"
     desc = (
@@ -165,7 +167,7 @@ def _s3003_versioning(props: dict[str, Any], bucket: str) -> Finding:
 
 
 def _s3004_logging(props: dict[str, Any], bucket: str) -> Finding:
-    logging = props.get("LoggingConfiguration") or {}
+    logging = as_map(props.get("LoggingConfiguration"))
     target = logging.get("DestinationBucketName")
     enabled = bool(target)
     desc = (

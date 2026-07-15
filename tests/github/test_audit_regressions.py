@@ -42,6 +42,8 @@ from pipeline_check.core.checks.github.rules import gha072_overprovisioned_secre
 from pipeline_check.core.checks.github.rules import gha111_ai_iac_apply as gha111
 from pipeline_check.core.checks.rule import discover_rules
 
+from .conftest import run_check
+
 _GH_RULES = [
     (rule.id, rule)
     for rule, _check in discover_rules("pipeline_check.core.checks.github.rules")
@@ -112,3 +114,32 @@ class TestGha055ReusableOutputsSecret:
         vuln, safe = gha055.RULE.exploit_example.split("\n\n", 1)
         assert gha055.check("wf.yml", yaml.safe_load(vuln)).passed is False
         assert gha055.check("wf.yml", yaml.safe_load(safe)).passed is True
+
+
+class TestGHA022PipUpgradeShortForm:
+    """A5: ``pip install -U`` was dead code. ``DEP_UPDATE_RE`` matched a
+    case-sensitive ``-U`` but the rules scan a lowercased blob (``-u``), so
+    the common short form of ``--upgrade`` was never flagged. Exemptions
+    for build/lint tooling must still hold."""
+
+    def test_pip_dash_u_fires(self):
+        wf = (
+            "on: push\n"
+            "jobs:\n"
+            "  b:\n"
+            "    runs-on: ubuntu-latest\n"
+            "    steps:\n"
+            "      - run: pip install -U requests\n"
+        )
+        assert run_check(wf, "GHA-022").passed is False
+
+    def test_exempt_tooling_upgrade_still_passes(self):
+        wf = (
+            "on: push\n"
+            "jobs:\n"
+            "  b:\n"
+            "    runs-on: ubuntu-latest\n"
+            "    steps:\n"
+            "      - run: pip install -U pip setuptools\n"
+        )
+        assert run_check(wf, "GHA-022").passed is True

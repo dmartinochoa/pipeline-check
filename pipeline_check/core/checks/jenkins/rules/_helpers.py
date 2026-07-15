@@ -101,7 +101,15 @@ LABEL_TAINT_RE = re.compile(
 
 
 SHELL_STEP_RE = re.compile(
-    r"(?:sh|bat|powershell|pwsh)\s*\(?\s*"
+    # ``\b`` on both sides so a token merely ending in ``sh``/``bat``
+    # (``publish``, ``finish``, ``combat``) is not read as a shell step.
+    r"\b(?:sh|bat|powershell|pwsh)\b\s*\(?\s*"
+    # Optional Groovy named-argument form. ``sh(script: "…")``,
+    # ``sh label: 'x', script: "…"``, and
+    # ``sh(returnStdout: true, script: "…")`` are the mainstream ways to
+    # write a shell step that returns stdout/status; the ``script:`` label
+    # (and any preceding named args) sit between the keyword and the body.
+    r"(?:(?:[A-Za-z_]\w*\s*:\s*[^,\n]*,\s*)*script\s*:\s*)?"
     r"(?:\"\"\"(?P<triple_d>.*?)\"\"\""
     r"|'''(?P<triple_s>.*?)'''"
     r"|\"(?P<dq>(?:[^\"\\]|\\.)*)\""

@@ -35,6 +35,9 @@ from .._iam_policy import (
     iter_allow as _iter_allow_statements,
 )
 from .._iam_policy import (
+    iter_statements as _iter_statements,
+)
+from .._iam_policy import (
     parse_doc as _parse,
 )
 from .._iam_policy import (
@@ -49,11 +52,17 @@ from .base import TerraformBaseCheck, TerraformResource
 
 def _role_is_cicd(values: dict[str, Any]) -> bool:
     doc = _parse(values.get("assume_role_policy"))
-    for stmt in doc.get("Statement", []):
-        principal = stmt.get("Principal", {}) or {}
+    for stmt in _iter_statements(doc):
+        principal = stmt.get("Principal")
+        if not isinstance(principal, dict):
+            # A string ``Principal: "*"`` (public trust) or a list can't
+            # name a CI/CD service principal, so skip instead of crashing.
+            continue
         services = principal.get("Service", [])
         if isinstance(services, str):
             services = [services]
+        if not isinstance(services, list):
+            continue
         if any(s in _CICD_SERVICE_PRINCIPALS for s in services):
             return True
     return False

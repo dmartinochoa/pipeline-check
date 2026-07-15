@@ -45,7 +45,57 @@ release commit collapses this section into `## [X.Y.Z] - <date>`.
   Claude / Cursor / VS Code / Zed. The devenv loader gained a YAML path
   (via the repo's duplicate-key-rejecting loader) for these files.
 
-## [1.17.0] - 2026-06-16
+### Fixed
+
+- **Terraform / CloudFormation IAM checks no longer crash-degrade to a
+  silent pass on scalar policy shapes.** An `aws_iam_role` whose trust
+  policy is authored with a single-dict `Statement` (not a list) or a
+  bare string `Principal: "*"` made the shared `_role_is_cicd` /
+  `is_oidc_trust_stmt` helpers raise `AttributeError`. The per-rule
+  guard caught it, but that degraded the whole IAM-* family to a passing
+  "could not be evaluated" finding, so a genuinely CI/CD-scoped
+  `AdministratorAccess` role written in the single-dict form was never
+  flagged (IAM-001..008). The helpers now normalize `Statement` through a
+  shared `iter_statements` and type-guard `Principal`, so the rules
+  evaluate these shapes instead of silently passing them. Found by the
+  2026-07 rule audit.
+- **More scalar-shape crash-degrades fixed across the file-based
+  providers.** Same class as above: a value the format allows to be a
+  scalar, list, `null`, or unresolved plan-time reference reached a `.get`
+  that assumed a mapping, so the rule crashed and (via the per-rule guard)
+  degraded to a silent pass. Fixed Terraform `S3-005` (single-dict /
+  non-object bucket policy), `ECR-003` (single-dict / top-level-list repo
+  policy), `LMB-003` (`environment.variables` as an unresolved reference),
+  and `CB-004` (`build_timeout` as a reference string, which also corrects
+  the unset-timeout description); CloudFormation `ECR-005` and
+  `S3-001..004` (a nested config block authored as a bare scalar, via a new
+  shared `as_map` helper); Azure `ADO-012` (numeric `key:` / `restoreKeys:`);
+  Argo CD `ARGOCD-019` (ApplicationSet `spec` authored as a YAML list); and
+  Bitbucket `BB-005` (non-mapping `options:`). Found by the 2026-07 rule
+  audit.
+- **`pip install -U` is detected again (`GHA-022`, `GL-022`, and the
+  BB/ADO/CC clones).** `DEP_UPDATE_RE` matched a case-sensitive `-U`, but
+  the rules scan a lowercased command blob where it has become `-u`, so the
+  common short form of `pip install --upgrade` was never flagged (dead
+  code). The pattern (and the tooling-exemption pattern, so `pip install -U
+  pip` stays exempt) now matches `-[uU]`.
+- **`KMS-002` no longer flags the AWS default key policy (aws + Terraform).**
+  The check reported the `kms:*`-to-account-root "Enable IAM User
+  Permissions" statement that AWS creates on essentially every
+  customer-managed key. A new shared `principal_is_only_account_root`
+  helper exempts the root baseline (a role ARN ending in `:role/root` is
+  not treated as root); a wildcard grant to any non-root principal still
+  fires. CloudFormation already handled this.
+- **Jenkins shell rules now scan the `sh(script: "...")` named-argument
+  form.** The shared `SHELL_STEP_RE` only matched a body immediately after
+  the step keyword, so `sh(script: "...")`, `sh label: 'x', script: "..."`,
+  and `sh(returnStdout: true, script: "...")` (the mainstream way to write
+  a step that returns stdout) escaped `JF-002` / `JF-030` / `JF-036` /
+  `JF-037` and the model/AI shell rules. The regex also gained word
+  boundaries so a token merely ending in `sh` (`publish`, `finish`) is no
+  longer read as a shell step. Azure `ADO-027` gained the analogous fix,
+  reading the explicit-task form (`task: Bash@3` / `CmdLine@2` /
+  `PowerShell@2` with `inputs.script`). Found by the 2026-07 rule audit.
 
 ### Changed
 

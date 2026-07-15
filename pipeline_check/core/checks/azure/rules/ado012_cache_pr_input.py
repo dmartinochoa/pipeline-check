@@ -64,9 +64,15 @@ def check(path: str, doc: dict[str, Any]) -> Finding:
                 raw = inputs.get(key_field)
                 if raw is None:
                     continue
-                text = raw if isinstance(raw, str) else "\n".join(
-                    str(v) for v in (raw or [])
-                )
+                if isinstance(raw, str):
+                    text = raw
+                elif isinstance(raw, list):
+                    text = "\n".join(str(v) for v in raw)
+                else:
+                    # A numeric or otherwise scalar key (e.g. ``key: 2024``)
+                    # can't carry a PR-controlled expression; stringify it
+                    # rather than iterating a non-iterable.
+                    text = str(raw)
                 if CACHE_TAINT_RE.search(text):
                     offenders.append(f"{job_loc}.{step_loc}.inputs.{key_field}")
     passed = not offenders

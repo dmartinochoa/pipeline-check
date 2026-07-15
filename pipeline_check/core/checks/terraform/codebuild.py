@@ -180,12 +180,28 @@ def _cb003_logging_enabled(values: dict[str, Any], address: str) -> Finding:
 
 def _cb004_timeout(values: dict[str, Any], address: str) -> Finding:
     timeout = values.get("build_timeout")
-    passed = timeout is not None and timeout < _MAX_SENSIBLE_TIMEOUT
-    desc = (
-        f"Build timeout is set to {timeout} minutes."
-        if passed else
-        f"Build timeout is {timeout or 'default'} minutes (AWS maximum)."
-    )
+    # build_timeout is a number, but in HCL/plan mode it can arrive as an
+    # unresolved reference string; coerce only a clean integer literal and
+    # otherwise treat the value as unknown rather than comparing str < int.
+    timeout_num: int | None = None
+    if isinstance(timeout, bool):
+        timeout_num = None
+    elif isinstance(timeout, int):
+        timeout_num = timeout
+    elif isinstance(timeout, float):
+        timeout_num = int(timeout)
+    elif isinstance(timeout, str) and timeout.strip().lstrip("+-").isdigit():
+        timeout_num = int(timeout.strip())
+    passed = timeout_num is not None and timeout_num < _MAX_SENSIBLE_TIMEOUT
+    if passed:
+        desc = f"Build timeout is set to {timeout} minutes."
+    elif timeout in (None, ""):
+        desc = "No build timeout is set; CodeBuild defaults to 60 minutes."
+    else:
+        desc = (
+            f"Build timeout is {timeout} minutes, at or above the "
+            f"{_MAX_SENSIBLE_TIMEOUT}-minute maximum."
+        )
     return Finding(
         check_id="CB-004",
         title="No build timeout configured",

@@ -430,3 +430,33 @@ class TestBB020StepLevelCloneDepth:
             "          - make\n"
         )
         assert bb020.check("x.yml", doc).passed is True
+
+
+class TestBB005NonMappingOptions:
+    def test_null_options_does_not_crash(self):
+        # ``options:`` present but empty parses as None; ``.get`` on it used
+        # to raise and skip the check for the whole file.
+        doc = yaml.safe_load(
+            "options:\n"
+            "pipelines:\n"
+            "  default:\n"
+            "    - step:\n"
+            "        name: s\n"
+            "        script:\n"
+            "          - make\n"
+        )
+        f = bb005.check("bitbucket-pipelines.yml", doc)
+        assert f.check_id == "BB-005" and f.passed is False
+
+    def test_global_max_time_still_credited(self):
+        doc = yaml.safe_load(
+            "options:\n"
+            "  max-time: 30\n"
+            "pipelines:\n"
+            "  default:\n"
+            "    - step:\n"
+            "        name: s\n"
+            "        script:\n"
+            "          - make\n"
+        )
+        assert bb005.check("bitbucket-pipelines.yml", doc).passed is True

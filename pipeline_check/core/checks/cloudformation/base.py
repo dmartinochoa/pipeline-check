@@ -316,6 +316,19 @@ def as_str(value: Any) -> str:
     return value if isinstance(value, str) else ""
 
 
+def as_map(value: Any) -> dict[str, Any]:
+    """Return *value* if it is a mapping, else an empty dict.
+
+    A nested property block (``VersioningConfiguration``,
+    ``EncryptionConfiguration``, ...) is normally a mapping, but a template
+    can legally carry a scalar or list there (e.g. ``VersioningConfiguration:
+    Enabled`` written as a bare string). ``props.get("X") or {}`` keeps a
+    truthy scalar and then ``.get`` on it raises; use this instead so the
+    rule degrades to "block absent" rather than crashing.
+    """
+    return value if isinstance(value, dict) else {}
+
+
 _SUB_VAR_RE = __import__("re").compile(r"\$\{([A-Za-z0-9:._-]+)\}")
 
 

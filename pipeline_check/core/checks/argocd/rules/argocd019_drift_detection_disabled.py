@@ -117,7 +117,8 @@ RULE = Rule(
 def _app_spec(doc: Any) -> dict[str, Any] | None:
     """Return the effective spec (ApplicationSet nests it under template)."""
     if doc.kind == "ApplicationSet":
-        tmpl = (doc.data.get("spec") or {}).get("template") or {}
+        spec_block = doc.data.get("spec")
+        tmpl = spec_block.get("template") if isinstance(spec_block, dict) else None
         spec = tmpl.get("spec") if isinstance(tmpl, dict) else None
     else:
         spec = doc.data.get("spec")

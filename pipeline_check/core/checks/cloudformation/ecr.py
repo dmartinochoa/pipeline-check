@@ -10,7 +10,7 @@ import json
 from typing import Any
 
 from ..base import Finding, Severity
-from .base import CloudFormationBaseCheck, as_str, is_true
+from .base import CloudFormationBaseCheck, as_map, as_str, is_true
 
 
 class ECRChecks(CloudFormationBaseCheck):
@@ -157,7 +157,7 @@ def _ecr004_lifecycle_policy(properties: dict[str, Any], name: str) -> Finding:
 
 
 def _ecr005_kms_encryption(properties: dict[str, Any], name: str) -> Finding:
-    enc = properties.get("EncryptionConfiguration") or {}
+    enc = as_map(properties.get("EncryptionConfiguration"))
     enc_type = as_str(enc.get("EncryptionType")) or "AES256"
     kms_key = enc.get("KmsKey")
     passed = enc_type == "KMS" and bool(kms_key)
