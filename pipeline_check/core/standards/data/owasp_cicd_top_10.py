@@ -958,6 +958,8 @@ STANDARD = Standard(
         "ORG-011":  ["CICD-SEC-6", "CICD-SEC-10"],  # org: org webhook over insecure transport
         "ORG-012":  ["CICD-SEC-3", "CICD-SEC-10"],  # org: new-repo Dependabot security-updates default off
         "ORG-013":  ["CICD-SEC-1", "CICD-SEC-5"],   # org: org ruleset not enforced (evaluate/disabled)
+        "ORG-014":  ["CICD-SEC-3", "CICD-SEC-8"],   # org: native SHA-pinning policy not required
+        "ORG-015":  ["CICD-SEC-1"],                 # org: immutable releases not enforced org-wide
         # GitLab-specific platform posture (SCM-050..053)
         "SCM-050":  ["CICD-SEC-6"],                # GitLab push rules: prevent_secrets
         "SCM-051":  ["CICD-SEC-1", "CICD-SEC-6"],  # GitLab push rules: committer-email check

@@ -711,6 +711,8 @@ STANDARD = Standard(
                      "Build.L3.NonFalsifiable"],    # allowed_actions unrestricted (untrusted 3rd-party in build)
         "SCM-029":  ["Build.L3.NonFalsifiable"],    # ruleset not enforced (governance silently disabled)
         "ORG-013":  ["Build.L3.NonFalsifiable"],    # org ruleset not enforced (org-wide governance silently disabled)
+        "ORG-015":  ["Build.L3.NonFalsifiable"],  # org: immutable releases not enforced org-wide
+        "ORG-014":  ["Build.L3.NonFalsifiable"],  # org: native SHA-pinning policy not required
         "SCM-030":  ["Build.L3.NonFalsifiable"],    # ruleset always-bypass (governance bypassed silently)
         "SCM-034":  ["Build.L3.NonFalsifiable"],    # ruleset allows force_push
         "SCM-035":  ["Build.L3.NonFalsifiable"],    # ruleset allows deletion

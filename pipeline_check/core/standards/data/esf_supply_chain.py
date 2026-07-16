@@ -472,6 +472,8 @@ STANDARD = Standard(
         "ORG-011":  ["ESF-D-SECRETS"],              # org: org webhook over insecure transport
         "ORG-012":  ["ESF-S-VULN-MGMT"],            # org: new-repo Dependabot security-updates default off
         "ORG-013":  ["ESF-D-CODE-REVIEW"],          # org: org ruleset not enforced (evaluate/disabled)
+        "ORG-015":  ["ESF-D-CODE-REVIEW"],  # org: immutable releases not enforced org-wide
+        "ORG-014":  ["ESF-D-CODE-REVIEW"],  # org: native SHA-pinning policy not required
         "SCM-002":  ["ESF-D-CODE-REVIEW"],          # required reviews missing
         "SCM-004":  ["ESF-D-SECRETS"],              # secret scanning disabled
         "SCM-005":  ["ESF-S-VULN-MGMT"],            # Dependabot security updates off

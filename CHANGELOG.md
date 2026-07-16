@@ -12,6 +12,22 @@ release commit collapses this section into `## [X.Y.Z] - <date>`.
 
 ### Added
 
+- **Native platform-control adoption posture (`scm_org` `ORG-014`,
+  `ORG-015`).** As GitHub ships native pipeline-security controls, the
+  highest-value check shifts from "you should pin / protect" to "the
+  native control is on and enforced." `ORG-014` (MEDIUM) flags an org
+  whose Actions policy does not require SHA-pinned actions
+  (`sha_pinning_required: false` on `GET /orgs/{org}/actions/permissions`,
+  the endpoint ORG-003 already fetches), the platform-native complement to
+  GHA-001 that stops a retagged / backdoored action org-wide. `ORG-015`
+  (MEDIUM) flags an org that does not enforce immutable releases
+  (`enforced_repositories: none` on the GA
+  `GET /orgs/{org}/settings/immutable-releases`), so a compromised
+  maintainer account can still swap a published release asset or repoint a
+  tag; `all` passes and `selected` passes with a partial-coverage note.
+  Both pass with an "unavailable" note on GitHub Enterprise Server or an
+  API version predating the control. Extends the org-governance pack; no
+  engine change. `scm_org` 13 -> 15.
 - **Committed unsafe-serialization model artifact (modelfile `MODEL-006`).**
   Flags a committed model-weight file, anywhere in the scanned tree, whose
   format deserializes arbitrary code at load: `.pkl` / `.pickle` / `.pt` /

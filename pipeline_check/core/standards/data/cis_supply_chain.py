@@ -1036,6 +1036,8 @@ STANDARD = Standard(
         "ORG-011":  ["2.4.3"],                           # org: org webhook over insecure transport
         "ORG-012":  ["1.1.8"],                           # org: new-repo Dependabot security-updates default off
         "ORG-013":  ["1.1.17"],                          # org: org ruleset not enforced (evaluate/disabled)
+        "ORG-015":  ["1.1.17"],  # org: immutable releases not enforced org-wide
+        "ORG-014":  ["1.1.17"],  # org: native SHA-pinning policy not required
         # GitLab-specific platform posture (SCM-050..053)
         "SCM-050":  ["1.5.1"],                           # GitLab push rules: prevent_secrets
         "SCM-051":  ["1.1.6"],                           # GitLab push rules: committer-email check
