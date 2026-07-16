@@ -395,6 +395,87 @@ class TestToolRegistry:
             assert callable(spec["fn"])
 
 
+# ── analyze_manifest (snippet-in-text) ──────────────────────────────
+
+_GHA_SNIPPET = (
+    "name: x\n"
+    "on: pull_request_target\n"
+    "jobs:\n"
+    "  a:\n"
+    "    runs-on: ubuntu-latest\n"
+    "    steps:\n"
+    "      - run: echo ${{ github.event.pull_request.title }}\n"
+)
+_DOCKERFILE_SNIPPET = "FROM ubuntu:latest\nRUN curl http://x | bash\n"
+
+
+class TestAnalyzeManifest:
+    def test_explicit_provider_scans_text(self):
+        out = _tools.analyze_manifest(_GHA_SNIPPET, provider="github")
+        assert out["provider"] == "github"
+        assert out["detected"] is False
+        assert out["summary"]["failed"] > 0
+
+    def test_temp_path_is_stripped_from_resource(self):
+        out = _tools.analyze_manifest(_GHA_SNIPPET, provider="github")
+        # No throwaway temp prefix leaks into the reported resource.
+        for f in out["findings"]:
+            assert "pc-snippet-" not in f["resource"]
+            assert not f["resource"].startswith("/")
+        assert out["findings"][0]["resource"] == ".github/workflows/snippet.yml"
+
+    def test_sniffs_dockerfile_from_content(self):
+        out = _tools.analyze_manifest(_DOCKERFILE_SNIPPET)
+        assert out["provider"] == "dockerfile"
+        assert out["detected"] is True
+
+    def test_sniffs_kubernetes_from_content(self):
+        k8s = (
+            "apiVersion: v1\nkind: Pod\nspec:\n  containers:\n"
+            "    - name: c\n      image: nginx\n"
+            "      securityContext:\n        privileged: true\n"
+        )
+        out = _tools.analyze_manifest(k8s)
+        assert out["provider"] == "kubernetes"
+
+    def test_filename_hint_selects_provider(self):
+        out = _tools.analyze_manifest(
+            "build:\n  script:\n    - echo hi\n", filename=".gitlab-ci.yml",
+        )
+        assert out["provider"] == "gitlab"
+
+    def test_ambiguous_snippet_raises_with_provider_list(self):
+        with pytest.raises(ValueError, match="could not determine the provider"):
+            _tools.analyze_manifest("foo:\n  bar: baz\n")
+
+    def test_empty_content_raises(self):
+        with pytest.raises(ValueError, match="empty"):
+            _tools.analyze_manifest("   ")
+
+    def test_live_provider_not_snippet_analyzable(self):
+        # ``aws`` / ``scm`` have no single-file form and aren't offered.
+        assert "aws" not in _tools.SNIPPET_PROVIDERS
+        assert "scm" not in _tools.SNIPPET_PROVIDERS
+        with pytest.raises(ValueError, match="does not support snippet"):
+            _tools.analyze_manifest("x: 1\n", provider="aws")
+
+    def test_severity_threshold_filters(self):
+        full = _tools.analyze_manifest(_GHA_SNIPPET, provider="github")
+        high = _tools.analyze_manifest(
+            _GHA_SNIPPET, provider="github", severity_threshold="HIGH",
+        )
+        assert high["summary"]["total"] <= full["summary"]["total"]
+        for f in high["findings"]:
+            assert f["severity"] in ("CRITICAL", "HIGH")
+
+    def test_registered_as_a_tool(self):
+        names = {s["name"] for s in _tools.TOOL_SPECS}
+        assert "analyze_manifest" in names
+        fn = _tools.get_tool_fn("analyze_manifest")
+        out = fn(content=_DOCKERFILE_SNIPPET)
+        assert out["provider"] == "dockerfile"
+
+
 # ── server harness layer ────────────────────────────────────────────
 
 

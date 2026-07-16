@@ -6,6 +6,19 @@ What's planned, what's shipped, and what's deliberately out of scope.
 
 ### Unreleased (on ``dev``)
 
+- **``analyze_manifest`` MCP tool (scan a snippet as text)** — The MCP
+  server's 12th tool scans a raw pipeline snippet passed as *text* (not a
+  path), so an AI assistant can validate the workflow YAML / Dockerfile /
+  manifest it just generated before it lands on disk. ``provider`` is the
+  reliable selector; omit it and a high-confidence content sniff (a
+  Dockerfile ``FROM``, a Kubernetes ``apiVersion`` + ``kind``, a GitHub
+  ``runs-on:`` / ``uses:``) or a ``filename`` hint picks one, erroring
+  with the supported list when ambiguous. The snippet is written to a
+  throwaway temp file at the provider's canonical name (file-based
+  scanners run unchanged) and the temp path is stripped from the reported
+  resource. Scoped to the file-based providers. The third "own the
+  AI-pipeline surface" item from the 2026-07-02 sweep, completing that
+  trio (MCP-config pack + model-artifact rule already shipped).
 - **MCP-config security pack (``devenv`` DEV-009, DEV-010, plus Zed and
   Continue config surfaces)** — Extends the MCP-config coverage past
   DEV-007's stdio command servers. ``DEV-009`` flags a committed MCP
@@ -808,15 +821,19 @@ extends an existing thread it says so.
   already use), not pickle-opcode disassembly. Deep opcode scanning stays
   out of scope on the same boundary as "no CVE layer scanning": ModelScan
   and ModelAudit own that, the way Trivy owns image CVEs.
-- **``analyze_manifest`` pre-commit MCP tool (S, med).** poutine's MCP
-  surface exposes an ``analyze_manifest`` tool so an AI coding assistant
-  validates the pipeline YAML it just generated before the human commits
-  it. The tool's own MCP ``scan`` needs a file path. Add a companion tool
-  that scans a raw pipeline snippet passed as text (provider hinted or
-  auto-detected via ``core/detect.py``) and returns findings plus fix
-  suggestions, making pipeline-check the guardrail on AI-generated
-  pipelines. Tiny lift on the existing ``mcp_server/tools.py``, squarely on
-  the "own the AI surface" theme.
+- **``analyze_manifest`` pre-commit MCP tool (S, med). — SHIPPED
+  (Unreleased, on ``dev``).** See the Unreleased section above. poutine's
+  MCP surface exposes an ``analyze_manifest`` tool so an AI coding
+  assistant validates the pipeline YAML it just generated before the
+  human commits it. The tool's own MCP ``scan`` needs a file path; the
+  new tool scans a raw snippet passed as *text* (provider hinted, or a
+  high-confidence content sniff since ``core/detect.py`` is path-based),
+  writing it to a throwaway temp file at the provider's canonical name so
+  the file-based scanners run unchanged. Scoped to the file-based
+  providers; ambiguous snippets error with the supported list rather than
+  risk a wrong-scanner result. The third and final "own the AI-pipeline
+  surface" item from the 2026-07-02 sweep (after the MCP-config pack and
+  the model-artifact rule).
 
 **Verify the platform's native controls are on (adoption posture):**
 

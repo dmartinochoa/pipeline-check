@@ -12,6 +12,20 @@ release commit collapses this section into `## [X.Y.Z] - <date>`.
 
 ### Added
 
+- **`analyze_manifest` MCP tool: scan a pipeline snippet as text.** The
+  MCP server gains a 12th tool that scans a raw pipeline snippet passed
+  as *text* (not a path), so an AI coding assistant can validate the
+  workflow YAML / Dockerfile / manifest it just generated before the
+  human commits it. `provider` is the reliable selector; omit it and a
+  high-confidence content sniff (a Dockerfile `FROM`, a Kubernetes
+  `apiVersion` + `kind`, a GitHub `runs-on:` / `uses:`) or a `filename`
+  hint picks one, erroring with the supported-provider list when the
+  snippet is ambiguous rather than risking a wrong-scanner result. The
+  snippet is written to a throwaway temp file at the provider's canonical
+  name (so the file-based scanners run unchanged) and the temp path is
+  stripped back out of the reported resource. Scoped to the file-based
+  providers; live providers (`aws` / `scm` / ...) have no single-snippet
+  form. Makes pipeline-check the guardrail on AI-generated pipelines.
 - **Committed unsafe-serialization model artifact (modelfile `MODEL-006`).**
   Flags a committed model-weight file, anywhere in the scanned tree, whose
   format deserializes arbitrary code at load: `.pkl` / `.pickle` / `.pt` /
