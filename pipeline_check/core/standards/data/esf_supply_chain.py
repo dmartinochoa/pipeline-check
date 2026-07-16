@@ -398,6 +398,7 @@ STANDARD = Standard(
         "MODEL-001": ["ESF-S-PIN-DEPS", "ESF-S-VERIFY-DEPS"],      # unpinned base model
         "MODEL-002": ["ESF-S-TRUSTED-REG", "ESF-S-VERIFY-DEPS"],   # third-party hub base model
         "MODEL-003": ["ESF-S-VERIFY-DEPS"],                        # local unverified weights blob
+        "MODEL-006": ["ESF-S-VERIFY-DEPS"],                        # committed unsafe-serialization model artifact
         "MODEL-004": ["ESF-S-PIN-DEPS", "ESF-S-VERIFY-DEPS"],      # remote LoRA adapter
         "MODEL-005": ["ESF-S-VERIFY-DEPS"],                        # config auto_map = custom loader code
         "DF-031": ["ESF-S-PIN-DEPS", "ESF-S-VERIFY-DEPS"],         # COPY --from external image not digest-pinned
@@ -471,6 +472,8 @@ STANDARD = Standard(
         "ORG-011":  ["ESF-D-SECRETS"],              # org: org webhook over insecure transport
         "ORG-012":  ["ESF-S-VULN-MGMT"],            # org: new-repo Dependabot security-updates default off
         "ORG-013":  ["ESF-D-CODE-REVIEW"],          # org: org ruleset not enforced (evaluate/disabled)
+        "ORG-015":  ["ESF-D-CODE-REVIEW"],  # org: immutable releases not enforced org-wide
+        "ORG-014":  ["ESF-D-CODE-REVIEW"],  # org: native SHA-pinning policy not required
         "SCM-002":  ["ESF-D-CODE-REVIEW"],          # required reviews missing
         "SCM-004":  ["ESF-D-SECRETS"],              # secret scanning disabled
         "SCM-005":  ["ESF-S-VULN-MGMT"],            # Dependabot security updates off
@@ -1146,6 +1149,8 @@ STANDARD = Standard(
         "DEV-001":   ["ESF-D-INJECTION"],                  # vscode folderOpen task
         "DEV-006":   ["ESF-D-INJECTION"],                  # vscode settings exec-path / env injection
         "DEV-007":   ["ESF-D-INJECTION"],                  # committed MCP config auto-launches a command server
+        "DEV-009":   ["ESF-D-INJECTION"],   # remote MCP config over plaintext HTTP
+        "DEV-010":   ["ESF-D-INJECTION"],   # committed MCP config blanket tool auto-approve
         "DEV-002":   ["ESF-D-INJECTION"],                  # devcontainer lifecycle
         "DEV-003":   ["ESF-D-INJECTION"],                  # committed claude hook
         "DEV-004":   ["ESF-S-VERIFY-DEPS", "ESF-D-INJECTION"],  # remote fetch+exec

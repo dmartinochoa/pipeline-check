@@ -471,6 +471,7 @@ STANDARD = Standard(
         "MODEL-001": ["GV.SC-05"],              # unpinned base model
         "MODEL-002": ["GV.SC-05"],              # third-party hub base model
         "MODEL-003": ["GV.SC-05"],              # local unverified weights blob
+        "MODEL-006": ["GV.SC-05"],              # committed unsafe-serialization model artifact
         "MODEL-004": ["GV.SC-05"],              # remote LoRA adapter
         "MODEL-005": ["GV.SC-05"],              # config auto_map = custom loader code
         "DF-031": ["GV.SC-05"],                 # COPY --from external image not digest-pinned
@@ -1072,6 +1073,8 @@ STANDARD = Standard(
         "ORG-011":  ["PR.DS-02"],                # org governance: org webhook over insecure transport
         "ORG-012":  ["PR.PS-02", "GV.SC-05"],    # org governance: new-repo Dependabot security-updates default off
         "ORG-013":  ["PR.PS-06", "PR.PS-01"],    # org governance: org ruleset not enforced (evaluate/disabled)
+        "ORG-015":  ["PR.PS-06", "PR.PS-01"],  # org: immutable releases not enforced org-wide
+        "ORG-014":  ["PR.PS-06", "PR.PS-01"],  # org: native SHA-pinning policy not required
         "NPM-012":  ["PR.AA-01", "GV.SC-05"],   # publish token missing restrictions
         # ── Azure Cloud (Entra ID / Storage / Key Vault / ACR / Monitor) ──
         "ENTRA-001": ["PR.AA-05"],               # SP assigned Global Administrator
@@ -1181,6 +1184,8 @@ STANDARD = Standard(
         "DEV-001":   ["PR.PS-05"],
         "DEV-006":   ["PR.PS-05"],
         "DEV-007":   ["PR.PS-05"],   # committed MCP config auto-launches a command server
+        "DEV-009":   ["PR.PS-05"],   # remote MCP config over plaintext HTTP
+        "DEV-010":   ["PR.PS-05"],   # committed MCP config blanket tool auto-approve
         "DEV-002":   ["PR.PS-05"],
         "DEV-003":   ["PR.PS-05"],
         "DEV-004":   ["PR.PS-05"],

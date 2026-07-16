@@ -665,6 +665,7 @@ STANDARD = Standard(
         "MODEL-001": ["SR-3", "SR-11", "SI-2"],          # unpinned base model
         "MODEL-002": ["SR-3", "SR-11", "SI-2"],          # third-party hub base model
         "MODEL-003": ["SR-3", "SR-11", "SI-2"],          # local unverified weights blob
+        "MODEL-006": ["SR-3", "SR-11", "SI-2"],          # committed unsafe-serialization model artifact
         "MODEL-004": ["SR-3", "SR-11", "SI-2"],          # remote LoRA adapter
         "MODEL-005": ["SR-3", "SR-11", "SI-2"],          # config auto_map = custom loader code
         "DF-031":   ["SR-3", "SR-11", "SI-2"],           # COPY --from external image not digest-pinned
@@ -1025,6 +1026,8 @@ STANDARD = Standard(
         "ORG-011":  ["SC-8"],                              # org: org webhook over insecure transport
         "ORG-012":  ["RA-5", "SI-2"],                      # org: new-repo Dependabot security-updates default off
         "ORG-013":  ["SA-15", "CM-6"],                     # org: org ruleset not enforced (evaluate/disabled)
+        "ORG-015":  ["SA-15", "CM-6"],  # org: immutable releases not enforced org-wide
+        "ORG-014":  ["SA-15", "CM-6"],  # org: native SHA-pinning policy not required
         "NPM-012":  ["IA-5", "SR-3"],                      # publish token missing restrictions
         # ── Azure Cloud (Entra ID / Storage / Key Vault / ACR / Monitor) ──
         "ENTRA-001": ["AC-3", "AC-6"],                     # SP assigned Global Administrator
@@ -1134,6 +1137,8 @@ STANDARD = Standard(
         "DEV-001":   ["CM-7"],                             # vscode folderOpen task
         "DEV-006":   ["CM-7"],                             # vscode settings exec-path / env injection
         "DEV-007":   ["CM-7"],                             # committed MCP config auto-launches a command server
+        "DEV-009":   ["CM-7"],   # remote MCP config over plaintext HTTP
+        "DEV-010":   ["CM-7"],   # committed MCP config blanket tool auto-approve
         "DEV-002":   ["CM-7"],                             # devcontainer lifecycle
         "DEV-003":   ["CM-7"],                             # committed claude hook
         "DEV-004":   ["SI-7", "CM-7"],                     # auto-run remote fetch+exec

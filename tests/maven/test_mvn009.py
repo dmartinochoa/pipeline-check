@@ -48,6 +48,24 @@ class TestMVN009:
         f = _run_mvn009(ctx)
         assert not f.passed
         assert "GHSA-xxxx-yyyy-zzzz" in f.description
+        # The structured VulnRef the OpenVEX reporter / --vex consume.
+        assert len(f.vulnerabilities) == 1
+        vref = f.vulnerabilities[0]
+        assert vref.vuln_id == "GHSA-xxxx-yyyy-zzzz"
+        assert vref.purl == "pkg:maven/org.example/lib@1.2.3"
+
+    def test_advisory_aliases_carried(self):
+        text = pom_with_dep(
+            group_id="org.example", artifact_id="lib", version="1.2.3",
+        )
+        ctx = _ctx_from(text)
+        ctx.osv_advisories = {
+            ("org.example:lib", "1.2.3"): [
+                {"id": "GHSA-xxxx-yyyy-zzzz", "aliases": ["CVE-2021-1"]},
+            ],
+        }
+        f = _run_mvn009(ctx)
+        assert f.vulnerabilities[0].aliases == ("CVE-2021-1",)
 
     def test_passes_when_version_not_in_advisory(self):
         text = pom_with_dep(

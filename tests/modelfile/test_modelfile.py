@@ -1,15 +1,28 @@
-"""Tests for the Modelfile provider (MODEL-001..005) and its parser."""
+"""Tests for the Modelfile provider (MODEL-001..006) and its parser."""
 from __future__ import annotations
+
+from pathlib import Path
 
 from pipeline_check.core.checks.base import Severity
 from pipeline_check.core.checks.modelfile.base import (
+    ModelfileContext,
+    WeightBlob,
     is_hf_model_config,
     parse_modelfile,
     ref_is_hub,
     ref_is_local,
+    unsafe_weight_ext,
 )
+from pipeline_check.core.checks.modelfile.checks import ModelfileChecks
 
 from .conftest import run_check, run_config_check
+
+
+def _model006(ctx: ModelfileContext):
+    for f in ModelfileChecks(ctx).run():
+        if f.check_id == "MODEL-006":
+            return f
+    raise AssertionError("MODEL-006 not found")
 
 
 class TestModelfileParser:
@@ -203,3 +216,87 @@ class TestHubRefWithWeightsExtension:
         assert ref_is_local("./model.gguf") is True
         assert ref_is_local("model.gguf") is True
         assert ref_is_local("/models/weights.bin") is True
+
+
+class TestUnsafeWeightExt:
+    """The MODEL-006 extension classifier (Tier-1 vs Tier-2)."""
+
+    def test_tier1_fires_on_extension_alone(self):
+        for name in (
+            "a.pkl", "a.pickle", "a.pt", "a.pth", "a.ckpt",
+            "a.joblib", "a.dill", "a.keras",
+        ):
+            assert unsafe_weight_ext(name, in_model_dir=False) is not None, name
+
+    def test_safe_formats_never_fire(self):
+        for name in ("a.safetensors", "a.gguf", "a.onnx"):
+            assert unsafe_weight_ext(name, in_model_dir=True) is None, name
+
+    def test_tier2_needs_model_context(self):
+        # A bare data/firmware blob is not flagged...
+        assert unsafe_weight_ext("firmware.bin", in_model_dir=False) is None
+        assert unsafe_weight_ext("dataset.h5", in_model_dir=False) is None
+        # ...but a model-ish name or a model directory qualifies it.
+        assert unsafe_weight_ext("pytorch_model.bin", in_model_dir=False) == ".bin"
+        assert unsafe_weight_ext("firmware.bin", in_model_dir=True) == ".bin"
+        assert unsafe_weight_ext("model.h5", in_model_dir=False) == ".h5"
+
+    def test_no_extension(self):
+        assert unsafe_weight_ext("Modelfile", in_model_dir=True) is None
+
+
+class TestMODEL006:
+    """Committed model weights in a code-executing serialization format."""
+
+    def test_passes_with_no_weight_blobs(self):
+        f = _model006(ModelfileContext([], []))
+        assert f.passed
+        assert f.severity is Severity.LOW
+
+    def test_fires_and_aggregates(self):
+        ctx = ModelfileContext(
+            [], [],
+            weight_blobs=[
+                WeightBlob(path="a.pkl", ext=".pkl"),
+                WeightBlob(path="sub/b.pt", ext=".pt"),
+            ],
+            root=".",
+        )
+        f = _model006(ctx)
+        assert not f.passed
+        assert f.severity is Severity.LOW
+        assert "2 committed model artifact(s)" in f.description
+        assert {loc.path for loc in f.locations} == {"a.pkl", "sub/b.pt"}
+
+    def test_from_path_tier_matrix(self, tmp_path):
+        (tmp_path / "models").mkdir()
+        (tmp_path / "hfmodel").mkdir()
+        (tmp_path / "data").mkdir()
+        # flagged
+        (tmp_path / "preprocess.pkl").write_bytes(b"")
+        (tmp_path / "sd.ckpt").write_bytes(b"")
+        (tmp_path / "pytorch_model.bin").write_bytes(b"")
+        (tmp_path / "hfmodel" / "weights.bin").write_bytes(b"")
+        (tmp_path / "hfmodel" / "config.json").write_text(
+            '{"model_type": "llama", "architectures": ["X"]}', encoding="utf-8",
+        )
+        # not flagged
+        (tmp_path / "models" / "model.safetensors").write_bytes(b"")
+        (tmp_path / "data" / "firmware.bin").write_bytes(b"")
+
+        ctx = ModelfileContext.from_path(tmp_path)
+        flagged = {Path(b.path).name for b in ctx.weight_blobs}
+        assert flagged == {
+            "preprocess.pkl", "sd.ckpt", "pytorch_model.bin", "weights.bin",
+        }
+        assert "firmware.bin" not in flagged
+        assert "model.safetensors" not in flagged
+        assert not _model006(ctx).passed
+
+    def test_skips_vendored_dirs(self, tmp_path):
+        vendored = tmp_path / "node_modules" / "pkg"
+        vendored.mkdir(parents=True)
+        (vendored / "thing.pkl").write_bytes(b"")
+        ctx = ModelfileContext.from_path(tmp_path)
+        assert not ctx.weight_blobs
+        assert _model006(ctx).passed

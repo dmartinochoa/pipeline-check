@@ -6,7 +6,78 @@ What's planned, what's shipped, and what's deliberately out of scope.
 
 ### Unreleased (on ``dev``)
 
-- _Nothing queued for the next release yet._
+- **OpenVEX ingest and emit (``--vex`` / ``--output openvex``)** — The
+  VEX-exchange support for the OSV advisory findings (NPM-010 /
+  PYPI-009 / MVN-009 / NUGET-009), the CVE-shaped subset of the catalog.
+  Those four rules now attach a structured ``(vulnerability,
+  product-PURL)`` pair (``Finding.vulnerabilities``, built via the
+  ``core.sbom`` PURL helpers). ``--output openvex`` emits an OpenVEX
+  0.2.0 document, one ``affected`` statement per vulnerability listing
+  every affected product PURL plus the OSV cross-reference aliases, with
+  a content-hash ``@id`` for stable re-runs. ``--vex PATH`` (repeatable)
+  consumes an OpenVEX document and excludes from the gate (still
+  reported) any advisory finding a maintainer marked ``not_affected`` /
+  ``fixed``, matched by vulnerability id or alias (either direction) and
+  product PURL, the same baseline-style handling ``--baseline`` gets. A
+  misconfiguration finding is never VEX-suppressed. The "OpenVEX ingest
+  and emit" candidate from the 2026-07-02 sweep below.
+- **Native platform-control adoption posture (``scm_org`` ORG-014,
+  ORG-015)** — The first increment of the "verify the native control is on
+  and enforced" thesis. ``ORG-014`` (MEDIUM) flags an organization whose
+  Actions policy does not require SHA-pinned actions
+  (``sha_pinning_required: false`` on the ``GET /orgs/{org}/actions/
+  permissions`` body ORG-003 already fetches), the platform-native
+  complement to GHA-001. ``ORG-015`` (MEDIUM) flags an organization that
+  does not enforce immutable releases (``enforced_repositories: none`` on
+  the GA ``GET /orgs/{org}/settings/immutable-releases``), passing on
+  ``all`` and passing with a partial note on ``selected``. Both degrade to
+  a passing "unavailable" note on GitHub Enterprise Server / older API
+  versions. One new context slot / fetch, no engine change. The first
+  slice of the "Native platform-control adoption posture" candidate from
+  the 2026-07-02 sweep below; the per-repo release-attestation and native
+  egress-firewall pieces stay deferred (see that candidate). ``scm_org``
+  13 -> 15.
+- **``analyze_manifest`` MCP tool (scan a snippet as text)** — The MCP
+  server's 12th tool scans a raw pipeline snippet passed as *text* (not a
+  path), so an AI assistant can validate the workflow YAML / Dockerfile /
+  manifest it just generated before it lands on disk. ``provider`` is the
+  reliable selector; omit it and a high-confidence content sniff (a
+  Dockerfile ``FROM``, a Kubernetes ``apiVersion`` + ``kind``, a GitHub
+  ``runs-on:`` / ``uses:``) or a ``filename`` hint picks one, erroring
+  with the supported list when ambiguous. The snippet is written to a
+  throwaway temp file at the provider's canonical name (file-based
+  scanners run unchanged) and the temp path is stripped from the reported
+  resource. Scoped to the file-based providers. The third "own the
+  AI-pipeline surface" item from the 2026-07-02 sweep, completing that
+  trio (MCP-config pack + model-artifact rule already shipped).
+- **MCP-config security pack (``devenv`` DEV-009, DEV-010, plus Zed and
+  Continue config surfaces)** — Extends the MCP-config coverage past
+  DEV-007's stdio command servers. ``DEV-009`` flags a committed MCP
+  config that reaches a remote server over plaintext ``http://`` to a
+  non-loopback host (loopback and ``https`` pass); ``DEV-010`` flags a
+  blanket tool auto-approval (``autoApprove: true`` / ``["*"]``,
+  ``alwaysAllow: ["*"]``) that removes the human confirmation. Both also
+  read two new committed surfaces: Zed's ``.zed/settings.json``
+  ``context_servers`` and Continue's ``.continue/config.yaml`` /
+  ``.continue/mcpServers/*.yaml`` (the devenv loader gained a YAML path,
+  and the shared server-spec walker now handles Continue's list-shaped
+  ``mcpServers``). The "own the AI-pipeline surface" item from the
+  2026-07-02 sweep below, shipped as PR #381 (rules + Zed) and #382
+  (Continue). Scope narrowed on the build: the env-block-secrets idea
+  was dropped (DEV-008 already scans the MCP ``env`` block) and
+  Cline / Windsurf were dropped (user-global configs, never committed).
+- **Committed unsafe-serialization model artifact (``modelfile``
+  MODEL-006)** — Flags a committed model-weight file, anywhere in the
+  scanned tree, whose format deserializes arbitrary code at load:
+  ``.pkl`` / ``.pickle`` / ``.pt`` / ``.pth`` / ``.ckpt`` / ``.joblib`` /
+  ``.dill`` / ``.keras`` on the extension alone, and the ambiguous
+  ``.bin`` / ``.h5`` / ``.hdf5`` only with model context (a model-ish
+  name or a sibling model config / Modelfile). ``.safetensors`` /
+  ``.gguf`` / ``.onnx`` are the safe formats and never fire. LOW
+  severity, the tree-wide complement to MODEL-003's Modelfile ``FROM``
+  reference. A format / provenance check, not pickle-opcode analysis
+  (ModelScan / ModelAudit own that). The second "own the AI-pipeline
+  surface" item from the 2026-07-02 sweep below, shipped as PR #383.
 
 ### Recently shipped (see CHANGELOG for exact versions and dates)
 
@@ -719,6 +790,143 @@ is summarized in the ``### Fixed`` block in ``CHANGELOG.md``.
 
 Larger items not yet scoped to a specific release. Landing order
 is open.
+
+### Competitive-landscape sweep (2026-07-02)
+
+A fresh pass over the CI/CD-security and supply-chain tooling market
+(zizmor, poutine, octoscan, Raven, Cisco MCP Scanner, StepSecurity,
+OSV-Scanner V2, ModelScan / ModelAudit, Legitify / Allstar) plus
+GitHub's own published 2026 security roadmap. The read confirms the
+existing thesis: net-new static rules are diminishing returns, and the
+open frontier is the AI-pipeline surface plus converting breadth into
+adoption-posture and product. Two market shifts are new since the
+2026-06-08 investigation and drive the items below: (1) GitHub is now
+shipping native pipeline-security controls, so the scanner's job is
+shifting from "find the missing control" to "verify the native control
+is on and enforced"; (2) MCP servers have become a named supply-chain
+risk with dedicated scanners (Cisco, poutine), which the tool's existing
+DEV-007 / modelfile work is one rule short of leading on. Effort (S/M/L)
+and impact noted. None of these duplicate a candidate below; where one
+extends an existing thread it says so.
+
+**Own the AI-pipeline surface (the clean category-leadership play):**
+
+- **MCP-server configuration security pack (M, very high, timing). —
+  SHIPPED 2026-07-02 (PR #381: DEV-009 plaintext remote + DEV-010
+  blanket auto-approve + Zed surface; PR #382: Continue surface). Scope
+  trimmed on the build: the env-block-secrets rule was dropped (DEV-008
+  already scans the MCP ``env`` block) and Cline / Windsurf were dropped
+  (user-global configs, never committed). See the Unreleased section
+  above.** The
+  concrete build-out of the "MCP-config beyond DEV-007" NEXT option, now
+  matched to the market: Cisco shipped an open-source MCP Scanner, poutine
+  added an MCP surface, and MCP servers are a named supply-chain risk
+  (tool-poisoning, rug-pull). DEV-007 already flags a committed MCP config
+  that auto-launches a *command* (stdio) server and calls out unpinned
+  ``npx -y`` / ``uvx`` runners, but by design it skips remote servers and
+  does not read tool-grant breadth. New rules extending the devenv / MCP
+  area: a remote MCP server bound over plaintext ``http://`` or from an
+  unpinned / untrusted origin (``type: http`` / ``sse``, the rug-pull
+  surface DEV-007 deliberately passes on); an MCP config that blanket
+  auto-approves a server's tools (``autoApprove`` / ``alwaysAllow`` and the
+  Cursor / Cline / Windsurf equivalents), so the agent runs those tools
+  with no confirmation; plaintext credentials handed to an MCP server via
+  its ``env:`` block (only if DEV-008's literal-secret pass does not
+  already reach the MCP ``env`` path); and broadened config surfaces
+  (``.continue``, Windsurf, Cline, Zed) past the three DEV-007 reads. Clean
+  static-config work, category-leading, rides a live threat. Strongest
+  single new item.
+- **Committed unsafe-serialization model artifact (S-M, med). —
+  SHIPPED 2026-07-02 (PR #383) as MODEL-006, LOW severity, with the
+  ambiguous ``.bin`` / ``.h5`` / ``.hdf5`` extensions gated on model
+  context for precision. See the Unreleased section above.** The
+  poisoned-model threat that PickleScan / ModelScan / ModelAudit chase
+  (roughly 45% of Hugging Face repos still ship pickle weights, and
+  PickleScan itself picked up bypass CVEs in 2025). Extend the
+  ``modelfile`` provider past its ``FROM`` / ``ADAPTER`` declaration scope
+  to flag a committed model-weight file in a code-carrying format anywhere
+  in the tree (``.pkl`` / ``.pickle`` / ``.pt`` / ``.pth`` / ``.bin`` /
+  ``.h5`` / ``.keras`` / ``.joblib`` / ``.dill``), recommend safetensors /
+  GGUF, and name the load-time arbitrary-code risk. Deliberately a
+  format / provenance check (the axis MODEL-003 and the OCI-manifest rules
+  already use), not pickle-opcode disassembly. Deep opcode scanning stays
+  out of scope on the same boundary as "no CVE layer scanning": ModelScan
+  and ModelAudit own that, the way Trivy owns image CVEs.
+- **``analyze_manifest`` pre-commit MCP tool (S, med). — SHIPPED
+  (Unreleased, on ``dev``).** See the Unreleased section above. poutine's
+  MCP surface exposes an ``analyze_manifest`` tool so an AI coding
+  assistant validates the pipeline YAML it just generated before the
+  human commits it. The tool's own MCP ``scan`` needs a file path; the
+  new tool scans a raw snippet passed as *text* (provider hinted, or a
+  high-confidence content sniff since ``core/detect.py`` is path-based),
+  writing it to a throwaway temp file at the provider's canonical name so
+  the file-based scanners run unchanged. Scoped to the file-based
+  providers; ambiguous snippets error with the supported list rather than
+  risk a wrong-scanner result. The third and final "own the AI-pipeline
+  surface" item from the 2026-07-02 sweep (after the MCP-config pack and
+  the model-artifact rule).
+
+**Verify the platform's native controls are on (adoption posture):**
+
+- **OpenVEX ingest and emit (M, med). — SHIPPED (Unreleased, on
+  ``dev``).** See the Unreleased section above (``--vex`` /
+  ``--output openvex``). The SCA world is converging on VEX (OSV-Scanner
+  V2, Trivy, and Sigstore all ship OpenVEX / CSAF). The tool already
+  emits OSV-backed advisory findings (NPM-010 / PYPI-009 / MVN-009 /
+  NUGET-009) and CycloneDX + SPDX SBOMs. Built as scoped: the four OSV
+  rules now carry a structured ``(vulnerability, product-PURL)`` pair
+  (``Finding.vulnerabilities``); ``--output openvex`` emits an OpenVEX
+  0.2.0 document (one ``affected`` statement per vulnerability), and
+  ``--vex`` consumes a document to suppress, baseline-style, the advisory
+  findings a maintainer marked ``not_affected`` / ``fixed`` (a governance
+  escape hatch scoped to the CVE-shaped subset, not the misconfig
+  findings). Slotted into the existing reporter / gate plumbing. The
+  CSAF format and suppressing non-advisory findings were left out of
+  scope on the same "OSV subset only" boundary.
+- **Native platform-control adoption posture (M, high). — PARTIALLY
+  SHIPPED (Unreleased, on ``dev``).** The first two org-level checks
+  landed (see the Unreleased section above): ``ORG-014`` (org Actions
+  policy does not require SHA pinning, reading the ``sha_pinning_required``
+  field ORG-003 already fetches) and ``ORG-015`` (org does not enforce
+  immutable releases, ``GET /orgs/{org}/settings/immutable-releases``),
+  both stable GA APIs. GitHub is shipping native pipeline-security
+  controls through 2025-2026: an Actions policy that blocks actions and
+  enforces SHA pinning (2025-08), immutable releases plus release
+  attestations (public preview 2025-08), org-level artifact-attestation
+  policies and a Kubernetes admission controller, and a published 2026
+  roadmap of workflow dependency locking, a native egress firewall, and
+  execution-policy rulesets. As the platform hardens, the highest-value
+  check is no longer "you should sign / pin / gate" but "the native
+  control exists and is enforced." **Remaining:** the per-repo
+  release-attestation check (the latest release carries no release
+  attestation) was deferred, it needs a release + attestation-by-digest
+  correlation that is FP-prone and adds per-repo fan-out cost; the native
+  egress firewall policy is still on GitHub's 2026 *future* roadmap with no
+  stable API yet; and the execution-policy-ruleset check overlaps the
+  existing ORG-013 ruleset-enforcement rule. Rides GitHub's own
+  announcements, maps cleanly to the existing compliance frameworks, needs
+  no engine change. Extends the SCM / ORG governance pack. The
+  workflow-dependency-locking piece is already reserved by the "GitHub
+  Actions dependency locking support" candidate below; this is the rest of
+  the 2026 control set.
+
+**Credibility:**
+
+- **Answer the academic scanner comparison (S, low).** A January 2026
+  arXiv paper, "Unpacking Security Scanners for GitHub Actions Workflows"
+  (arXiv:2601.14455), benchmarks the GHA scanners academically. Read its
+  corpus and methodology against the cicd-goat matrix, fold any genuine
+  gap it surfaces into the rule pack, and cite it in ``docs/comparison.md``
+  for external credibility. Complements the already-open "broader
+  cross-scanner comparison benchmark" candidate rather than replacing it.
+
+Sources for this sweep (verify before acting, tools move fast):
+GitHub 2026 security roadmap and the Actions-policy / immutable-releases
+changelog entries (github.blog); Cisco MCP Scanner (blogs.cisco.com) and
+poutine MCP (org.boostsecurity.io); OSV-Scanner V2 (blog.google);
+ModelScan (protectai/modelscan) and the PickleScan bypass CVEs
+(jfrog.com); zizmor audits (docs.zizmor.sh); Legitify / Allstar / OpenSSF
+Scorecard (openssf.org).
 
 ### Strategic improvement investigation (2026-06-08)
 

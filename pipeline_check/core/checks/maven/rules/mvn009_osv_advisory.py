@@ -3,7 +3,9 @@ from __future__ import annotations
 
 from typing import Any
 
-from ...base import Finding, Location, Severity
+from ....sbom import make_maven_purl
+from ..._primitives.osv_fetcher import advisory_aliases, advisory_id
+from ...base import Finding, Location, Severity, VulnRef
 from ...rule import Rule
 from ..base import (
     MavenContext,
@@ -108,6 +110,7 @@ def check(
 
     offenders: list[str] = []
     locations: list[Location] = []
+    vulns: list[VulnRef] = []
     for dep in iter_real_dependencies(pom):
         if dep.version is None:
             continue
@@ -122,10 +125,17 @@ def check(
         advisories = osv.get((key, resolved))
         if not advisories:
             continue
-        ids = [a.id if hasattr(a, "id") else str(a) for a in advisories]
+        ids = [advisory_id(a) for a in advisories]
         offenders.append(
             f"{key}:{resolved} ({', '.join(ids)})"
         )
+        purl = make_maven_purl(dep.group_id, dep.artifact_id, resolved)
+        for a in advisories:
+            vulns.append(VulnRef(
+                vuln_id=advisory_id(a),
+                purl=purl,
+                aliases=advisory_aliases(a),
+            ))
         locations.append(Location(
             path=pom.path,
             start_line=dep.line_no, end_line=dep.line_no,
@@ -149,5 +159,5 @@ def check(
         check_id=RULE.id, title=RULE.title, severity=RULE.severity,
         resource=pom.path, description=desc,
         recommendation=RULE.recommendation, passed=passed,
-        locations=locations,
+        locations=locations, vulnerabilities=tuple(vulns),
     )

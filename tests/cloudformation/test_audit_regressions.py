@@ -39,6 +39,9 @@ from pipeline_check.core.checks.cloudformation.rules import (
     iam006_sensitive_wildcard as iam006,
 )
 from pipeline_check.core.checks.cloudformation.rules import (
+    iam008_oidc_audience as iam008,
+)
+from pipeline_check.core.checks.cloudformation.rules import (
     lmb003_plaintext_env as lmb003,
 )
 from pipeline_check.core.checks.cloudformation.rules import (
@@ -516,3 +519,64 @@ class TestPBAC003IPv6Egress:
         })})
         findings = [f for f in Phase3Checks(ctx).run() if f.check_id == "PBAC-003"]
         assert not findings or findings[0].passed is True
+
+
+class TestIAM008StringPrincipalTrust:
+    def test_public_string_principal_does_not_crash(self):
+        # A role whose trust uses ``Principal: "*"`` (a public trust,
+        # string not dict) used to crash ``is_oidc_trust_stmt`` and, via
+        # ``_guard_check``, degrade IAM-008 to a silent pass. It is not an
+        # OIDC trust, so the rule must simply pass without raising.
+        ctx = make_context({"Role": r("Role", "AWS::IAM::Role", {
+            "AssumeRolePolicyDocument": {"Statement": {
+                "Effect": "Allow", "Principal": "*",
+                "Action": "sts:AssumeRole"}}})})
+        f = [x for x in iam008.check(ctx) if x.check_id == "IAM-008"]
+        assert not f or f[0].passed is True
+
+    def test_unpinned_oidc_trust_still_fires(self):
+        # Regression guard: a GitHub Actions OIDC trust without an :aud
+        # condition must still be flagged.
+        ctx = make_context({"Role": r("Role", "AWS::IAM::Role", {
+            "AssumeRolePolicyDocument": {"Statement": [{
+                "Effect": "Allow",
+                "Principal": {"Federated":
+                    "arn:aws:iam::123456789012:oidc-provider/"
+                    "token.actions.githubusercontent.com"},
+                "Action": "sts:AssumeRoleWithWebIdentity"}]}})})
+        f = [x for x in iam008.check(ctx) if x.check_id == "IAM-008"]
+        assert f and f[0].passed is False
+
+
+class TestScalarNestedBlockCrashes:
+    """A nested property block authored as a truthy scalar (e.g.
+    ``VersioningConfiguration: Enabled``) used to raise ``AttributeError``
+    on ``.get`` and, via the per-rule guard, drop the finding. The blocks
+    now normalize through ``as_map`` and degrade to "block absent".
+    """
+
+    def test_ecr005_scalar_encryption_config(self):
+        from pipeline_check.core.checks.cloudformation.ecr import (
+            _ecr005_kms_encryption,
+        )
+        assert _ecr005_kms_encryption(
+            {"EncryptionConfiguration": "KMS"}, "r").passed is False
+        # Regression: a proper KMS block is still credited.
+        assert _ecr005_kms_encryption({"EncryptionConfiguration": {
+            "EncryptionType": "KMS", "KmsKey": "arn:aws:kms:...:key/x"}},
+            "r").passed is True
+
+    def test_s3_scalar_blocks_do_not_crash(self):
+        from pipeline_check.core.checks.cloudformation.s3 import (
+            _s3001_pab,
+            _s3002_encryption,
+            _s3003_versioning,
+            _s3004_logging,
+        )
+        assert _s3001_pab({"PublicAccessBlockConfiguration": True}, "b").passed is False
+        assert _s3002_encryption({"BucketEncryption": "AES256"}, "b").passed is False
+        assert _s3003_versioning({"VersioningConfiguration": "Enabled"}, "b").passed is False
+        assert _s3004_logging({"LoggingConfiguration": "on"}, "b").passed is False
+        # Regression: proper nested dicts still evaluate.
+        assert _s3003_versioning(
+            {"VersioningConfiguration": {"Status": "Enabled"}}, "b").passed is True

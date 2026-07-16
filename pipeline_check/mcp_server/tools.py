@@ -23,6 +23,7 @@ from __future__ import annotations
 import importlib
 import importlib.util
 import os
+import re
 from collections.abc import Callable
 from pathlib import Path
 from typing import Any
@@ -928,6 +929,212 @@ def _finding_ref_to_dict(f: Any) -> dict[str, Any]:
     }
 
 
+# ── Tool: analyze_manifest ──────────────────────────────────────────
+#
+# Scan a raw pipeline snippet passed as *text* rather than a path, so an
+# AI coding assistant can validate the pipeline YAML / Dockerfile /
+# manifest it just generated before the human commits it. The snippet is
+# written to a throwaway temp file at the provider's canonical name (so
+# the file-based scanners pick it up unchanged), scanned, and the temp
+# path is stripped back out of the reported resource.
+
+
+# Where to drop a snippet for each snippet-analyzable provider:
+# ``(relative_write_path, relative_scan_path)``. When the two differ the
+# scan path is a directory the scanner globs (the file lives inside it);
+# when they're equal the scanner reads the file directly. Only file-based
+# providers appear here (live providers like aws / scm / runs have no
+# single-snippet form). Derived from ``detect.PROVIDER_DETECT_FILES`` so a
+# new file-based provider's canonical name is reused, with an explicit
+# filename supplied for the directory-globbing providers.
+_SNIPPET_PLACEMENT: dict[str, tuple[str, str]] = {}
+
+
+def _build_snippet_placement() -> dict[str, tuple[str, str]]:
+    from ..core.detect import PROVIDER_DETECT_FILES
+
+    # Filename to write inside a directory-globbing provider's folder.
+    dir_filenames = {
+        "github": "snippet.yml",
+        "gitea": "snippet.yml",
+        "harness": "snippet.yml",
+        "kubernetes": "snippet.yaml",
+    }
+    out: dict[str, tuple[str, str]] = {}
+    for provider, files, dirs in PROVIDER_DETECT_FILES:
+        if provider not in _PROVIDER_PATH_KW:
+            continue
+        if files:
+            out[provider] = (files[0], files[0])
+        elif dirs:
+            fname = dir_filenames.get(provider, "snippet.yml")
+            out[provider] = (f"{dirs[0]}/{fname}", dirs[0])
+    return out
+
+
+_SNIPPET_PLACEMENT = _build_snippet_placement()
+
+SNIPPET_PROVIDERS: tuple[str, ...] = tuple(sorted(_SNIPPET_PLACEMENT))
+
+
+def _sniff_provider(content: str, filename: str | None = None) -> str | None:
+    """Best-effort provider guess for a raw snippet.
+
+    ``core.detect`` keys off files present on disk, which a text snippet
+    has none of, so this reads the content itself. It only returns a
+    provider on a high-confidence, provider-unique signal (a Dockerfile
+    ``FROM``, a Kubernetes ``apiVersion`` + ``kind``, a GitHub
+    ``runs-on:`` / ``uses:``); ambiguous YAML (GitHub vs Azure vs GitLab
+    all use ``steps:``) returns ``None`` so the caller supplies an
+    explicit ``provider`` rather than risk a wrong-scanner result. A
+    ``filename`` hint, when given, is matched first.
+    """
+    if filename:
+        base = os.path.basename(filename).lower()
+        for provider, (write_rel, _) in _SNIPPET_PLACEMENT.items():
+            if os.path.basename(write_rel).lower() == base:
+                return provider
+        if base in ("dockerfile", "containerfile"):
+            return "dockerfile"
+
+    text = content
+    lowered = text.lower()
+
+    def _has(pattern: str) -> bool:
+        return re.search(pattern, text, re.MULTILINE) is not None
+
+    # Unambiguous, provider-unique signals first.
+    if _has(r"^\s*FROM\s+\S") and "apiversion:" not in lowered:
+        return "dockerfile"
+    if "awstemplateformatversion" in lowered or _has(r"Type:\s*['\"]?AWS::"):
+        return "cloudformation"
+    if _has(r"^\s*apiVersion:\s*\S") and _has(r"^\s*kind:\s*\S"):
+        return "kubernetes"
+    if _has(r"^\s*pipeline\s*\{") or _has(r"^\s*node\s*\{"):
+        return "jenkins"
+    if _has(r'^\s*(resource|provider|module)\s+"'):
+        return "terraform"
+    # GitHub is identifiable by its unique keys (``runs-on`` / ``uses``)
+    # combined with ``jobs:``; GitLab / Azure lack both.
+    if _has(r"^\s*jobs:") and (_has(r"runs-on:") or _has(r"uses:")):
+        return "github"
+    if _has(r"^\s*orbs:") or (_has(r"^\s*version:\s*2") and _has(r"^\s*workflows:")):
+        return "circleci"
+    return None
+
+
+def analyze_manifest(
+    content: str,
+    provider: str | None = None,
+    filename: str | None = None,
+    *,
+    no_chains: bool = False,
+    min_confidence: str = "LOW",
+    severity_threshold: str | None = None,
+) -> dict[str, Any]:
+    """Scan a raw pipeline snippet passed as text and return findings.
+
+    The guardrail for AI-generated pipelines: hand it the YAML /
+    Dockerfile / manifest text an assistant just produced and get the
+    same findings a committed-file scan would, before anything lands on
+    disk. ``provider`` is the reliable selector; omit it and a
+    high-confidence content sniff (or the ``filename`` hint) picks one,
+    falling back to a ``ValueError`` that names the supported providers
+    when the snippet is ambiguous.
+    """
+    if not content or not content.strip():
+        raise ValueError("content is empty; pass the pipeline snippet text.")
+
+    resolved = (provider or _sniff_provider(content, filename) or "").strip()
+    if not resolved:
+        raise ValueError(
+            "could not determine the provider from the snippet; pass "
+            "``provider`` explicitly. Snippet-analyzable providers: "
+            + ", ".join(SNIPPET_PROVIDERS)
+        )
+    if resolved not in _SNIPPET_PLACEMENT:
+        raise ValueError(
+            f"provider {resolved!r} does not support snippet analysis "
+            f"(it has no single-file form). Snippet-analyzable providers: "
+            + ", ".join(SNIPPET_PROVIDERS)
+        )
+
+    write_rel, scan_rel = _SNIPPET_PLACEMENT[resolved]
+    flag = _PROVIDER_PATH_KW[resolved]
+    assert flag is not None  # every snippet provider is file-based
+
+    import tempfile
+
+    threshold_rank = _CONFIDENCE_ORDER[Confidence(min_confidence.upper())]
+    with tempfile.TemporaryDirectory(prefix="pc-snippet-") as tmp:
+        tmp_root = Path(tmp)
+        target = tmp_root / write_rel
+        target.parent.mkdir(parents=True, exist_ok=True)
+        target.write_text(content, encoding="utf-8")
+        scan_path = tmp_root / scan_rel
+
+        # Call the Scanner directly (the temp path is server-generated, so
+        # the client-path root guard in ``_provider_kwarg`` doesn't apply).
+        scan_kwargs: dict[str, Any] = {flag: str(scan_path)}
+        scanner = Scanner(
+            pipeline=resolved,
+            chains_enabled=not no_chains,
+            **scan_kwargs,
+        )
+        findings = scanner.run()
+        findings = [
+            f for f in findings
+            if _CONFIDENCE_ORDER[f.confidence] >= threshold_rank
+        ]
+        if severity_threshold:
+            sev_rank = _severity_rank(Severity(severity_threshold.upper()))
+            findings = [
+                f for f in findings if _severity_rank(f.severity) >= sev_rank
+            ]
+        chains = list(getattr(scanner, "chains", []) or [])
+        prefix = str(tmp_root) + os.sep
+
+    def _relabel(resource: str) -> str:
+        # Strip the throwaway temp prefix so the agent sees the canonical
+        # snippet path, not a ``/tmp/pc-snippet-xxxx/`` leak.
+        if resource.startswith(prefix):
+            return resource[len(prefix):].replace(os.sep, "/")
+        return resource
+
+    score_result = score(findings)
+    findings_out: list[dict[str, Any]] = []
+    for f in findings:
+        d = _finding_to_dict(f)
+        d["resource"] = _relabel(d["resource"])
+        if "locations" in d:
+            for loc in d["locations"]:
+                loc["path"] = _relabel(loc["path"])
+        findings_out.append(d)
+    chains_out = [
+        {
+            "id": c.chain_id,
+            "title": c.title,
+            "severity": c.severity.value,
+            "summary": c.summary,
+            "triggering_check_ids": list(c.triggering_check_ids),
+        }
+        for c in chains
+    ]
+    return {
+        "provider": resolved,
+        "detected": provider is None,
+        "score": dict(score_result),
+        "findings": findings_out,
+        "chains": chains_out,
+        "summary": {
+            "total": len(findings),
+            "failed": sum(1 for f in findings if not f.passed),
+            "passed": sum(1 for f in findings if f.passed),
+            "by_severity": _severity_summary(findings),
+        },
+    }
+
+
 # ── Tool registry ───────────────────────────────────────────────────
 
 
@@ -1307,6 +1514,64 @@ TOOL_SPECS: list[dict[str, Any]] = [
             "additionalProperties": False,
         },
         "fn": lambda **kw: scan_pr_diff(**kw),
+    },
+    {
+        "name": "analyze_manifest",
+        "description": (
+            "Scan a raw pipeline snippet passed as TEXT (not a path) and "
+            "return findings + fix recommendations. The guardrail for "
+            "AI-generated pipelines: validate the workflow YAML / "
+            "Dockerfile / manifest you just generated before it lands on "
+            "disk. Pass ``provider`` when known; omit it and a "
+            "high-confidence content sniff (or a ``filename`` hint) picks "
+            "one, erroring with the supported list when the snippet is "
+            "ambiguous."
+        ),
+        "input_schema": {
+            "type": "object",
+            "properties": {
+                "content": {
+                    "type": "string",
+                    "description": (
+                        "The raw pipeline snippet text (a workflow YAML, "
+                        "Dockerfile, Kubernetes manifest, etc.)."
+                    ),
+                },
+                "provider": {
+                    "type": "string",
+                    "enum": list(SNIPPET_PROVIDERS),
+                    "description": (
+                        "The provider the snippet targets. Omit to "
+                        "auto-detect from the content / filename."
+                    ),
+                },
+                "filename": {
+                    "type": "string",
+                    "description": (
+                        "Optional filename hint (e.g. ``Dockerfile``, "
+                        "``.gitlab-ci.yml``) used to pick a provider when "
+                        "``provider`` is omitted."
+                    ),
+                },
+                "no_chains": {"type": "boolean", "default": False},
+                "min_confidence": {
+                    "type": "string",
+                    "enum": _enum_confidence(),
+                    "default": "LOW",
+                },
+                "severity_threshold": {
+                    "type": "string",
+                    "enum": _enum_severity(),
+                    "description": (
+                        "Optional minimum severity. Findings below it are "
+                        "dropped from the result."
+                    ),
+                },
+            },
+            "required": ["content"],
+            "additionalProperties": False,
+        },
+        "fn": lambda **kw: analyze_manifest(**kw),
     },
 ]
 

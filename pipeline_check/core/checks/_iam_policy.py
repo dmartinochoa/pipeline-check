@@ -50,16 +50,28 @@ def parse_doc(raw: object) -> dict[str, Any]:
     return loaded if isinstance(loaded, dict) else {}
 
 
-def iter_allow(doc: dict[str, Any]) -> Iterable[dict[str, Any]]:
-    # Statement can legally be a single dict or a list; be tolerant of None
-    # and of malformed entries that aren't dicts at all.
+def iter_statements(doc: dict[str, Any]) -> Iterable[dict[str, Any]]:
+    """Yield each statement *dict* from a policy document.
+
+    ``Statement`` can legally be a single dict or a list; be tolerant of
+    ``None`` and of malformed entries that aren't dicts at all. Unlike
+    :func:`iter_allow` this does not filter on ``Effect`` (trust-policy
+    callers, e.g. deciding whether a role is CI/CD-scoped, want every
+    statement, not just ``Allow`` ones).
+    """
     stmts = doc.get("Statement") or []
     if isinstance(stmts, dict):
         stmts = [stmts]
     elif not isinstance(stmts, list):
         return
     for stmt in stmts:
-        if isinstance(stmt, dict) and stmt.get("Effect") == "Allow":
+        if isinstance(stmt, dict):
+            yield stmt
+
+
+def iter_allow(doc: dict[str, Any]) -> Iterable[dict[str, Any]]:
+    for stmt in iter_statements(doc):
+        if stmt.get("Effect") == "Allow":
             yield stmt
 
 
@@ -120,7 +132,12 @@ def is_oidc_trust_stmt(stmt: dict[str, Any]) -> str | None:
     """
     if stmt.get("Effect") != "Allow":
         return None
-    principal = stmt.get("Principal", {}) or {}
+    principal = stmt.get("Principal")
+    if not isinstance(principal, dict):
+        # A bare ``Principal: "*"`` (string) or a list is a public/anonymous
+        # trust, not a Federated OIDC one; treat it as a non-match rather
+        # than crashing on ``.get``.
+        return None
     federated = principal.get("Federated")
     if not federated:
         return None
@@ -203,6 +220,25 @@ def oidc_subject_pinned(stmt: dict[str, Any]) -> bool:
                 return False
             return True
     return False
+
+
+def principal_is_only_account_root(stmt: dict[str, Any]) -> bool:
+    """Return True when *stmt*'s principal is exclusively the account root
+    (``arn:*:iam::<acct>:root``).
+
+    The default / AWS-recommended KMS key policy grants ``kms:*`` to the
+    account root so IAM policies can govern key access. That baseline
+    statement is not an over-broad grant, so wildcard-action checks
+    (KMS-002) must skip it. A role whose ARN ends in ``:role/root`` does
+    not match (it ends with ``/root``, not ``:root``).
+    """
+    principal = stmt.get("Principal")
+    if not isinstance(principal, dict) or set(principal) - {"AWS"}:
+        return False
+    values = as_list(principal.get("AWS"))
+    if not values:
+        return False
+    return all(isinstance(v, str) and v.endswith(":root") for v in values)
 
 
 def public_principal(stmt: dict[str, Any]) -> bool:

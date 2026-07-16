@@ -46,6 +46,7 @@ import sys
 from collections.abc import Iterable
 from dataclasses import dataclass, field
 from pathlib import Path
+from typing import Any
 
 import yaml
 
@@ -174,6 +175,13 @@ class GateConfig:
     #: Defaults to :data:`EXPIRY_WARNING_DAYS`; set by
     #: ``--warn-expiring-suppressions``.
     expiry_warning_days: int | None = EXPIRY_WARNING_DAYS
+    #: Parsed OpenVEX statements from ``--vex``. When set, an OSV advisory
+    #: finding whose ``(vulnerability, product)`` a maintainer marked
+    #: ``not_affected`` / ``fixed`` is partitioned out of the gated set
+    #: (still reported), the same baseline-style handling ``baseline_path``
+    #: gets. ``None`` means no VEX document was supplied. Typed loosely to
+    #: avoid a core import cycle; it is a ``core.openvex.VexIndex``.
+    vex_index: Any = None
 
     def any_explicit_gate(self) -> bool:
         """True when at least one gate condition is explicitly configured.
@@ -205,6 +213,11 @@ class GateResult:
     suppressed: list[Finding]
     #: Failing findings already present in the baseline.
     baseline_matched: list[Finding]
+    #: Advisory findings suppressed by an OpenVEX document (``--vex``): a
+    #: maintainer marked the ``(vulnerability, product)`` ``not_affected``
+    #: or ``fixed``. Excluded from the gated set like ``baseline_matched``,
+    #: still reported. Empty when no VEX document was supplied.
+    vex_suppressed: list[Finding] = field(default_factory=list)
     #: Ignore rules whose ``expires`` date has passed. Reported to the
     #: user so stale suppressions surface instead of rotting silently.
     expired_rules: list[IgnoreRule] = field(default_factory=list)
@@ -479,6 +492,21 @@ def evaluate_gate(
     """
     failing = [f for f in findings if not f.passed]
 
+    # Filter: OpenVEX (``--vex``). An OSV advisory finding a maintainer
+    # marked ``not_affected`` / ``fixed`` is partitioned out before the
+    # baseline / ignore passes, so it never reaches the gated set. Only
+    # advisory findings carry ``vulnerabilities``, so this can't touch a
+    # misconfiguration finding.
+    vex_suppressed: list[Finding] = []
+    if config.vex_index:
+        after_vex: list[Finding] = []
+        for f in failing:
+            if config.vex_index.match(f) is not None:
+                vex_suppressed.append(f)
+            else:
+                after_vex.append(f)
+        failing = after_vex
+
     # Filter: baseline, file wins over git-ref when both set.
     if config.baseline_path:
         baseline_pairs = load_baseline(config.baseline_path)
@@ -610,6 +638,7 @@ def evaluate_gate(
         effective=effective,
         suppressed=suppressed,
         baseline_matched=baseline_matched,
+        vex_suppressed=vex_suppressed,
         expired_rules=expired_rules,
         expiring_soon=expiring_soon,
         conditions_evaluated=conditions,

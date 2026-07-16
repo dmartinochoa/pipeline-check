@@ -8,12 +8,15 @@ from __future__ import annotations
 
 import textwrap
 
+from pipeline_check.core._yaml_strict import safe_load_strict
 from pipeline_check.core.checks.devenv.base import (
     KIND_CLAUDE_SETTINGS,
+    KIND_CONTINUE_CONFIG,
     KIND_DEVCONTAINER,
     KIND_MCP_CONFIG,
     KIND_VSCODE_SETTINGS,
     KIND_VSCODE_TASKS,
+    KIND_ZED_SETTINGS,
     DevEnvContext,
     WorkspaceFile,
     loads_jsonc,
@@ -26,13 +29,19 @@ _DEFAULT_PATH = {
     KIND_DEVCONTAINER: ".devcontainer/devcontainer.json",
     KIND_CLAUDE_SETTINGS: ".claude/settings.json",
     KIND_MCP_CONFIG: ".mcp.json",
+    KIND_ZED_SETTINGS: ".zed/settings.json",
+    KIND_CONTINUE_CONFIG: ".continue/config.yaml",
 }
 
 
 def devenv_ctx(raw: str, kind: str, path: str | None = None) -> DevEnvContext:
-    """Build a DevEnvContext with one WorkspaceFile of *kind*."""
+    """Build a DevEnvContext with one WorkspaceFile of *kind*.
+
+    Continue configs are YAML; every other kind is JSON(C).
+    """
     raw = textwrap.dedent(raw)
-    data = loads_jsonc(raw)
+    loader = safe_load_strict if kind == KIND_CONTINUE_CONFIG else loads_jsonc
+    data = loader(raw)
     if not isinstance(data, dict):
         data = {}
     return DevEnvContext(

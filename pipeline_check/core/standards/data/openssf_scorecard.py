@@ -682,6 +682,7 @@ STANDARD = Standard(
         "MODEL-001": ["Pinned-Dependencies"],                           # unpinned base model
         "MODEL-002": ["Pinned-Dependencies"],                           # third-party hub base model
         "MODEL-003": ["Pinned-Dependencies"],                           # local unverified weights blob
+        "MODEL-006": ["Pinned-Dependencies"],                           # committed unsafe-serialization model artifact
         "MODEL-004": ["Pinned-Dependencies"],                           # remote LoRA adapter
         "MODEL-005": ["Pinned-Dependencies"],                           # config auto_map = custom loader code
         "DF-031": ["Pinned-Dependencies"],                              # COPY --from external image not digest-pinned

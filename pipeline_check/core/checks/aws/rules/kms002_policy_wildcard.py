@@ -6,7 +6,7 @@ from typing import Any
 
 from botocore.exceptions import ClientError
 
-from ..._iam_policy import as_list, iter_allow
+from ..._iam_policy import as_list, iter_allow, principal_is_only_account_root
 from ...base import Finding, Severity
 from ...rule import Rule
 from .._catalog import ResourceCatalog
@@ -70,6 +70,10 @@ RULE = Rule(
 def _wildcard_kms(doc: dict[str, Any]) -> list[str]:
     offenders: list[str] = []
     for stmt in iter_allow(doc):
+        # The AWS default key policy grants kms:* to the account root so
+        # IAM policies can govern access; that baseline is not a finding.
+        if principal_is_only_account_root(stmt):
+            continue
         actions = as_list(stmt.get("Action"))
         if any(a in ("*", "kms:*") for a in actions if isinstance(a, str)):
             offenders.append(stmt.get("Sid") or "<unsid>")

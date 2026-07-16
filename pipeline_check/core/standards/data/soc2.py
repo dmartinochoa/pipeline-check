@@ -352,6 +352,7 @@ STANDARD = Standard(
         "MODEL-001": ["CC8.1"],             # unpinned base model
         "MODEL-002": ["CC8.1"],             # third-party hub base model
         "MODEL-003": ["CC8.1"],             # local unverified weights blob
+        "MODEL-006": ["CC8.1"],             # committed unsafe-serialization model artifact
         "MODEL-004": ["CC8.1"],             # remote LoRA adapter
         "MODEL-005": ["CC8.1"],             # config auto_map = custom loader code
         "DF-031": ["CC8.1"],                # COPY --from external image not digest-pinned
@@ -985,6 +986,8 @@ STANDARD = Standard(
         "ORG-011":  ["CC6.7"],                   # org governance: org webhook over insecure transport
         "ORG-012":  ["CC7.1"],                   # org governance: new-repo Dependabot security-updates default off
         "ORG-013":  ["CC8.1"],                   # org governance: org ruleset not enforced (evaluate/disabled)
+        "ORG-015":  ["CC8.1"],  # org: immutable releases not enforced org-wide
+        "ORG-014":  ["CC8.1"],  # org: native SHA-pinning policy not required
         "NPM-012":  ["CC6.1", "CC8.1"],          # publish token missing restrictions
         # ── SCM posture (governance via the platform REST API) ──────
         # Branch protection / review controls map to CC8.1 (Change
@@ -1149,6 +1152,8 @@ STANDARD = Standard(
         "DEV-001":   ["CC6.8"],
         "DEV-006":   ["CC6.8"],
         "DEV-007":   ["CC6.8"],   # committed MCP config auto-launches a command server
+        "DEV-009":   ["CC6.8"],   # remote MCP config over plaintext HTTP
+        "DEV-010":   ["CC6.8"],   # committed MCP config blanket tool auto-approve
         "DEV-002":   ["CC6.8"],
         "DEV-003":   ["CC6.8"],
         "DEV-004":   ["CC6.8"],

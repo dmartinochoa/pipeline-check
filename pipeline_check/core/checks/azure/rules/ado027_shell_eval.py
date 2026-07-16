@@ -58,11 +58,25 @@ RULE = Rule(
 )
 
 
+#: Explicit-task equivalents of the shortcut script keys. Their inline
+#: shell body lives under ``inputs.script`` (``targetType: inline``).
+_SHELL_TASK_PREFIXES = ("bash@", "cmdline@", "powershell@", "pwsh@")
+
+
 def _step_script_body(step: dict[str, Any]) -> str:
     for key in ("script", "bash", "powershell", "pwsh"):
         val = step.get(key)
         if isinstance(val, str):
             return val
+    # Explicit-task form: ``task: Bash@3`` / ``CmdLine@2`` / ``PowerShell@2``
+    # put the shell body under ``inputs.script``, a mainstream ADO style.
+    task = step.get("task")
+    if isinstance(task, str) and task.lower().startswith(_SHELL_TASK_PREFIXES):
+        inputs = step.get("inputs")
+        if isinstance(inputs, dict):
+            script = inputs.get("script")
+            if isinstance(script, str):
+                return script
     return ""
 
 

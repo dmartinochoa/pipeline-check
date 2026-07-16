@@ -575,6 +575,7 @@ STANDARD = Standard(
         "MODEL-001": ["PW.4.1", "PW.4.4"],             # unpinned base model
         "MODEL-002": ["PW.4.1", "PW.4.4"],             # third-party hub base model
         "MODEL-003": ["PW.4.1", "PW.4.4"],             # local unverified weights blob
+        "MODEL-006": ["PW.4.1", "PW.4.4"],             # committed unsafe-serialization model artifact
         "MODEL-004": ["PW.4.1", "PW.4.4"],             # remote LoRA adapter
         "MODEL-005": ["PW.4.1", "PW.4.4"],             # config auto_map = custom loader code
         "DF-031":   ["PW.4.1", "PW.4.4"],              # COPY --from external image not digest-pinned
@@ -1008,6 +1009,8 @@ STANDARD = Standard(
         "ORG-011":  ["PO.3.2"],                        # org: org webhook over insecure transport
         "ORG-012":  ["PW.4.4", "RV.1.1"],              # org: new-repo Dependabot security-updates default off
         "ORG-013":  ["PS.1.1"],                        # org: org ruleset not enforced (evaluate/disabled)
+        "ORG-015":  ["PS.1.1"],  # org: immutable releases not enforced org-wide
+        "ORG-014":  ["PS.1.1"],  # org: native SHA-pinning policy not required
         # GitLab-specific platform posture (SCM-050..053)
         "SCM-050":  ["PS.1.1"],                        # GitLab push rules: prevent_secrets
         "SCM-051":  ["PO.5.1", "PS.1.1"],              # GitLab push rules: committer-email check
@@ -1125,6 +1128,8 @@ STANDARD = Standard(
         "DEV-001":   ["PW.6.1", "PW.9.1"],
         "DEV-006":   ["PW.6.1", "PW.9.1"],
         "DEV-007":   ["PW.6.1", "PW.9.1"],   # committed MCP config auto-launches a command server
+        "DEV-009":   ["PW.6.1", "PW.9.1"],   # remote MCP config over plaintext HTTP
+        "DEV-010":   ["PW.6.1", "PW.9.1"],   # committed MCP config blanket tool auto-approve
         "DEV-002":   ["PW.6.1", "PW.9.1"],
         "DEV-003":   ["PW.6.1", "PW.9.1"],
         "DEV-004":   ["PW.4.1", "PW.4.4"],

@@ -34,7 +34,10 @@ def check(path: str, doc: dict[str, Any]) -> Finding:
     # A global options.max-time applies to every step that omits a
     # per-step override, so the pipeline is bounded even without
     # per-step declarations.
-    global_max_time = doc.get("options", {}).get("max-time")
+    options = doc.get("options")
+    global_max_time = (
+        options.get("max-time") if isinstance(options, dict) else None
+    )
     unbounded = [
         loc for loc, step in iter_steps(doc)
         if "max-time" not in step and global_max_time is None

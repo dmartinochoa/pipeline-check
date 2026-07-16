@@ -49,7 +49,7 @@ The MODEL-* pack covers the model supply chain a Modelfile declares:
 
 ## What it covers
 
-5 checks · 0 have an autofix patch (``--fix``).
+6 checks · 0 have an autofix patch (``--fix``).
 
 | Check | Title | Severity | Fix |
 |-------|-------|----------|-----|
@@ -58,6 +58,7 @@ The MODEL-* pack covers the model supply chain a Modelfile declares:
 | [MODEL-003](#model-003) | Base model loaded from a local unverified weights blob | <span class="pg-sev pg-sev--low">LOW</span> |  |
 | [MODEL-004](#model-004) | LoRA adapter applied from a remote source | <span class="pg-sev pg-sev--medium">MEDIUM</span> |  |
 | [MODEL-005](#model-005) | Vendored model config declares custom loader code (auto_map) | <span class="pg-sev pg-sev--medium">MEDIUM</span> |  |
+| [MODEL-006](#model-006) | Committed model weights in a code-executing serialization format | <span class="pg-sev pg-sev--low">LOW</span> |  |
 
 ---
 
@@ -156,6 +157,30 @@ Fires on a vendored Hugging Face ``config.json`` whose ``auto_map`` block is non
 **Recommended action**
 
 Review the custom Python the ``auto_map`` references (``modeling_*.py`` / ``configuration_*.py`` in the model directory) the same way you would any dependency, and pin the model to an exact revision so the code can't change under you. Load the model with ``trust_remote_code=False`` (the library default) wherever the model works without its custom classes; if the custom code is required, load it in a job scoped to no production secrets. Prefer models that ship standard architectures and safetensors weights over ones that require remote code.
+
+</div>
+
+</div>
+
+<div class="pg-rule pg-rule--low" markdown>
+
+## MODEL-006: Committed model weights in a code-executing serialization format { #model-006 }
+
+<div class="pg-rule__tags">
+<span class="pg-sev pg-sev--low">LOW</span> <span class="pg-tag pg-tag--owasp">CICD-SEC-3</span> <span class="pg-tag pg-tag--esf">ESF-S-VERIFY-DEPS</span> <span class="pg-tag pg-tag--cwe">CWE-502</span> <span class="pg-tag pg-tag--cwe">CWE-494</span> <span class="pg-tag pg-tag--cwe">CWE-829</span>
+</div>
+
+Fires on a committed weight file, anywhere in the scanned tree, whose extension deserializes code at load: ``.pkl`` / ``.pickle`` / ``.pt`` / ``.pth`` / ``.ckpt`` / ``.joblib`` / ``.dill`` / ``.keras`` on the extension alone, and the ambiguous ``.bin`` / ``.h5`` / ``.hdf5`` only when the name looks like a model (``pytorch_model.bin``) or a model config / Modelfile sits alongside. ``.safetensors`` / ``.gguf`` / ``.onnx`` are the safe formats and never fire. A format / provenance check, not pickle-opcode analysis (ModelScan / ModelAudit own that). The tree-wide complement of MODEL-003's Modelfile ``FROM`` reference.
+
+**Known false-positive modes**
+
+- Committing a model in a pickle format is often intentional (a small ``.pkl`` preprocessor, a legacy ``.pt`` checkpoint). The finding is a format-hygiene signal, not proof of tampering; suppress with a rationale where safetensors / GGUF isn't an option and the file's checksum is verified out of band.
+
+<div class="pg-rule__rec" markdown>
+
+**Recommended action**
+
+Ship model weights as safetensors or GGUF, which store tensors and metadata only and can't execute code at load, rather than a pickle-backed format (``.pkl`` / ``.pt`` / ``.pth`` / ``.ckpt`` / ``.joblib`` / ``.dill``) or a Keras ``.h5`` / ``.keras`` whose Lambda layers can carry code. If a legacy format is unavoidable, record and verify the file's checksum out of band and load it in a job scoped to no production secrets. A committed binary blob carries no provenance a reviewer can check.
 
 </div>
 

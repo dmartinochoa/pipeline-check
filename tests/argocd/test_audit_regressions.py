@@ -227,3 +227,28 @@ class TestARGOCD010ApplicationSet:
         """
         f = run_check(y, "ARGOCD-010")
         assert not f.passed
+
+
+# ---------------------------------------------------------------------------
+# ARGOCD-019 — ApplicationSet whose spec is authored as a YAML list
+# ---------------------------------------------------------------------------
+
+
+class TestARGOCD019ListSpec:
+    """Crash fix: an ApplicationSet with a list-shaped ``spec`` made
+    ``_app_spec`` call ``.get`` on a list, raising and (via the per-rule
+    guard) degrading ARGOCD-019 to a silent pass. It must evaluate the
+    document without crashing instead."""
+
+    def test_list_spec_does_not_crash(self):
+        y = """
+        apiVersion: argoproj.io/v1alpha1
+        kind: ApplicationSet
+        metadata:
+          name: x
+        spec:
+          - generators: []
+        """
+        f = run_check(y, "ARGOCD-019")
+        assert "could not be evaluated" not in (f.description or "")
+        assert f.passed is True

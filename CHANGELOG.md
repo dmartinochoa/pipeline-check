@@ -10,7 +10,147 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 PRs landing on `dev` between releases append entries below. The
 release commit collapses this section into `## [X.Y.Z] - <date>`.
 
-## [1.17.0] - 2026-06-16
+## [1.18.0] - 2026-07-16
+
+### Added
+
+- **OpenVEX ingest and emit (`--vex` / `--output openvex`).** The SCA
+  world is converging on VEX (OSV-Scanner V2, Trivy, Sigstore all ship
+  OpenVEX), so the OSV advisory findings (`NPM-010` / `PYPI-009` /
+  `MVN-009` / `NUGET-009`) now carry a structured `(vulnerability,
+  product-PURL)` pair instead of only free text. `--output openvex`
+  emits an OpenVEX 0.2.0 document, one `affected` statement per
+  vulnerability with every affected product as a Package-URL and the OSV
+  cross-reference aliases; the document `@id` is a content hash so an
+  unchanged finding set yields a stable id. `--vex PATH` (repeatable)
+  consumes an OpenVEX document and excludes from the gate (still
+  reporting) any advisory finding whose `(vulnerability, product)` a
+  maintainer marked `not_affected` or `fixed`, the same baseline-style
+  handling `--baseline` gets. Matching is by vulnerability id or any
+  alias (either direction) and by product PURL (a versionless product
+  covers every version). Scoped to the CVE-shaped subset: a
+  misconfiguration finding is never VEX-suppressed. Emit produces the
+  triage worklist; `--vex` feeds the triaged verdicts back on the next
+  run.
+- **Native platform-control adoption posture (`scm_org` `ORG-014`,
+  `ORG-015`).** As GitHub ships native pipeline-security controls, the
+  highest-value check shifts from "you should pin / protect" to "the
+  native control is on and enforced." `ORG-014` (MEDIUM) flags an org
+  whose Actions policy does not require SHA-pinned actions
+  (`sha_pinning_required: false` on `GET /orgs/{org}/actions/permissions`,
+  the endpoint ORG-003 already fetches), the platform-native complement to
+  GHA-001 that stops a retagged / backdoored action org-wide. `ORG-015`
+  (MEDIUM) flags an org that does not enforce immutable releases
+  (`enforced_repositories: none` on the GA
+  `GET /orgs/{org}/settings/immutable-releases`), so a compromised
+  maintainer account can still swap a published release asset or repoint a
+  tag; `all` passes and `selected` passes with a partial-coverage note.
+  Both pass with an "unavailable" note on GitHub Enterprise Server or an
+  API version predating the control. Extends the org-governance pack; no
+  engine change. `scm_org` 13 -> 15.
+- **`analyze_manifest` MCP tool: scan a pipeline snippet as text.** The
+  MCP server gains a 12th tool that scans a raw pipeline snippet passed
+  as *text* (not a path), so an AI coding assistant can validate the
+  workflow YAML / Dockerfile / manifest it just generated before the
+  human commits it. `provider` is the reliable selector; omit it and a
+  high-confidence content sniff (a Dockerfile `FROM`, a Kubernetes
+  `apiVersion` + `kind`, a GitHub `runs-on:` / `uses:`) or a `filename`
+  hint picks one, erroring with the supported-provider list when the
+  snippet is ambiguous rather than risking a wrong-scanner result. The
+  snippet is written to a throwaway temp file at the provider's canonical
+  name (so the file-based scanners run unchanged) and the temp path is
+  stripped back out of the reported resource. Scoped to the file-based
+  providers; live providers (`aws` / `scm` / ...) have no single-snippet
+  form. Makes pipeline-check the guardrail on AI-generated pipelines.
+- **Committed unsafe-serialization model artifact (modelfile `MODEL-006`).**
+  Flags a committed model-weight file, anywhere in the scanned tree, whose
+  format deserializes arbitrary code at load: `.pkl` / `.pickle` / `.pt` /
+  `.pth` / `.ckpt` / `.joblib` / `.dill` / `.keras` on the extension alone,
+  and the ambiguous `.bin` / `.h5` / `.hdf5` only when the name looks like a
+  model (`pytorch_model.bin`) or a model config / Modelfile sits alongside.
+  `.safetensors` / `.gguf` / `.onnx` are the safe formats and never fire.
+  The tree-wide complement to `MODEL-003`, which only fires on a Modelfile
+  `FROM` reference. A format / provenance check, not pickle-opcode analysis
+  (ModelScan / ModelAudit own that).
+- **MCP-config security pack (devenv `DEV-009`, `DEV-010`, Zed surface).**
+  Two new rules extend the MCP-config coverage past DEV-007's stdio
+  command servers. `DEV-009` flags a committed MCP config that reaches a
+  *remote* server over plaintext `http://` to a non-loopback host (the
+  tool stream crosses the network in the clear, so an on-path attacker
+  can read or rewrite the tools the agent is offered); loopback and
+  `https://` endpoints pass. `DEV-010` flags a *blanket* tool
+  auto-approval (`autoApprove: true` / `["*"]`, Cline's
+  `alwaysAllow: ["*"]`), which removes the human confirmation so a
+  poisoned or rug-pulled tool runs silently; a scoped named-tool
+  allow-list passes. Both also read Zed's `.zed/settings.json`
+  `context_servers` block, a new committed surface all the MCP rules
+  (DEV-007/008/009/010) now cover, including Zed's nested
+  `command: {path, args}` shape.
+- **Continue config surface for the MCP rules (devenv).** The
+  developer-environment scanner now reads Continue's YAML configs
+  (`.continue/config.yaml` and `.continue/mcpServers/*.yaml`), so the MCP
+  rules (DEV-007/008/009/010) cover them. Continue declares `mcpServers`
+  as a YAML *list* of objects (each with a `name`), which the shared
+  server-spec walker now handles alongside the JSON object shape used by
+  Claude / Cursor / VS Code / Zed. The devenv loader gained a YAML path
+  (via the repo's duplicate-key-rejecting loader) for these files.
+
+### Fixed
+
+- **Terraform / CloudFormation IAM checks no longer crash-degrade to a
+  silent pass on scalar policy shapes.** An `aws_iam_role` whose trust
+  policy is authored with a single-dict `Statement` (not a list) or a
+  bare string `Principal: "*"` made the shared `_role_is_cicd` /
+  `is_oidc_trust_stmt` helpers raise `AttributeError`. The per-rule
+  guard caught it, but that degraded the whole IAM-* family to a passing
+  "could not be evaluated" finding, so a genuinely CI/CD-scoped
+  `AdministratorAccess` role written in the single-dict form was never
+  flagged (IAM-001..008). The helpers now normalize `Statement` through a
+  shared `iter_statements` and type-guard `Principal`, so the rules
+  evaluate these shapes instead of silently passing them. Found by the
+  2026-07 rule audit.
+- **More scalar-shape crash-degrades fixed across the file-based
+  providers.** Same class as above: a value the format allows to be a
+  scalar, list, `null`, or unresolved plan-time reference reached a `.get`
+  that assumed a mapping, so the rule crashed and (via the per-rule guard)
+  degraded to a silent pass. Fixed Terraform `S3-005` (single-dict /
+  non-object bucket policy), `ECR-003` (single-dict / top-level-list repo
+  policy), `LMB-003` (`environment.variables` as an unresolved reference),
+  and `CB-004` (`build_timeout` as a reference string, which also corrects
+  the unset-timeout description); CloudFormation `ECR-005` and
+  `S3-001..004` (a nested config block authored as a bare scalar, via a new
+  shared `as_map` helper); Azure `ADO-012` (numeric `key:` / `restoreKeys:`);
+  Argo CD `ARGOCD-019` (ApplicationSet `spec` authored as a YAML list); and
+  Bitbucket `BB-005` (non-mapping `options:`). Found by the 2026-07 rule
+  audit.
+- **`pip install -U` is detected again (`GHA-022`, `GL-022`, and the
+  BB/ADO/CC clones).** `DEP_UPDATE_RE` matched a case-sensitive `-U`, but
+  the rules scan a lowercased command blob where it has become `-u`, so the
+  common short form of `pip install --upgrade` was never flagged (dead
+  code). The pattern (and the tooling-exemption pattern, so `pip install -U
+  pip` stays exempt) now matches `-[uU]`.
+- **`KMS-002` no longer flags the AWS default key policy (aws + Terraform).**
+  The check reported the `kms:*`-to-account-root "Enable IAM User
+  Permissions" statement that AWS creates on essentially every
+  customer-managed key. A new shared `principal_is_only_account_root`
+  helper exempts the root baseline (a role ARN ending in `:role/root` is
+  not treated as root); a wildcard grant to any non-root principal still
+  fires. CloudFormation already handled this.
+- **Jenkins shell rules now scan the `sh(script: "...")` named-argument
+  form.** The shared `SHELL_STEP_RE` only matched a body immediately after
+  the step keyword, so `sh(script: "...")`, `sh label: 'x', script: "..."`,
+  and `sh(returnStdout: true, script: "...")` (the mainstream way to write
+  a step that returns stdout) escaped `JF-002` / `JF-030` / `JF-036` /
+  `JF-037` and the model/AI shell rules. The regex also gained word
+  boundaries so a token merely ending in `sh` (`publish`, `finish`) is no
+  longer read as a shell step. Azure `ADO-027` gained the analogous fix,
+  reading the explicit-task form (`task: Bash@3` / `CmdLine@2` /
+  `PowerShell@2` with `inputs.script`). Found by the 2026-07 rule audit.
+  The named-argument sub-pattern was then hardened against a
+  regular-expression denial of service: a crafted `sh(` prefix with many
+  `name:` fragments could trigger exponential backtracking. A `script`
+  exclusion plus removing an overlapping-whitespace quantifier keep the
+  match linear.
 
 ### Changed
 

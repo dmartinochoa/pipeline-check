@@ -552,6 +552,7 @@ STANDARD = Standard(
         "MODEL-001": ["CICD-SEC-3"],   # unpinned base model
         "MODEL-002": ["CICD-SEC-3"],   # base model from a third-party hub
         "MODEL-003": ["CICD-SEC-3"],   # local unverified weights blob
+        "MODEL-006": ["CICD-SEC-3"],   # committed unsafe-serialization model artifact
         "MODEL-004": ["CICD-SEC-3"],   # remote LoRA adapter
         "MODEL-005": ["CICD-SEC-3"],   # config auto_map = custom loader code
         "DF-031":   ["CICD-SEC-3"],   # COPY --from external image not digest-pinned
@@ -957,6 +958,8 @@ STANDARD = Standard(
         "ORG-011":  ["CICD-SEC-6", "CICD-SEC-10"],  # org: org webhook over insecure transport
         "ORG-012":  ["CICD-SEC-3", "CICD-SEC-10"],  # org: new-repo Dependabot security-updates default off
         "ORG-013":  ["CICD-SEC-1", "CICD-SEC-5"],   # org: org ruleset not enforced (evaluate/disabled)
+        "ORG-014":  ["CICD-SEC-3", "CICD-SEC-8"],   # org: native SHA-pinning policy not required
+        "ORG-015":  ["CICD-SEC-1"],                 # org: immutable releases not enforced org-wide
         # GitLab-specific platform posture (SCM-050..053)
         "SCM-050":  ["CICD-SEC-6"],                # GitLab push rules: prevent_secrets
         "SCM-051":  ["CICD-SEC-1", "CICD-SEC-6"],  # GitLab push rules: committer-email check
@@ -1097,6 +1100,8 @@ STANDARD = Standard(
         "DEV-001":   ["CICD-SEC-4"],                # vscode folderOpen task
         "DEV-006":   ["CICD-SEC-4"],                # vscode settings exec-path / env injection
         "DEV-007":   ["CICD-SEC-4"],                # committed MCP config auto-launches a command server
+        "DEV-009":   ["CICD-SEC-4"],   # remote MCP config over plaintext HTTP
+        "DEV-010":   ["CICD-SEC-4"],   # committed MCP config blanket tool auto-approve
         "DEV-002":   ["CICD-SEC-4"],                # devcontainer lifecycle
         "DEV-003":   ["CICD-SEC-4"],                # committed claude hook
         "DEV-004":   ["CICD-SEC-3", "CICD-SEC-4"],  # auto-run remote fetch+exec

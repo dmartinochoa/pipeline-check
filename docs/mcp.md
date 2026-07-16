@@ -31,6 +31,7 @@ The server exposes the following tools. Schemas are advertised through `tools/li
 | `explain_chain` | Full reference for one attack chain id (MITRE ATT&CK techniques, kill-chain phase, references). |
 | `list_standards` | Every registered compliance standard with control counts. |
 | `scan` | Run a scan and return findings + score + chains. STRIDE codes attached to each finding. Honors `diff_base` for branch-scoped file filtering. |
+| `analyze_manifest` | Scan a raw pipeline snippet passed as **text** (not a path) and return findings + fix recommendations. The guardrail for AI-generated pipelines: validate the workflow YAML / Dockerfile / manifest an assistant just produced before it lands on disk. Pass `provider` when known; omit it and a high-confidence content sniff (or a `filename` hint) picks one, erroring with the supported list when the snippet is ambiguous. Scoped to the file-based providers. |
 | `inventory` | Component inventory for a provider + path. |
 | `threat_model` | Run a scan and return the STRIDE-mapped Markdown threat-model document. See [threatmodel.md](threatmodel.md) for what's in the document. |
 | `scan_markdown` | Run a scan and return the GitHub-Flavored Markdown summary (PR-comment shape). |

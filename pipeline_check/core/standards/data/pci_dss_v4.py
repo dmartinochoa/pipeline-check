@@ -267,6 +267,7 @@ STANDARD = Standard(
         "MODEL-001": ["6.4.3", "6.5.1"],                 # unpinned base model
         "MODEL-002": ["6.4.3", "6.5.1"],                 # third-party hub base model
         "MODEL-003": ["6.4.3", "6.5.1"],                 # local unverified weights blob
+        "MODEL-006": ["6.4.3", "6.5.1"],                 # committed unsafe-serialization model artifact
         "MODEL-004": ["6.4.3", "6.5.1"],                 # remote LoRA adapter
         "MODEL-005": ["6.4.3", "6.5.1"],                 # config auto_map = custom loader code
         "DF-031": ["6.4.3", "6.5.1"],                    # COPY --from external image not digest-pinned
@@ -1014,6 +1015,8 @@ STANDARD = Standard(
         "ORG-011":  ["6.4.1"],                            # org: org webhook over insecure transport
         "ORG-012":  ["6.3.1", "6.3.3"],                   # org: new-repo Dependabot security-updates default off
         "ORG-013":  ["6.4.3"],                            # org: org ruleset not enforced (evaluate/disabled)
+        "ORG-015":  ["6.4.3"],  # org: immutable releases not enforced org-wide
+        "ORG-014":  ["6.4.3"],  # org: native SHA-pinning policy not required
         "NPM-012":  ["8.2.1", "6.5.1"],                   # publish token missing restrictions
         # ── Azure Cloud (Entra ID / Storage / Key Vault / ACR / Monitor) ──
         "ENTRA-001": ["7.2.1", "7.2.5"],                  # SP assigned Global Administrator
@@ -1123,6 +1126,8 @@ STANDARD = Standard(
         "DEV-001":   ["6.5.1"],
         "DEV-006":   ["6.5.1"],
         "DEV-007":   ["6.5.1"],   # committed MCP config auto-launches a command server
+        "DEV-009":   ["6.5.1"],   # remote MCP config over plaintext HTTP
+        "DEV-010":   ["6.5.1"],   # committed MCP config blanket tool auto-approve
         "DEV-002":   ["6.5.1"],
         "DEV-003":   ["6.5.1"],
         "DEV-004":   ["6.3.3", "6.5.1"],

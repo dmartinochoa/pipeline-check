@@ -77,11 +77,71 @@ class ModelConfig:
     data: dict[str, Any]
 
 
+@dataclass(frozen=True, slots=True)
+class WeightBlob:
+    """A committed model-weight file in a code-executing serialization format.
+
+    Recorded by path and (lower-case) extension only; the file's bytes
+    are never read. MODEL-006 reasons over the format, not the content.
+    """
+
+    path: str
+    ext: str
+
+
 #: HF transformers ``config.json`` marker keys: presence of any one means
 #: the file is a model config rather than some other ``config.json``.
 _HF_CONFIG_MARKERS: frozenset[str] = frozenset({
     "auto_map", "architectures", "model_type",
 })
+
+#: Weight-file extensions that deserialize arbitrary code at load and are
+#: unambiguous enough to flag on the extension alone: Python pickle
+#: (``.pkl`` / ``.pickle`` / ``.joblib`` / ``.dill``), pickle-backed torch
+#: (``.pt`` / ``.pth`` / ``.ckpt``), and Keras (``.keras``, whose Lambda
+#: layers carry code).
+_TIER1_UNSAFE_EXTS: frozenset[str] = frozenset({
+    ".pkl", ".pickle", ".pt", ".pth", ".ckpt", ".joblib", ".dill", ".keras",
+})
+
+#: Extensions that are pickle- / code-carrying when they hold a model but
+#: are widely used for unrelated data too (a firmware ``.bin``, a generic
+#: HDF5 dataset). Flagged only with model context (a model-ish filename or
+#: a model directory) so the rule stays precise.
+_TIER2_AMBIGUOUS_EXTS: frozenset[str] = frozenset({".bin", ".h5", ".hdf5"})
+
+#: The safe formats the recommendation points at. Never flagged.
+_SAFE_WEIGHT_EXTS: frozenset[str] = frozenset({
+    ".safetensors", ".gguf", ".onnx",
+})
+
+#: A filename that reads like model weights, used to qualify a Tier-2
+#: extension without a sibling config (``pytorch_model.bin``, ``model.h5``,
+#: ``weights.bin``, ``checkpoint.bin``).
+_MODELISH_NAME_RE = re.compile(
+    r"model|weights|ckpt|checkpoint|pytorch", re.IGNORECASE,
+)
+
+
+def unsafe_weight_ext(name: str, *, in_model_dir: bool) -> str | None:
+    """Return the flagged extension of *name*, or ``None``.
+
+    A Tier-1 extension (:data:`_TIER1_UNSAFE_EXTS`) is flagged on its own.
+    A Tier-2 extension (:data:`_TIER2_AMBIGUOUS_EXTS`) is flagged only with
+    model context: a model-ish filename or a file that sits in a directory
+    holding a model config / Modelfile (*in_model_dir*).
+    """
+    dot = name.rfind(".")
+    if dot < 0:
+        return None
+    ext = name[dot:].lower()
+    if ext in _TIER1_UNSAFE_EXTS:
+        return ext
+    if ext in _TIER2_AMBIGUOUS_EXTS and (
+        in_model_dir or _MODELISH_NAME_RE.search(name)
+    ):
+        return ext
+    return None
 
 #: Directories never worth walking for a vendored model config.
 _SKIP_DIRS: frozenset[str] = frozenset({
@@ -174,9 +234,15 @@ class ModelfileContext:
         self,
         modelfiles: list[Modelfile],
         model_configs: list[ModelConfig] | None = None,
+        weight_blobs: list[WeightBlob] | None = None,
+        root: str = ".",
     ) -> None:
         self.modelfiles = modelfiles
         self.model_configs = model_configs or []
+        self.weight_blobs = weight_blobs or []
+        #: The scanned path, used as the resource for tree-wide findings
+        #: (MODEL-006) that aren't tied to a single parsed document.
+        self.root = root
         self.files_scanned: int = len(modelfiles) + len(self.model_configs)
         self.files_skipped: int = 0
         self.warnings: list[str] = []
@@ -245,7 +311,27 @@ class ModelfileContext:
                 skipped += 1
                 continue
             model_configs.append(ModelConfig(path=str(f), data=data))
-        ctx = cls(modelfiles, model_configs)
+        # Third pass: committed weight blobs in a code-executing format,
+        # anywhere in the tree, independent of any Modelfile reference.
+        # A Tier-2 (ambiguous) extension qualifies when it sits in a
+        # directory that also holds a model config or Modelfile.
+        model_dirs = (
+            {Path(mc.path).parent for mc in model_configs}
+            | {Path(mf.path).parent for mf in modelfiles}
+        )
+        if root.is_file():
+            weight_candidates = [root]
+        else:
+            weight_candidates = [
+                p for p in root.rglob("*")
+                if p.is_file() and not _skipped_dir(p)
+            ]
+        weight_blobs: list[WeightBlob] = []
+        for p in sorted(weight_candidates):
+            ext = unsafe_weight_ext(p.name, in_model_dir=p.parent in model_dirs)
+            if ext is not None:
+                weight_blobs.append(WeightBlob(path=str(p), ext=ext))
+        ctx = cls(modelfiles, model_configs, weight_blobs, root=str(root))
         ctx.files_skipped = skipped
         ctx.warnings = warnings
         return ctx
@@ -339,7 +425,7 @@ def ref_tag(ref: str) -> str | None:
 
 __all__ = [
     "Directive", "ModelConfig", "Modelfile", "ModelfileBaseCheck",
-    "ModelfileContext", "adapter_refs", "config_custom_code", "from_refs",
-    "is_hf_model_config", "iter_directives", "parse_modelfile",
-    "ref_is_hub", "ref_is_local", "ref_tag",
+    "ModelfileContext", "WeightBlob", "adapter_refs", "config_custom_code",
+    "from_refs", "is_hf_model_config", "iter_directives", "parse_modelfile",
+    "ref_is_hub", "ref_is_local", "ref_tag", "unsafe_weight_ext",
 ]

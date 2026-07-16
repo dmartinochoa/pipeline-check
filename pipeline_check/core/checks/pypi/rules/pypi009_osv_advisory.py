@@ -4,7 +4,9 @@ from __future__ import annotations
 import re
 from typing import Any
 
-from ...base import Finding, Location, Severity
+from ....sbom import make_pypi_purl
+from ..._primitives.osv_fetcher import advisory_aliases, advisory_id
+from ...base import Finding, Location, Severity, VulnRef
 from ...rule import Rule
 from ..base import PypiContext, RequirementsFile
 
@@ -72,6 +74,7 @@ def check(
 
     offenders: list[str] = []
     locations: list[Location] = []
+    vulns: list[VulnRef] = []
     for line in reqfile.lines:
         m = _EXACT_RE.match(line.body)
         if m is None:
@@ -86,10 +89,17 @@ def check(
         advisories = osv.get((name_lower, version))
         if not advisories:
             continue
-        ids = [a.id if hasattr(a, "id") else str(a) for a in advisories]
+        ids = [advisory_id(a) for a in advisories]
         offenders.append(
             f"{name}=={version} ({', '.join(ids)})"
         )
+        purl = make_pypi_purl(name, version)
+        for a in advisories:
+            vulns.append(VulnRef(
+                vuln_id=advisory_id(a),
+                purl=purl,
+                aliases=advisory_aliases(a),
+            ))
         locations.append(Location(
             path=reqfile.path,
             start_line=line.line_no, end_line=line.line_no,
@@ -113,5 +123,5 @@ def check(
         check_id=RULE.id, title=RULE.title, severity=RULE.severity,
         resource=reqfile.path, description=desc,
         recommendation=RULE.recommendation, passed=passed,
-        locations=locations,
+        locations=locations, vulnerabilities=tuple(vulns),
     )

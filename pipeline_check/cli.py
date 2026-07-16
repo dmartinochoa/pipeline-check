@@ -83,7 +83,7 @@ from .cli_ops_commands import (
     fleet_cmd,
     init_cmd,
 )
-from .cli_paths import _resolve_provider_paths
+from .cli_paths import ProviderPathArgs, _resolve_provider_paths
 
 # Re-export for the test suite (it imports this from ``cli``); ``cli``
 # itself only reaches it through ``_emit_gate_summary``, so the redundant
@@ -260,7 +260,7 @@ class _GroupedCommand(click.Command):
             "--fail-on", "--min-grade", "--max-failures",
             "--fail-on-check", "--fail-on-parse-error",
             "--baseline", "--baseline-from-git",
-            "--write-baseline",
+            "--write-baseline", "--vex",
             "--diff-base", "--pr-diff", "--ignore-file", "--no-inline-ignore",
             "--fail-on-chain", "--fail-on-any-chain",
             "--warn-expiring-suppressions",
@@ -1477,8 +1477,8 @@ def _install_completion_callback(
     type=click.Choice(
         [
             "terminal", "json", "jsonl", "html", "sarif", "junit",
-            "markdown", "threatmodel", "cyclonedx", "spdx", "codequality",
-            "csv", "annotations", "both",
+            "markdown", "threatmodel", "cyclonedx", "spdx", "openvex",
+            "codequality", "csv", "annotations", "both",
         ],
         case_sensitive=False,
     ),
@@ -1838,6 +1838,21 @@ def _install_completion_callback(
     help=(
         "Path to a prior --output json report. Findings already failing in "
         "the baseline are excluded from gate evaluation (but still reported)."
+    ),
+)
+@click.option(
+    "--vex",
+    "vex_paths",
+    multiple=True,
+    metavar="PATH",
+    help=(
+        "Path to an OpenVEX document (repeatable). An OSV advisory finding "
+        "(NPM-010 / PYPI-009 / MVN-009 / NUGET-009) whose (vulnerability, "
+        "product) a maintainer marked not_affected or fixed is excluded from "
+        "gate evaluation (but still reported), the same baseline-style "
+        "handling --baseline gets. Scoped to the advisory subset; a "
+        "misconfiguration finding is never VEX-suppressed. Emit a matching "
+        "document for the scan's own advisory findings with --output openvex."
     ),
 )
 @click.option(
@@ -2220,6 +2235,7 @@ def scan(
     diff_base: str | None,
     pr_diff: str | None,
     baseline: str | None,
+    vex_paths: tuple[str, ...],
     write_baseline: str | None,
     ignore_file: str | None,
     no_inline_ignore: bool,
@@ -2404,37 +2420,39 @@ def scan(
     pipelines_to_resolve = pipelines_list or [pipeline_lc]
     _paths = _resolve_provider_paths(
         pipelines_to_resolve,
-        tf_plan=tf_plan,
-        tf_source=tf_source,
-        gha_path=gha_path,
-        gitea_path=gitea_path,
-        gitlab_path=gitlab_path,
-        bitbucket_path=bitbucket_path,
-        azure_path=azure_path,
-        jenkinsfile_path=jenkinsfile_path,
-        circleci_path=circleci_path,
-        cfn_template=cfn_template,
-        cloudbuild_path=cloudbuild_path,
-        buildkite_path=buildkite_path,
-        tekton_path=tekton_path,
-        argo_path=argo_path,
-        argocd_path=argocd_path,
-        dockerfile_path=dockerfile_path,
-        k8s_path=k8s_path,
-        helm_path=helm_path,
-        oci_manifest=oci_manifest,
-        drone_path=drone_path,
-        harness_path=harness_path,
-        npm_path=npm_path,
-        pypi_path=pypi_path,
-        maven_path=maven_path,
-        nuget_path=nuget_path,
-        gomod_path=gomod_path,
-        cargo_path=cargo_path,
-        composer_path=composer_path,
-        rubygems_path=rubygems_path,
-        pulumi_path=pulumi_path,
-        helm_values=helm_values,
+        ProviderPathArgs(
+            tf_plan=tf_plan,
+            tf_source=tf_source,
+            gha_path=gha_path,
+            gitea_path=gitea_path,
+            gitlab_path=gitlab_path,
+            bitbucket_path=bitbucket_path,
+            azure_path=azure_path,
+            jenkinsfile_path=jenkinsfile_path,
+            circleci_path=circleci_path,
+            cfn_template=cfn_template,
+            cloudbuild_path=cloudbuild_path,
+            buildkite_path=buildkite_path,
+            tekton_path=tekton_path,
+            argo_path=argo_path,
+            argocd_path=argocd_path,
+            dockerfile_path=dockerfile_path,
+            k8s_path=k8s_path,
+            helm_path=helm_path,
+            oci_manifest=oci_manifest,
+            drone_path=drone_path,
+            harness_path=harness_path,
+            npm_path=npm_path,
+            pypi_path=pypi_path,
+            maven_path=maven_path,
+            nuget_path=nuget_path,
+            gomod_path=gomod_path,
+            cargo_path=cargo_path,
+            composer_path=composer_path,
+            rubygems_path=rubygems_path,
+            pulumi_path=pulumi_path,
+            helm_values=helm_values,
+        ),
     )
 
     _validate_scan_inputs(
@@ -3029,6 +3047,14 @@ def scan(
             f"--warn-expiring-suppressions: {exc}"
         ) from exc
 
+    vex_index = None
+    if vex_paths:
+        from pipeline_check.core.openvex import VexError, load_vex
+        try:
+            vex_index = load_vex(vex_paths)
+        except VexError as exc:
+            raise click.UsageError(f"--vex: {exc}") from exc
+
     gate_config = GateConfig(
         fail_on=Severity(fail_on.upper()) if fail_on else None,
         min_grade=min_grade.upper() if min_grade else None,
@@ -3042,6 +3068,7 @@ def scan(
         fail_on_any_chain=fail_on_any_chain,
         fail_on_parse_error=fail_on_parse_error,
         expiry_warning_days=expiry_window,
+        vex_index=vex_index,
     )
 
     if verbose:
@@ -3439,6 +3466,12 @@ def _emit_scan_report(
             scanner.sbom(), tool_version=__version__, scanned_path=target or ".",
         )
 
+    def _openvex_text() -> str:
+        from pipeline_check.core.openvex_reporter import report_openvex
+        return report_openvex(
+            findings, tool_version=__version__, scanned_path=target or ".",
+        )
+
     def _threatmodel_text() -> str:
         from pipeline_check.core.threatmodel_reporter import report_threatmodel
         return report_threatmodel(
@@ -3456,6 +3489,7 @@ def _emit_scan_report(
         "annotations": (_annotations_text, "GitHub Actions annotations"),
         "cyclonedx": (_cyclonedx_text, "CycloneDX SBOM"),
         "spdx": (_spdx_text, "SPDX SBOM"),
+        "openvex": (_openvex_text, "OpenVEX document"),
         "threatmodel": (_threatmodel_text, "Threat-model report"),
     }
     reporter = text_reporters.get(output)

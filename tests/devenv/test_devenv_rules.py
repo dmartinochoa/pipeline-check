@@ -4,10 +4,12 @@ from __future__ import annotations
 from pipeline_check.core.checks.base import Severity
 from pipeline_check.core.checks.devenv.base import (
     KIND_CLAUDE_SETTINGS,
+    KIND_CONTINUE_CONFIG,
     KIND_DEVCONTAINER,
     KIND_MCP_CONFIG,
     KIND_VSCODE_SETTINGS,
     KIND_VSCODE_TASKS,
+    KIND_ZED_SETTINGS,
     _strip_jsonc,
     loads_jsonc,
 )
@@ -365,3 +367,231 @@ class TestDEV008:
     def test_passes_on_unrelated_settings(self):
         f = run_check('{"editor.tabSize": 2}', KIND_VSCODE_SETTINGS, "DEV-008")
         assert f.passed
+
+
+class TestDEV009:
+    """Committed MCP config uses a remote server over plaintext HTTP."""
+
+    def test_fires_on_plaintext_remote(self):
+        f = run_check(
+            '{"mcpServers": {"api": '
+            '{"type": "http", "url": "http://tools.example.com/mcp"}}}',
+            KIND_MCP_CONFIG, "DEV-009",
+        )
+        assert not f.passed
+        assert f.severity is Severity.MEDIUM
+        assert "api" in f.description
+
+    def test_fires_on_sse_over_http(self):
+        f = run_check(
+            '{"mcpServers": {"stream": '
+            '{"type": "sse", "url": "http://sse.example.com/mcp"}}}',
+            KIND_MCP_CONFIG, "DEV-009",
+        )
+        assert not f.passed
+
+    def test_passes_on_https_remote(self):
+        f = run_check(
+            '{"mcpServers": {"api": '
+            '{"type": "http", "url": "https://tools.example.com/mcp"}}}',
+            KIND_MCP_CONFIG, "DEV-009",
+        )
+        assert f.passed
+
+    def test_passes_on_loopback_http(self):
+        # A local dev server over http is fine.
+        f = run_check(
+            '{"mcpServers": {"local": {"url": "http://localhost:3000/mcp"}}}',
+            KIND_MCP_CONFIG, "DEV-009",
+        )
+        assert f.passed
+
+    def test_passes_on_127_loopback(self):
+        f = run_check(
+            '{"mcpServers": {"local": {"url": "http://127.0.0.1:8080/mcp"}}}',
+            KIND_MCP_CONFIG, "DEV-009",
+        )
+        assert f.passed
+
+    def test_passes_on_stdio_command_server(self):
+        # A command (stdio) server is DEV-007's concern, not DEV-009's.
+        f = run_check(
+            '{"mcpServers": {"weather": {"command": "npx", "args": ["-y", "x"]}}}',
+            KIND_MCP_CONFIG, "DEV-009",
+        )
+        assert f.passed
+
+    def test_fires_on_zed_context_server(self):
+        f = run_check(
+            '{"context_servers": {"z": '
+            '{"url": "http://tools.example.com/mcp"}}}',
+            KIND_ZED_SETTINGS, "DEV-009",
+        )
+        assert not f.passed
+
+    def test_passes_on_non_mcp_kind(self):
+        f = run_check('{"version": "2.0.0"}', KIND_VSCODE_TASKS, "DEV-009")
+        assert f.passed
+
+
+class TestDEV010:
+    """Committed MCP config blanket-auto-approves a server's tools."""
+
+    def test_fires_on_autoapprove_true(self):
+        f = run_check(
+            '{"mcpServers": {"gh": {"command": "npx", "autoApprove": true}}}',
+            KIND_MCP_CONFIG, "DEV-010",
+        )
+        assert not f.passed
+        assert f.severity is Severity.MEDIUM
+        assert "gh" in f.description
+
+    def test_fires_on_wildcard_autoapprove(self):
+        f = run_check(
+            '{"mcpServers": {"gh": {"command": "npx", "autoApprove": ["*"]}}}',
+            KIND_MCP_CONFIG, "DEV-010",
+        )
+        assert not f.passed
+
+    def test_fires_on_wildcard_alwaysallow(self):
+        f = run_check(
+            '{"mcpServers": {"gh": {"command": "npx", "alwaysAllow": ["*"]}}}',
+            KIND_MCP_CONFIG, "DEV-010",
+        )
+        assert not f.passed
+
+    def test_passes_on_named_allowlist(self):
+        # A scoped, named-tool grant is an intentional bounded choice.
+        f = run_check(
+            '{"mcpServers": {"gh": '
+            '{"command": "npx", "alwaysAllow": ["read_file", "list_dir"]}}}',
+            KIND_MCP_CONFIG, "DEV-010",
+        )
+        assert f.passed
+
+    def test_passes_without_auto_approve(self):
+        f = run_check(
+            '{"mcpServers": {"gh": {"command": "npx"}}}',
+            KIND_MCP_CONFIG, "DEV-010",
+        )
+        assert f.passed
+
+    def test_fires_on_zed_context_server(self):
+        f = run_check(
+            '{"context_servers": {"z": '
+            '{"command": {"path": "npx"}, "autoApprove": true}}}',
+            KIND_ZED_SETTINGS, "DEV-010",
+        )
+        assert not f.passed
+
+    def test_passes_on_non_mcp_kind(self):
+        f = run_check('{"version": "2.0.0"}', KIND_VSCODE_TASKS, "DEV-010")
+        assert f.passed
+
+
+class TestZedSurface:
+    """`.zed/settings.json` context_servers feed the MCP rules."""
+
+    def test_zed_settings_classified_as_zed_kind(self):
+        from pathlib import Path
+
+        from pipeline_check.core.checks.devenv.base import _kind_for
+
+        assert _kind_for(Path(".zed/settings.json")) == KIND_ZED_SETTINGS
+
+    def test_dev007_reads_zed_nested_command(self):
+        # Zed's nested command object {path, args} resolves like a
+        # flat command + args.
+        f = run_check(
+            '{"context_servers": {"z": '
+            '{"command": {"path": "uvx", "args": ["mcp-db"]}}}}',
+            KIND_ZED_SETTINGS, "DEV-007",
+        )
+        assert not f.passed
+        assert "remote package" in f.description  # uvx flagged
+
+
+class TestContinueSurface:
+    """Continue's YAML `mcpServers` list feeds the MCP rules."""
+
+    _CONFIG = """\
+        name: my-assistant
+        version: 0.0.1
+        schema: v1
+        mcpServers:
+          - name: SQLite MCP
+            command: npx
+            args: ["-y", "mcp-sqlite"]
+          - name: Remote Tools
+            type: streamable-http
+            url: http://tools.example.com/mcp
+    """
+
+    def test_dev007_fires_on_continue_list_command_server(self):
+        f = run_check(self._CONFIG, KIND_CONTINUE_CONFIG, "DEV-007")
+        assert not f.passed
+        assert "SQLite MCP" in f.description  # list-item name resolved
+        assert "remote package" in f.description  # npx -y flagged
+
+    def test_dev009_fires_on_continue_plaintext_remote(self):
+        f = run_check(self._CONFIG, KIND_CONTINUE_CONFIG, "DEV-009")
+        assert not f.passed
+        assert "Remote Tools" in f.description
+
+    def test_dev010_passes_no_autoapprove_key_in_continue(self):
+        # Continue has no autoApprove/alwaysAllow key; nothing to flag.
+        f = run_check(self._CONFIG, KIND_CONTINUE_CONFIG, "DEV-010")
+        assert f.passed
+
+    def test_dev008_scans_continue_env_secret(self):
+        raw = """\
+            mcpServers:
+              - name: gh
+                command: npx
+                env:
+                  GITHUB_TOKEN: ghp_abcdef1234567890abcdef1234567890abcd
+        """
+        f = run_check(raw, KIND_CONTINUE_CONFIG, "DEV-008")
+        assert not f.passed
+        assert f.severity is Severity.CRITICAL
+
+    def test_kind_classification(self):
+        from pathlib import Path
+
+        from pipeline_check.core.checks.devenv.base import _kind_for
+
+        assert _kind_for(Path(".continue/config.yaml")) == KIND_CONTINUE_CONFIG
+        assert (
+            _kind_for(Path(".continue/mcpServers/playwright.yaml"))
+            == KIND_CONTINUE_CONFIG
+        )
+
+    def test_from_path_discovers_and_parses_continue(self, tmp_path):
+        # End-to-end: discover + YAML-parse the two Continue surfaces.
+        from pipeline_check.core.checks.devenv.base import DevEnvContext
+
+        cont = tmp_path / ".continue"
+        (cont / "mcpServers").mkdir(parents=True)
+        (cont / "config.yaml").write_text(self._CONFIG, encoding="utf-8")
+        (cont / "mcpServers" / "pw.yaml").write_text(
+            "mcpServers:\n  - name: Browser\n    command: uvx\n    args: [pw]\n",
+            encoding="utf-8",
+        )
+        ctx = DevEnvContext.from_path(tmp_path)
+        kinds = {f.kind for f in ctx.files}
+        assert kinds == {KIND_CONTINUE_CONFIG}
+        assert len(ctx.files) == 2
+        assert not ctx.warnings
+
+    def test_from_path_warns_on_malformed_yaml(self, tmp_path):
+        from pipeline_check.core.checks.devenv.base import DevEnvContext
+
+        cont = tmp_path / ".continue"
+        cont.mkdir()
+        # Duplicate mapping key: safe_load_strict rejects it.
+        (cont / "config.yaml").write_text(
+            "mcpServers: []\nmcpServers: []\n", encoding="utf-8",
+        )
+        ctx = DevEnvContext.from_path(tmp_path)
+        assert not ctx.files
+        assert any("YAML" in w for w in ctx.warnings)

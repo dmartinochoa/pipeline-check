@@ -33,7 +33,7 @@ All other flags (`--output`, `--severity-threshold`, `--checks`,
 
 ## What it covers
 
-8 checks · 0 have an autofix patch (``--fix``).
+10 checks · 0 have an autofix patch (``--fix``).
 
 | Check | Title | Severity | Fix |
 |-------|-------|----------|-----|
@@ -45,6 +45,8 @@ All other flags (`--output`, `--severity-threshold`, `--checks`,
 | [DEV-006](#dev-006) | VS Code settings point a tool at a repo-local binary | <span class="pg-sev pg-sev--high">HIGH</span> |  |
 | [DEV-007](#dev-007) | Committed MCP config auto-launches a local command server | <span class="pg-sev pg-sev--medium">MEDIUM</span> |  |
 | [DEV-008](#dev-008) | Credential-shaped literal in a developer-environment config | <span class="pg-sev pg-sev--critical">CRITICAL</span> |  |
+| [DEV-009](#dev-009) | Committed MCP config uses a remote server over plaintext HTTP | <span class="pg-sev pg-sev--medium">MEDIUM</span> |  |
+| [DEV-010](#dev-010) | Committed MCP config blanket-auto-approves a server's tools | <span class="pg-sev pg-sev--medium">MEDIUM</span> |  |
 
 ---
 
@@ -184,7 +186,7 @@ Don't commit a workspace ``.vscode/settings.json`` that points an executable-pat
 <span class="pg-sev pg-sev--medium">MEDIUM</span> <span class="pg-tag pg-tag--owasp">CICD-SEC-4</span> <span class="pg-tag pg-tag--esf">ESF-D-INJECTION</span> <span class="pg-tag pg-tag--cwe">CWE-829</span> <span class="pg-tag pg-tag--cwe">CWE-94</span>
 </div>
 
-Fires when a committed MCP config (``.mcp.json``, ``.cursor/mcp.json``, ``.vscode/mcp.json``) defines a server with a ``command`` (a stdio server the editor / agent launches as a local process on project open). Both the ``mcpServers`` (Claude / Cursor) and ``servers`` (VS Code) block names are read. ``url``-only servers (``type: http`` / ``sse``) don't spawn a local process and don't fire. Commands that fetch an unpinned remote package (``npx -y`` / ``uvx`` / ``pnpm dlx`` / ``bunx`` / ``pipx run``) are called out as the sharpest case.
+Fires when a committed MCP config (``.mcp.json``, ``.cursor/mcp.json``, ``.vscode/mcp.json``, Zed's ``.zed/settings.json``, or Continue's ``.continue/config.yaml`` / ``.continue/mcpServers/*.yaml``) defines a server with a ``command`` (a stdio server the editor / agent launches as a local process on project open). The ``mcpServers`` (Claude / Cursor object, Continue list), ``servers`` (VS Code), and ``context_servers`` (Zed) block names are all read. ``url``-only servers (``type: http`` / ``sse``) don't spawn a local process and don't fire here (DEV-009 checks their transport). Commands that fetch an unpinned remote package (``npx -y`` / ``uvx`` / ``pnpm dlx`` / ``bunx`` / ``pipx run``) are called out as the sharpest case.
 
 **Known false-positive modes**
 
@@ -208,7 +210,7 @@ Treat a committed MCP server config as code that runs on project open. Prefer a 
 <span class="pg-sev pg-sev--critical">CRITICAL</span> <span class="pg-tag pg-tag--owasp">CICD-SEC-6</span> <span class="pg-tag pg-tag--esf">ESF-D-SECRETS</span> <span class="pg-tag pg-tag--cwe">CWE-798</span>
 </div>
 
-Scans every string in a developer-environment config (``.vscode/`` tasks / settings, ``.devcontainer``, ``.claude/settings.json``, and MCP configs ``.mcp.json`` / ``.cursor/mcp.json`` / ``.vscode/mcp.json``) against the cross-provider credential-shape catalog. The common hit is a token in an MCP server's ``env`` block or a devcontainer ``remoteEnv`` / ``containerEnv``.
+Scans every string in a developer-environment config (``.vscode/`` tasks / settings, ``.devcontainer``, ``.claude/settings.json``, and MCP configs ``.mcp.json`` / ``.cursor/mcp.json`` / ``.vscode/mcp.json`` / Zed's ``.zed/settings.json`` / Continue's ``.continue/`` YAML) against the cross-provider credential-shape catalog. The common hit is a token in an MCP server's ``env`` block or a devcontainer ``remoteEnv`` / ``containerEnv``.
 
 **Known false-positive modes**
 
@@ -219,6 +221,54 @@ Scans every string in a developer-environment config (``.vscode/`` tasks / setti
 **Recommended action**
 
 Rotate the exposed credential immediately, it is in the repo's history. Don't commit secrets to editor / agent / container config: pass them through the environment at run time (an MCP server reads ``${env:GITHUB_TOKEN}`` from the developer's shell, a devcontainer reads a host env var) or a local, git-ignored config rather than a committed literal.
+
+</div>
+
+</div>
+
+<div class="pg-rule pg-rule--medium" markdown>
+
+## DEV-009: Committed MCP config uses a remote server over plaintext HTTP { #dev-009 }
+
+<div class="pg-rule__tags">
+<span class="pg-sev pg-sev--medium">MEDIUM</span> <span class="pg-tag pg-tag--owasp">CICD-SEC-4</span> <span class="pg-tag pg-tag--esf">ESF-D-INJECTION</span> <span class="pg-tag pg-tag--cwe">CWE-319</span> <span class="pg-tag pg-tag--cwe">CWE-829</span>
+</div>
+
+Fires when a committed MCP config (``.mcp.json``, ``.cursor/mcp.json``, ``.vscode/mcp.json``, Zed's ``.zed/settings.json``, or Continue's ``.continue/config.yaml`` / ``.continue/mcpServers/*.yaml``) defines a remote server whose ``url`` is plaintext ``http://`` to a non-loopback host (any ``sse`` / ``streamable-http`` transport included). Loopback URLs (``localhost`` / ``127.0.0.0/8`` / ``::1``) and ``https://`` endpoints pass. Stdio (``command``) servers are DEV-007's concern, not this rule's.
+
+**Known false-positive modes**
+
+- A remote server reached over plaintext inside a trusted, isolated network segment may be intentional. Prefer TLS regardless; if the plaintext hop is truly contained, suppress on the file with a rationale naming the server and the network boundary.
+
+<div class="pg-rule__rec" markdown>
+
+**Recommended action**
+
+Point the MCP server at an ``https://`` endpoint so the tool stream is authenticated and encrypted. A plaintext ``http://`` transport to a remote host lets an on-path attacker read or rewrite the tools the agent is offered and the data it exchanges. If the server genuinely runs locally, bind it to loopback (``http://localhost`` / ``127.0.0.1``), which is not flagged.
+
+</div>
+
+</div>
+
+<div class="pg-rule pg-rule--medium" markdown>
+
+## DEV-010: Committed MCP config blanket-auto-approves a server's tools { #dev-010 }
+
+<div class="pg-rule__tags">
+<span class="pg-sev pg-sev--medium">MEDIUM</span> <span class="pg-tag pg-tag--owasp">CICD-SEC-4</span> <span class="pg-tag pg-tag--esf">ESF-D-INJECTION</span> <span class="pg-tag pg-tag--cwe">CWE-284</span> <span class="pg-tag pg-tag--cwe">CWE-269</span>
+</div>
+
+Fires when a committed MCP config (``.mcp.json``, ``.cursor/mcp.json``, ``.vscode/mcp.json``, Zed's ``.zed/settings.json``, or Continue's ``.continue/config.yaml`` / ``.continue/mcpServers/*.yaml``) sets a *blanket* tool auto-approval on a server: ``autoApprove: true`` / ``["*"]`` or ``alwaysAllow`` containing ``"*"``. A grant scoped to specific named tools is a bounded choice and passes.
+
+**Known false-positive modes**
+
+- A blanket grant on a first-party, fully trusted local server may be intentional. Prefer a named-tool allow-list; if the blanket grant is deliberate, suppress on the file with a rationale naming the server.
+
+<div class="pg-rule__rec" markdown>
+
+**Recommended action**
+
+Don't commit a blanket tool auto-approval. Remove ``autoApprove: true`` / ``["*"]`` (and Cline's ``alwaysAllow: ["*"]``) so tool calls keep their human confirmation, or scope the grant to the specific low-risk tools you trust (``alwaysAllow: ["read_file"]``). Combined with an auto-launched server (DEV-007), a blanket grant means a poisoned tool runs with no prompt for every contributor who opens the repo.
 
 </div>
 

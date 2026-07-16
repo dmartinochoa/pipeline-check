@@ -596,6 +596,7 @@ STANDARD = Standard(
         "MODEL-001": ["Build.L3.NonFalsifiable"],                  # unpinned base model
         "MODEL-002": ["Build.L3.NonFalsifiable"],                  # third-party hub base model
         "MODEL-003": ["Build.L3.NonFalsifiable"],                  # local unverified weights blob
+        "MODEL-006": ["Build.L3.NonFalsifiable"],                  # committed unsafe-serialization model artifact
         "MODEL-004": ["Build.L3.NonFalsifiable"],                  # remote LoRA adapter
         "MODEL-005": ["Build.L3.NonFalsifiable"],                  # config auto_map = custom loader code
         "DF-031": ["Build.L3.NonFalsifiable"],                     # COPY --from external image not digest-pinned
@@ -710,6 +711,8 @@ STANDARD = Standard(
                      "Build.L3.NonFalsifiable"],    # allowed_actions unrestricted (untrusted 3rd-party in build)
         "SCM-029":  ["Build.L3.NonFalsifiable"],    # ruleset not enforced (governance silently disabled)
         "ORG-013":  ["Build.L3.NonFalsifiable"],    # org ruleset not enforced (org-wide governance silently disabled)
+        "ORG-015":  ["Build.L3.NonFalsifiable"],  # org: immutable releases not enforced org-wide
+        "ORG-014":  ["Build.L3.NonFalsifiable"],  # org: native SHA-pinning policy not required
         "SCM-030":  ["Build.L3.NonFalsifiable"],    # ruleset always-bypass (governance bypassed silently)
         "SCM-034":  ["Build.L3.NonFalsifiable"],    # ruleset allows force_push
         "SCM-035":  ["Build.L3.NonFalsifiable"],    # ruleset allows deletion

@@ -11,6 +11,7 @@ from __future__ import annotations
 import json
 from typing import Any
 
+from .._iam_policy import iter_statements
 from ..base import Finding, Severity
 from .base import TerraformBaseCheck
 
@@ -114,8 +115,10 @@ def _ecr003_public_policy(policy_text: str | None, name: str) -> Finding:
             recommendation="Verify the policy is valid JSON.",
             passed=False,
         )
+    if not isinstance(policy, dict):
+        policy = {}
     public = [
-        s for s in policy.get("Statement", [])
+        s for s in iter_statements(policy)
         if s.get("Effect") == "Allow"
         and (
             s.get("Principal") == "*"

@@ -348,6 +348,7 @@ pipeline_check --output annotations                # GitHub Actions inline ::err
 pipeline_check --output threatmodel -O threats.md  # STRIDE threat model (Markdown)
 pipeline_check --output cyclonedx -O sbom.json     # CycloneDX 1.6 build SBOM
 pipeline_check --output spdx -O sbom.spdx.json     # SPDX 2.3 build SBOM
+pipeline_check --output openvex -O vex.json        # OpenVEX doc for the OSV advisory findings
 pipeline_check --output both                       # terminal→stderr, JSON→stdout
 ```
 

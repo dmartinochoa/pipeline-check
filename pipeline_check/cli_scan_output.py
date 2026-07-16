@@ -199,6 +199,11 @@ def _emit_gate_summary(
         msg_lines.append(
             f"[gate] {len(gate.baseline_matched)} finding(s) suppressed by baseline"
         )
+    if gate.vex_suppressed:
+        msg_lines.append(
+            f"[gate] {len(gate.vex_suppressed)} advisory finding(s) "
+            f"suppressed by OpenVEX (--vex)"
+        )
     if gate.suppressed:
         msg_lines.append(
             f"[gate] {len(gate.suppressed)} finding(s) suppressed by ignore file"
