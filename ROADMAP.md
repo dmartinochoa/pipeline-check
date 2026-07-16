@@ -21,6 +21,22 @@ What's planned, what's shipped, and what's deliberately out of scope.
   product PURL, the same baseline-style handling ``--baseline`` gets. A
   misconfiguration finding is never VEX-suppressed. The "OpenVEX ingest
   and emit" candidate from the 2026-07-02 sweep below.
+- **Native platform-control adoption posture (``scm_org`` ORG-014,
+  ORG-015)** — The first increment of the "verify the native control is on
+  and enforced" thesis. ``ORG-014`` (MEDIUM) flags an organization whose
+  Actions policy does not require SHA-pinned actions
+  (``sha_pinning_required: false`` on the ``GET /orgs/{org}/actions/
+  permissions`` body ORG-003 already fetches), the platform-native
+  complement to GHA-001. ``ORG-015`` (MEDIUM) flags an organization that
+  does not enforce immutable releases (``enforced_repositories: none`` on
+  the GA ``GET /orgs/{org}/settings/immutable-releases``), passing on
+  ``all`` and passing with a partial note on ``selected``. Both degrade to
+  a passing "unavailable" note on GitHub Enterprise Server / older API
+  versions. One new context slot / fetch, no engine change. The first
+  slice of the "Native platform-control adoption posture" candidate from
+  the 2026-07-02 sweep below; the per-repo release-attestation and native
+  egress-firewall pieces stay deferred (see that candidate). ``scm_org``
+  13 -> 15.
 - **MCP-config security pack (``devenv`` DEV-009, DEV-010, plus Zed and
   Continue config surfaces)** — Extends the MCP-config coverage past
   DEV-007's stdio command servers. ``DEV-009`` flags a committed MCP
@@ -835,24 +851,6 @@ extends an existing thread it says so.
 
 **Verify the platform's native controls are on (adoption posture):**
 
-- **Native platform-control adoption posture (M, high).** GitHub is
-  shipping native pipeline-security controls through 2025-2026: an Actions
-  policy that blocks actions and enforces SHA pinning (2025-08), immutable
-  releases plus release attestations (public preview 2025-08), org-level
-  artifact-attestation policies and a Kubernetes admission controller, and
-  a published 2026 roadmap of workflow dependency locking, a native egress
-  firewall, and execution-policy rulesets. As the platform hardens, the
-  highest-value check is no longer "you should sign / pin / gate" but "the
-  native control exists and is enforced." New API-driven posture checks on
-  the SCM / ORG providers: immutable releases not enabled on a repo; the
-  latest release carries no release attestation; the org has no Actions
-  SHA-pinning policy or execution-policy ruleset; no native egress firewall
-  policy (the platform-native complement to the harden-runner GHA-107 /
-  GHA-108 egress signals). Rides GitHub's own announcements, maps cleanly
-  to the existing compliance frameworks, needs no engine change. Extends
-  the SCM / ORG governance pack. The workflow-dependency-locking piece is
-  already reserved by the "GitHub Actions dependency locking support"
-  candidate below; this is the rest of the 2026 control set.
 - **OpenVEX ingest and emit (M, med). — SHIPPED (Unreleased, on
   ``dev``).** See the Unreleased section above (``--vex`` /
   ``--output openvex``). The SCA world is converging on VEX (OSV-Scanner
@@ -868,6 +866,32 @@ extends an existing thread it says so.
   findings). Slotted into the existing reporter / gate plumbing. The
   CSAF format and suppressing non-advisory findings were left out of
   scope on the same "OSV subset only" boundary.
+- **Native platform-control adoption posture (M, high). — PARTIALLY
+  SHIPPED (Unreleased, on ``dev``).** The first two org-level checks
+  landed (see the Unreleased section above): ``ORG-014`` (org Actions
+  policy does not require SHA pinning, reading the ``sha_pinning_required``
+  field ORG-003 already fetches) and ``ORG-015`` (org does not enforce
+  immutable releases, ``GET /orgs/{org}/settings/immutable-releases``),
+  both stable GA APIs. GitHub is shipping native pipeline-security
+  controls through 2025-2026: an Actions policy that blocks actions and
+  enforces SHA pinning (2025-08), immutable releases plus release
+  attestations (public preview 2025-08), org-level artifact-attestation
+  policies and a Kubernetes admission controller, and a published 2026
+  roadmap of workflow dependency locking, a native egress firewall, and
+  execution-policy rulesets. As the platform hardens, the highest-value
+  check is no longer "you should sign / pin / gate" but "the native
+  control exists and is enforced." **Remaining:** the per-repo
+  release-attestation check (the latest release carries no release
+  attestation) was deferred, it needs a release + attestation-by-digest
+  correlation that is FP-prone and adds per-repo fan-out cost; the native
+  egress firewall policy is still on GitHub's 2026 *future* roadmap with no
+  stable API yet; and the execution-policy-ruleset check overlaps the
+  existing ORG-013 ruleset-enforcement rule. Rides GitHub's own
+  announcements, maps cleanly to the existing compliance frameworks, needs
+  no engine change. Extends the SCM / ORG governance pack. The
+  workflow-dependency-locking piece is already reserved by the "GitHub
+  Actions dependency locking support" candidate below; this is the rest of
+  the 2026 control set.
 
 **Credibility:**
 

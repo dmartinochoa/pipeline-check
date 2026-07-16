@@ -52,6 +52,10 @@ class SCMOrgContext:
     #: ``GET /orgs/{org}/rulesets`` body (a list of ``{id, name, target,
     #: enforcement, ...}``), or ``None`` when unavailable. ORG-013.
     org_rulesets: list[Any] | None = None
+    #: ``GET /orgs/{org}/settings/immutable-releases`` body
+    #: (``{enforced_repositories: "all"|"selected"|"none", ...}``), or
+    #: ``None`` when unavailable. ORG-015.
+    immutable_releases: dict[str, Any] | None = None
     warnings: list[str] = field(default_factory=list)
     files_scanned: int = 0   # repurposed: 1 when any org endpoint was fetched
     files_skipped: int = 0
@@ -102,6 +106,10 @@ class SCMOrgContext:
         rs = fetcher.fetch(f"orgs/{org}/rulesets")
         if isinstance(rs, list):
             ctx.org_rulesets = rs
+        # Immutable-releases org policy (GA 2025-10). Object, not array.
+        imr = fetcher.fetch(f"orgs/{org}/settings/immutable-releases")
+        if isinstance(imr, dict):
+            ctx.immutable_releases = imr
         fetched_any = any((
             ctx.org_meta is not None,
             ctx.actions_permissions is not None,
@@ -110,6 +118,7 @@ class SCMOrgContext:
             ctx.actions_runner_groups is not None,
             ctx.org_hooks is not None,
             ctx.org_rulesets is not None,
+            ctx.immutable_releases is not None,
         ))
         ctx.files_scanned = 1 if fetched_any else 0
         ctx.files_skipped = 0 if fetched_any else 1

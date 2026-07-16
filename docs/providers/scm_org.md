@@ -22,7 +22,7 @@ pipeline_check --pipeline scm_org --scm-org my-org --gh-token "$GITHUB_TOKEN"
 
 ## What it covers
 
-13 checks · 0 have an autofix patch (``--fix``).
+15 checks · 0 have an autofix patch (``--fix``).
 
 | Check | Title | Severity | Fix |
 |-------|-------|----------|-----|
@@ -39,6 +39,8 @@ pipeline_check --pipeline scm_org --scm-org my-org --gh-token "$GITHUB_TOKEN"
 | [ORG-011](#org-011) | Organization webhook delivers events over insecure transport | <span class="pg-sev pg-sev--high">HIGH</span> |  |
 | [ORG-012](#org-012) | New repositories get Dependabot alerts but not security updates | <span class="pg-sev pg-sev--low">LOW</span> |  |
 | [ORG-013](#org-013) | Organization ruleset is in evaluate / disabled mode (not enforced) | <span class="pg-sev pg-sev--medium">MEDIUM</span> |  |
+| [ORG-014](#org-014) | Organization does not require SHA-pinned actions | <span class="pg-sev pg-sev--medium">MEDIUM</span> |  |
+| [ORG-015](#org-015) | Organization does not enforce immutable releases | <span class="pg-sev pg-sev--medium">MEDIUM</span> |  |
 
 ---
 
@@ -301,6 +303,54 @@ Walks ``GET /orgs/{org}/rulesets`` and flags every entry whose ``enforcement`` i
 **Recommended action**
 
 Flip every non-enforcing organization ruleset to ``enforcement: active`` (Org Settings -> Repository -> Rulesets -> <name> -> Enforcement status -> Active). An org-level ruleset applies branch / tag / push governance across every repository the ruleset targets, so a single ruleset left in ``evaluate`` (preview, runs the rule logic but never blocks) or ``disabled`` (explicit off) leaves all of those repos with the audit appearance of org-wide governance and the behavior of none. Operators commonly create a ruleset in ``evaluate`` to preview its effect and forget to promote it.
+
+</div>
+
+</div>
+
+<div class="pg-rule pg-rule--medium" markdown>
+
+## ORG-014: Organization does not require SHA-pinned actions { #org-014 }
+
+<div class="pg-rule__tags">
+<span class="pg-sev pg-sev--medium">MEDIUM</span> <span class="pg-tag pg-tag--owasp">CICD-SEC-3</span> <span class="pg-tag pg-tag--owasp">CICD-SEC-8</span> <span class="pg-tag pg-tag--cwe">CWE-829</span> <span class="pg-tag pg-tag--cwe">CWE-1357</span>
+</div>
+
+Reads the ``sha_pinning_required`` field on ``GET /orgs/{org}/actions/permissions`` (the same endpoint ORG-003 uses, so no extra fetch). Fires when the field is present and ``false``. Passes when it is ``true``, and passes with a note when the field is absent (GitHub Enterprise Server or an older API version that predates the policy) or the endpoint is unavailable. The org-governance complement to GHA-001 (per-workflow unpinned ``uses:``). Needs a token with the ``admin:org`` scope.
+
+**Known false-positive modes**
+
+- An org that pins actions by convention or via a CI lint (rather than the platform policy) is genuinely pinned but still flagged, because the native enforcement is off and nothing stops a new repo from skipping the convention. Turn the policy on to make the guarantee enforced, or suppress at the org level with that rationale.
+
+<div class="pg-rule__rec" markdown>
+
+**Recommended action**
+
+Turn on the organization's SHA-pinning policy (Org Settings -> Actions -> General -> Policies -> "Require actions to be pinned to a full-length commit SHA"), or set ``sha_pinning_required: true`` via ``PUT /orgs/{org}/actions/permissions``. GitHub now enforces the pin at the platform level, so an action referenced by a mutable tag (``@v4``) or branch is rejected org-wide before it can run. This is the native complement to GHA-001: rather than flagging each unpinned ``uses:`` after the fact, the org control stops a retagged / backdoored action (the tj-actions/changed-files class, CVE-2025-30066) from executing in any repo.
+
+</div>
+
+</div>
+
+<div class="pg-rule pg-rule--medium" markdown>
+
+## ORG-015: Organization does not enforce immutable releases { #org-015 }
+
+<div class="pg-rule__tags">
+<span class="pg-sev pg-sev--medium">MEDIUM</span> <span class="pg-tag pg-tag--owasp">CICD-SEC-1</span> <span class="pg-tag pg-tag--cwe">CWE-353</span>
+</div>
+
+Reads ``enforced_repositories`` from ``GET /orgs/{org}/settings/immutable-releases`` and fires when it is ``"none"`` (no repo is enforced). Passes on ``"all"`` and passes with a partial-coverage note on ``"selected"`` (some repos enforced, the rest still mutable). Passes with an unavailable note when the endpoint is missing (GitHub Enterprise Server or an API version predating the GA control) or the token lacks scope. The org-governance analog of the per-release attestation posture; needs a token with the ``admin:org`` scope.
+
+**Known false-positive modes**
+
+- An org that scopes immutable-release enforcement to a documented subset via ``selected`` passes (it is not flagged). An org that deliberately keeps releases mutable (rapid-iteration internal tooling with no external consumers) can suppress at the org level with that rationale.
+
+<div class="pg-rule__rec" markdown>
+
+**Recommended action**
+
+Enforce immutable releases org-wide (Org Settings -> Repository -> Immutable releases -> All repositories), or set ``enforced_repositories: all`` via ``PUT /orgs/{org}/settings/immutable-releases``. Once enforced, a published release's assets are locked and its Git tag is protected, so an attacker who compromises a maintainer account can no longer swap a release binary or repoint a tag after downstream consumers have pinned to it. Immutable releases also carry a build attestation for verifiable integrity. ``selected`` leaves every unlisted repo mutable; prefer ``all`` unless a documented subset is intentional.
 
 </div>
 

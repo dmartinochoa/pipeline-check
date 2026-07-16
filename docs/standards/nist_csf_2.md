@@ -14,7 +14,7 @@ process telemetry the tool cannot witness.
 
 - **Controls in this standard:** 23
 - **Controls evidenced by at least one check:** 23 / 23
-- **Distinct checks evidencing this standard:** 997
+- **Distinct checks evidencing this standard:** 999
 - **Of those, autofixable with `--fix`:** 120
 
 _Severity levels (`CRITICAL` / `HIGH` / `MEDIUM` / `LOW` / `INFO`) follow the same scale across every provider and standard. See [How to read severity](README.md#how-to-read-severity) on the standards overview for the definitions._
@@ -35,11 +35,11 @@ Click a control ID to jump to the per-control section with the full check list. 
 | [`PR.AA-05`](#ctrl-pr-aa-05) | Access permissions, entitlements, and authorizations are defined in a policy, managed, enforced, and reviewed | 76 | 8C · 39H · 28M · 1L |
 | [`PR.DS-01`](#ctrl-pr-ds-01) | The confidentiality, integrity, and availability of data-at-rest are protected | 79 | 11C · 50H · 16M · 2L |
 | [`PR.DS-02`](#ctrl-pr-ds-02) | The confidentiality, integrity, and availability of data-in-transit are protected | 46 | 40H · 5M · 1L |
-| [`PR.PS-01`](#ctrl-pr-ps-01) | Configuration management practices are established and applied | 93 | 13C · 34H · 31M · 14L · 1I |
+| [`PR.PS-01`](#ctrl-pr-ps-01) | Configuration management practices are established and applied | 95 | 13C · 34H · 33M · 14L · 1I |
 | [`PR.PS-02`](#ctrl-pr-ps-02) | Software is maintained, replaced, and removed commensurate with risk | 54 | 8C · 14H · 21M · 11L |
 | [`PR.PS-04`](#ctrl-pr-ps-04) | Log records are generated and made available for continuous monitoring | 41 | 5H · 15M · 5L · 16I |
 | [`PR.PS-05`](#ctrl-pr-ps-05) | Installation and execution of unauthorized software are prevented | 117 | 23C · 80H · 9M · 5L |
-| [`PR.PS-06`](#ctrl-pr-ps-06) | Secure software development practices are integrated, and their performance is monitored throughout the SDLC | 96 | 2C · 29H · 56M · 9L |
+| [`PR.PS-06`](#ctrl-pr-ps-06) | Secure software development practices are integrated, and their performance is monitored throughout the SDLC | 98 | 2C · 29H · 58M · 9L |
 | [`PR.IR-01`](#ctrl-pr-ir-01) | Networks and environments are protected from unauthorized logical access and usage | 86 | 14C · 46H · 24M · 2L |
 | [`PR.IR-03`](#ctrl-pr-ir-03) | Mechanisms are implemented to achieve resilience requirements in normal and adverse situations | 13 | 3H · 8M · 2L |
 | [`DE.CM-01`](#ctrl-de-cm-01) | Networks and network services are monitored to find potentially adverse events | 5 | 4M · 1L |
@@ -849,7 +849,7 @@ pipeline_check --pipeline aws --standard nist_csf_2 --standard owasp_cicd_top_10
 
 ### PR.PS-01: Configuration management practices are established and applied { #ctrl-pr-ps-01 }
 
-**Evidenced by 93 checks** across 20 providers (AWS, Argo Workflows, Azure Cloud, Azure DevOps, Bitbucket, Buildkite, CircleCI, Cloud Build, Dockerfile, Drone CI, GCP, GitHub Actions, GitLab CI, Harness CI/CD, Jenkins, Kubernetes, OCI manifest, SCM, SCM org governance, Tekton).
+**Evidenced by 95 checks** across 20 providers (AWS, Argo Workflows, Azure Cloud, Azure DevOps, Bitbucket, Buildkite, CircleCI, Cloud Build, Dockerfile, Drone CI, GCP, GitHub Actions, GitLab CI, Harness CI/CD, Jenkins, Kubernetes, OCI manifest, SCM, SCM org governance, Tekton).
 
 | Check | Title | Severity | Provider | Fix |
 |-------|-------|----------|----------|-----|
@@ -939,6 +939,8 @@ pipeline_check --pipeline aws --standard nist_csf_2 --standard owasp_cicd_top_10
 | [`OCI-006`](../providers/oci.md#oci-006) | Image has an excessive layer count | <span class="pg-sev pg-sev--low">LOW</span> | [OCI manifest](../providers/oci.md) |  |
 | [`ORG-009`](../providers/scm_org.md#org-009) | Organization self-hosted runner group is available to public repositories | <span class="pg-sev pg-sev--high">HIGH</span> | [SCM org governance](../providers/scm_org.md) |  |
 | [`ORG-013`](../providers/scm_org.md#org-013) | Organization ruleset is in evaluate / disabled mode (not enforced) | <span class="pg-sev pg-sev--medium">MEDIUM</span> | [SCM org governance](../providers/scm_org.md) |  |
+| [`ORG-014`](../providers/scm_org.md#org-014) | Organization does not require SHA-pinned actions | <span class="pg-sev pg-sev--medium">MEDIUM</span> | [SCM org governance](../providers/scm_org.md) |  |
+| [`ORG-015`](../providers/scm_org.md#org-015) | Organization does not enforce immutable releases | <span class="pg-sev pg-sev--medium">MEDIUM</span> | [SCM org governance](../providers/scm_org.md) |  |
 | [`SCM-024`](../providers/scm_github.md#scm-024) | Deployment environment can deploy from any branch | <span class="pg-sev pg-sev--medium">MEDIUM</span> | [SCM](../providers/scm_github.md) |  |
 | [`SCM-029`](../providers/scm_github.md#scm-029) | Repository ruleset is in evaluate / disabled mode (not enforced) | <span class="pg-sev pg-sev--medium">MEDIUM</span> | [SCM](../providers/scm_github.md) |  |
 | [`SCM-041`](../providers/scm_github.md#scm-041) | Active ruleset doesn't gate on a deployment environment | <span class="pg-sev pg-sev--low">LOW</span> | [SCM](../providers/scm_github.md) |  |
@@ -1182,7 +1184,7 @@ pipeline_check --pipeline aws --standard nist_csf_2 --standard owasp_cicd_top_10
 
 ### PR.PS-06: Secure software development practices are integrated, and their performance is monitored throughout the SDLC { #ctrl-pr-ps-06 }
 
-**Evidenced by 96 checks** across 18 providers (AWS, Argo Workflows, Azure Cloud, Azure DevOps, Bitbucket, Buildkite, CircleCI, Cloud Build, Drone CI, GitHub Actions, GitLab CI, GitLab group governance, Harness CI/CD, Jenkins, OCI manifest, SCM, SCM org governance, Tekton).
+**Evidenced by 98 checks** across 18 providers (AWS, Argo Workflows, Azure Cloud, Azure DevOps, Bitbucket, Buildkite, CircleCI, Cloud Build, Drone CI, GitHub Actions, GitLab CI, GitLab group governance, Harness CI/CD, Jenkins, OCI manifest, SCM, SCM org governance, Tekton).
 
 | Check | Title | Severity | Provider | Fix |
 |-------|-------|----------|----------|-----|
@@ -1242,6 +1244,8 @@ pipeline_check --pipeline aws --standard nist_csf_2 --standard owasp_cicd_top_10
 | [`OCI-002`](../providers/oci.md#oci-002) | Image is missing a build attestation manifest | <span class="pg-sev pg-sev--high">HIGH</span> | [OCI manifest](../providers/oci.md) |  |
 | [`ORG-005`](../providers/scm_org.md#org-005) | Organization lets GitHub Actions approve pull requests | <span class="pg-sev pg-sev--high">HIGH</span> | [SCM org governance](../providers/scm_org.md) |  |
 | [`ORG-013`](../providers/scm_org.md#org-013) | Organization ruleset is in evaluate / disabled mode (not enforced) | <span class="pg-sev pg-sev--medium">MEDIUM</span> | [SCM org governance](../providers/scm_org.md) |  |
+| [`ORG-014`](../providers/scm_org.md#org-014) | Organization does not require SHA-pinned actions | <span class="pg-sev pg-sev--medium">MEDIUM</span> | [SCM org governance](../providers/scm_org.md) |  |
+| [`ORG-015`](../providers/scm_org.md#org-015) | Organization does not enforce immutable releases | <span class="pg-sev pg-sev--medium">MEDIUM</span> | [SCM org governance](../providers/scm_org.md) |  |
 | [`SCM-001`](../providers/scm_github.md#scm-001) | Default branch has no protection rule | <span class="pg-sev pg-sev--high">HIGH</span> | [SCM](../providers/scm_github.md) |  |
 | [`SCM-002`](../providers/scm_github.md#scm-002) | Default branch protection does not require pull request reviews | <span class="pg-sev pg-sev--high">HIGH</span> | [SCM](../providers/scm_github.md) |  |
 | [`SCM-003`](../providers/scm_github.md#scm-003) | GitHub default code scanning is not enabled | <span class="pg-sev pg-sev--medium">MEDIUM</span> | [SCM](../providers/scm_github.md) |  |

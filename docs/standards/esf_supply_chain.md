@@ -12,7 +12,7 @@ the scanner evidences controls that surface in CI/CD configuration.
 
 - **Controls in this standard:** 24
 - **Controls evidenced by at least one check:** 24 / 24
-- **Distinct checks evidencing this standard:** 998
+- **Distinct checks evidencing this standard:** 1000
 - **Of those, autofixable with `--fix`:** 120
 
 _Severity levels (`CRITICAL` / `HIGH` / `MEDIUM` / `LOW` / `INFO`) follow the same scale across every provider and standard. See [How to read severity](README.md#how-to-read-severity) on the standards overview for the definitions._
@@ -30,7 +30,7 @@ Click a control ID to jump to the per-control section with the full check list. 
 | [`ESF-D-PRIV-BUILD`](#ctrl-esf-d-priv-build) | Avoid privileged / host-networked build workers | 48 | 6C · 27H · 14M · 1L |
 | [`ESF-D-SIGN-ARTIFACTS`](#ctrl-esf-d-sign-artifacts) | Sign build artifacts and verify signatures before release | 34 | 6H · 28M |
 | [`ESF-D-SBOM`](#ctrl-esf-d-sbom) | Produce SBOM / provenance metadata with every build | 28 | 1H · 22M · 5L |
-| [`ESF-D-CODE-REVIEW`](#ctrl-esf-d-code-review) | Require peer review of source and pipeline configuration | 43 | 1C · 19H · 15M · 8L |
+| [`ESF-D-CODE-REVIEW`](#ctrl-esf-d-code-review) | Require peer review of source and pipeline configuration | 45 | 1C · 19H · 17M · 8L |
 | [`ESF-D-TOKEN-HYGIENE`](#ctrl-esf-d-token-hygiene) | Use short-lived, federated credentials (OIDC), not long-lived tokens | 46 | 1C · 32H · 13M |
 | [`ESF-D-INJECTION`](#ctrl-esf-d-injection) | Prevent script / template injection from untrusted pipeline context | 125 | 29C · 82H · 10M · 4L |
 | [`ESF-D-TAMPER`](#ctrl-esf-d-tamper) | Protect build artifacts from tampering and detect unauthorized modification | 6 | 1C · 4M · 1L |
@@ -421,7 +421,7 @@ pipeline_check --pipeline aws --standard esf_supply_chain --standard owasp_cicd_
 
 ### ESF-D-CODE-REVIEW: Require peer review of source and pipeline configuration { #ctrl-esf-d-code-review }
 
-**Evidenced by 43 checks** across 7 providers (AWS, Argo CD, GitHub Actions, GitLab group governance, Helm, SCM, SCM org governance).
+**Evidenced by 45 checks** across 7 providers (AWS, Argo CD, GitHub Actions, GitLab group governance, Helm, SCM, SCM org governance).
 
 | Check | Title | Severity | Provider | Fix |
 |-------|-------|----------|----------|-----|
@@ -441,6 +441,8 @@ pipeline_check --pipeline aws --standard esf_supply_chain --standard owasp_cicd_
 | [`HELM-006`](../providers/helm.md#helm-006) | Chart.yaml does not declare a kubeVersion compatibility range | <span class="pg-sev pg-sev--low">LOW</span> | [Helm](../providers/helm.md) |  |
 | [`ORG-005`](../providers/scm_org.md#org-005) | Organization lets GitHub Actions approve pull requests | <span class="pg-sev pg-sev--high">HIGH</span> | [SCM org governance](../providers/scm_org.md) |  |
 | [`ORG-013`](../providers/scm_org.md#org-013) | Organization ruleset is in evaluate / disabled mode (not enforced) | <span class="pg-sev pg-sev--medium">MEDIUM</span> | [SCM org governance](../providers/scm_org.md) |  |
+| [`ORG-014`](../providers/scm_org.md#org-014) | Organization does not require SHA-pinned actions | <span class="pg-sev pg-sev--medium">MEDIUM</span> | [SCM org governance](../providers/scm_org.md) |  |
+| [`ORG-015`](../providers/scm_org.md#org-015) | Organization does not enforce immutable releases | <span class="pg-sev pg-sev--medium">MEDIUM</span> | [SCM org governance](../providers/scm_org.md) |  |
 | [`SCM-001`](../providers/scm_github.md#scm-001) | Default branch has no protection rule | <span class="pg-sev pg-sev--high">HIGH</span> | [SCM](../providers/scm_github.md) |  |
 | [`SCM-002`](../providers/scm_github.md#scm-002) | Default branch protection does not require pull request reviews | <span class="pg-sev pg-sev--high">HIGH</span> | [SCM](../providers/scm_github.md) |  |
 | [`SCM-007`](../providers/scm_github.md#scm-007) | Default branch protection allows force-pushes | <span class="pg-sev pg-sev--high">HIGH</span> | [SCM](../providers/scm_github.md) |  |

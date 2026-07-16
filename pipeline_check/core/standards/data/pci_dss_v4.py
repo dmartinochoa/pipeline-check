@@ -1015,6 +1015,8 @@ STANDARD = Standard(
         "ORG-011":  ["6.4.1"],                            # org: org webhook over insecure transport
         "ORG-012":  ["6.3.1", "6.3.3"],                   # org: new-repo Dependabot security-updates default off
         "ORG-013":  ["6.4.3"],                            # org: org ruleset not enforced (evaluate/disabled)
+        "ORG-015":  ["6.4.3"],  # org: immutable releases not enforced org-wide
+        "ORG-014":  ["6.4.3"],  # org: native SHA-pinning policy not required
         "NPM-012":  ["8.2.1", "6.5.1"],                   # publish token missing restrictions
         # ── Azure Cloud (Entra ID / Storage / Key Vault / ACR / Monitor) ──
         "ENTRA-001": ["7.2.1", "7.2.5"],                  # SP assigned Global Administrator

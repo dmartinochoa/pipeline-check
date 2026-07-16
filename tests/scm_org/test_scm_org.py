@@ -260,6 +260,14 @@ _SECRETS_PATH = f"orgs/{_ORG}/actions/secrets"
 _RUNNER_GROUPS_PATH = f"orgs/{_ORG}/actions/runner-groups"
 _HOOKS_PATH = f"orgs/{_ORG}/hooks"
 _RULESETS_PATH = f"orgs/{_ORG}/rulesets"
+_IMMUTABLE_PATH = f"orgs/{_ORG}/settings/immutable-releases"
+
+
+def _ctx_immutable(policy: dict | None) -> SCMOrgContext:
+    mapping: dict[str, Any] = {_ORG_PATH: {"login": _ORG}}
+    if policy is not None:
+        mapping[_IMMUTABLE_PATH] = policy
+    return SCMOrgContext.for_org(_ORG, FakeFetcher(mapping))
 
 
 def _ctx_actions(
@@ -509,6 +517,67 @@ class TestOrg013:
         assert "not available" in out[0].description
 
 
+# ── ORG-014: native SHA-pinning policy not required ───────────────────────
+
+class TestOrg014:
+    def test_fires_when_not_required(self):
+        ctx = _ctx_actions(
+            {"enabled_repositories": "all", "sha_pinning_required": False},
+        )
+        out = [f for f in _for(_findings(ctx), "ORG-014") if not f.passed]
+        assert len(out) == 1
+        assert out[0].severity == Severity.MEDIUM
+        assert "does not require SHA-pinned actions" in out[0].description
+
+    def test_passes_when_required(self):
+        ctx = _ctx_actions(
+            {"enabled_repositories": "all", "sha_pinning_required": True},
+        )
+        out = _for(_findings(ctx), "ORG-014")
+        assert out and all(f.passed for f in out)
+
+    def test_passes_with_note_when_field_absent(self):
+        # GitHub Enterprise Server / older API version: no field present.
+        ctx = _ctx_actions({"enabled_repositories": "all"})
+        out = _for(_findings(ctx), "ORG-014")
+        assert out and all(f.passed for f in out)
+        assert "does not report" in out[0].description
+
+    def test_passes_with_note_when_permissions_unavailable(self):
+        ctx = _ctx_actions(None)
+        out = _for(_findings(ctx), "ORG-014")
+        assert out and all(f.passed for f in out)
+        assert "not available" in out[0].description
+
+
+# ── ORG-015: immutable releases not enforced ──────────────────────────────
+
+class TestOrg015:
+    def test_fires_when_none(self):
+        ctx = _ctx_immutable({"enforced_repositories": "none"})
+        out = [f for f in _for(_findings(ctx), "ORG-015") if not f.passed]
+        assert len(out) == 1
+        assert out[0].severity == Severity.MEDIUM
+        assert "does not enforce immutable releases" in out[0].description
+
+    def test_passes_when_all(self):
+        ctx = _ctx_immutable({"enforced_repositories": "all"})
+        out = _for(_findings(ctx), "ORG-015")
+        assert out and all(f.passed for f in out)
+
+    def test_passes_with_partial_note_when_selected(self):
+        ctx = _ctx_immutable({"enforced_repositories": "selected"})
+        out = _for(_findings(ctx), "ORG-015")
+        assert out and all(f.passed for f in out)
+        assert "selected subset" in out[0].description
+
+    def test_passes_with_note_when_unavailable(self):
+        ctx = _ctx_immutable(None)
+        out = _for(_findings(ctx), "ORG-015")
+        assert out and all(f.passed for f in out)
+        assert "not available" in out[0].description
+
+
 # ── Provider wiring ───────────────────────────────────────────────────────
 
 class TestProvider:
@@ -536,7 +605,8 @@ class TestProvider:
             "ORG-007": "CICD-SEC-2", "ORG-008": "CICD-SEC-2",
             "ORG-009": "CICD-SEC-4", "ORG-010": "CICD-SEC-6",
             "ORG-011": "CICD-SEC-6", "ORG-012": "CICD-SEC-3",
-            "ORG-013": "CICD-SEC-1",
+            "ORG-013": "CICD-SEC-1", "ORG-014": "CICD-SEC-3",
+            "ORG-015": "CICD-SEC-1",
         }
         for cid, ctrl in expected.items():
             controls = {c.control_id for c in resolve_for_check(cid)}

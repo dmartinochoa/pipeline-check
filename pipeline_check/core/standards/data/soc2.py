@@ -986,6 +986,8 @@ STANDARD = Standard(
         "ORG-011":  ["CC6.7"],                   # org governance: org webhook over insecure transport
         "ORG-012":  ["CC7.1"],                   # org governance: new-repo Dependabot security-updates default off
         "ORG-013":  ["CC8.1"],                   # org governance: org ruleset not enforced (evaluate/disabled)
+        "ORG-015":  ["CC8.1"],  # org: immutable releases not enforced org-wide
+        "ORG-014":  ["CC8.1"],  # org: native SHA-pinning policy not required
         "NPM-012":  ["CC6.1", "CC8.1"],          # publish token missing restrictions
         # ── SCM posture (governance via the platform REST API) ──────
         # Branch protection / review controls map to CC8.1 (Change
