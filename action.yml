@@ -84,7 +84,8 @@ inputs:
       JSON, one finding per line for log / SIEM ingestion), ``html``,
       ``junit``, ``markdown``, ``codequality``, ``csv``, ``annotations``
       (GitHub Actions inline ``::error`` annotations), ``cyclonedx``,
-      ``spdx``, ``both``.
+      ``spdx``, ``openvex`` (an OpenVEX document for the OSV advisory
+      findings), ``both``.
     required: false
     default: 'sarif'
   output-file:
@@ -97,6 +98,7 @@ inputs:
       ``gl-code-quality-report.json`` for Code Quality (the GitLab
       convention), ``pipeline-check-sbom.json`` for CycloneDX,
       ``pipeline-check.spdx.json`` for SPDX,
+      ``pipeline-check.openvex.json`` for OpenVEX,
       ``pipeline-check-threatmodel.json`` for the threat-model
       report. Terminal / both write to stdout when this is blank.
     required: false
@@ -292,6 +294,7 @@ runs:
             codequality) OUTPUT_FILE="gl-code-quality-report.json" ;;
             cyclonedx)   OUTPUT_FILE="pipeline-check-sbom.json" ;;
             spdx)        OUTPUT_FILE="pipeline-check.spdx.json" ;;
+            openvex)     OUTPUT_FILE="pipeline-check.openvex.json" ;;
             threatmodel) OUTPUT_FILE="pipeline-check-threatmodel.json" ;;
           esac
         fi

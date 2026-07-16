@@ -4,7 +4,9 @@ from __future__ import annotations
 import re
 from typing import Any
 
-from ...base import Finding, Location, Severity
+from ..._primitives.osv_fetcher import advisory_aliases, advisory_id
+from ....sbom import make_npm_purl
+from ...base import Finding, Location, Severity, VulnRef
 from ...rule import Rule
 from ..base import NpmContext, NpmManifest, iter_manifest_dependencies
 
@@ -79,6 +81,7 @@ def check(
 
     offenders: list[str] = []
     locations: list[Location] = []
+    vulns: list[VulnRef] = []
     for section, name, spec in iter_manifest_dependencies(manifest):
         m = _EXACT_VERSION_RE.match(spec.strip())
         if m is None:
@@ -87,10 +90,17 @@ def check(
         advisories = osv.get((name, version))
         if not advisories:
             continue
-        ids = [a.id if hasattr(a, "id") else str(a) for a in advisories]
+        ids = [advisory_id(a) for a in advisories]
         offenders.append(
             f"{section}.{name}@{version} ({', '.join(ids)})"
         )
+        purl = make_npm_purl(name, version)
+        for a in advisories:
+            vulns.append(VulnRef(
+                vuln_id=advisory_id(a),
+                purl=purl,
+                aliases=advisory_aliases(a),
+            ))
         idx = manifest.text.find(f'"{name}"')
         line_no = manifest.text[:idx].count("\n") + 1 if idx >= 0 else 1
         locations.append(Location(
@@ -115,5 +125,5 @@ def check(
         check_id=RULE.id, title=RULE.title, severity=RULE.severity,
         resource=manifest.path, description=desc,
         recommendation=RULE.recommendation, passed=passed,
-        locations=locations,
+        locations=locations, vulnerabilities=tuple(vulns),
     )

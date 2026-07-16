@@ -6,6 +6,21 @@ What's planned, what's shipped, and what's deliberately out of scope.
 
 ### Unreleased (on ``dev``)
 
+- **OpenVEX ingest and emit (``--vex`` / ``--output openvex``)** — The
+  VEX-exchange support for the OSV advisory findings (NPM-010 /
+  PYPI-009 / MVN-009 / NUGET-009), the CVE-shaped subset of the catalog.
+  Those four rules now attach a structured ``(vulnerability,
+  product-PURL)`` pair (``Finding.vulnerabilities``, built via the
+  ``core.sbom`` PURL helpers). ``--output openvex`` emits an OpenVEX
+  0.2.0 document, one ``affected`` statement per vulnerability listing
+  every affected product PURL plus the OSV cross-reference aliases, with
+  a content-hash ``@id`` for stable re-runs. ``--vex PATH`` (repeatable)
+  consumes an OpenVEX document and excludes from the gate (still
+  reported) any advisory finding a maintainer marked ``not_affected`` /
+  ``fixed``, matched by vulnerability id or alias (either direction) and
+  product PURL, the same baseline-style handling ``--baseline`` gets. A
+  misconfiguration finding is never VEX-suppressed. The "OpenVEX ingest
+  and emit" candidate from the 2026-07-02 sweep below.
 - **MCP-config security pack (``devenv`` DEV-009, DEV-010, plus Zed and
   Continue config surfaces)** — Extends the MCP-config coverage past
   DEV-007's stdio command servers. ``DEV-009`` flags a committed MCP
@@ -838,17 +853,21 @@ extends an existing thread it says so.
   the SCM / ORG governance pack. The workflow-dependency-locking piece is
   already reserved by the "GitHub Actions dependency locking support"
   candidate below; this is the rest of the 2026 control set.
-- **OpenVEX ingest and emit (M, med).** The SCA world is converging on VEX
-  (OSV-Scanner V2, Trivy, and Sigstore all ship OpenVEX / CSAF). The tool
-  already emits OSV-backed advisory findings (NPM-010 / PYPI-009 /
-  MVN-009 / NUGET-009) and CycloneDX + SPDX SBOMs. Add: consume an OpenVEX
-  document to suppress the advisory findings a maintainer has marked
-  ``not_affected`` / ``fixed`` (a governance escape hatch scoped to the
-  CVE-shaped subset, not the misconfig findings), and emit an OpenVEX
-  statement for the tool's own advisory findings so a downstream consumer
-  can carry the same exchange. Slots into the existing reporter / SBOM
-  plumbing. Value is scoped to the OSV subset, so it is a smaller bet than
-  it first looks.
+- **OpenVEX ingest and emit (M, med). — SHIPPED (Unreleased, on
+  ``dev``).** See the Unreleased section above (``--vex`` /
+  ``--output openvex``). The SCA world is converging on VEX (OSV-Scanner
+  V2, Trivy, and Sigstore all ship OpenVEX / CSAF). The tool already
+  emits OSV-backed advisory findings (NPM-010 / PYPI-009 / MVN-009 /
+  NUGET-009) and CycloneDX + SPDX SBOMs. Built as scoped: the four OSV
+  rules now carry a structured ``(vulnerability, product-PURL)`` pair
+  (``Finding.vulnerabilities``); ``--output openvex`` emits an OpenVEX
+  0.2.0 document (one ``affected`` statement per vulnerability), and
+  ``--vex`` consumes a document to suppress, baseline-style, the advisory
+  findings a maintainer marked ``not_affected`` / ``fixed`` (a governance
+  escape hatch scoped to the CVE-shaped subset, not the misconfig
+  findings). Slotted into the existing reporter / gate plumbing. The
+  CSAF format and suppressing non-advisory findings were left out of
+  scope on the same "OSV subset only" boundary.
 
 **Credibility:**
 

@@ -18,6 +18,7 @@ format carries the same finding set, only the rendering differs.
 | `threatmodel` | stdout or `--output-file` | STRIDE-mapped Markdown threat-model document. Auto-runs `--inventory`. SOC 2 / PCI / NIST SSDF evidence packages, architecture-review docs |
 | `cyclonedx` | stdout or `--output-file`  | CycloneDX 1.6 JSON SBOM of build-time dependencies (actions, base images, packages). PURL identifiers on every component |
 | `spdx` | stdout or `--output-file`  | SPDX 2.3 JSON SBOM of the same build-time dependencies. Each package carries a PURL `externalRef`; the document `DESCRIBES` every package |
+| `openvex` | stdout or `--output-file`  | OpenVEX 0.2.0 document for the OSV advisory findings (`NPM-010` / `PYPI-009` / `MVN-009` / `NUGET-009`), one `affected` statement per `(vulnerability, product-PURL)`. Feed a triaged `not_affected` / `fixed` document back with `--vex` |
 | `both`     | terminal → **stderr**, JSON → stdout | Pipe `jq` while still seeing a human report |
 
 `--pr-diff REF` is the diff-mode counterpart to the formats above: it
@@ -362,6 +363,39 @@ entry, and the provider / kind / source / pinned metadata goes in the
 package ``comment``. The document ``DESCRIBES`` every package via a
 relationship. No external library is required; the JSON is emitted
 directly.
+
+## OpenVEX
+
+```bash
+# Emit a VEX document for the scan's OSV advisory findings.
+pipeline_check --pipeline npm --resolve-remote \
+    --output openvex --output-file pipeline-check.openvex.json
+
+# Later: suppress the ones a maintainer has triaged away.
+pipeline_check --pipeline npm --resolve-remote --vex triaged.openvex.json
+```
+
+The `openvex` format emits an [OpenVEX](https://openvex.dev) 0.2.0
+document covering the CVE-shaped subset of the catalog: the OSV
+advisory rules (`NPM-010` / `PYPI-009` / `MVN-009` / `NUGET-009`), which
+are the only checks that attach a structured `(vulnerability, product)`
+pair. Each distinct vulnerability becomes one statement with `status:
+affected`, listing every affected product as a Package-URL (the same
+PURL the SBOM reporters emit), plus the OSV cross-reference aliases so a
+consumer keyed on either the CVE or the GHSA can match. The document
+`@id` is a content hash of the statements, so re-running on an unchanged
+finding set yields a stable id. Misconfiguration findings never appear.
+
+`--vex PATH` (repeatable) is the consume side. Hand it an OpenVEX
+document and any OSV advisory finding whose `(vulnerability, product)` a
+maintainer marked `not_affected` or `fixed` is excluded from the gate
+(but still shown in the report), the same baseline-style handling
+`--baseline` gets. Matching is by vulnerability id or any alias (either
+direction) and by product PURL (a versionless product covers every
+version). The natural loop is `--output openvex` to produce the
+worklist, triage each statement's `status` and `justification`, then
+`--vex` the result back on the next run. Feeding a document with only
+`affected` / `under_investigation` statements suppresses nothing.
 
 ## Exit codes are independent of format
 

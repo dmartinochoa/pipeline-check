@@ -3,7 +3,9 @@ from __future__ import annotations
 
 from typing import Any
 
-from ...base import Finding, Location, Severity
+from ..._primitives.osv_fetcher import advisory_aliases, advisory_id
+from ....sbom import make_nuget_purl
+from ...base import Finding, Location, Severity, VulnRef
 from ...rule import Rule
 from ..base import NuGetContext, NuGetProject
 
@@ -65,16 +67,24 @@ def check(
 
     offenders: list[str] = []
     locations: list[Location] = []
+    vulns: list[VulnRef] = []
     for ref in project.package_refs:
         if ref.version is None:
             continue
         advisories = osv.get((ref.name.lower(), ref.version))
         if not advisories:
             continue
-        ids = [a.id if hasattr(a, "id") else str(a) for a in advisories]
+        ids = [advisory_id(a) for a in advisories]
         offenders.append(
             f"{ref.name}@{ref.version} ({', '.join(ids)})"
         )
+        purl = make_nuget_purl(ref.name, ref.version)
+        for a in advisories:
+            vulns.append(VulnRef(
+                vuln_id=advisory_id(a),
+                purl=purl,
+                aliases=advisory_aliases(a),
+            ))
         locations.append(Location(
             path=project.path,
             start_line=ref.line_no, end_line=ref.line_no,
@@ -98,5 +108,5 @@ def check(
         check_id=RULE.id, title=RULE.title, severity=RULE.severity,
         resource=project.path, description=desc,
         recommendation=RULE.recommendation, passed=passed,
-        locations=locations,
+        locations=locations, vulnerabilities=tuple(vulns),
     )

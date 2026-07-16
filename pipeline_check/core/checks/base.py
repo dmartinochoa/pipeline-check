@@ -36,6 +36,7 @@ __all__ = [
     "Finding",
     "Location",
     "ResourceAnchor",
+    "VulnRef",
     "ControlRef",
     "BaseCheck",
     # re-exported from blob
@@ -266,6 +267,43 @@ class TaintFlow:
         return out
 
 
+@dataclass(frozen=True, slots=True)
+class VulnRef:
+    """A structured known-vulnerability the finding evidences.
+
+    Carried by the OSV-advisory rules (``NPM-010`` / ``PYPI-009`` /
+    ``MVN-009`` / ``NUGET-009``), the CVE-shaped subset of the catalog.
+    Where the free-text ``description`` reads ``lodash@4.17.20
+    (GHSA-xxxx, CVE-yyyy)``, this exposes the same facts as machine
+    data so the OpenVEX reporter can emit one statement per
+    ``(vulnerability, product)`` pair and a consumed VEX document can
+    match and suppress a finding without parsing prose.
+
+    ``vuln_id`` is the primary advisory id (a GHSA / CVE / OSV id).
+    ``aliases`` are the other ids OSV lists for the same advisory (a
+    GHSA and its CVE cross-reference each other), so a VEX statement
+    keyed on either form still matches. ``purl`` is the affected
+    product in canonical Package-URL form (``pkg:npm/lodash@4.17.20``),
+    built via the ``core.sbom`` ``make_*_purl`` helpers so it agrees
+    with the SBOM reporters' component identities.
+
+    ``(vuln_id, purl)`` is the equality key; the VEX matcher treats a
+    finding's ``vulnerabilities`` as a set and looks for a statement
+    whose vulnerability (by ``vuln_id`` or any alias, either direction)
+    and product ``purl`` overlap.
+    """
+
+    vuln_id: str
+    purl: str
+    aliases: tuple[str, ...] = ()
+
+    def to_dict(self) -> dict[str, Any]:
+        out: dict[str, Any] = {"vuln_id": self.vuln_id, "purl": self.purl}
+        if self.aliases:
+            out["aliases"] = list(self.aliases)
+        return out
+
+
 @dataclass(slots=True)
 class Finding:
     check_id: str
@@ -354,6 +392,16 @@ class Finding:
     #: rules; engine-internal, not serialized into reports (the
     #: human-readable form is ``path_evidence``).
     taint_flows: tuple[TaintFlow, ...] = ()
+    #: Structured known-vulnerability references the finding evidences.
+    #: Populated only by the OSV-advisory rules (``NPM-010`` /
+    #: ``PYPI-009`` / ``MVN-009`` / ``NUGET-009``), the CVE-shaped
+    #: subset of the catalog. Consumed by the OpenVEX reporter (one
+    #: statement per ``(vulnerability, product)`` pair) and by the
+    #: ``--vex`` ingest path, which suppresses a finding whose
+    #: ``(vuln, product)`` a maintainer marked ``not_affected`` /
+    #: ``fixed``. Empty for every misconfiguration rule, so VEX
+    #: matching is automatically scoped to the advisory subset.
+    vulnerabilities: tuple[VulnRef, ...] = ()
 
     def to_dict(self) -> dict[str, Any]:
         out: dict[str, Any] = {
@@ -380,6 +428,8 @@ class Finding:
             out["path_evidence"] = list(self.path_evidence)
         if self.resource_anchors:
             out["resource_anchors"] = [a.to_dict() for a in self.resource_anchors]
+        if self.vulnerabilities:
+            out["vulnerabilities"] = [v.to_dict() for v in self.vulnerabilities]
         return out
 
 
