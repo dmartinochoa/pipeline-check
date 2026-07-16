@@ -3,8 +3,8 @@ from __future__ import annotations
 
 from typing import Any
 
-from ..._primitives.osv_fetcher import advisory_aliases, advisory_id
 from ....sbom import make_maven_purl
+from ..._primitives.osv_fetcher import advisory_aliases, advisory_id
 from ...base import Finding, Location, Severity, VulnRef
 from ...rule import Rule
 from ..base import (
