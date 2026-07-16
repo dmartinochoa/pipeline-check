@@ -146,6 +146,11 @@ release commit collapses this section into `## [X.Y.Z] - <date>`.
   longer read as a shell step. Azure `ADO-027` gained the analogous fix,
   reading the explicit-task form (`task: Bash@3` / `CmdLine@2` /
   `PowerShell@2` with `inputs.script`). Found by the 2026-07 rule audit.
+  The named-argument sub-pattern was then hardened against a
+  regular-expression denial of service: a crafted `sh(` prefix with many
+  `name:` fragments could trigger exponential backtracking. A `script`
+  exclusion plus removing an overlapping-whitespace quantifier keep the
+  match linear.
 
 ### Changed
 

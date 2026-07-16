@@ -109,7 +109,13 @@ SHELL_STEP_RE = re.compile(
     # ``sh(returnStdout: true, script: "…")`` are the mainstream ways to
     # write a shell step that returns stdout/status; the ``script:`` label
     # (and any preceding named args) sit between the keyword and the body.
-    r"(?:(?:[A-Za-z_]\w*\s*:\s*[^,\n]*,\s*)*script\s*:\s*)?"
+    # Two guards keep this run linear (the original tripped a py/redos):
+    # ``(?!script\b)`` stops a leading ``script:`` from being eaten as a
+    # named-arg pair (so it's always the explicit ``script:`` clause below,
+    # no pair-vs-clause backtracking); and the value is ``:[^,\n]*`` rather
+    # than ``:\s*[^,\n]*`` so no two adjacent quantifiers both match the
+    # spaces after the colon (the overlap that exploded on crafted input).
+    r"(?:(?:(?!script\b)[A-Za-z_]\w*\s*:[^,\n]*,\s*)*script\s*:\s*)?"
     r"(?:\"\"\"(?P<triple_d>.*?)\"\"\""
     r"|'''(?P<triple_s>.*?)'''"
     r"|\"(?P<dq>(?:[^\"\\]|\\.)*)\""
