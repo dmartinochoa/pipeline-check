@@ -116,40 +116,57 @@ class _ScanPaths:
     pulumi_path: str | None = None
 
 
+@dataclass(frozen=True)
+class ProviderPathArgs:
+    """The raw ``--<provider>-path`` flag values as ``scan()`` receives them.
+
+    ``scan()``'s signature is fixed by Click (one option binds to one
+    parameter), so these ~30 path flags arrive as loose locals. Bundling
+    them into one frozen object lets :func:`_resolve_provider_paths` (and
+    any future consumer) take a single typed argument instead of a
+    31-keyword call, and gives the group a documented name. The *resolved*
+    counterpart, after auto-detect / validation, is :class:`_ScanPaths`.
+
+    Every field defaults to ``None`` / ``()`` so a caller constructs it
+    with only the flags it has, keyword-style; the field names match the
+    ``scan()`` parameters and the ``_ScanPaths`` fields one-to-one.
+    """
+    tf_plan: str | None = None
+    tf_source: str | None = None
+    gha_path: str | None = None
+    gitea_path: str | None = None
+    gitlab_path: str | None = None
+    bitbucket_path: str | None = None
+    azure_path: str | None = None
+    jenkinsfile_path: str | None = None
+    circleci_path: str | None = None
+    cfn_template: str | None = None
+    cloudbuild_path: str | None = None
+    buildkite_path: str | None = None
+    tekton_path: str | None = None
+    argo_path: str | None = None
+    argocd_path: str | None = None
+    dockerfile_path: str | None = None
+    k8s_path: str | None = None
+    helm_path: str | None = None
+    oci_manifest: str | None = None
+    drone_path: str | None = None
+    harness_path: str | None = None
+    npm_path: str | None = None
+    pypi_path: str | None = None
+    maven_path: str | None = None
+    nuget_path: str | None = None
+    gomod_path: str | None = None
+    cargo_path: str | None = None
+    composer_path: str | None = None
+    rubygems_path: str | None = None
+    pulumi_path: str | None = None
+    helm_values: tuple[str, ...] = ()
+
+
 def _resolve_provider_paths(
     pipelines_to_resolve: list[str],
-    *,
-    tf_plan: str | None,
-    tf_source: str | None,
-    gha_path: str | None,
-    gitea_path: str | None,
-    gitlab_path: str | None,
-    bitbucket_path: str | None,
-    azure_path: str | None,
-    jenkinsfile_path: str | None,
-    circleci_path: str | None,
-    cfn_template: str | None,
-    cloudbuild_path: str | None,
-    buildkite_path: str | None,
-    tekton_path: str | None,
-    argo_path: str | None,
-    argocd_path: str | None,
-    dockerfile_path: str | None,
-    k8s_path: str | None,
-    helm_path: str | None,
-    oci_manifest: str | None,
-    drone_path: str | None,
-    harness_path: str | None,
-    npm_path: str | None,
-    pypi_path: str | None,
-    maven_path: str | None,
-    nuget_path: str | None,
-    gomod_path: str | None,
-    cargo_path: str | None,
-    composer_path: str | None,
-    rubygems_path: str | None,
-    pulumi_path: str | None,
-    helm_values: tuple[str, ...],
+    path_args: ProviderPathArgs,
 ) -> _ScanPaths:
     """Resolve / auto-detect each selected provider's source path.
 
@@ -158,7 +175,44 @@ def _resolve_provider_paths(
     auto-detecting a canonical path when the flag was omitted and raising
     ``click.UsageError`` on a missing or invalid one. Returns the
     resolved paths bundled for the scanner kwargs.
+
+    *path_args* carries the raw ``--<provider>-path`` flag values; it is
+    unpacked into the working locals the resolution loop reassigns, so the
+    per-provider logic below reads exactly as it did when this took one
+    keyword argument per flag.
     """
+    tf_plan = path_args.tf_plan
+    tf_source = path_args.tf_source
+    gha_path = path_args.gha_path
+    gitea_path = path_args.gitea_path
+    gitlab_path = path_args.gitlab_path
+    bitbucket_path = path_args.bitbucket_path
+    azure_path = path_args.azure_path
+    jenkinsfile_path = path_args.jenkinsfile_path
+    circleci_path = path_args.circleci_path
+    cfn_template = path_args.cfn_template
+    cloudbuild_path = path_args.cloudbuild_path
+    buildkite_path = path_args.buildkite_path
+    tekton_path = path_args.tekton_path
+    argo_path = path_args.argo_path
+    argocd_path = path_args.argocd_path
+    dockerfile_path = path_args.dockerfile_path
+    k8s_path = path_args.k8s_path
+    helm_path = path_args.helm_path
+    oci_manifest = path_args.oci_manifest
+    drone_path = path_args.drone_path
+    harness_path = path_args.harness_path
+    npm_path = path_args.npm_path
+    pypi_path = path_args.pypi_path
+    maven_path = path_args.maven_path
+    nuget_path = path_args.nuget_path
+    gomod_path = path_args.gomod_path
+    cargo_path = path_args.cargo_path
+    composer_path = path_args.composer_path
+    rubygems_path = path_args.rubygems_path
+    pulumi_path = path_args.pulumi_path
+    helm_values = path_args.helm_values
+
     for pipeline_lc in pipelines_to_resolve:
         if pipeline_lc == "terraform":
             if tf_plan and tf_source:
