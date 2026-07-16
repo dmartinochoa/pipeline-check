@@ -12,6 +12,24 @@ release commit collapses this section into `## [X.Y.Z] - <date>`.
 
 ### Added
 
+- **OpenVEX ingest and emit (`--vex` / `--output openvex`).** The SCA
+  world is converging on VEX (OSV-Scanner V2, Trivy, Sigstore all ship
+  OpenVEX), so the OSV advisory findings (`NPM-010` / `PYPI-009` /
+  `MVN-009` / `NUGET-009`) now carry a structured `(vulnerability,
+  product-PURL)` pair instead of only free text. `--output openvex`
+  emits an OpenVEX 0.2.0 document, one `affected` statement per
+  vulnerability with every affected product as a Package-URL and the OSV
+  cross-reference aliases; the document `@id` is a content hash so an
+  unchanged finding set yields a stable id. `--vex PATH` (repeatable)
+  consumes an OpenVEX document and excludes from the gate (still
+  reporting) any advisory finding whose `(vulnerability, product)` a
+  maintainer marked `not_affected` or `fixed`, the same baseline-style
+  handling `--baseline` gets. Matching is by vulnerability id or any
+  alias (either direction) and by product PURL (a versionless product
+  covers every version). Scoped to the CVE-shaped subset: a
+  misconfiguration finding is never VEX-suppressed. Emit produces the
+  triage worklist; `--vex` feeds the triaged verdicts back on the next
+  run.
 - **Committed unsafe-serialization model artifact (modelfile `MODEL-006`).**
   Flags a committed model-weight file, anywhere in the scanned tree, whose
   format deserializes arbitrary code at load: `.pkl` / `.pickle` / `.pt` /

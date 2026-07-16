@@ -32,6 +32,30 @@ class OsvAdvisory:
     aliases: tuple[str, ...]
 
 
+def advisory_id(adv: Any) -> str:
+    """Extract the advisory id from an :class:`OsvAdvisory` or a dict.
+
+    Production passes :class:`OsvAdvisory` objects; the rule tests pass
+    plain ``{"id": ...}`` dicts. Accept both, and fall back to ``str``
+    for anything else so a caller never crashes on a malformed entry.
+    """
+    if hasattr(adv, "id"):
+        return str(adv.id)
+    if isinstance(adv, dict):
+        return str(adv.get("id", adv))
+    return str(adv)
+
+
+def advisory_aliases(adv: Any) -> tuple[str, ...]:
+    """Extract the alias id tuple from an :class:`OsvAdvisory` or a dict."""
+    raw = getattr(adv, "aliases", None)
+    if raw is None and isinstance(adv, dict):
+        raw = adv.get("aliases")
+    if isinstance(raw, (list, tuple)):
+        return tuple(str(a) for a in raw)
+    return ()
+
+
 def query_osv_batch(
     queries: list[tuple[str, str, str]],
     cache: FileSystemCache | None = None,
