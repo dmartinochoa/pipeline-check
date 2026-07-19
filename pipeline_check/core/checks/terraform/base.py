@@ -56,6 +56,9 @@ class TerraformContext:
         resources, data_sources = _split_resources(plan)
         self._resources: list[TerraformResource] = resources
         self._data_sources: list[TerraformResource] = data_sources
+        self._after_unknown: dict[str, dict[str, Any]] = (
+            _index_after_unknown(plan)
+        )
 
     @classmethod
     def from_path(cls, path: str | Path) -> TerraformContext:
@@ -100,6 +103,9 @@ class TerraformContext:
         ctx.files_skipped = 0
         ctx._resources = result.resources
         ctx._data_sources = result.data_sources
+        # HCL source mode has no plan ``after_unknown`` metadata; rules
+        # fall back to the interpolation-string heuristics there.
+        ctx._after_unknown = {}
         if result.unresolved_refs:
             refs = ", ".join(sorted(result.unresolved_refs)[:10])
             ctx.warnings.append(
@@ -128,8 +134,44 @@ class TerraformContext:
             if resource_type is None or r.type == resource_type:
                 yield r
 
+    def after_unknown(self, address: str) -> dict[str, Any]:
+        """Return the ``after_unknown`` map for *address*, or ``{}``.
+
+        A ``terraform show -json`` plan carries, per resource change, an
+        ``after_unknown`` tree mirroring ``after`` with ``true`` at every
+        attribute whose value is computed at apply time (a reference to
+        a not-yet-created resource, a generated id, ...). Rules consult
+        this to tell "attribute genuinely absent / false" from "attribute
+        set to a value the plan can't resolve yet", so they don't false
+        -fire on a fresh plan. Empty in HCL source mode.
+        """
+        return self._after_unknown.get(address, {})
+
     def __len__(self) -> int:
         return len(self._resources)
+
+
+def _index_after_unknown(
+    plan: dict[str, Any],
+) -> dict[str, dict[str, Any]]:
+    """Map each resource address to its ``change.after_unknown`` tree.
+
+    Only entries whose ``after_unknown`` is a mapping are kept, so a
+    fully-known change (``after_unknown`` is often ``false`` / ``{}``)
+    simply doesn't appear and ``after_unknown(addr)`` returns ``{}``.
+    """
+    out: dict[str, dict[str, Any]] = {}
+    for rc in plan.get("resource_changes") or []:
+        if not isinstance(rc, dict):
+            continue
+        addr = rc.get("address")
+        change = rc.get("change")
+        if not isinstance(addr, str) or not isinstance(change, dict):
+            continue
+        au = change.get("after_unknown")
+        if isinstance(au, dict):
+            out[addr] = au
+    return out
 
 
 def _split_resources(

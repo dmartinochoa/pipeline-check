@@ -43,6 +43,66 @@ release commit collapses this section into `## [X.Y.Z] - <date>`.
   the `AllAllowed` default and every App Service failed regardless of its
   true FTP setting. The rule now reads `ftps_state` (keeping `ftp_state`
   as a legacy-SDK fallback). Found by the 2026-07 rule audit.
+- **Terraform S3-001..004 and SM-001 no longer false-fire on fresh
+  plans.** These rules correlate a side-resource to an artifact bucket
+  (or a rotation to a secret) by a join key (`bucket`, `secret_id`) that
+  is a value computed at apply time. On a `terraform plan` that creates
+  the bucket/secret in the same run the key is unresolved and
+  `planned_values` omits it, so the join silently missed and the whole
+  family reported CRITICAL/HIGH against a fully-configured plan. When a
+  side-resource's join key is unresolved, an unmatched bucket/secret is
+  now reported as "could not correlate, verify against applied state"
+  (an informational pass) instead of a false failure; a genuinely
+  missing side-resource still fails. SM-001 also now matches a
+  `secret_id` written as a `.arn` interpolation, not only `.id`. Found
+  by the 2026-07 rule audit.
+- **Terraform PBAC-003 is now scoped to CodeBuild security groups.** It
+  walked every `aws_security_group` in the plan, so an open-egress rule
+  on an unrelated ALB/EC2/EKS group fired even with no CodeBuild present.
+  It now gates on a VPC-configured `aws_codebuild_project` and, when the
+  attached `security_group_ids` are resolvable, evaluates only those
+  groups (matching the rule's documented CodeBuild scope). Found by the
+  2026-07 rule audit.
+- **Terraform TF-003 now honors `vpc_config.subnets`.** It failed a
+  CodeBuild project whenever any subnet in the VPC was public, so the
+  standard two-tier VPC (private build subnet + a public NAT/ALB subnet)
+  always failed. It now evaluates the subnets the project actually
+  attaches when they resolve, and only falls back to the VPC-wide
+  heuristic when they can't. Found by the 2026-07 rule audit.
+- **Terraform SM-002 no longer flags org-scoped wildcard principals.** A
+  `Principal: "*"` narrowed by an `aws:PrincipalOrgID` condition (the
+  AWS-documented cross-account pattern the rule's own recommendation
+  suggests) is no longer reported as world-open. Found by the 2026-07
+  rule audit.
+- **Terraform SSM-001 no longer flags `oauth` / `author` parameter
+  names.** The shared secret-name heuristic matched a bare `AUTH`
+  substring, so a plain-`String` parameter like `/app/oauth_redirect_url`
+  was reported as an unencrypted secret. `AUTH` now requires a secret-ish
+  qualifier (`auth_token`, `auth_key`, ...); `AUTHORIZATION` still
+  matches. Found by the 2026-07 rule audit.
+- **Terraform TF-001 severity reconciled.** The emitted finding hardcoded
+  CRITICAL while the rule metadata (docs, `explain`, MCP) said HIGH; the
+  finding now uses HIGH to match. Found by the 2026-07 rule audit.
+- **Terraform PBAC-005 no longer false-fires on fresh plans.** A
+  per-action `role_arn = aws_iam_role.x.arn` is computed at apply time,
+  so `planned_values` omits it and every action read as role-less
+  ("all actions inherit the pipeline role"). The `TerraformContext` now
+  exposes the plan's `after_unknown` metadata, and PBAC-005 treats an
+  action whose `role_arn` is computed as declaring its own role rather
+  than inheriting. Found by the 2026-07 rule audit.
+- **Terraform S3-002/003/004 recognize AWS-provider-v3 inline blocks.**
+  These rules only joined the standalone `aws_s3_bucket_versioning` /
+  `aws_s3_bucket_server_side_encryption_configuration` /
+  `aws_s3_bucket_logging` resources, so a stack pinned to AWS provider
+  v3 (which configures these inline on `aws_s3_bucket`) was reported as
+  unversioned/unencrypted/unlogged. Each rule now falls back to the
+  inline block on the `aws_s3_bucket` before failing. Found by the
+  2026-07 rule audit.
+- **Terraform TF-002 documentation/dead-code cleanup.** The `docs_note`
+  now lists `aws_secretsmanager_secret_version` (which the rule already
+  scans), and the unreachable `_TF002_SKIP_TYPES` early-continue (none
+  of its types were in the scan set) was removed. Found by the 2026-07
+  rule audit.
 
 ## [1.18.0] - 2026-07-16
 

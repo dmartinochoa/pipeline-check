@@ -10,13 +10,29 @@ from __future__ import annotations
 import json
 
 from pipeline_check.core.checks._iam_policy import is_oidc_trust_stmt
+from pipeline_check.core.checks._patterns import SECRET_NAME_RE
+from pipeline_check.core.checks.base import Severity
 from pipeline_check.core.checks.terraform.base import TerraformContext
 from pipeline_check.core.checks.terraform.codebuild import _cb004_timeout
 from pipeline_check.core.checks.terraform.ecr import _ecr003_public_policy
 from pipeline_check.core.checks.terraform.iam import IAMChecks
+from pipeline_check.core.checks.terraform.phase4 import (
+    _tf001_iam_access_key,
+    _tf003_codebuild_public_subnet,
+)
 from pipeline_check.core.checks.terraform.rules import iam001_admin_access as iam001
+from pipeline_check.core.checks.terraform.rules import (
+    s3001_public_access_block as s3001,
+)
+from pipeline_check.core.checks.terraform.rules import s3002_encryption as s3002
+from pipeline_check.core.checks.terraform.rules import s3003_versioning as s3003
+from pipeline_check.core.checks.terraform.rules import (
+    s3004_access_logging as s3004,
+)
+from pipeline_check.core.checks.terraform.rules import sm001_rotation as sm001
+from pipeline_check.core.checks.terraform.rules import sm002_public_policy as sm002
 from pipeline_check.core.checks.terraform.s3 import _s3005_secure_transport
-from pipeline_check.core.checks.terraform.services import _lambda
+from pipeline_check.core.checks.terraform.services import _lambda, _ssm
 
 _ADMIN = "arn:aws:iam::aws:policy/AdministratorAccess"
 
@@ -176,3 +192,281 @@ class TestKMS002AccountRootBaseline:
             "Principal": {"AWS": "arn:aws:iam::111122223333:role/CI"},
             "Action": "kms:*", "Resource": "*"}]}
         assert self._kms002(pol).passed is False
+
+
+def _pipeline(bucket):
+    return {
+        "address": "aws_codepipeline.p", "mode": "managed",
+        "type": "aws_codepipeline", "name": "p",
+        "values": {
+            "name": "p", "stage": [],
+            "artifact_store": [{"location": bucket}],
+        },
+    }
+
+
+class TestA2PlanModeBucketJoin:
+    """A2: the S3-00x artifact-bucket rules join a side-resource by its
+    ``bucket`` value, but on a fresh ``terraform plan`` that value is a
+    computed reference ``planned_values`` omits, so the join misses and
+    the whole family false-fired CRITICAL/HIGH on a fully-configured
+    plan. When a side-resource's ``bucket`` is unresolved, an unmatched
+    bucket is now reported "could not correlate" instead of failing.
+    """
+
+    def test_s3001_unknown_bucket_pab_does_not_false_fire(self):
+        # Artifact bucket name is a known literal; the PAB (all four
+        # flags true) has no ``bucket`` key — the shape terraform emits
+        # for ``bucket = aws_s3_bucket.x.id`` at plan time.
+        plan = _plan([
+            _pipeline("my-artifacts"),
+            {"address": "aws_s3_bucket_public_access_block.a",
+             "mode": "managed", "type": "aws_s3_bucket_public_access_block",
+             "name": "a", "values": {
+                 "block_public_acls": True, "ignore_public_acls": True,
+                 "block_public_policy": True, "restrict_public_buckets": True}},
+        ])
+        f = s3001.check(TerraformContext(plan))
+        assert len(f) == 1
+        assert f[0].passed is True
+        assert "could not correlate" in f[0].description.lower()
+
+    def test_s3001_genuinely_missing_pab_still_fires(self):
+        # No PAB resource at all in the plan: the failure must stand.
+        plan = _plan([_pipeline("my-artifacts")])
+        f = s3001.check(TerraformContext(plan))
+        assert len(f) == 1
+        assert f[0].passed is False
+
+    def test_s3001_resolved_join_still_evaluates(self):
+        # A PAB whose bucket resolves to the artifact bucket but leaves a
+        # flag false must still fail — the unresolved path must not mask
+        # a real misconfiguration.
+        plan = _plan([
+            _pipeline("my-artifacts"),
+            {"address": "aws_s3_bucket_public_access_block.a",
+             "mode": "managed", "type": "aws_s3_bucket_public_access_block",
+             "name": "a", "values": {
+                 "bucket": "my-artifacts",
+                 "block_public_acls": True, "ignore_public_acls": True,
+                 "block_public_policy": True, "restrict_public_buckets": False}},
+        ])
+        f = s3001.check(TerraformContext(plan))
+        assert f[0].passed is False
+
+    def test_s3002_unknown_bucket_sse_does_not_false_fire(self):
+        plan = _plan([
+            _pipeline("my-artifacts"),
+            {"address": "aws_s3_bucket_server_side_encryption_configuration.a",
+             "mode": "managed",
+             "type": "aws_s3_bucket_server_side_encryption_configuration",
+             "name": "a", "values": {
+                 "rule": [{"apply_server_side_encryption_by_default": [
+                     {"sse_algorithm": "aws:kms"}]}]}},
+        ])
+        f = s3002.check(TerraformContext(plan))
+        assert f[0].passed is True
+        assert "could not correlate" in f[0].description.lower()
+
+
+class TestS3InlineBlockFallback:
+    """S3-002/003/004 only joined the standalone ``aws_s3_bucket_*``
+    resources; AWS-provider-v3 stacks configure SSE / versioning /
+    logging as inline blocks on ``aws_s3_bucket`` and were false-flagged.
+    """
+
+    def _bucket(self, name, **inline):
+        vals = {"bucket": name}
+        vals.update(inline)
+        return {"address": f"aws_s3_bucket.{name}", "mode": "managed",
+                "type": "aws_s3_bucket", "name": name, "values": vals}
+
+    def test_s3002_inline_sse_passes(self):
+        plan = _plan([
+            _pipeline("art"),
+            self._bucket("art", server_side_encryption_configuration=[
+                {"rule": [{"apply_server_side_encryption_by_default": [
+                    {"sse_algorithm": "aws:kms"}]}]}]),
+        ])
+        f = s3002.check(TerraformContext(plan))
+        assert f[0].passed is True
+
+    def test_s3003_inline_versioning_passes(self):
+        plan = _plan([
+            _pipeline("art"),
+            self._bucket("art", versioning=[{"enabled": True}]),
+        ])
+        f = s3003.check(TerraformContext(plan))
+        assert f[0].passed is True
+
+    def test_s3003_inline_versioning_suspended_fails(self):
+        plan = _plan([
+            _pipeline("art"),
+            self._bucket("art", versioning=[{"enabled": False}]),
+        ])
+        f = s3003.check(TerraformContext(plan))
+        assert f[0].passed is False
+
+    def test_s3004_inline_logging_passes(self):
+        plan = _plan([
+            _pipeline("art"),
+            self._bucket("art", logging=[{"target_bucket": "logs"}]),
+        ])
+        f = s3004.check(TerraformContext(plan))
+        assert f[0].passed is True
+
+    def test_no_inline_and_no_standalone_still_fails(self):
+        # A bucket resource with no inline versioning must still fail.
+        plan = _plan([_pipeline("art"), self._bucket("art")])
+        f = s3003.check(TerraformContext(plan))
+        assert f[0].passed is False
+
+
+class TestA2SecretRotationJoin:
+    """A2: SM-001 keys rotations by ``secret_id``, computed at apply
+    time and omitted from a fresh plan, so the rule's own "Safe"
+    example (secret + rotation) false-fired HIGH. It also never matched
+    a ``.arn`` interpolation.
+    """
+
+    def _secret(self, name):
+        return {"address": f"aws_secretsmanager_secret.{name}",
+                "mode": "managed", "type": "aws_secretsmanager_secret",
+                "name": name, "values": {"name": name}}
+
+    def _rotation(self, secret_id):
+        vals = {} if secret_id is None else {"secret_id": secret_id}
+        return {"address": "aws_secretsmanager_secret_rotation.r",
+                "mode": "managed",
+                "type": "aws_secretsmanager_secret_rotation",
+                "name": "r", "values": vals}
+
+    def test_unknown_secret_id_does_not_false_fire(self):
+        # Rotation present, secret_id computed (absent) at plan time.
+        plan = _plan([self._secret("db"), self._rotation(None)])
+        f = sm001.check(TerraformContext(plan))
+        assert len(f) == 1
+        assert f[0].passed is True
+        assert "computed at apply time" in f[0].description.lower()
+
+    def test_no_rotation_still_fires(self):
+        plan = _plan([self._secret("db")])
+        f = sm001.check(TerraformContext(plan))
+        assert f[0].passed is False
+
+    def test_arn_interpolation_matches(self):
+        plan = _plan([
+            self._secret("db"),
+            self._rotation("${aws_secretsmanager_secret.db.arn}"),
+        ])
+        f = sm001.check(TerraformContext(plan))
+        assert f[0].passed is True
+        assert "matching" in f[0].description.lower()
+
+
+class TestTerraformFpAndSeverityFixes:
+    """Assorted terraform_c5 FP / bug fixes from the 2026-07 audit."""
+
+    def test_tf001_emits_high_matching_rule_metadata(self):
+        # The finding hardcoded CRITICAL while RULE.severity is HIGH.
+        plan = _plan([{
+            "address": "aws_iam_access_key.k", "mode": "managed",
+            "type": "aws_iam_access_key", "name": "k",
+            "values": {"user": "svc"}}])
+        f = _tf001_iam_access_key(TerraformContext(plan))
+        assert f and f[0].severity == Severity.HIGH
+
+    def test_sm002_org_scoped_wildcard_passes(self):
+        # Wildcard principal narrowed by aws:PrincipalOrgID is the
+        # AWS-documented cross-account pattern, not world-open.
+        pol = json.dumps({"Statement": [{
+            "Effect": "Allow", "Principal": "*",
+            "Action": "secretsmanager:GetSecretValue", "Resource": "*",
+            "Condition": {"StringEquals": {"aws:PrincipalOrgID": "o-abc"}}}]})
+        plan = _plan([{
+            "address": "aws_secretsmanager_secret_policy.p", "mode": "managed",
+            "type": "aws_secretsmanager_secret_policy", "name": "p",
+            "values": {"policy": pol}}])
+        f = sm002.check(TerraformContext(plan))
+        assert f and f[0].passed is True
+
+    def test_sm002_unconstrained_wildcard_still_fires(self):
+        pol = json.dumps({"Statement": [{
+            "Effect": "Allow", "Principal": "*",
+            "Action": "secretsmanager:GetSecretValue", "Resource": "*"}]})
+        plan = _plan([{
+            "address": "aws_secretsmanager_secret_policy.p", "mode": "managed",
+            "type": "aws_secretsmanager_secret_policy", "name": "p",
+            "values": {"policy": pol}}])
+        f = sm002.check(TerraformContext(plan))
+        assert f and f[0].passed is False
+
+    def test_ssm001_oauth_name_not_flagged(self):
+        # ``AUTH`` no longer matches within ``oauth`` / ``author``.
+        assert SECRET_NAME_RE.search("/app/oauth_redirect_url") is None
+        assert SECRET_NAME_RE.search("author_email") is None
+        plan = _plan([{
+            "address": "aws_ssm_parameter.p", "mode": "managed",
+            "type": "aws_ssm_parameter", "name": "p",
+            "values": {"name": "/app/oauth_redirect_url", "type": "String"}}])
+        assert not any(
+            f.check_id == "SSM-001" for f in _ssm(TerraformContext(plan))
+        )
+
+    def test_ssm001_auth_token_still_flagged(self):
+        assert SECRET_NAME_RE.search("AUTH_TOKEN") is not None
+        plan = _plan([{
+            "address": "aws_ssm_parameter.p", "mode": "managed",
+            "type": "aws_ssm_parameter", "name": "p",
+            "values": {"name": "/app/auth_token", "type": "String"}}])
+        f = [f for f in _ssm(TerraformContext(plan)) if f.check_id == "SSM-001"]
+        assert f and f[0].passed is False
+
+
+class TestTf003SubnetScoping:
+    """TF-003 failed a CodeBuild project whenever ANY subnet in its VPC
+    was public, ignoring which subnets ``vpc_config.subnets`` attaches.
+    """
+
+    def _subnet(self, name, public, vpc="vpc-1"):
+        return {"address": f"aws_subnet.{name}", "mode": "managed",
+                "type": "aws_subnet", "name": name,
+                "values": {"vpc_id": vpc,
+                           "map_public_ip_on_launch": public}}
+
+    def _codebuild(self, subnets):
+        return {"address": "aws_codebuild_project.b", "mode": "managed",
+                "type": "aws_codebuild_project", "name": "b",
+                "values": {"name": "b", "vpc_config": [{
+                    "vpc_id": "vpc-1", "subnets": subnets}]}}
+
+    def test_private_referenced_subnet_passes_despite_public_peer(self):
+        # Two-tier VPC: project attaches only the private subnet; a
+        # public subnet elsewhere in the VPC must not fail the project.
+        plan = _plan([
+            self._subnet("priv", False),
+            self._subnet("pub", True),
+            self._codebuild(["${aws_subnet.priv.id}"]),
+        ])
+        f = [f for f in _tf003_codebuild_public_subnet(TerraformContext(plan))
+             if f.check_id == "TF-003"]
+        assert f and f[0].passed is True
+
+    def test_public_referenced_subnet_fails(self):
+        plan = _plan([
+            self._subnet("pub", True),
+            self._codebuild(["${aws_subnet.pub.id}"]),
+        ])
+        f = [f for f in _tf003_codebuild_public_subnet(TerraformContext(plan))
+             if f.check_id == "TF-003"]
+        assert f and f[0].passed is False
+
+    def test_unresolved_subnets_fall_back_to_vpc_heuristic(self):
+        # subnets computed at plan time (empty): fall back to VPC-wide.
+        plan = _plan([
+            self._subnet("pub", True),
+            self._codebuild([]),
+        ])
+        f = [f for f in _tf003_codebuild_public_subnet(TerraformContext(plan))
+             if f.check_id == "TF-003"]
+        assert f and f[0].passed is False

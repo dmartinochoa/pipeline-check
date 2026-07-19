@@ -65,7 +65,44 @@ class S3Checks(TerraformBaseCheck):
         return out
 
 
-def _s3001_pab(values: dict[str, Any] | None, bucket: str) -> Finding:
+def _uncorrelated_finding(
+    check_id: str, title: str, severity: Severity, bucket: str,
+    recommendation: str, side_resource: str,
+) -> Finding:
+    """Pass-with-note when the artifact-bucket join couldn't be made
+    because a side-resource's ``bucket`` is unknown at plan time.
+
+    Reporting a hard failure here would false-fire on every fresh
+    ``terraform plan`` that creates the bucket and its ``side_resource``
+    together (the join key is a computed value ``planned_values``
+    omits). We can't confirm the setting either way, so we surface an
+    informational pass instead of a false CRITICAL/HIGH.
+    """
+    return Finding(
+        check_id=check_id, title=title, severity=severity, resource=bucket,
+        description=(
+            f"Could not correlate a {side_resource} to this artifact "
+            f"bucket: its ``bucket`` is a value computed at apply time, "
+            f"which ``terraform plan`` leaves unresolved. Re-scan the "
+            f"applied state (or a plan where the bucket name is known) "
+            f"to evaluate this control; not failing on an unresolved "
+            f"plan-time reference."
+        ),
+        recommendation=recommendation, passed=True,
+    )
+
+
+def _s3001_pab(
+    values: dict[str, Any] | None, bucket: str, *, unresolved: bool = False,
+) -> Finding:
+    if not values and unresolved:
+        return _uncorrelated_finding(
+            "S3-001",
+            "Artifact bucket public access block not fully enabled",
+            Severity.CRITICAL, bucket,
+            "Attach aws_s3_bucket_public_access_block with all four flags true.",
+            "aws_s3_bucket_public_access_block",
+        )
     if not values:
         fully_blocked = False
         missing = ["BlockPublicAcls", "IgnorePublicAcls", "BlockPublicPolicy", "RestrictPublicBuckets"]
@@ -94,7 +131,17 @@ def _s3001_pab(values: dict[str, Any] | None, bucket: str) -> Finding:
     )
 
 
-def _s3002_encryption(values: dict[str, Any] | None, bucket: str) -> Finding:
+def _s3002_encryption(
+    values: dict[str, Any] | None, bucket: str, *, unresolved: bool = False,
+) -> Finding:
+    if not values and unresolved:
+        return _uncorrelated_finding(
+            "S3-002",
+            "Artifact bucket server-side encryption not configured",
+            Severity.HIGH, bucket,
+            "Add aws_s3_bucket_server_side_encryption_configuration.",
+            "aws_s3_bucket_server_side_encryption_configuration",
+        )
     encrypted = False
     algo = "unknown"
     if values:
@@ -119,7 +166,16 @@ def _s3002_encryption(values: dict[str, Any] | None, bucket: str) -> Finding:
     )
 
 
-def _s3003_versioning(values: dict[str, Any] | None, bucket: str) -> Finding:
+def _s3003_versioning(
+    values: dict[str, Any] | None, bucket: str, *, unresolved: bool = False,
+) -> Finding:
+    if not values and unresolved:
+        return _uncorrelated_finding(
+            "S3-003", "Artifact bucket versioning not enabled",
+            Severity.MEDIUM, bucket,
+            "Add aws_s3_bucket_versioning with status = \"Enabled\".",
+            "aws_s3_bucket_versioning",
+        )
     status = ""
     if values:
         vcfg = _first(values.get("versioning_configuration"))
@@ -141,7 +197,16 @@ def _s3003_versioning(values: dict[str, Any] | None, bucket: str) -> Finding:
     )
 
 
-def _s3004_logging(values: dict[str, Any] | None, bucket: str) -> Finding:
+def _s3004_logging(
+    values: dict[str, Any] | None, bucket: str, *, unresolved: bool = False,
+) -> Finding:
+    if not values and unresolved:
+        return _uncorrelated_finding(
+            "S3-004", "Artifact bucket access logging not enabled",
+            Severity.LOW, bucket,
+            "Add aws_s3_bucket_logging targeting a central logging bucket.",
+            "aws_s3_bucket_logging",
+        )
     target = (values or {}).get("target_bucket")
     enabled = bool(target)
     desc = (

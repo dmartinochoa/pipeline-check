@@ -7,9 +7,13 @@ ARNs) have no useful Terraform analogue and are omitted.
 from __future__ import annotations
 
 import json
+import re
+from typing import Any
 
 from ..base import Finding, Severity
 from .base import TerraformBaseCheck, TerraformContext
+
+_SG_REF_RE = re.compile(r"aws_security_group\.([A-Za-z0-9_-]+)")
 
 _PR_EVENTS = {
     "PULL_REQUEST_CREATED", "PULL_REQUEST_UPDATED", "PULL_REQUEST_REOPENED",
@@ -52,9 +56,47 @@ def _ecr006(ctx: TerraformContext) -> list[Finding]:
     return out
 
 
+def _codebuild_attached_sg_refs(
+    ctx: TerraformContext,
+) -> tuple[set[str], bool]:
+    """Which security groups do CodeBuild projects attach, and is any
+    CodeBuild project VPC-configured at all?
+
+    Returns ``(referenced_sg_names, any_vpc_codebuild)``.
+    ``referenced_sg_names`` are the ``aws_security_group`` resource names
+    pulled from each project's ``vpc_config.security_group_ids`` (parsed
+    out of interpolation strings when resolvable; empty when the ids are
+    computed at plan time). ``any_vpc_codebuild`` gates the whole rule:
+    with no VPC-configured CodeBuild project there is nothing PBAC-003 is
+    meant to protect, so it must not fire on unrelated ALB/EC2/EKS SGs.
+    """
+    names: set[str] = set()
+    any_vpc = False
+    for cb in ctx.resources("aws_codebuild_project"):
+        for vc in cb.values.get("vpc_config") or []:
+            if not isinstance(vc, dict):
+                continue
+            any_vpc = True
+            for sgid in vc.get("security_group_ids") or []:
+                if isinstance(sgid, str):
+                    names.update(_SG_REF_RE.findall(sgid))
+    return names, any_vpc
+
+
 def _pbac003(ctx: TerraformContext) -> list[Finding]:
+    attached_names, any_vpc_codebuild = _codebuild_attached_sg_refs(ctx)
+    if not any_vpc_codebuild:
+        # No VPC-configured CodeBuild project in the plan — the rule is
+        # CodeBuild-scoped (see title / docs_note), so an open-egress SG
+        # on an ALB/EC2/EKS stack is not in scope.
+        return []
     out: list[Finding] = []
     for sg in ctx.resources("aws_security_group"):
+        # When the attached SG ids are resolvable, evaluate only those;
+        # when they are computed at plan time (attached_names empty),
+        # fall back to every SG so detection isn't silently lost.
+        if attached_names and sg.name not in attached_names:
+            continue
         for rule in sg.values.get("egress") or []:
             cidrs = rule.get("cidr_blocks") or []
             cidrs6 = rule.get("ipv6_cidr_blocks") or []
@@ -81,19 +123,63 @@ def _pbac003(ctx: TerraformContext) -> list[Finding]:
     return out
 
 
+def _action_role_arn_unknown(
+    pipeline_unknown: dict[str, Any], s_idx: int, a_idx: int,
+) -> bool:
+    """Whether ``stage[s_idx].action[a_idx].role_arn`` is computed at
+    apply time, per the pipeline's ``after_unknown`` tree.
+
+    A ``role_arn = aws_iam_role.x.arn`` for a role created in the same
+    plan is unknown; ``planned_values`` omits it, so it reads as absent.
+    ``after_unknown`` distinguishes that from a genuinely role-less
+    action. Navigated defensively: a ``True`` at any level means the
+    whole subtree is unknown.
+    """
+    stages = pipeline_unknown.get("stage")
+    if stages is True:
+        return True
+    if not isinstance(stages, list) or not 0 <= s_idx < len(stages):
+        return False
+    stage = stages[s_idx]
+    if stage is True:
+        return True
+    if not isinstance(stage, dict):
+        return False
+    actions = stage.get("action")
+    if actions is True:
+        return True
+    if not isinstance(actions, list) or not 0 <= a_idx < len(actions):
+        return False
+    action = actions[a_idx]
+    if action is True:
+        return True
+    if not isinstance(action, dict):
+        return False
+    return action.get("role_arn") is True
+
+
 def _pbac005_cp005_cp007(ctx: TerraformContext) -> list[Finding]:
     out: list[Finding] = []
     for p in ctx.resources("aws_codepipeline"):
         pipeline_role = p.values.get("role_arn", "")
         stages = p.values.get("stage") or []
+        pipeline_unknown = ctx.after_unknown(p.address)
         # PBAC-005, any stage action with its own role_arn passes.
         has_scoped = False
         total_actions = 0
-        for stage in stages:
-            for action in stage.get("action") or []:
+        for s_idx, stage in enumerate(stages):
+            for a_idx, action in enumerate(stage.get("action") or []):
                 total_actions += 1
                 arole = action.get("role_arn", "")
                 if arole and arole != pipeline_role:
+                    has_scoped = True
+                elif not arole and _action_role_arn_unknown(
+                    pipeline_unknown, s_idx, a_idx,
+                ):
+                    # role_arn is a computed value (a per-action role
+                    # created in the same plan), unresolved at plan time.
+                    # The action DOES declare its own role, so it is
+                    # scoped, not inheriting the pipeline role.
                     has_scoped = True
         if total_actions:
             out.append(Finding(

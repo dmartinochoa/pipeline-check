@@ -5,7 +5,11 @@ from ...base import Finding, Severity
 from ...rule import Rule
 from ..base import TerraformContext
 from ..s3 import _s3001_pab
-from ._s3_context import artifact_buckets, index_by_bucket
+from ._s3_context import (
+    artifact_buckets,
+    has_unresolved_bucket,
+    index_by_bucket,
+)
 
 RULE = Rule(
     id="S3-001",
@@ -52,5 +56,10 @@ RULE = Rule(
 
 def check(ctx: TerraformContext) -> list[Finding]:
     buckets = artifact_buckets(ctx)
-    pab = index_by_bucket(ctx, "aws_s3_bucket_public_access_block")
-    return [_s3001_pab(pab.get(b), b) for b in sorted(buckets)]
+    rtype = "aws_s3_bucket_public_access_block"
+    pab = index_by_bucket(ctx, rtype)
+    unresolved = has_unresolved_bucket(ctx, rtype)
+    return [
+        _s3001_pab(pab.get(b), b, unresolved=unresolved)
+        for b in sorted(buckets)
+    ]
