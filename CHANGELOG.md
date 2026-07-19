@@ -10,6 +10,34 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 PRs landing on `dev` between releases append entries below. The
 release commit collapses this section into `## [X.Y.Z] - <date>`.
 
+### Fixed
+
+- **SCM-047 no longer fires on every C/C++ repo.** The linguist→CodeQL
+  language map spelled C/C++ as `cpp`, but GitHub's default-setup
+  `languages` enum uses `c-cpp`, so a C/C++ repo could never match its
+  scanning config and always failed even when default setup analyzed it.
+  Mapped `C`/`C++` to `c-cpp`. Found by the 2026-07 rule audit.
+- **SCM-016 no longer fires on every repo.** The rule read
+  `security_and_analysis.private_vulnerability_reporting.status` off the
+  repo-metadata payload, but GitHub never returns private vulnerability
+  reporting there — its state lives behind the dedicated
+  `GET /repos/{owner}/{repo}/private-vulnerability-reporting` endpoint
+  (`{"enabled": bool}`). The `SCMContext` hydrator now fetches that
+  endpoint into a `private_vulnerability_reporting` slot and the rule
+  reads `enabled` from it, passing with an unavailability note when the
+  endpoint can't be reached instead of inferring "disabled" from an
+  always-absent field. Found by the 2026-07 rule audit.
+- **SCM-053 can now actually detect GitLab author self-approval.** The
+  rule read `merge_requests_author_approval` off the `GET /projects/:id`
+  payload, but GitLab exposes it only on `GET /projects/:id/approvals`,
+  so `bool(None)` always resolved to "author approval disabled" and the
+  misconfiguration was never flagged (a silent false negative on every
+  GitLab scan). The GitLab hydrator now fetches the approvals endpoint
+  into a `_gitlab_approvals` slot and the rule reads the field there,
+  passing with an unavailability note when the endpoint can't be reached
+  rather than inferring the safe posture. Found by the 2026-07 rule
+  audit.
+
 ## [1.18.0] - 2026-07-16
 
 ### Added

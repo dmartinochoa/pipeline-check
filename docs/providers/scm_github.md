@@ -584,11 +584,11 @@ Enable secret scanning push protection under the repository's Settings -> Code s
 <span class="pg-sev pg-sev--low">LOW</span> <span class="pg-tag pg-tag--owasp">CICD-SEC-10</span> <span class="pg-tag pg-tag--esf">ESF-V-VULN-MGMT</span> <span class="pg-tag pg-tag--cwe">CWE-1059</span>
 </div>
 
-Reads ``security_and_analysis.private_vulnerability_reporting.status`` from the repo metadata payload. Fires when the value is anything other than ``enabled``. Severity is LOW because the rule documents process readiness rather than a structural vulnerability — but having no private reporting channel means the next external researcher's report is either a public issue or nothing.
+Reads ``enabled`` from the dedicated ``GET /repos/{owner}/{repo}/private-vulnerability-reporting`` endpoint (private vulnerability reporting is not part of the repo ``security_and_analysis`` block). Fires when the endpoint reports ``enabled: false``; passes with an unavailability note when the endpoint can't be reached so it doesn't fire on every repo. Severity is LOW because the rule documents process readiness rather than a structural vulnerability — but having no private reporting channel means the next external researcher's report is either a public issue or nothing.
 
 **Known false-positive modes**
 
-- When the scanning token lacks ``admin`` scope on the repo, the ``security_and_analysis`` block is omitted from the API response and this rule cannot tell ``disabled`` from ``unknown``. Re-run with admin scope to confirm.
+- When the endpoint is unreachable (the token lacks the scope to read it, or a GitHub Enterprise Server version predates the feature), this rule cannot tell ``disabled`` from ``unknown`` and passes with an unavailability note. Re-run with a sufficiently scoped token to confirm.
 - Repos that publish a SECURITY.md with an alternative out-of-band reporting channel (security@ mailbox, HackerOne / Bugcrowd program) cover the same control via a different mechanism. Suppress via ignore-file when the alternative is in place and documented.
 
 <div class="pg-rule__rec" markdown>
@@ -1553,7 +1553,7 @@ On the project Settings -> General -> Merge requests panel, enable ``All threads
 <span class="pg-sev pg-sev--high">HIGH</span> <span class="pg-tag pg-tag--owasp">CICD-SEC-1</span> <span class="pg-tag pg-tag--owasp">CICD-SEC-4</span> <span class="pg-tag pg-tag--esf">ESF-S-CHANGE-CONTROL</span> <span class="pg-tag pg-tag--cwe">CWE-269</span>
 </div>
 
-Reads ``repo_meta._gitlab_project.merge_requests_author_approval`` and fires when True (the unsafe value). GitLab inverts the field semantics: ``true`` means author approval is permitted, ``false`` means it's disabled. The rule normalizes this so a passing finding reflects the safe posture regardless of the API's boolean polarity. Together with SCM-002 (required approval count >= 1) this catches the full self-merge bypass; either rule alone is insufficient.
+Reads ``merge_requests_author_approval`` from the project approvals endpoint (``GET /projects/:id/approvals``, stashed as ``repo_meta._gitlab_approvals``) and fires when True (the unsafe value). The field is not on the ``GET /projects/:id`` payload. GitLab inverts the field semantics: ``true`` means author approval is permitted, ``false`` means it's disabled. The rule normalizes this so a passing finding reflects the safe posture regardless of the API's boolean polarity. Together with SCM-002 (required approval count >= 1) this catches the full self-merge bypass; either rule alone is insufficient.
 
 **Known false-positive modes**
 
@@ -1567,7 +1567,7 @@ Reads ``repo_meta._gitlab_project.merge_requests_author_approval`` and fires whe
 
 **Recommended action**
 
-On the project Settings -> Merge requests -> Approvals panel, disable ``Allow author of merge request to approve their own merge request``. The API surfaces this as ``merge_requests_author_approval: false`` on ``PUT /projects/:id`` (the inverted boolean: ``false`` *disables* author approval, which is the safe posture). Combined with ``approvals_before_merge >= 1`` (already audited by SCM-002 on the universal-rules side), the approval gate becomes meaningful: the author can't self-merge by clicking Approve and bypassing review.
+On the project Settings -> Merge requests -> Approvals panel, disable ``Allow author of merge request to approve their own merge request``. The API surfaces this as ``merge_requests_author_approval: false`` on ``POST /projects/:id/approvals`` (the inverted boolean: ``false`` *disables* author approval, which is the safe posture). Combined with ``approvals_before_merge >= 1`` (already audited by SCM-002 on the universal-rules side), the approval gate becomes meaningful: the author can't self-merge by clicking Approve and bypassing review.
 
 </div>
 

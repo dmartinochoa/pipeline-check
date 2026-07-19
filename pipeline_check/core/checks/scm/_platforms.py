@@ -132,6 +132,10 @@ def gitlab_context_for_repo(
         default_branch = "main"
 
     push_rule_raw = fetcher.fetch(f"projects/{encoded}/push_rule")
+    # Merge-request approval settings live on their own endpoint, NOT
+    # on the project payload. ``merge_requests_author_approval`` (the
+    # field SCM-053 reads) is here, not on ``GET /projects/:id``.
+    approvals_raw = fetcher.fetch(f"projects/{encoded}/approvals")
 
     stats = project.get("statistics")
     raw_size = stats.get("repository_size") if isinstance(stats, dict) else None
@@ -155,6 +159,9 @@ def gitlab_context_for_repo(
         "_gitlab_project": project,
         "_gitlab_push_rule": (
             push_rule_raw if isinstance(push_rule_raw, dict) else None
+        ),
+        "_gitlab_approvals": (
+            approvals_raw if isinstance(approvals_raw, dict) else None
         ),
     }
 

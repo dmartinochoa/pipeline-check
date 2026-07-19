@@ -570,13 +570,17 @@ class TestGitLabSpecificRules:
         assert findings["SCM-052"].passed
 
     def test_scm053_fires_when_author_self_approval_allowed(self):
+        # merge_requests_author_approval lives on the /approvals
+        # endpoint, NOT the project payload (2026-07 audit, SCM-053).
         f = FakeFetcher({
             "projects/g%2Fp": {
                 "default_branch": "main",
                 "statistics": {"repository_size": 1024},
-                "merge_requests_author_approval": True,
             },
             "projects/g%2Fp/protected_branches": [],
+            "projects/g%2Fp/approvals": {
+                "merge_requests_author_approval": True,
+            },
         })
         ctx = gitlab_context_for_repo("g/p", f)
         findings = _findings_by_id(ctx)
@@ -587,13 +591,33 @@ class TestGitLabSpecificRules:
             "projects/g%2Fp": {
                 "default_branch": "main",
                 "statistics": {"repository_size": 1024},
+            },
+            "projects/g%2Fp/protected_branches": [],
+            "projects/g%2Fp/approvals": {
                 "merge_requests_author_approval": False,
+            },
+        })
+        ctx = gitlab_context_for_repo("g/p", f)
+        findings = _findings_by_id(ctx)
+        assert findings["SCM-053"].passed
+
+    def test_scm053_passes_when_approvals_endpoint_unavailable(self):
+        # No /approvals response (token lacks scope, endpoint failed):
+        # pass with an "unavailable" note rather than a silent false
+        # negative. Crucially, a value on the project payload must NOT
+        # be read as the setting.
+        f = FakeFetcher({
+            "projects/g%2Fp": {
+                "default_branch": "main",
+                "statistics": {"repository_size": 1024},
+                "merge_requests_author_approval": True,
             },
             "projects/g%2Fp/protected_branches": [],
         })
         ctx = gitlab_context_for_repo("g/p", f)
         findings = _findings_by_id(ctx)
         assert findings["SCM-053"].passed
+        assert "unavailable" in findings["SCM-053"].description.lower()
 
     def test_gitlab_only_rules_skip_with_note_on_github(self):
         """SCM-050..053 should pass with a skip note on GitHub

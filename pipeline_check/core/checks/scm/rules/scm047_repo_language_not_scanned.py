@@ -28,8 +28,8 @@ from ..base import (
 #: Source: GitHub Code Scanning docs (CodeQL-supported languages
 #: list, current as of 2026 spec sync).
 _CODEQL_SUPPORTED: dict[str, str] = {
-    "C": "cpp",
-    "C++": "cpp",
+    "C": "c-cpp",
+    "C++": "c-cpp",
     "C#": "csharp",
     "Go": "go",
     "Java": "java-kotlin",
