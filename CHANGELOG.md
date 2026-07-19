@@ -115,6 +115,15 @@ release commit collapses this section into `## [X.Y.Z] - <date>`.
   production stages missing a manual approval; a `prod` token
   immediately preceded by a negating prefix (`pre` / `non` / `staging`)
   no longer counts. Found by the 2026-07 rule audit.
+- **Dockerfile DF-006 no longer flags benign config env vars.** It
+  matched a credential *substring* in the key name plus any literal
+  value, so `ENV TOKENIZERS_PARALLELISM=false`, `ENV TOKEN_TTL=3600`,
+  and `ENV DB_PASSWORD_FILE=/run/secrets/db_pw` all fired a CRITICAL
+  false alarm. Credential words are now matched as whole key segments
+  (so `TOKEN` matches `ACCESS_TOKEN` but not `TOKENIZERS`), reference
+  suffixes (`_FILE` / `_PATH` / `_TTL` / ...) are excluded, and the
+  value must actually look secret-shaped (not a number, boolean/enum, or
+  filesystem path). Found by the 2026-07 rule audit.
 
 ## [1.18.0] - 2026-07-16
 
