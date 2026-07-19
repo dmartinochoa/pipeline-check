@@ -23,16 +23,20 @@ RULE = Rule(
         "panel, disable ``Allow author of merge request to approve "
         "their own merge request``. The API surfaces this as "
         "``merge_requests_author_approval: false`` on "
-        "``PUT /projects/:id`` (the inverted boolean: ``false`` "
-        "*disables* author approval, which is the safe posture). "
+        "``POST /projects/:id/approvals`` (the inverted boolean: "
+        "``false`` *disables* author approval, which is the safe "
+        "posture). "
         "Combined with ``approvals_before_merge >= 1`` (already "
         "audited by SCM-002 on the universal-rules side), the "
         "approval gate becomes meaningful: the author can't "
         "self-merge by clicking Approve and bypassing review."
     ),
     docs_note=(
-        "Reads ``repo_meta._gitlab_project.merge_requests_author_"
-        "approval`` and fires when True (the unsafe value). "
+        "Reads ``merge_requests_author_approval`` from the project "
+        "approvals endpoint (``GET /projects/:id/approvals``, stashed "
+        "as ``repo_meta._gitlab_approvals``) and fires when True (the "
+        "unsafe value). The field is not on the ``GET /projects/:id`` "
+        "payload. "
         "GitLab inverts the field semantics: ``true`` means "
         "author approval is permitted, ``false`` means it's "
         "disabled. The rule normalizes this so a passing finding "
@@ -57,7 +61,7 @@ RULE = Rule(
     ),
     exploit_example=(
         "# Vulnerable: project allows authors to approve their MRs.\n"
-        "GET /projects/group%2Fproject\n"
+        "GET /projects/group%2Fproject/approvals\n"
         "{\n"
         "  \"approvals_before_merge\": 1,\n"
         "  \"merge_requests_author_approval\": true\n"
@@ -86,15 +90,32 @@ def check(snapshot: SCMRepoSnapshot) -> Finding:
             recommendation=RULE.recommendation, passed=True,
         )
     meta = snapshot.repo_meta if isinstance(snapshot.repo_meta, dict) else {}
-    project: Any = meta.get("_gitlab_project")
-    if not isinstance(project, dict):
+    approvals: Any = meta.get("_gitlab_approvals")
+    if not isinstance(approvals, dict):
         return Finding(
             check_id=RULE.id, title=RULE.title, severity=RULE.severity,
             resource=repo_resource(snapshot),
-            description="GitLab project metadata unavailable.",
+            description=(
+                "GitLab project-approvals settings unavailable "
+                "(``/projects/:id/approvals`` needs a token with "
+                "``read_api`` scope, or the endpoint failed). Author "
+                "self-approval posture cannot be evaluated."
+            ),
             recommendation=RULE.recommendation, passed=True,
         )
-    allowed = bool(project.get("merge_requests_author_approval"))
+    raw = approvals.get("merge_requests_author_approval")
+    if not isinstance(raw, bool):
+        return Finding(
+            check_id=RULE.id, title=RULE.title, severity=RULE.severity,
+            resource=repo_resource(snapshot),
+            description=(
+                "``merge_requests_author_approval`` is absent from the "
+                "project-approvals payload; author self-approval "
+                "posture cannot be evaluated."
+            ),
+            recommendation=RULE.recommendation, passed=True,
+        )
+    allowed = raw
     passed = not allowed
     desc = (
         "Author cannot self-approve their MR "

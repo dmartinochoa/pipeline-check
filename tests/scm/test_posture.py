@@ -644,12 +644,8 @@ class TestSCM016:
     def test_enabled_passes(self):
         snap = SCMRepoSnapshot(
             owner="o", name="r",
-            repo_meta={
-                "default_branch": "main",
-                "security_and_analysis": {
-                    "private_vulnerability_reporting": {"status": "enabled"},
-                },
-            },
+            repo_meta={"default_branch": "main"},
+            private_vulnerability_reporting={"enabled": True},
         )
         f = _by_id(_findings(snap), "SCM-016")
         assert f.passed
@@ -657,16 +653,53 @@ class TestSCM016:
     def test_disabled_fails(self):
         snap = SCMRepoSnapshot(
             owner="o", name="r",
-            repo_meta={
-                "default_branch": "main",
-                "security_and_analysis": {
-                    "private_vulnerability_reporting": {"status": "disabled"},
-                },
-            },
+            repo_meta={"default_branch": "main"},
+            private_vulnerability_reporting={"enabled": False},
         )
         f = _by_id(_findings(snap), "SCM-016")
         assert not f.passed
         assert f.severity == Severity.LOW
+
+    # Regression (2026-07 audit, finding SCM-016): PVR state lives behind
+    # the dedicated ``/private-vulnerability-reporting`` endpoint, not in
+    # the repo_meta ``security_and_analysis`` block the rule used to read.
+    # A realistic admin-scoped ``security_and_analysis`` block (which
+    # never carries a PVR key) must NOT make the rule fire — the endpoint
+    # slot being absent means "unavailable", so the rule passes.
+    def test_security_and_analysis_block_without_pvr_slot_passes(self):
+        snap = SCMRepoSnapshot(
+            owner="o", name="r",
+            repo_meta={
+                "default_branch": "main",
+                "security_and_analysis": {
+                    "secret_scanning": {"status": "enabled"},
+                    "dependabot_security_updates": {"status": "enabled"},
+                },
+            },
+            private_vulnerability_reporting=None,
+        )
+        f = _by_id(_findings(snap), "SCM-016")
+        assert f.passed
+        assert "unavailable" in f.description.lower()
+
+    def test_endpoint_unavailable_passes_silently(self):
+        snap = SCMRepoSnapshot(
+            owner="o", name="r",
+            repo_meta={"default_branch": "main"},
+            private_vulnerability_reporting=None,
+        )
+        f = _by_id(_findings(snap), "SCM-016")
+        assert f.passed
+        assert "unavailable" in f.description.lower()
+
+    def test_non_github_platform_skips(self):
+        snap = SCMRepoSnapshot(
+            owner="o", name="r", platform="gitlab",
+            repo_meta={"default_branch": "main"},
+        )
+        f = _by_id(_findings(snap), "SCM-016")
+        assert f.passed
+        assert "gitlab" in f.description.lower()
 
 
 # ── SCM-017: CODEOWNERS file presence ───────────────────────────────
@@ -1378,13 +1411,16 @@ class TestWholePackBehavior:
         )
         findings = _findings(snap)
         failures = sorted(f.check_id for f in findings if not f.passed)
-        # Branch-protection root cause + the 5 security-feature
+        # Branch-protection root cause + the 4 security-feature
         # rules that are independent of branch protection +
         # SCM-017 (CODEOWNERS file presence, independent of
-        # protection).
+        # protection). SCM-016 is NOT here: its private-vulnerability-
+        # reporting endpoint isn't populated on this synthetic
+        # snapshot, so it passes with an "unavailable" note rather
+        # than inferring "disabled" from an absent field.
         assert failures == [
             "SCM-001", "SCM-003", "SCM-004", "SCM-005",
-            "SCM-015", "SCM-016", "SCM-017",
+            "SCM-015", "SCM-017",
         ]
 
     def test_archived_snapshot_only_branch_protection_fires(self):
@@ -3761,6 +3797,35 @@ class TestSCM047LanguageCoverage:
         f = _by_id(_findings(snap), "SCM-047")
         assert f.passed
 
+    # Regression (2026-07 audit, finding SCM-047): the default-setup
+    # ``languages`` enum spells C/C++ as ``c-cpp``, not ``cpp``. With the
+    # old mapping a C/C++ repo could never pass even when default setup
+    # analyzed it.
+    def test_cpp_repo_with_c_cpp_scanning_passes(self):
+        snap = SCMRepoSnapshot(
+            owner="o", name="r",
+            code_scanning_default_setup={
+                "state": "configured",
+                "languages": ["c-cpp"],
+            },
+            repo_languages={"C++": 90000, "C": 10000},
+        )
+        f = _by_id(_findings(snap), "SCM-047")
+        assert f.passed
+
+    def test_cpp_repo_without_c_cpp_scanning_fails(self):
+        snap = SCMRepoSnapshot(
+            owner="o", name="r",
+            code_scanning_default_setup={
+                "state": "configured",
+                "languages": ["python"],
+            },
+            repo_languages={"C++": 90000, "Python": 10000},
+        )
+        f = _by_id(_findings(snap), "SCM-047")
+        assert not f.passed
+        assert "C++" in f.description
+
 
 # ── Default-branch scoping: rulesets exist but scope away from main ──
 #
@@ -4428,10 +4493,14 @@ class TestSCM052:
 
 
 class TestSCM053:
+    # merge_requests_author_approval is read from the project approvals
+    # endpoint, stashed as _gitlab_approvals (2026-07 audit, SCM-053).
     def test_author_self_approval_allowed_fails(self):
         snap = SCMRepoSnapshot(
             owner="o", name="r", platform="gitlab",
-            repo_meta={"_gitlab_project": {"merge_requests_author_approval": True}},
+            repo_meta={"_gitlab_approvals": {
+                "merge_requests_author_approval": True,
+            }},
         )
         f = _by_id(_findings(snap), "SCM-053")
         assert not f.passed
@@ -4440,9 +4509,24 @@ class TestSCM053:
     def test_author_self_approval_disabled_passes(self):
         snap = SCMRepoSnapshot(
             owner="o", name="r", platform="gitlab",
-            repo_meta={"_gitlab_project": {"merge_requests_author_approval": False}},
+            repo_meta={"_gitlab_approvals": {
+                "merge_requests_author_approval": False,
+            }},
         )
         assert _by_id(_findings(snap), "SCM-053").passed
+
+    def test_approvals_unavailable_passes_with_note(self):
+        # No _gitlab_approvals slot, and a stray value on the project
+        # payload must not be read as the setting.
+        snap = SCMRepoSnapshot(
+            owner="o", name="r", platform="gitlab",
+            repo_meta={"_gitlab_project": {
+                "merge_requests_author_approval": True,
+            }},
+        )
+        f = _by_id(_findings(snap), "SCM-053")
+        assert f.passed
+        assert "unavailable" in f.description.lower()
 
 
 class TestSCM054:

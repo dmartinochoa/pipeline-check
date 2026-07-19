@@ -15,8 +15,13 @@ import re
 
 # Environment variable names that suggest a secret is stored in plaintext.
 SECRET_NAME_RE = re.compile(
+    # ``AUTH`` requires a secret-ish qualifier (``auth_token`` etc.) so it
+    # no longer matches within ``oauth`` / ``author`` — a bare ``AUTH``
+    # substring flagged benign names (an OAuth redirect URL, an "author"
+    # field). ``AUTHORIZATION`` stays a standalone alternative.
     r"(PASSWORD|PASSWD|PWD|SECRET|TOKEN|API[_\-]?KEY|ACCESS[_\-]?KEY|"
-    r"SECRET[_\-]?KEY|PRIVATE[_\-]?KEY|CREDENTIAL|AUTH|AUTHORIZATION)",
+    r"SECRET[_\-]?KEY|PRIVATE[_\-]?KEY|CREDENTIAL|"
+    r"AUTH[_\-]?(?:TOKEN|KEY|SECRET|PASS|PASSWORD)|AUTHORIZATION)",
     re.IGNORECASE,
 )
 

@@ -10,6 +10,138 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 PRs landing on `dev` between releases append entries below. The
 release commit collapses this section into `## [X.Y.Z] - <date>`.
 
+### Fixed
+
+- **SCM-047 no longer fires on every C/C++ repo.** The linguist→CodeQL
+  language map spelled C/C++ as `cpp`, but GitHub's default-setup
+  `languages` enum uses `c-cpp`, so a C/C++ repo could never match its
+  scanning config and always failed even when default setup analyzed it.
+  Mapped `C`/`C++` to `c-cpp`. Found by the 2026-07 rule audit.
+- **SCM-016 no longer fires on every repo.** The rule read
+  `security_and_analysis.private_vulnerability_reporting.status` off the
+  repo-metadata payload, but GitHub never returns private vulnerability
+  reporting there — its state lives behind the dedicated
+  `GET /repos/{owner}/{repo}/private-vulnerability-reporting` endpoint
+  (`{"enabled": bool}`). The `SCMContext` hydrator now fetches that
+  endpoint into a `private_vulnerability_reporting` slot and the rule
+  reads `enabled` from it, passing with an unavailability note when the
+  endpoint can't be reached instead of inferring "disabled" from an
+  always-absent field. Found by the 2026-07 rule audit.
+- **SCM-053 can now actually detect GitLab author self-approval.** The
+  rule read `merge_requests_author_approval` off the `GET /projects/:id`
+  payload, but GitLab exposes it only on `GET /projects/:id/approvals`,
+  so `bool(None)` always resolved to "author approval disabled" and the
+  misconfiguration was never flagged (a silent false negative on every
+  GitLab scan). The GitLab hydrator now fetches the approvals endpoint
+  into a `_gitlab_approvals` slot and the rule reads the field there,
+  passing with an unavailability note when the endpoint can't be reached
+  rather than inferring the safe posture. Found by the 2026-07 rule
+  audit.
+- **AZAPP-005 no longer flags every App Service.** The rule read a
+  nonexistent `ftp_state` attribute off the Azure `SiteConfig`; the real
+  property is `ftps_state`, so the missing attribute always fell back to
+  the `AllAllowed` default and every App Service failed regardless of its
+  true FTP setting. The rule now reads `ftps_state` (keeping `ftp_state`
+  as a legacy-SDK fallback). Found by the 2026-07 rule audit.
+- **Terraform S3-001..004 and SM-001 no longer false-fire on fresh
+  plans.** These rules correlate a side-resource to an artifact bucket
+  (or a rotation to a secret) by a join key (`bucket`, `secret_id`) that
+  is a value computed at apply time. On a `terraform plan` that creates
+  the bucket/secret in the same run the key is unresolved and
+  `planned_values` omits it, so the join silently missed and the whole
+  family reported CRITICAL/HIGH against a fully-configured plan. When a
+  side-resource's join key is unresolved, an unmatched bucket/secret is
+  now reported as "could not correlate, verify against applied state"
+  (an informational pass) instead of a false failure; a genuinely
+  missing side-resource still fails. SM-001 also now matches a
+  `secret_id` written as a `.arn` interpolation, not only `.id`. Found
+  by the 2026-07 rule audit.
+- **Terraform PBAC-003 is now scoped to CodeBuild security groups.** It
+  walked every `aws_security_group` in the plan, so an open-egress rule
+  on an unrelated ALB/EC2/EKS group fired even with no CodeBuild present.
+  It now gates on a VPC-configured `aws_codebuild_project` and, when the
+  attached `security_group_ids` are resolvable, evaluates only those
+  groups (matching the rule's documented CodeBuild scope). Found by the
+  2026-07 rule audit.
+- **Terraform TF-003 now honors `vpc_config.subnets`.** It failed a
+  CodeBuild project whenever any subnet in the VPC was public, so the
+  standard two-tier VPC (private build subnet + a public NAT/ALB subnet)
+  always failed. It now evaluates the subnets the project actually
+  attaches when they resolve, and only falls back to the VPC-wide
+  heuristic when they can't. Found by the 2026-07 rule audit.
+- **Terraform SM-002 no longer flags org-scoped wildcard principals.** A
+  `Principal: "*"` narrowed by an `aws:PrincipalOrgID` condition (the
+  AWS-documented cross-account pattern the rule's own recommendation
+  suggests) is no longer reported as world-open. Found by the 2026-07
+  rule audit.
+- **Terraform SSM-001 no longer flags `oauth` / `author` parameter
+  names.** The shared secret-name heuristic matched a bare `AUTH`
+  substring, so a plain-`String` parameter like `/app/oauth_redirect_url`
+  was reported as an unencrypted secret. `AUTH` now requires a secret-ish
+  qualifier (`auth_token`, `auth_key`, ...); `AUTHORIZATION` still
+  matches. Found by the 2026-07 rule audit.
+- **Terraform TF-001 severity reconciled.** The emitted finding hardcoded
+  CRITICAL while the rule metadata (docs, `explain`, MCP) said HIGH; the
+  finding now uses HIGH to match. Found by the 2026-07 rule audit.
+- **Terraform PBAC-005 no longer false-fires on fresh plans.** A
+  per-action `role_arn = aws_iam_role.x.arn` is computed at apply time,
+  so `planned_values` omits it and every action read as role-less
+  ("all actions inherit the pipeline role"). The `TerraformContext` now
+  exposes the plan's `after_unknown` metadata, and PBAC-005 treats an
+  action whose `role_arn` is computed as declaring its own role rather
+  than inheriting. Found by the 2026-07 rule audit.
+- **Terraform S3-002/003/004 recognize AWS-provider-v3 inline blocks.**
+  These rules only joined the standalone `aws_s3_bucket_versioning` /
+  `aws_s3_bucket_server_side_encryption_configuration` /
+  `aws_s3_bucket_logging` resources, so a stack pinned to AWS provider
+  v3 (which configures these inline on `aws_s3_bucket`) was reported as
+  unversioned/unencrypted/unlogged. Each rule now falls back to the
+  inline block on the `aws_s3_bucket` before failing. Found by the
+  2026-07 rule audit.
+- **Terraform TF-002 documentation/dead-code cleanup.** The `docs_note`
+  now lists `aws_secretsmanager_secret_version` (which the rule already
+  scans), and the unreachable `_TF002_SKIP_TYPES` early-continue (none
+  of its types were in the scan set) was removed. Found by the 2026-07
+  rule audit.
+- **CloudFormation CA-001 accepts an intrinsic CMK reference.** A
+  CodeArtifact domain whose `EncryptionKey` points at an in-template KMS
+  key via `!Ref` / `!GetAtt` (the only practical way to reference a
+  stack-defined CMK) was reported as "not encrypted". It now reuses the
+  same intrinsic-CMK resolution CCM-002 uses. Found by the 2026-07 rule
+  audit.
+- **CodePipeline CP-005 no longer treats `pre-prod` / `non-prod` as
+  production.** Stage/action names like `PreProd`, `non-prod`, or
+  `staging-prod` split into a `prod` token and were flagged as
+  production stages missing a manual approval; a `prod` token
+  immediately preceded by a negating prefix (`pre` / `non` / `staging`)
+  no longer counts. Found by the 2026-07 rule audit.
+- **Dockerfile DF-006 no longer flags benign config env vars.** It
+  matched a credential *substring* in the key name plus any literal
+  value, so `ENV TOKENIZERS_PARALLELISM=false`, `ENV TOKEN_TTL=3600`,
+  and `ENV DB_PASSWORD_FILE=/run/secrets/db_pw` all fired a CRITICAL
+  false alarm. Credential words are now matched as whole key segments
+  (so `TOKEN` matches `ACCESS_TOKEN` but not `TOKENIZERS`), reference
+  suffixes (`_FILE` / `_PATH` / `_TTL` / ...) are excluded, and the
+  value must actually look secret-shaped (not a number, boolean/enum, or
+  filesystem path). Found by the 2026-07 rule audit.
+- **`poetry install` and `cargo install --locked` no longer flagged as
+  missing lockfile enforcement.** The shared `PKG_NO_LOCKFILE_RE` flagged
+  `poetry install` unless a (nonexistent) `--no-update` flag was present,
+  but `poetry install` installs from `poetry.lock` (the lockfile-
+  enforcing analog of `npm ci`); and `cargo install --locked` enforces
+  `Cargo.lock`. `poetry install` is no longer flagged at all, and
+  `cargo install` is exempt when `--locked` is present. Affects the
+  no-lockfile rule across every provider (GHA-021 / GL-021 / ADO-021 /
+  BB-021 / CC-021 / JF-021 / and the `_pkg_unpinned` variants). Found by
+  the 2026-07 rule audit.
+- **Kubernetes K8S-026 no longer flags internal load balancers.** A
+  `Service` of `type: LoadBalancer` carrying a recognized internal-LB
+  annotation (AWS `aws-load-balancer-internal` / `scheme: internal`, GKE
+  `load-balancer-type: Internal`, Azure `azure-load-balancer-internal`)
+  is private-network-only and never accepts 0.0.0.0/0, so a missing
+  `loadBalancerSourceRanges` is no longer reported as internet exposure.
+  Found by the 2026-07 rule audit.
+
 ## [1.18.0] - 2026-07-16
 
 ### Added

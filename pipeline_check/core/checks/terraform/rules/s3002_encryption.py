@@ -1,11 +1,19 @@
 """S3-002 (Terraform). Pipeline artifact bucket SSE not configured."""
 from __future__ import annotations
 
+from typing import Any
+
 from ...base import Finding, Severity
 from ...rule import Rule
 from ..base import TerraformContext
 from ..s3 import _s3002_encryption
-from ._s3_context import artifact_buckets, index_by_bucket
+from ._s3_context import (
+    _first_block,
+    artifact_buckets,
+    bucket_resource_values,
+    has_unresolved_bucket,
+    index_by_bucket,
+)
 
 RULE = Rule(
     id="S3-002",
@@ -49,9 +57,28 @@ RULE = Rule(
 )
 
 
+def _inline_sse(
+    ctx: TerraformContext, bucket: str,
+) -> dict[str, Any] | None:
+    """Provider-v3 inline ``server_side_encryption_configuration`` block
+    on the ``aws_s3_bucket``, reshaped to the standalone resource's
+    ``rule`` form. ``None`` when the bucket / block is absent."""
+    vals = bucket_resource_values(ctx, bucket)
+    if vals is None:
+        return None
+    inline = _first_block(vals.get("server_side_encryption_configuration"))
+    if not inline:
+        return None
+    return {"rule": inline.get("rule")}
+
+
 def check(ctx: TerraformContext) -> list[Finding]:
     buckets = artifact_buckets(ctx)
-    enc = index_by_bucket(
-        ctx, "aws_s3_bucket_server_side_encryption_configuration",
-    )
-    return [_s3002_encryption(enc.get(b), b) for b in sorted(buckets)]
+    rtype = "aws_s3_bucket_server_side_encryption_configuration"
+    enc = index_by_bucket(ctx, rtype)
+    unresolved = has_unresolved_bucket(ctx, rtype)
+    out: list[Finding] = []
+    for b in sorted(buckets):
+        vals = enc.get(b) or _inline_sse(ctx, b)
+        out.append(_s3002_encryption(vals, b, unresolved=unresolved))
+    return out
