@@ -137,7 +137,7 @@ def _web_app(name: str = "bad-app"):
     config = MagicMock()
     config.min_tls_version = "1.0"
     config.remote_debugging_enabled = True
-    config.ftp_state = "AllAllowed"
+    config.ftps_state = "AllAllowed"
     return {"app": app, "config": config}
 
 

@@ -37,6 +37,12 @@ release commit collapses this section into `## [X.Y.Z] - <date>`.
   passing with an unavailability note when the endpoint can't be reached
   rather than inferring the safe posture. Found by the 2026-07 rule
   audit.
+- **AZAPP-005 no longer flags every App Service.** The rule read a
+  nonexistent `ftp_state` attribute off the Azure `SiteConfig`; the real
+  property is `ftps_state`, so the missing attribute always fell back to
+  the `AllAllowed` default and every App Service failed regardless of its
+  true FTP setting. The rule now reads `ftps_state` (keeping `ftp_state`
+  as a legacy-SDK fallback). Found by the 2026-07 rule audit.
 
 ## [1.18.0] - 2026-07-16
 
