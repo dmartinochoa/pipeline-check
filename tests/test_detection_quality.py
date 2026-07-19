@@ -182,6 +182,28 @@ class TestPkgNoLockfileGoInstall:
         assert PKG_NO_LOCKFILE_RE.search(cmd.lower()), f"missed: {cmd}"
 
 
+class TestPkgNoLockfilePoetryCargo:
+    """Regression (2026-07 audit, GHA-021 / GL-021): ``poetry install``
+    enforces ``poetry.lock`` (it is not a lock-bypassing command) and
+    ``cargo install --locked`` enforces ``Cargo.lock``."""
+
+    @pytest.mark.parametrize("cmd", [
+        "poetry install",
+        "poetry install --no-interaction",
+        "poetry install --only main",
+        "cargo install --locked ripgrep",
+        "cargo install ripgrep --locked",
+    ])
+    def test_lockfile_enforcing_not_flagged(self, cmd):
+        assert not PKG_NO_LOCKFILE_RE.search(cmd.lower()), f"false positive: {cmd}"
+
+    @pytest.mark.parametrize("cmd", [
+        "cargo install ripgrep",
+    ])
+    def test_unlocked_cargo_still_flagged(self, cmd):
+        assert PKG_NO_LOCKFILE_RE.search(cmd.lower()), f"missed: {cmd}"
+
+
 # ────────────────────────────────────────────────────────────────────────
 # UNTRUSTED_CONTEXT_RE — GitHub Actions script injection
 # ────────────────────────────────────────────────────────────────────────

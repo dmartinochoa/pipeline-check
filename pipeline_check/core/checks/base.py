@@ -556,12 +556,13 @@ PKG_NO_LOCKFILE_RE = _re.compile(
     r"|\byarn\s+install\b(?![^\n]*(?:--frozen-lockfile|--immutable))"
     # bundle install without --frozen / --deployment
     r"|\bbundle\s+install\b(?![^\n]*(?:--frozen|--deployment))"
-    # cargo install (always risky in CI without lockfile)
-    r"|\bcargo\s+install\s"
-    # go install without @vN.N version pin
-    r"|\bgo\s+install\s+(?!.*@v\d+\.\d+)\S+(?:\s|$)"
-    # poetry install without --no-update
-    r"|\bpoetry\s+install\b(?![^\n]*--no-update)",
+    # cargo install without --locked (--locked enforces Cargo.lock)
+    r"|\bcargo\s+install\s(?![^\n]*--locked)"
+    # go install without @vN.N version pin.
+    # NB: ``poetry install`` is intentionally NOT flagged — it installs
+    # from ``poetry.lock`` when present (the lockfile-enforcing analog of
+    # ``npm ci``); the lock-bypassing command is ``poetry update``.
+    r"|\bgo\s+install\s+(?!.*@v\d+\.\d+)\S+(?:\s|$)",
     _re.MULTILINE,
 )
 

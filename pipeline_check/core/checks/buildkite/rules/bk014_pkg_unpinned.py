@@ -47,8 +47,8 @@ RULE = Rule(
         "install <pkg>`` without ``-r`` or ``--require-hashes``, "
         "``yarn install`` without ``--frozen-lockfile``, "
         "``bundle install`` without ``--frozen``, ``cargo "
-        "install``, ``go install`` without an ``@vN.N`` pin, "
-        "``poetry install`` without ``--no-update``."
+        "install`` without ``--locked``, ``go install`` without an "
+        "``@vN.N`` pin."
     ),
     known_fp=(
         "Bootstrap-stage installs that intentionally pull "

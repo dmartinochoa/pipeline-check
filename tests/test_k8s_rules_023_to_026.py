@@ -81,14 +81,18 @@ def _service(
     name: str = "svc",
     type_: str = "ClusterIP",
     source_ranges: list[str] | None = None,
+    annotations: dict[str, Any] | None = None,
 ) -> dict[str, Any]:
     spec: dict[str, Any] = {"type": type_, "ports": [{"port": 80}]}
     if source_ranges is not None:
         spec["loadBalancerSourceRanges"] = source_ranges
+    metadata: dict[str, Any] = {"name": name, "namespace": "apps"}
+    if annotations is not None:
+        metadata["annotations"] = annotations
     return {
         "apiVersion": "v1",
         "kind": "Service",
-        "metadata": {"name": name, "namespace": "apps"},
+        "metadata": metadata,
         "spec": spec,
     }
 
@@ -249,3 +253,33 @@ class TestK8S026LBWithoutSourceRanges:
         # remediation (loadBalancerSourceRanges) doesn't apply.
         f = r26.check(_ctx(_service(type_="NodePort")))
         assert f.passed
+
+    # Regression (2026-07 audit, K8S-026): an internal LB is private and
+    # never accepts 0.0.0.0/0, so a missing source-range list is not an
+    # internet-exposure finding.
+    def test_aws_internal_lb_exempt(self):
+        f = r26.check(_ctx(_service(type_="LoadBalancer", annotations={
+            "service.beta.kubernetes.io/aws-load-balancer-internal": "true"})))
+        assert f.passed
+
+    def test_aws_internal_scheme_exempt(self):
+        f = r26.check(_ctx(_service(type_="LoadBalancer", annotations={
+            "service.beta.kubernetes.io/aws-load-balancer-scheme": "internal"})))
+        assert f.passed
+
+    def test_gke_internal_lb_exempt(self):
+        f = r26.check(_ctx(_service(type_="LoadBalancer", annotations={
+            "networking.gke.io/load-balancer-type": "Internal"})))
+        assert f.passed
+
+    def test_azure_internal_lb_exempt(self):
+        f = r26.check(_ctx(_service(type_="LoadBalancer", annotations={
+            "service.beta.kubernetes.io/azure-load-balancer-internal": "true"})))
+        assert f.passed
+
+    def test_internet_facing_scheme_still_fires(self):
+        # An explicit internet-facing scheme is not internal.
+        f = r26.check(_ctx(_service(type_="LoadBalancer", annotations={
+            "service.beta.kubernetes.io/aws-load-balancer-scheme":
+                "internet-facing"})))
+        assert not f.passed

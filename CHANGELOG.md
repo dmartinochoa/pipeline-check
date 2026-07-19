@@ -124,6 +124,23 @@ release commit collapses this section into `## [X.Y.Z] - <date>`.
   suffixes (`_FILE` / `_PATH` / `_TTL` / ...) are excluded, and the
   value must actually look secret-shaped (not a number, boolean/enum, or
   filesystem path). Found by the 2026-07 rule audit.
+- **`poetry install` and `cargo install --locked` no longer flagged as
+  missing lockfile enforcement.** The shared `PKG_NO_LOCKFILE_RE` flagged
+  `poetry install` unless a (nonexistent) `--no-update` flag was present,
+  but `poetry install` installs from `poetry.lock` (the lockfile-
+  enforcing analog of `npm ci`); and `cargo install --locked` enforces
+  `Cargo.lock`. `poetry install` is no longer flagged at all, and
+  `cargo install` is exempt when `--locked` is present. Affects the
+  no-lockfile rule across every provider (GHA-021 / GL-021 / ADO-021 /
+  BB-021 / CC-021 / JF-021 / and the `_pkg_unpinned` variants). Found by
+  the 2026-07 rule audit.
+- **Kubernetes K8S-026 no longer flags internal load balancers.** A
+  `Service` of `type: LoadBalancer` carrying a recognized internal-LB
+  annotation (AWS `aws-load-balancer-internal` / `scheme: internal`, GKE
+  `load-balancer-type: Internal`, Azure `azure-load-balancer-internal`)
+  is private-network-only and never accepts 0.0.0.0/0, so a missing
+  `loadBalancerSourceRanges` is no longer reported as internet exposure.
+  Found by the 2026-07 rule audit.
 
 ## [1.18.0] - 2026-07-16
 
