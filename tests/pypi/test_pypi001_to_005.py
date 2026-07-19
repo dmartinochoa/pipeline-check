@@ -69,6 +69,19 @@ class TestPYPI001:
 # ── PYPI-002 missing hash pin ──────────────────────────────────────────
 
 
+    # Regression (2026-07 audit, PYPI-001): a `-r`/`-c` nested-include
+    # directive is not a requirement and carries no `==` pin.
+    def test_r_include_line_not_flagged(self):
+        text = "-r base.txt\nrequests==2.31.0\n"
+        f = run_check(text, "PYPI-001")
+        assert f.passed
+
+    def test_c_constraint_line_not_flagged(self):
+        text = "-c constraints.txt\nrequests==2.31.0\n"
+        f = run_check(text, "PYPI-001")
+        assert f.passed
+
+
 class TestPYPI002:
     def test_fails_without_hashes(self):
         text = "requests==2.31.0\n"
@@ -94,6 +107,26 @@ class TestPYPI002:
     def test_in_file_is_exempt(self):
         text = "requests\n"
         f = run_check(text, "PYPI-002", path="requirements.in")
+        assert f.passed
+
+    # Regression (2026-07 audit, PYPI-002): nested-include and
+    # editable/local lines can't carry a `--hash=` and must not be flagged.
+    def test_r_include_not_flagged(self):
+        text = (
+            "--require-hashes\n"
+            "requests==2.31.0 --hash=sha256:abc\n"
+            "-r base.txt\n"
+        )
+        f = run_check(text, "PYPI-002")
+        assert f.passed
+
+    def test_editable_local_not_flagged(self):
+        text = (
+            "--require-hashes\n"
+            "requests==2.31.0 --hash=sha256:abc\n"
+            "-e .\n"
+        )
+        f = run_check(text, "PYPI-002")
         assert f.passed
 
 

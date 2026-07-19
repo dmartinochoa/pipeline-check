@@ -118,6 +118,27 @@ class TestGCSQL003:
         cat = make_catalog(**{"cloudsql:instances": []})
         assert gcsql003_ssl_required.check(cat) == []
 
+    # Regression (2026-07 audit, GCSQL-003): modern instances enforce
+    # TLS via sslMode, which supersedes the legacy requireSsl boolean.
+    def test_ssl_mode_encrypted_only_passes(self, make_catalog):
+        inst = {"name": "db", "settings": {"ipConfiguration": {
+            "ipv4Enabled": False, "sslMode": "ENCRYPTED_ONLY"}}}
+        cat = make_catalog(**{"cloudsql:instances": [inst]})
+        findings = gcsql003_ssl_required.check(cat)
+        assert findings[0].passed is True
+
+    def test_ssl_mode_trusted_cert_passes(self, make_catalog):
+        inst = {"name": "db", "settings": {"ipConfiguration": {
+            "sslMode": "TRUSTED_CLIENT_CERTIFICATE_REQUIRED"}}}
+        cat = make_catalog(**{"cloudsql:instances": [inst]})
+        assert gcsql003_ssl_required.check(cat)[0].passed is True
+
+    def test_ssl_mode_allow_unencrypted_fails(self, make_catalog):
+        inst = {"name": "db", "settings": {"ipConfiguration": {
+            "sslMode": "ALLOW_UNENCRYPTED_AND_ENCRYPTED"}}}
+        cat = make_catalog(**{"cloudsql:instances": [inst]})
+        assert gcsql003_ssl_required.check(cat)[0].passed is False
+
 
 # -----------------------------------------------------------------------
 # GCSQL-004: IAM authentication
@@ -171,3 +192,12 @@ class TestGCSQL005:
     def test_no_instances_returns_empty(self, make_catalog):
         cat = make_catalog(**{"cloudsql:instances": []})
         assert gcsql005_pitr.check(cat) == []
+
+    # Regression (2026-07 audit, GCSQL-005): MySQL surfaces PITR as
+    # binaryLogEnabled, not pointInTimeRecoveryEnabled.
+    def test_mysql_binary_log_enabled_passes(self, make_catalog):
+        inst = {"name": "db", "settings": {"backupConfiguration": {
+            "enabled": True, "binaryLogEnabled": True}}}
+        cat = make_catalog(**{"cloudsql:instances": [inst]})
+        findings = gcsql005_pitr.check(cat)
+        assert findings[0].passed is True

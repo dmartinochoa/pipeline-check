@@ -168,6 +168,24 @@ class TestK8S037:
         f = check_k8s037(ctx)
         assert not f.passed
 
+    # Regression (2026-07 audit, K8S-037): a credential-word substring in
+    # a ConfigMap key whose value is a URL (OAuth/OIDC endpoint) or a
+    # reference name is ubiquitous, safe config — not an embedded secret.
+    def test_passes_on_oauth_endpoint_urls_and_reference_names(self):
+        ctx = k8s_ctx(_cm("config", {
+            "token_endpoint": "https://accounts.google.com/o/oauth2/token",
+            "access_token_url": "https://login.example.com/oauth2/token",
+            "secret_name": "app-db-creds",
+        }))
+        assert check_k8s037(ctx).passed
+
+    def test_still_fires_on_literal_secret_value(self):
+        ctx = k8s_ctx(_cm("config", {
+            "api_token": "ghp_abcdefghijklmnopqrstuvwxyz0123456789",
+        }))
+        f = check_k8s037(ctx)
+        assert not f.passed
+
 
 # ──────────────────────────────────────────────────────────────────
 # K8S-038 — NetworkPolicy allow-all rule

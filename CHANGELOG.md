@@ -141,6 +141,44 @@ release commit collapses this section into `## [X.Y.Z] - <date>`.
   is private-network-only and never accepts 0.0.0.0/0, so a missing
   `loadBalancerSourceRanges` is no longer reported as internet exposure.
   Found by the 2026-07 rule audit.
+- **PyPI PYPI-001/002 no longer flag `-r`/`-c` includes or `-e .`.** The
+  requirements parser treated a nested-include directive (`-r base.txt`,
+  `-c constraints.txt`) as a requirement, so PYPI-001 reported it as
+  "missing a version pin" and PYPI-002 as "missing a hash" — a fully
+  pinned file that layers a base file failed spuriously. The parser now
+  classifies `-r`/`--requirement`/`-c`/`--constraint` as options, and
+  PYPI-002 also skips editable/local/URL/VCS lines (which can't be
+  hash-pinned). Found by the 2026-07 rule audit.
+- **Tekton TKN-007 honors the v1 `taskRunTemplate.serviceAccountName`.**
+  It only read the deprecated top-level `spec.serviceAccountName`, so a
+  correct `tekton.dev/v1` PipelineRun pinning a least-privilege SA under
+  `spec.taskRunTemplate` was reported as running the default SA. Found
+  by the 2026-07 rule audit.
+- **RubyGems GEM-010 no longer trips on `ruby File.read('.ruby-version')`.**
+  The dynamic-Gemfile detector matched `File.read` anywhere, flagging the
+  mainstream Rails idiom that pins the interpreter version (not a gem
+  list). The `ruby File.read(...)` / `ruby file:` version-pin form is now
+  excluded. Found by the 2026-07 rule audit.
+- **Kubernetes K8S-037 no longer flags config values by key name alone.**
+  A ConfigMap entry whose key contained a credential word (`token_endpoint`,
+  `access_token_url`, `secret_name`) was flagged HIGH regardless of its
+  value, so OAuth/OIDC endpoint URLs and secret *reference names* fired.
+  The key-name path now requires the value to not be a URL and the key to
+  not be a reference-suffix pointer (`_name`/`_url`/`_endpoint`/...), and
+  AWS-key detection routes through `aws_key_in` so vendor-example keys are
+  excluded. Found by the 2026-07 rule audit.
+- **GCP GCSQL-003 recognizes the modern `sslMode`.** It read only the
+  legacy `requireSsl` boolean, so a Cloud SQL instance that enforces TLS
+  via `sslMode: ENCRYPTED_ONLY` (the recommended setting, and what current
+  Terraform emits) was reported as "does not require SSL". It now passes on
+  `sslMode` of `ENCRYPTED_ONLY` / `TRUSTED_CLIENT_CERTIFICATE_REQUIRED`,
+  falling back to `requireSsl` when `sslMode` is absent. Found by the
+  2026-07 rule audit.
+- **GCP GCSQL-005 recognizes MySQL point-in-time recovery.** It read only
+  `pointInTimeRecoveryEnabled` (PostgreSQL / SQL Server); MySQL surfaces
+  PITR as `backupConfiguration.binaryLogEnabled`, so every MySQL instance
+  with PITR enabled was flagged. Either field now counts. Found by the
+  2026-07 rule audit.
 
 ## [1.18.0] - 2026-07-16
 

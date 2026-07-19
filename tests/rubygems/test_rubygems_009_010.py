@@ -131,6 +131,30 @@ class TestGEM010:
         findings = _scan(tmp_path)
         assert findings["GEM-010"].passed
 
+    def test_passes_on_ruby_version_pin(self, tmp_path):
+        # Regression (2026-07 audit, GEM-010): the mainstream Rails idiom
+        # ``ruby File.read('.ruby-version').strip`` pins the interpreter
+        # version, not a gem list.
+        (tmp_path / "Gemfile").write_text(
+            "source 'https://rubygems.org'\n"
+            "ruby File.read('.ruby-version').strip\n"
+            "gem 'rails', '7.0.4'\n",
+            encoding="utf-8",
+        )
+        findings = _scan(tmp_path)
+        assert findings["GEM-010"].passed
+
+    def test_still_fires_on_bare_file_read(self, tmp_path):
+        # A File.read not in the ``ruby`` version-pin form is still flagged.
+        (tmp_path / "Gemfile").write_text(
+            "source 'https://rubygems.org'\n"
+            "gems = File.read('gemlist.txt')\n"
+            "gem 'rails', '7.0.4'\n",
+            encoding="utf-8",
+        )
+        findings = _scan(tmp_path)
+        assert not findings["GEM-010"].passed
+
     def test_skips_constructs_in_comments(self, tmp_path):
         (tmp_path / "Gemfile").write_text(
             "source 'https://rubygems.org'\n"

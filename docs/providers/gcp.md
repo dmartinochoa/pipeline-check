@@ -1034,7 +1034,7 @@ Without SSL enforcement, database connections can be intercepted on the network.
 
 **Recommended action**
 
-Set requireSsl to true in the Cloud SQL instance's ipConfiguration. This ensures all client connections are encrypted with TLS.
+Set ``ipConfiguration.sslMode`` to ``ENCRYPTED_ONLY`` (or ``TRUSTED_CLIENT_CERTIFICATE_REQUIRED`` for mTLS) on the Cloud SQL instance so all client connections are encrypted with TLS. ``sslMode`` is the modern control; the legacy ``requireSsl`` boolean maps only to the strict client-certificate mode.
 
 </div>
 

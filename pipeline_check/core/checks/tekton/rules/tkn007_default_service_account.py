@@ -54,10 +54,25 @@ RULE = Rule(
 )
 
 
-def _missing_or_default(spec: dict[str, Any]) -> bool:
+def _effective_sa(spec: dict[str, Any]) -> Any:
+    """The ServiceAccount the run actually uses.
+
+    ``spec.serviceAccountName`` is the deprecated v1beta1 form; the
+    current ``tekton.dev/v1`` PipelineRun sets it under
+    ``spec.taskRunTemplate.serviceAccountName``. Prefer the top-level
+    value when present, else fall back to the taskRunTemplate form.
+    """
     sa = spec.get("serviceAccountName")
-    if sa is None:
-        return True
+    if isinstance(sa, str) and sa.strip():
+        return sa
+    trt = spec.get("taskRunTemplate")
+    if isinstance(trt, dict):
+        return trt.get("serviceAccountName")
+    return sa
+
+
+def _missing_or_default(spec: dict[str, Any]) -> bool:
+    sa = _effective_sa(spec)
     if not isinstance(sa, str):
         return True
     return sa.strip().lower() in {"", "default"}

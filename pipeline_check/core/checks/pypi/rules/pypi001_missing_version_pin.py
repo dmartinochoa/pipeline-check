@@ -5,7 +5,12 @@ import re
 
 from ...base import Finding, Location, Severity
 from ...rule import Rule
-from ..base import RequirementsFile, iter_specs
+from ..base import (
+    RequirementsFile,
+    is_editable_or_local,
+    is_url_or_vcs,
+    iter_specs,
+)
 
 RULE = Rule(
     id="PYPI-001",
@@ -52,25 +57,6 @@ RULE = Rule(
 # (``pkg == 1.2.3`` is valid). ``\s*`` consumes that gap so the
 # pin is recognized in either spacing.
 _PIN_RE = re.compile(r"==\s*[^=,;\s]+")
-_VCS_OR_URL_PREFIXES: tuple[str, ...] = (
-    "git+", "hg+", "svn+", "bzr+",
-    "http://", "https://", "ftp://", "file:",
-)
-
-
-def _is_url_or_vcs(body: str) -> bool:
-    head = body.lstrip().split(maxsplit=1)[0].lower()
-    return head.startswith(_VCS_OR_URL_PREFIXES)
-
-
-def _is_editable_or_local(body: str) -> bool:
-    stripped = body.lstrip()
-    if stripped.startswith(("-e ", "-e\t", "--editable")):
-        return True
-    head = stripped.split(maxsplit=1)[0]
-    if head.startswith((".", "/", "./", "../")):
-        return True
-    return False
 
 
 def check(rf: RequirementsFile) -> Finding:
@@ -102,7 +88,7 @@ def check(rf: RequirementsFile) -> Finding:
     locations: list[Location] = []
     for line in iter_specs(rf):
         body = line.body
-        if _is_url_or_vcs(body) or _is_editable_or_local(body):
+        if is_url_or_vcs(body) or is_editable_or_local(body):
             continue
         if _PIN_RE.search(body):
             continue
