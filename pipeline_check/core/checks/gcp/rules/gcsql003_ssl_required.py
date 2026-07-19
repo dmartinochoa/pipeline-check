@@ -12,9 +12,11 @@ RULE = Rule(
     owasp=("CICD-SEC-9",),
     cwe=("CWE-319",),
     recommendation=(
-        "Set requireSsl to true in the Cloud SQL instance's "
-        "ipConfiguration. This ensures all client connections are "
-        "encrypted with TLS."
+        "Set ``ipConfiguration.sslMode`` to ``ENCRYPTED_ONLY`` (or "
+        "``TRUSTED_CLIENT_CERTIFICATE_REQUIRED`` for mTLS) on the Cloud "
+        "SQL instance so all client connections are encrypted with TLS. "
+        "``sslMode`` is the modern control; the legacy ``requireSsl`` "
+        "boolean maps only to the strict client-certificate mode."
     ),
     docs_note=(
         "Without SSL enforcement, database connections can be "
@@ -36,7 +38,18 @@ def check(catalog: ResourceCatalog) -> list[Finding]:
         name = inst.get("name", "<unnamed>")
         settings = inst.get("settings", {})
         ip_config = settings.get("ipConfiguration", {})
-        require_ssl = ip_config.get("requireSsl", False)
+        # Modern Cloud SQL enforces TLS via ``sslMode``; the legacy
+        # ``requireSsl`` boolean maps only to
+        # ``TRUSTED_CLIENT_CERTIFICATE_REQUIRED`` and is false/absent
+        # when ``sslMode: ENCRYPTED_ONLY`` (the recommended setting) is
+        # used. Prefer ``sslMode`` when present, else fall back.
+        ssl_mode = ip_config.get("sslMode")
+        if isinstance(ssl_mode, str) and ssl_mode:
+            require_ssl = ssl_mode in {
+                "ENCRYPTED_ONLY", "TRUSTED_CLIENT_CERTIFICATE_REQUIRED",
+            }
+        else:
+            require_ssl = bool(ip_config.get("requireSsl", False))
         if require_ssl:
             findings.append(Finding(
                 check_id=RULE.id,

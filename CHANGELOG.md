@@ -167,6 +167,18 @@ release commit collapses this section into `## [X.Y.Z] - <date>`.
   not be a reference-suffix pointer (`_name`/`_url`/`_endpoint`/...), and
   AWS-key detection routes through `aws_key_in` so vendor-example keys are
   excluded. Found by the 2026-07 rule audit.
+- **GCP GCSQL-003 recognizes the modern `sslMode`.** It read only the
+  legacy `requireSsl` boolean, so a Cloud SQL instance that enforces TLS
+  via `sslMode: ENCRYPTED_ONLY` (the recommended setting, and what current
+  Terraform emits) was reported as "does not require SSL". It now passes on
+  `sslMode` of `ENCRYPTED_ONLY` / `TRUSTED_CLIENT_CERTIFICATE_REQUIRED`,
+  falling back to `requireSsl` when `sslMode` is absent. Found by the
+  2026-07 rule audit.
+- **GCP GCSQL-005 recognizes MySQL point-in-time recovery.** It read only
+  `pointInTimeRecoveryEnabled` (PostgreSQL / SQL Server); MySQL surfaces
+  PITR as `backupConfiguration.binaryLogEnabled`, so every MySQL instance
+  with PITR enabled was flagged. Either field now counts. Found by the
+  2026-07 rule audit.
 
 ## [1.18.0] - 2026-07-16
 
