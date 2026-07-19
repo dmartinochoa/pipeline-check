@@ -231,7 +231,6 @@ class TestUntrustedContextRE:
         "${{ github.event.discussion.body }}",
         "${{ github.head_ref }}",
         "${{ github.ref_name }}",
-        "${{ github.actor }}",
         "${{ inputs.user_name }}",
         "${{ github.event.pages[0].page_name }}",
         "${{ github.event.pages.page_name }}",
@@ -248,6 +247,12 @@ class TestUntrustedContextRE:
         "${{ github.event.number }}",
         "${{ runner.os }}",
         "${{ env.MY_VAR }}",
+        # Regression (2026-07 audit, GHA-003): a GitHub login is
+        # ``[A-Za-z0-9-]`` (+ ``[bot]``), so it can't carry shell
+        # metacharacters; zizmor / CodeQL classify github.actor as safe.
+        "${{ github.actor }}",
+        "${{ github.actor_id }}",
+        "${{ github.triggering_actor }}",
     ])
     def test_safe_contexts_not_flagged(self, expr):
         assert not self.re.search(expr), f"false positive: {expr}"

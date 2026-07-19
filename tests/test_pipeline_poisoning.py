@@ -69,8 +69,9 @@ def _scan(text: str, tmp_path: Path):
     "${{ github.ref_name }}",
     # workflow_dispatch / workflow_call inputs — caller-controlled.
     "${{ inputs.target_branch }}",
-    # Actor / base ref / repository_dispatch — added for completeness.
-    "${{ github.actor }}",
+    # base ref / repository_dispatch — caller-controlled. (github.actor
+    # is deliberately excluded: a login is [A-Za-z0-9-] and cannot carry
+    # shell metacharacters — see test_gha003_does_not_flag_safe_contexts.)
     "${{ github.event.pull_request.base.ref }}",
     "${{ github.event.client_payload.command }}",
     # Pre-existing high-signal fields, kept as a regression net.

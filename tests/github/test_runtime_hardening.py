@@ -1125,3 +1125,21 @@ class TestGHA038AllowUnsecureCommands:
         """
         f = run_check(wf, "GHA-038")
         assert f.passed
+
+
+def test_gha019_token_as_arg_with_stdout_redirect_passes():
+    # Regression (2026-07 audit, GHA-019): passing the token inline as a
+    # header and redirecting the command's OUTPUT to a file does not
+    # persist the token.
+    wf = """
+    on: push
+    jobs:
+      x:
+        runs-on: ubuntu-latest
+        steps:
+          - run: |
+              gh api /repos/o/r --header "Authorization: Bearer $GITHUB_TOKEN" > result.json
+          - run: |
+              curl -s -H "Authorization: token ${{ secrets.API_TOKEN }}" https://api.example.com/x > out.json
+    """
+    assert run_check(wf, "GHA-019").passed

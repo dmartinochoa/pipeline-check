@@ -129,6 +129,37 @@ def _job_has_scan_step(job: dict[str, Any]) -> bool:
     return any(_is_scan_step(step) for step in iter_steps(job))
 
 
+def _needs_list(job: dict[str, Any]) -> list[str]:
+    needs = job.get("needs") or []
+    if isinstance(needs, str):
+        return [needs]
+    if isinstance(needs, list):
+        return [n for n in needs if isinstance(n, str)]
+    return []
+
+
+def _has_scan_ancestor(
+    start: str, jobs_map: dict[str, dict[str, Any]], scan_jobs: set[str],
+) -> bool:
+    """Whether any transitive ``needs:`` ancestor of *start* runs a scan.
+
+    The scan often gates an intermediate job (``scan`` -> ``build`` ->
+    ``deploy``), so only walking the deploy job's direct ``needs`` misses
+    it. BFS the DAG upward until a scan-bearing ancestor is found.
+    """
+    seen: set[str] = set()
+    frontier = list(_needs_list(jobs_map.get(start, {})))
+    while frontier:
+        node = frontier.pop()
+        if node in seen:
+            continue
+        seen.add(node)
+        if node in scan_jobs:
+            return True
+        frontier.extend(_needs_list(jobs_map.get(node, {})))
+    return False
+
+
 def check(path: str, doc: dict[str, Any]) -> Finding:
     jobs_map: dict[str, dict[str, Any]] = {}
     for job_id, job in iter_jobs(doc):
@@ -153,13 +184,7 @@ def check(path: str, doc: dict[str, Any]) -> Finding:
             continue
         if job_id in scan_jobs:
             continue
-        needs = job.get("needs") or []
-        if isinstance(needs, str):
-            needs = [needs]
-        if not isinstance(needs, list):
-            needs = []
-        has_upstream_scan = any(n in scan_jobs for n in needs)
-        if not has_upstream_scan:
+        if not _has_scan_ancestor(job_id, jobs_map, scan_jobs):
             deploy_jobs_without_scan.append(job_id)
             locations.append(job_location(path, job))
 

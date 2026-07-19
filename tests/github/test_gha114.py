@@ -172,3 +172,33 @@ class TestGHA114PublishUnrestrictedTrigger:
               - uses: pypa/gh-action-pypi-publish-malicious@v1
         """
         assert run_check(wf, "GHA-114").passed
+
+
+def test_gha114_dry_run_publish_not_flagged():
+    # Regression (2026-07 audit): a packaging-validation dry-run is not a
+    # real publish and must not trip the unrestricted-trigger rule.
+    wf = """
+    on:
+      push:
+    jobs:
+      ci:
+        runs-on: ubuntu-latest
+        steps:
+          - run: npm publish --dry-run
+    """
+    assert run_check(wf, "GHA-114").passed
+
+
+def test_gha114_real_publish_alongside_dry_run_still_fires():
+    wf = """
+    on:
+      push:
+    jobs:
+      release:
+        runs-on: ubuntu-latest
+        steps:
+          - run: |
+              npm publish --dry-run
+              npm publish --access public
+    """
+    assert not run_check(wf, "GHA-114").passed

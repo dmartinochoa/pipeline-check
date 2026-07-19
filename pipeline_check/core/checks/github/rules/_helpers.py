@@ -79,10 +79,12 @@ UNTRUSTED_CONTEXT_RE = re.compile(
     r"|workflow_run\.(?:head_branch|display_title|head_commit\.message"
     r"|head_repository\.(?:description|homepage|default_branch))"
     r")"
-    # ``\b`` after the alternation so ``github.actor`` matches but
-    # ``github.actor_id`` (a numeric account ID, never injectable) does
-    # not get swallowed by the trailing ``[^\}]*`` wildcard below.
-    r"|github\.(?:head_ref|ref_name|actor)\b"
+    # ``github.actor`` is intentionally NOT here: a GitHub login is
+    # restricted to ``[A-Za-z0-9-]`` (plus a ``[bot]`` suffix) and can't
+    # carry shell metacharacters, so zizmor / CodeQL both classify it as
+    # injection-safe (GHA-013 even uses it as a trust guard). ``\b`` keeps
+    # the branch refs from swallowing a trailing ``_id`` suffix.
+    r"|github\.(?:head_ref|ref_name)\b"
     r"|github\.event\.pull_request\.base\.ref"
     r"|github\.event\.client_payload\.[^\})]*"
     # ``github.event.inputs.<name>`` is the original workflow_dispatch
