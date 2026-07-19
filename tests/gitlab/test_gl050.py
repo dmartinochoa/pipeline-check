@@ -85,3 +85,17 @@ class TestGL050PublishLongLivedToken:
         """
         f = run_check(cfg, "GL-050")
         assert f.passed
+
+
+def test_gl050_ci_job_token_publish_not_flagged():
+    # Regression (2026-07 audit): TWINE_PASSWORD=$CI_JOB_TOKEN is GitLab's
+    # native Package Registry credential, not a long-lived external token.
+    cfg = """
+    release:
+      script:
+        - twine upload --repository-url ${CI_API_V4_URL}/projects/${CI_PROJECT_ID}/packages/pypi dist/*
+      variables:
+        TWINE_USERNAME: gitlab-ci-token
+        TWINE_PASSWORD: $CI_JOB_TOKEN
+    """
+    assert run_check(cfg, "GL-050").passed

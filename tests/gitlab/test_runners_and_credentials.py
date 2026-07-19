@@ -138,6 +138,23 @@ class TestGL019VulnScanning:
         f = run_check(cfg, "GL-019")
         assert f.passed
 
+    def test_passes_with_gitlab_security_templates(self):
+        # Regression (2026-07 audit, GL-019): GitLab's built-in Security
+        # templates are the canonical way to wire scanning.
+        cfg = """
+        include:
+          - template: Security/Dependency-Scanning.gitlab-ci.yml
+          - template: Security/Container-Scanning.gitlab-ci.yml
+        build_job:
+          image: docker:24-cli
+          script:
+            - docker build -t registry.example.com/app:v1 .
+            - docker push registry.example.com/app:v1
+          timeout: 30 minutes
+        """
+        f = run_check(cfg, "GL-019")
+        assert f.passed
+
 
 # ── GL-020 token persistence ────────────────────────────────────────
 
