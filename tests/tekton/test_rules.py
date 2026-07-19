@@ -393,6 +393,39 @@ class TestTKN007DefaultServiceAccount:
         f = run_check(cfg, "TKN-007")
         assert f.passed
 
+    def test_passes_with_v1_taskruntemplate_sa(self):
+        # Regression (2026-07 audit, TKN-007): the tekton.dev/v1
+        # PipelineRun sets the SA under spec.taskRunTemplate, not the
+        # deprecated top-level spec.serviceAccountName.
+        cfg = """
+        apiVersion: tekton.dev/v1
+        kind: PipelineRun
+        metadata:
+          name: pr
+        spec:
+          pipelineRef:
+            name: p
+          taskRunTemplate:
+            serviceAccountName: ci-runner
+        """
+        f = run_check(cfg, "TKN-007")
+        assert f.passed
+
+    def test_fails_when_taskruntemplate_sa_is_default(self):
+        cfg = """
+        apiVersion: tekton.dev/v1
+        kind: PipelineRun
+        metadata:
+          name: pr
+        spec:
+          pipelineRef:
+            name: p
+          taskRunTemplate:
+            serviceAccountName: default
+        """
+        f = run_check(cfg, "TKN-007")
+        assert not f.passed
+
 
 # ── TKN-008 curl pipe / TLS bypass ─────────────────────────────────────
 

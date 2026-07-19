@@ -1,13 +1,46 @@
 """K8S-037. ConfigMap data carries a credential-shaped literal."""
 from __future__ import annotations
 
+import re
 from typing import Any
 
-from ..._primitives.secret_shapes import AWS_KEY_RE, SECRETISH_KEY_RE
+from ..._primitives.secret_shapes import (
+    SECRETISH_KEY_RE,
+    aws_key_in,
+)
 from ..._yaml_lines import line_of as _line_of
 from ...base import Finding, Location, Severity
 from ...rule import Rule
 from ..base import KubernetesContext
+
+#: Key suffixes that make a credential-named key a *reference* to the
+#: secret (a name / endpoint / URL), not the secret value itself.
+_REFERENCE_KEY_SUFFIXES = (
+    "_name", "_ref", "_reference", "_url", "_uri", "_endpoint",
+    "_host", "_id", "_file", "_path", "_arn",
+)
+_URL_VALUE_RE = re.compile(r"^\s*[a-z][a-z0-9+.\-]*://", re.IGNORECASE)
+
+
+def _configmap_credential_name(key: str, value: object) -> bool:
+    """Whether a ConfigMap entry looks like an embedded credential by
+    key name AND value shape.
+
+    ConfigMaps routinely carry non-secret config whose key contains a
+    credential word (``token_endpoint``, ``access_token_url``,
+    ``secret_name``); the value there is a URL or a reference name, not
+    a credential. Require the value to not be a URL and the key to not
+    be a reference-suffix pointer before flagging.
+    """
+    if not (isinstance(value, str) and value.strip()):
+        return False
+    if not SECRETISH_KEY_RE.search(key):
+        return False
+    if key.lower().endswith(_REFERENCE_KEY_SUFFIXES):
+        return False
+    if _URL_VALUE_RE.match(value):
+        return False
+    return True
 
 RULE = Rule(
     id="K8S-037",
@@ -114,16 +147,12 @@ def check(ctx: KubernetesContext) -> Finding:
                     else v if isinstance(v, str) else ""
                 )
                 hit = False
-                if AWS_KEY_RE.search(view):
+                if aws_key_in(view):
                     offenders.append(
                         f"ConfigMap/{m.name}.{field}.{k} (AKIA-shaped value)"
                     )
                     hit = True
-                elif (
-                    SECRETISH_KEY_RE.search(k)
-                    and isinstance(v, str)
-                    and v.strip()
-                ):
+                elif _configmap_credential_name(k, v):
                     offenders.append(
                         f"ConfigMap/{m.name}.{field}.{k} "
                         f"(literal credential-shaped name)"

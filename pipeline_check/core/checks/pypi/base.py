@@ -207,12 +207,19 @@ _TOP_LEVEL_OPTIONS: frozenset[str] = frozenset({
     "--pre",
     "--prefer-binary",
     "--find-links", "-f",
+    # Nested-file include directives: ``-r base.txt`` / ``-c
+    # constraints.txt`` layer other requirements files and are not
+    # themselves requirements, so they carry no ``==`` pin or
+    # ``--hash=`` (PYPI-001 / PYPI-002 must not flag them).
+    "--requirement", "-r",
+    "--constraint", "-c",
 })
 
 #: ``--flag=value`` forms whose head token startswith() one of these.
 _OPTION_EQUALS_FORMS: tuple[str, ...] = (
     "--index-url=", "-i=", "--extra-index-url=",
     "--trusted-host=", "--find-links=", "-f=",
+    "--requirement=", "--constraint=",
 )
 
 
@@ -273,6 +280,30 @@ def _parse_requirements(
             line_no=head_line_no, body=body, flags=tuple(flags),
         ))
     return tuple(lines), tuple(options)
+
+
+#: VCS / URL requirement prefixes: these install from a URL, not a
+#: registry-resolved name, so they carry no ``==`` pin or ``--hash=``.
+_VCS_OR_URL_PREFIXES: tuple[str, ...] = (
+    "git+", "hg+", "svn+", "bzr+",
+    "http://", "https://", "ftp://", "file:",
+)
+
+
+def is_url_or_vcs(body: str) -> bool:
+    """Whether a requirement line installs from a URL / VCS ref."""
+    head = body.lstrip().split(maxsplit=1)
+    return bool(head) and head[0].lower().startswith(_VCS_OR_URL_PREFIXES)
+
+
+def is_editable_or_local(body: str) -> bool:
+    """Whether a requirement line is an editable (``-e``) or local-path
+    install — neither can be version- or hash-pinned."""
+    stripped = body.lstrip()
+    if stripped.startswith(("-e ", "-e\t", "--editable")):
+        return True
+    head = stripped.split(maxsplit=1)
+    return bool(head) and head[0].startswith((".", "/", "./", "../"))
 
 
 def _comment_start(line: str) -> int:
