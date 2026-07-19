@@ -147,3 +147,37 @@ class TestGHA061AppTokenScopes:
         """
         f = run_check(wf, "GHA-061")
         assert f.passed
+
+
+def test_gha061_official_permission_scoped_inputs_pass():
+    # Regression (2026-07 audit): actions/create-github-app-token scopes
+    # via granular permission-<scope> inputs, not a `permissions` block.
+    wf = """
+    on: push
+    jobs:
+      x:
+        runs-on: ubuntu-latest
+        steps:
+          - uses: actions/create-github-app-token@v2
+            with:
+              app-id: ${{ vars.APP_ID }}
+              private-key: ${{ secrets.KEY }}
+              permission-contents: write
+              permission-issues: read
+    """
+    assert run_check(wf, "GHA-061").passed
+
+
+def test_gha061_unscoped_app_token_still_fires():
+    wf = """
+    on: push
+    jobs:
+      x:
+        runs-on: ubuntu-latest
+        steps:
+          - uses: actions/create-github-app-token@v2
+            with:
+              app-id: ${{ vars.APP_ID }}
+              private-key: ${{ secrets.KEY }}
+    """
+    assert not run_check(wf, "GHA-061").passed

@@ -148,6 +148,16 @@ def _step_declares_permissions(step: dict[str, Any]) -> bool:
     with_block = step.get("with")
     if not isinstance(with_block, dict):
         return False
+    # The official ``actions/create-github-app-token`` has no
+    # ``permissions`` input; it scopes the token via granular
+    # ``permission-<scope>: read|write`` inputs. Treat any such key as a
+    # declared filter, alongside the ``permissions`` block that
+    # tibdex / peter-murray use.
+    for key, kv in with_block.items():
+        if not (isinstance(key, str) and key.startswith("permission-")):
+            continue
+        if kv is not None and (not isinstance(kv, str) or kv.strip()):
+            return True
     val = with_block.get("permissions")
     if val is None:
         return False

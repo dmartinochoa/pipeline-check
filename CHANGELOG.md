@@ -12,6 +12,41 @@ release commit collapses this section into `## [X.Y.Z] - <date>`.
 
 ### Fixed
 
+- **GHA-003 no longer flags `github.actor`.** A GitHub login is
+  restricted to `[A-Za-z0-9-]` (plus a `[bot]` suffix) and can't carry
+  shell metacharacters, so `run: echo "by ${{ github.actor }}"` is not a
+  script-injection sink (zizmor / CodeQL agree; GHA-013 even uses it as a
+  trust guard). Removed `actor` from the untrusted-context regex. Found
+  by the 2026-07 rule audit.
+- **GHA-019 no longer flags a token used inline with stdout redirected.**
+  The token-persistence regex matched any line where `GITHUB_TOKEN` / a
+  `secrets.*` value appeared before a `>` redirect, so
+  `curl -H "Authorization: Bearer $GITHUB_TOKEN" url > out.json` (the
+  token is a header, the command's output is redirected) fired CRITICAL.
+  The file/`tee` branches now require an `echo`/`printf` writer (so the
+  secret is the content); redirects into `$GITHUB_ENV`/`OUTPUT`/`STATE`
+  still fire regardless. Found by the 2026-07 rule audit.
+- **GHA-061 recognizes the official app-token scoping inputs.**
+  `actions/create-github-app-token` scopes via granular
+  `permission-<scope>` inputs, not a `permissions` block, so a correctly
+  scoped step was flagged. Any `permission-*` `with:` key now counts as a
+  declared filter. Found by the 2026-07 rule audit.
+- **GHA-066 no longer flags a bounded workspace subdirectory.** It
+  matched any `path:` containing `github.workspace`, so
+  `path: ${{ github.workspace }}/dist` fired as a workspace-wide sweep. It
+  now strips the expression and flags only a whole-tree remainder
+  (empty / `/` / `/**` / `/**/*`). Found by the 2026-07 rule audit.
+- **GHA-098 walks the `needs:` DAG transitively.** It only checked the
+  deploy job's direct `needs`, so the mainstream `scan → build → deploy`
+  topology (where the scan gates an intermediate job) was flagged. It now
+  BFS-walks the `needs` graph for a scan-bearing ancestor. Found by the
+  2026-07 rule audit.
+- **GHA-113/114 no longer treat `--dry-run` as a publish.** The shared
+  publish detector matched `npm publish --dry-run` / `cargo publish
+  --dry-run` packaging-validation steps, so a plain CI workflow with no
+  token was flagged as an unrestricted-trigger publish. A command chunk
+  carrying `--dry-run` is now skipped. Found by the 2026-07 rule audit.
+
 - **SCM-047 no longer fires on every C/C++ repo.** The linguist→CodeQL
   language map spelled C/C++ as `cpp`, but GitHub's default-setup
   `languages` enum uses `c-cpp`, so a C/C++ repo could never match its

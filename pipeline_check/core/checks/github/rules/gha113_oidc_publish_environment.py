@@ -247,9 +247,13 @@ def _step_publishes(step: dict[str, Any]) -> tuple[bool, str]:
     """
     run = step.get("run")
     if isinstance(run, str):
-        m = _PUBLISH_RE.search(run)
-        if m:
-            return True, m.group(0).strip()
+        # Scan per command chunk so a ``--dry-run`` packaging-validation
+        # step (``npm publish --dry-run``) is not read as a real publish,
+        # while a genuine publish elsewhere in the same block still is.
+        for chunk in re.split(r"[\n;&|]+", run):
+            m = _PUBLISH_RE.search(chunk)
+            if m and "--dry-run" not in chunk:
+                return True, m.group(0).strip()
     uses = step.get("uses")
     if isinstance(uses, str):
         action = uses.split("@", 1)[0].strip().lower()

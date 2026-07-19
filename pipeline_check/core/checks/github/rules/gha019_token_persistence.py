@@ -101,13 +101,20 @@ def _find_artipacked_offender(
     return None
 
 
+#: The token / secret whose persistence we track.
+_SECRET_TOKEN = r"(?:GITHUB_TOKEN|\$\{\{\s*secrets\.\w+\s*\}\})"
 _TOKEN_PERSIST_RE = re.compile(
-    r"GITHUB_TOKEN.*(?:>>?\s|tee\s)"
-    r"|>>?\s*\$GITHUB_ENV.*GITHUB_TOKEN"
-    r"|\$\{\{\s*secrets\.GITHUB_TOKEN\s*\}\}.*>>?"
-    r"|\$\{\{\s*secrets\.\w+\s*\}\}.*>>?\s*"           # any secret redirected
-    r"|>>?\s*\$GITHUB_OUTPUT.*(?:GITHUB_TOKEN|secrets)"  # secrets to GITHUB_OUTPUT
-    r"|>>?\s*\$GITHUB_STATE.*(?:GITHUB_TOKEN|secrets)"   # secrets to GITHUB_STATE
+    # A secret is written to a file (or ``tee``) only when an ``echo`` /
+    # ``printf`` is doing the writing — i.e. the secret is the CONTENT.
+    # A secret passed as a header/flag to a command whose *stdout* is
+    # redirected (``curl -H "…$GITHUB_TOKEN…" url > out.json``) does NOT
+    # persist the token and must not fire.
+    r"(?:echo|printf)\b[^\n]*" + _SECRET_TOKEN
+    + r"[^\n]*(?:>>?\s|\|\s*tee\b)"
+    # A secret redirected into a GitHub special file persists it into the
+    # job/step environment regardless of the writer.
+    r"|" + _SECRET_TOKEN + r"[^\n]*>>?\s*\$GITHUB_(?:ENV|OUTPUT|STATE)\b"
+    r"|>>?\s*\$GITHUB_(?:ENV|OUTPUT|STATE)\b[^\n]*" + _SECRET_TOKEN
 )
 
 RULE = Rule(
