@@ -238,6 +238,23 @@ class TestGL003LiteralSecrets:
         )
         assert f.passed
 
+    def test_scanner_template_config_vars_pass(self):
+        # Regression (2026-07 audit, GL-003): GitLab analyzer/template
+        # config variables match the credential-name regex but carry
+        # configuration, not secrets.
+        f = _run(
+            """
+            variables:
+              SECRET_DETECTION_EXCLUDED_PATHS: "docs, spec"
+              SECRET_DETECTION_HISTORIC_SCAN: "true"
+              VAULT_TOKEN_PATH: /run/secrets/vault-token
+            build:
+              script: [make]
+            """,
+            "GL-003",
+        )
+        assert f.passed
+
 
 class TestGL004DeployGating:
     def test_ungated_deploy_fails(self):

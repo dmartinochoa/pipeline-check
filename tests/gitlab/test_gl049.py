@@ -71,3 +71,18 @@ class TestGL049AIOutputAutoland:
         """
         f = run_check(cfg, "GL-049")
         assert f.passed
+
+
+def test_gl049_git_push_then_glab_mr_create_not_flagged():
+    # Regression (2026-07 audit): pushing a feature branch and opening an
+    # MR for human review is the recommended flow, not an auto-land.
+    cfg = """
+    ai-fix:
+      script:
+        - claude -p "fix the failing test"
+        - git checkout -b ai-fix
+        - git commit -am "ai fix"
+        - git push origin ai-fix
+        - glab mr create --fill
+    """
+    assert run_check(cfg, "GL-049").passed

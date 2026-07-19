@@ -49,6 +49,37 @@ RULE = Rule(
 )
 
 
+#: GitLab analyzer/template config-variable key prefixes. Their values
+#: are scanner configuration (paths, flags), not credentials.
+_CONFIG_KEY_PREFIXES = (
+    "SECRET_DETECTION_", "SAST_", "DAST_", "DEPENDENCY_SCANNING_",
+    "CONTAINER_SCANNING_", "CS_", "DS_", "COVERAGE_",
+)
+#: Suffixes that make a credential-named key a pointer (a path / name /
+#: URL) rather than the secret itself.
+_REFERENCE_KEY_SUFFIXES = (
+    "_PATH", "_FILE", "_DIR", "_NAME", "_URL", "_URI", "_ENABLED", "_ID",
+)
+_BENIGN_VALUES = frozenset({
+    "true", "false", "yes", "no", "on", "off", "none", "null",
+})
+
+
+def _is_config_var(key: str, raw: str) -> bool:
+    """Whether ``key: raw`` is scanner/template config, not a secret."""
+    up = key.upper()
+    if up.startswith(_CONFIG_KEY_PREFIXES):
+        return True
+    if up.endswith(_REFERENCE_KEY_SUFFIXES):
+        return True
+    v = raw.strip()
+    if v.lower() in _BENIGN_VALUES:
+        return True
+    if v.startswith(("/", "./", "../", "~/")):
+        return True
+    return False
+
+
 def check(path: str, doc: dict[str, Any]) -> Finding:
     offenders: list[str] = []
 
@@ -68,6 +99,7 @@ def check(path: str, doc: dict[str, Any]) -> Finding:
                 SECRETISH_KEY_RE.search(key)
                 and raw and "$" not in raw
                 and not is_placeholder_value(raw)
+                and not _is_config_var(key, raw)
             ):
                 offenders.append(f"{where}.{key}")
 

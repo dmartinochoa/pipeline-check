@@ -33,6 +33,29 @@ class TestGL011IncludeLocalOnMR:
         f = run_check(cfg, "GL-011")
         assert not f.passed
 
+    def test_passes_when_mr_excluded_via_when_never(self):
+        # Regression (2026-07 audit, GL-011): the documented
+        # "branch pipelines only" snippet uses merge_request_event +
+        # when: never to EXCLUDE MR pipelines, so the local include is
+        # never MR-author-editable.
+        cfg = """
+        include:
+          - local: 'ci/build.yml'
+        workflow:
+          rules:
+            - if: '$CI_PIPELINE_SOURCE == "merge_request_event"'
+              when: never
+            - if: '$CI_COMMIT_BRANCH'
+        stages: [build]
+        build_job:
+          stage: build
+          image: alpine:3.19.1
+          script: [make]
+          timeout: 30 minutes
+        """
+        f = run_check(cfg, "GL-011")
+        assert f.passed
+
     def test_passes_when_mr_pipeline_uses_project_include(self):
         cfg = """
         include:

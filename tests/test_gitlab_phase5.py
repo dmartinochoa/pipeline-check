@@ -130,12 +130,39 @@ manual-smoketest:
         f = gl029_manual_allow_failure.check("<t>", doc)
         assert f.passed is True
 
-    def test_rules_with_manual_and_no_allow_failure_fails(self):
+    def test_rules_with_manual_and_no_allow_failure_passes(self):
+        # Regression (2026-07 audit, GL-029): ``when: manual`` INSIDE
+        # ``rules:`` defaults to ``allow_failure: false`` (per GitLab
+        # docs), so this job already blocks — it is not a false gate.
         doc = _doc("""
 deploy-prod:
   rules:
     - if: '$CI_COMMIT_BRANCH == "main"'
       when: manual
+  script: [./deploy.sh]
+""")
+        f = gl029_manual_allow_failure.check("<t>", doc)
+        assert f.passed is True
+
+    def test_rules_manual_with_explicit_allow_failure_true_fails(self):
+        # The actually-dangerous rules-form: an explicit allow_failure:
+        # true in the manual rule entry turns the gate into a no-op.
+        doc = _doc("""
+deploy-prod:
+  rules:
+    - if: '$CI_COMMIT_BRANCH == "main"'
+      when: manual
+      allow_failure: true
+  script: [./deploy.sh]
+""")
+        f = gl029_manual_allow_failure.check("<t>", doc)
+        assert f.passed is False
+
+    def test_legacy_job_manual_without_allow_failure_still_fails(self):
+        # Legacy job-level ``when: manual`` defaults allow_failure: true.
+        doc = _doc("""
+deploy-prod:
+  when: manual
   script: [./deploy.sh]
 """)
         f = gl029_manual_allow_failure.check("<t>", doc)

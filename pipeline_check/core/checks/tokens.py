@@ -148,6 +148,16 @@ VULN_SCAN_TOKENS = (
     "aquasecurity/trivy-action", "aquasec/trivy", "aquatrivy",
     "anchore/scan-action", "anchore/grype",
     "snyk/actions",
+    # GitLab's built-in security templates (``include: template:
+    # Security/Dependency-Scanning.gitlab-ci.yml`` etc.) are the canonical
+    # way GitLab pipelines wire scanning — the include value lands in the
+    # blob. Matched lowercase (``blob_lower``); the ``.gitlab-ci.yml``
+    # suffix keeps them unambiguous.
+    "dependency-scanning.gitlab-ci.yml",
+    "container-scanning.gitlab-ci.yml",
+    "sast.gitlab-ci.yml",
+    "secret-detection.gitlab-ci.yml",
+    "dast.gitlab-ci.yml",
 )
 
 

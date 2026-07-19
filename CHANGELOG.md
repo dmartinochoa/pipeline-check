@@ -12,6 +12,47 @@ release commit collapses this section into `## [X.Y.Z] - <date>`.
 
 ### Fixed
 
+- **GitLab GL-003 no longer flags analyzer config variables.** GitLab
+  Security-template config vars (`SECRET_DETECTION_EXCLUDED_PATHS`,
+  `SECRET_DETECTION_HISTORIC_SCAN`), reference-suffix keys
+  (`VAULT_TOKEN_PATH`), and boolean/path values matched the
+  credential-name regex despite carrying configuration, not secrets.
+  Config-prefixed keys, `_PATH`/`_FILE`/... suffixes, and boolean/path
+  values are now skipped. Found by the 2026-07 rule audit.
+- **GitLab GL-011 respects `when: never` MR exclusions.** The
+  MR-pipeline detector treated any `if:` mentioning `merge_request_event`
+  as opting *into* MR pipelines, but the documented "branch pipelines
+  only" snippet uses `merge_request_event` + `when: never` to opt *out*.
+  `when: never` entries no longer count (this also unpoisons GL-041 /
+  GL-044). Found by the 2026-07 rule audit.
+- **GitLab GL-019 recognizes the built-in Security templates.** A
+  pipeline that wires scanning via `include: template:
+  Security/Dependency-Scanning.gitlab-ci.yml` (and Container-Scanning /
+  SAST / Secret-Detection / DAST) was reported as having no vulnerability
+  scanning. Those template names now count as scanner tokens. Found by
+  the 2026-07 rule audit.
+- **GitLab GL-029 no longer flags rules-based `when: manual` gates.**
+  `when: manual` inside `rules:` defaults to `allow_failure: false` (it
+  already blocks), unlike legacy job-level `when: manual`; the rule now
+  flags a rules-derived manual job only when it explicitly opts into
+  `allow_failure: true`. Found by the 2026-07 rule audit.
+- **GitLab GL-046 extracts the model id positionally.** A
+  `huggingface-cli download gpt2 --local-dir models/gpt2` flagged the
+  `--local-dir` value as an unpinned third-party model. The model
+  reference is now taken from the first positional (CLI) / `repo_id=` /
+  first string arg (Python) of the fetch call, not any slash-shaped token
+  in the window. Found by the 2026-07 rule audit.
+- **GitLab GL-049 accepts the push-then-open-MR flow.** A plain
+  `git push` followed by `glab mr create` routes the change through human
+  review (the recommended pattern) and is no longer treated as an
+  agentic auto-land; the explicit auto-merge shapes still fire. Found by
+  the 2026-07 rule audit.
+- **GitLab GL-050 no longer flags `$CI_JOB_TOKEN` publishing.** A
+  `variables:` entry like `TWINE_PASSWORD: $CI_JOB_TOKEN` (GitLab's
+  native, auto-expiring Package Registry credential) matched the
+  long-lived-token rule by variable name; an entry whose value uses
+  `CI_JOB_TOKEN` is now skipped. Found by the 2026-07 rule audit.
+
 - **GHA-003 no longer flags `github.actor`.** A GitHub login is
   restricted to `[A-Za-z0-9-]` (plus a `[bot]` suffix) and can't carry
   shell metacharacters, so `run: echo "by ${{ github.actor }}"` is not a

@@ -78,10 +78,19 @@ def _is_deploy_like(name: str, job: dict[str, Any]) -> bool:
     return any(_DEPLOY_CMD_RE.search(line) for line in job_scripts(job))
 
 
-def _is_manual(job: dict[str, Any]) -> bool:
-    if job.get("when") == "manual":
-        return True
-    return rules_manual(job.get("rules"))
+def _rules_manual_allow_failure(rules: Any) -> bool:
+    """Whether a manual ``rules:`` entry explicitly sets
+    ``allow_failure: true`` (the actually-dangerous rules-form)."""
+    if not isinstance(rules, list):
+        return False
+    for r in rules:
+        if (
+            isinstance(r, dict)
+            and r.get("when") == "manual"
+            and r.get("allow_failure") is True
+        ):
+            return True
+    return False
 
 
 def check(path: str, doc: dict[str, Any]) -> Finding:
@@ -89,19 +98,33 @@ def check(path: str, doc: dict[str, Any]) -> Finding:
     for name, job in iter_jobs(doc):
         if not _is_deploy_like(name, job):
             continue
-        if not _is_manual(job):
+        job_level_manual = job.get("when") == "manual"
+        rules_level_manual = rules_manual(job.get("rules"))
+        if not (job_level_manual or rules_level_manual):
             continue
-        # allow_failure must be explicitly False, unset or True both
-        # default to "the pipeline proceeds regardless".
-        if job.get("allow_failure") is not False:
-            offenders.append(name)
+        allow_failure = job.get("allow_failure")
+        if job_level_manual:
+            # Legacy job-level ``when: manual`` defaults ``allow_failure:
+            # true``, so anything but an explicit ``false`` fails to block.
+            if allow_failure is not False:
+                offenders.append(name)
+        else:
+            # ``when: manual`` INSIDE ``rules:`` defaults ``allow_failure:
+            # false`` — it already blocks — so flag only when the job or a
+            # matching rule entry explicitly opts into ``allow_failure:
+            # true``.
+            if allow_failure is True or _rules_manual_allow_failure(
+                job.get("rules")
+            ):
+                offenders.append(name)
     passed = not offenders
     desc = (
-        "Every manual deploy job explicitly sets ``allow_failure: false``."
+        "Every manual deploy job blocks the pipeline (``allow_failure`` "
+        "is or defaults to ``false``)."
         if passed else
-        f"{len(offenders)} manual deploy job(s) rely on the default "
-        f"``allow_failure: true`` and therefore do not block the "
-        f"pipeline if unclicked: {', '.join(offenders)}."
+        f"{len(offenders)} manual deploy job(s) do not block the pipeline "
+        f"(``allow_failure`` is or defaults to ``true``): "
+        f"{', '.join(offenders)}."
     )
     return Finding(
         check_id=RULE.id, title=RULE.title, severity=RULE.severity,

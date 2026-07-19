@@ -58,11 +58,19 @@ def rules_manual(rules: Any) -> bool:
 
 
 def _rules_opt_into_mr(rules: Any) -> bool:
-    """True when a ``rules:`` list has an entry whose ``if:`` admits MR pipelines."""
+    """True when a ``rules:`` list has an entry whose ``if:`` admits MR pipelines.
+
+    An entry with ``when: never`` EXCLUDES the matched pipelines (the
+    documented "branch pipelines only" snippet is ``if:
+    $CI_PIPELINE_SOURCE == "merge_request_event"`` + ``when: never``), so
+    it opts *out*, not in, and must not count.
+    """
     if not isinstance(rules, list):
         return False
     return any(
-        isinstance(r, dict) and "merge_request_event" in str(r.get("if", ""))
+        isinstance(r, dict)
+        and "merge_request_event" in str(r.get("if", ""))
+        and r.get("when") != "never"
         for r in rules
     )
 

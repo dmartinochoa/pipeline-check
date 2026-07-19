@@ -89,6 +89,12 @@ _PUSH_AUTOMERGE_RE = re.compile(
 # A plain ``git push`` (the GitLab idiom for committing straight to a branch).
 _GIT_PUSH_RE = re.compile(r"\bgit\s+push\b", re.IGNORECASE)
 
+# Opening a merge request routes the change through human review, so a
+# plain ``git push`` that feeds a ``glab mr create`` is not an auto-land.
+_GLAB_MR_CREATE_RE = re.compile(r"\bglab\s+mr\s+create\b", re.IGNORECASE)
+
+_PLAIN_PUSH_LABEL = "git push (commits to a branch)"
+
 
 def _line_autolands(line: str) -> str | None:
     """Return a label for the no-review landing in *line*, or ``None``."""
@@ -97,7 +103,7 @@ def _line_autolands(line: str) -> str | None:
     if _PUSH_AUTOMERGE_RE.search(line):
         return "git push -o merge_request.merge_when_pipeline_succeeds"
     if _GIT_PUSH_RE.search(line) and "--dry-run" not in line:
-        return "git push (commits to a branch)"
+        return _PLAIN_PUSH_LABEL
     return None
 
 
@@ -108,11 +114,19 @@ def check(path: str, doc: dict[str, Any]) -> Finding:
     for job_id, job in iter_jobs(doc):
         agent: str | None = None
         autoland: str | None = None
+        opens_mr = False
         for line in job_scripts(job):
             if agent is None:
                 agent = invokes_agentic_cli(line)
             if autoland is None:
                 autoland = _line_autolands(line)
+            if _GLAB_MR_CREATE_RE.search(line):
+                opens_mr = True
+        # A plain ``git push`` that feeds an ``glab mr create`` opens the
+        # change for human review — the recommended flow — so it is not an
+        # auto-land. The explicit auto-merge shapes still fire.
+        if autoland == _PLAIN_PUSH_LABEL and opens_mr:
+            autoland = None
         if agent is not None and autoland is not None:
             offenders.append(f"{job_id}: {agent} + {autoland}")
             line_no = _line_of(job)
