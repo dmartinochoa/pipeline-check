@@ -12,6 +12,9 @@ from pipeline_check.core.checks.cloudformation.ecr import ECRChecks
 from pipeline_check.core.checks.cloudformation.extended import ExtendedChecks
 from pipeline_check.core.checks.cloudformation.phase3 import Phase3Checks
 from pipeline_check.core.checks.cloudformation.rules import (
+    ca001_domain_encryption as ca001,
+)
+from pipeline_check.core.checks.cloudformation.rules import (
     ca003_domain_policy_public as ca003,
 )
 from pipeline_check.core.checks.cloudformation.rules import (
@@ -580,3 +583,44 @@ class TestScalarNestedBlockCrashes:
         # Regression: proper nested dicts still evaluate.
         assert _s3003_versioning(
             {"VersioningConfiguration": {"Status": "Enabled"}}, "b").passed is True
+
+
+class TestCA001IntrinsicCmk:
+    """CA-001 flagged a CodeArtifact domain whose CMK is referenced via
+    an intrinsic (``!GetAtt`` / ``!Ref`` to an in-template KMS key) as
+    "not encrypted" because ``as_str`` returns "" for intrinsic dicts."""
+
+    def _resources(self, encryption_key):
+        return {
+            "Key": r("Key", "AWS::KMS::Key", {}),
+            "D": r("D", "AWS::CodeArtifact::Domain",
+                   {"DomainName": "corp", "EncryptionKey": encryption_key}),
+        }
+
+    def test_getatt_cmk_passes(self):
+        ctx = make_context(self._resources({"Fn::GetAtt": ["Key", "Arn"]}))
+        f = next(x for x in ca001.check(ctx) if x.check_id == "CA-001")
+        assert f.passed is True
+
+    def test_ref_cmk_passes(self):
+        ctx = make_context(self._resources({"Ref": "Key"}))
+        f = next(x for x in ca001.check(ctx) if x.check_id == "CA-001")
+        assert f.passed is True
+
+    def test_no_encryption_key_still_fails(self):
+        resources = {"D": r("D", "AWS::CodeArtifact::Domain",
+                            {"DomainName": "corp"})}
+        f = next(x for x in ca001.check(make_context(resources))
+                 if x.check_id == "CA-001")
+        assert f.passed is False
+
+    def test_intrinsic_to_non_kms_still_fails(self):
+        # A Ref to something that isn't a KMS resource must not pass.
+        resources = {
+            "Bucket": r("Bucket", "AWS::S3::Bucket", {}),
+            "D": r("D", "AWS::CodeArtifact::Domain",
+                   {"DomainName": "corp", "EncryptionKey": {"Ref": "Bucket"}}),
+        }
+        f = next(x for x in ca001.check(make_context(resources))
+                 if x.check_id == "CA-001")
+        assert f.passed is False

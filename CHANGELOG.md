@@ -103,6 +103,18 @@ release commit collapses this section into `## [X.Y.Z] - <date>`.
   scans), and the unreachable `_TF002_SKIP_TYPES` early-continue (none
   of its types were in the scan set) was removed. Found by the 2026-07
   rule audit.
+- **CloudFormation CA-001 accepts an intrinsic CMK reference.** A
+  CodeArtifact domain whose `EncryptionKey` points at an in-template KMS
+  key via `!Ref` / `!GetAtt` (the only practical way to reference a
+  stack-defined CMK) was reported as "not encrypted". It now reuses the
+  same intrinsic-CMK resolution CCM-002 uses. Found by the 2026-07 rule
+  audit.
+- **CodePipeline CP-005 no longer treats `pre-prod` / `non-prod` as
+  production.** Stage/action names like `PreProd`, `non-prod`, or
+  `staging-prod` split into a `prod` token and were flagged as
+  production stages missing a manual approval; a `prod` token
+  immediately preceded by a negating prefix (`pre` / `non` / `staging`)
+  no longer counts. Found by the 2026-07 rule audit.
 
 ## [1.18.0] - 2026-07-16
 

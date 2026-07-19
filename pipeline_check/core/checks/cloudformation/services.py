@@ -74,7 +74,17 @@ def _codeartifact(ctx: CloudFormationContext) -> list[Finding]:
     for d in ctx.resources("AWS::CodeArtifact::Domain"):
         key = d.properties.get("EncryptionKey")
         key_str = as_str(key)
-        passed = bool(key_str) and "alias/aws/" not in key_str
+        if key_str:
+            # Literal string: pass unless it's an AWS-owned alias.
+            passed = "alias/aws/" not in key_str
+        elif is_intrinsic(key) and _is_cmk_intrinsic(key, ctx):
+            # Ref/GetAtt to an in-template KMS::Key/Alias is the only
+            # practical way to point at a stack-defined CMK (CCM-002
+            # handles it the same way).
+            passed = True
+            key_str = "<intrinsic CMK reference>"
+        else:
+            passed = False
         out.append(Finding(
             check_id="CA-001",
             title="CodeArtifact domain not encrypted with customer KMS CMK",

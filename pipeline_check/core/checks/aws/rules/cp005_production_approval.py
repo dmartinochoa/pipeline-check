@@ -32,6 +32,10 @@ RULE = Rule(
 )
 
 _PROD_TOKENS = frozenset({"prod", "production", "live"})
+# Prefixes that negate a following ``prod`` token: ``pre-prod`` /
+# ``non-prod`` / ``staging-prod`` name a *non*-production environment
+# teams intentionally leave un-gated.
+_NEGATING_PREFIXES = frozenset({"pre", "non", "staging", "stage"})
 # Split a name into lowercased words across camelCase, kebab-case, and
 # snake_case so token matching is whole-word: "ProdDeploy" / "deploy-prod"
 # / "deploy_prod" match "prod", but "Delivery" / "Product" / "reproduce"
@@ -40,8 +44,15 @@ _WORD_RE = re.compile(r"[A-Z]+(?=[A-Z][a-z])|[A-Z]?[a-z]+|[A-Z]+|[0-9]+")
 
 
 def _name_matches_prod(text: str) -> bool:
-    words = {w.lower() for w in _WORD_RE.findall(text or "")}
-    return bool(_PROD_TOKENS & words)
+    words = [w.lower() for w in _WORD_RE.findall(text or "")]
+    for i, word in enumerate(words):
+        if word not in _PROD_TOKENS:
+            continue
+        # ``pre-prod`` / ``NonProd`` / ``staging-prod`` are not production.
+        if i > 0 and words[i - 1] in _NEGATING_PREFIXES:
+            continue
+        return True
+    return False
 
 
 def _stage_is_production(stage: dict[str, Any]) -> bool:
