@@ -18,6 +18,7 @@ HCL source path (best-effort, partial variable resolution):
 from __future__ import annotations
 
 import json
+import re
 from collections.abc import Iterator
 from dataclasses import dataclass
 from pathlib import Path
@@ -56,6 +57,12 @@ class TerraformContext:
         resources, data_sources = _split_resources(plan)
         self._resources: list[TerraformResource] = resources
         self._data_sources: list[TerraformResource] = data_sources
+        self._after_unknown: dict[str, dict[str, Any]] = (
+            _index_after_unknown(plan)
+        )
+        self._config_references: dict[str, dict[str, list[str]]] = (
+            _index_config_references(plan)
+        )
 
     @classmethod
     def from_path(cls, path: str | Path) -> TerraformContext:
@@ -100,6 +107,9 @@ class TerraformContext:
         ctx.files_skipped = 0
         ctx._resources = result.resources
         ctx._data_sources = result.data_sources
+        # HCL source mode has no plan ``after_unknown`` metadata; rules
+        # fall back to the interpolation-string heuristics there.
+        ctx._after_unknown = {}
         if result.unresolved_refs:
             refs = ", ".join(sorted(result.unresolved_refs)[:10])
             ctx.warnings.append(
@@ -128,8 +138,112 @@ class TerraformContext:
             if resource_type is None or r.type == resource_type:
                 yield r
 
+    def after_unknown(self, address: str) -> dict[str, Any]:
+        """Return the ``after_unknown`` map for *address*, or ``{}``.
+
+        A ``terraform show -json`` plan carries, per resource change, an
+        ``after_unknown`` tree mirroring ``after`` with ``true`` at every
+        attribute whose value is computed at apply time (a reference to
+        a not-yet-created resource, a generated id, ...). Rules consult
+        this to tell "attribute genuinely absent / false" from "attribute
+        set to a value the plan can't resolve yet", so they don't false
+        -fire on a fresh plan. Empty in HCL source mode.
+        """
+        return self._after_unknown.get(address, {})
+
+    def config_references(self, address: str, attr: str) -> list[str]:
+        """Resource addresses referenced by *address*'s *attr* expression.
+
+        Sourced from the plan's ``configuration`` block (``terraform show
+        -json``), which records the static reference graph even when the
+        referenced value is computed at apply time and therefore absent
+        from ``planned_values``. Lets a rule join, e.g., an
+        ``aws_iam_role_policy_attachment`` to the ``aws_iam_policy`` it
+        attaches when both ARNs are unknown on a create plan. Count /
+        for_each indices on *address* are ignored. Empty in HCL-source
+        mode (no configuration block)."""
+        base = _INDEX_SUFFIX_RE.sub("", address)
+        return self._config_references.get(base, {}).get(attr, [])
+
     def __len__(self) -> int:
         return len(self._resources)
+
+
+#: Trailing count / for_each index on a planned_values address
+#: (``aws_iam_policy.ci[0]`` / ``...["prod"]``); configuration-block
+#: addresses carry no index, so strip it before the lookup.
+_INDEX_SUFFIX_RE = re.compile(r"\[[^\]]*\]$")
+
+
+def _index_config_references(
+    plan: dict[str, Any],
+) -> dict[str, dict[str, list[str]]]:
+    """Map ``address -> {attr -> [referenced addresses]}`` from ``configuration``.
+
+    Walks ``configuration.root_module`` (and nested ``module_calls``) and
+    records each resource attribute's ``references`` list. This is the
+    static reference graph, present even when the referenced value is
+    computed at apply time. Empty when the plan carries no configuration
+    block (HCL-source mode).
+    """
+    out: dict[str, dict[str, list[str]]] = {}
+    config = plan.get("configuration")
+    if not isinstance(config, dict):
+        return out
+    root = config.get("root_module")
+    if isinstance(root, dict):
+        _walk_config_module(root, out)
+    return out
+
+
+def _walk_config_module(
+    module: dict[str, Any], out: dict[str, dict[str, list[str]]],
+) -> None:
+    for res in module.get("resources") or []:
+        if not isinstance(res, dict):
+            continue
+        addr = res.get("address")
+        exprs = res.get("expressions")
+        if not isinstance(addr, str) or not isinstance(exprs, dict):
+            continue
+        attr_refs: dict[str, list[str]] = {}
+        for attr, spec in exprs.items():
+            if isinstance(spec, dict):
+                refs = spec.get("references")
+                if isinstance(refs, list):
+                    attr_refs[attr] = [r for r in refs if isinstance(r, str)]
+        if attr_refs:
+            out[addr] = attr_refs
+    module_calls = module.get("module_calls")
+    if isinstance(module_calls, dict):
+        for call in module_calls.values():
+            if isinstance(call, dict):
+                sub = call.get("module")
+                if isinstance(sub, dict):
+                    _walk_config_module(sub, out)
+
+
+def _index_after_unknown(
+    plan: dict[str, Any],
+) -> dict[str, dict[str, Any]]:
+    """Map each resource address to its ``change.after_unknown`` tree.
+
+    Only entries whose ``after_unknown`` is a mapping are kept, so a
+    fully-known change (``after_unknown`` is often ``false`` / ``{}``)
+    simply doesn't appear and ``after_unknown(addr)`` returns ``{}``.
+    """
+    out: dict[str, dict[str, Any]] = {}
+    for rc in plan.get("resource_changes") or []:
+        if not isinstance(rc, dict):
+            continue
+        addr = rc.get("address")
+        change = rc.get("change")
+        if not isinstance(addr, str) or not isinstance(change, dict):
+            continue
+        au = change.get("after_unknown")
+        if isinstance(au, dict):
+            out[addr] = au
+    return out
 
 
 def _split_resources(

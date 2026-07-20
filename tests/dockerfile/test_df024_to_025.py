@@ -87,6 +87,50 @@ RUN echo hello
         f = run_check(text, "DF-024")
         assert f.passed
 
+    def test_fails_on_bare_yarn(self):
+        # Bare ``yarn`` (yarn 1.x) defaults to ``install``.
+        text = """\
+FROM node:20@sha256:0000000000000000000000000000000000000000000000000000000000000001
+RUN yarn
+"""
+        f = run_check(text, "DF-024")
+        assert not f.passed
+
+    def test_passes_on_yarn_subcommands(self):
+        # ``yarn build`` / ``yarn test`` / ``yarn lint`` run a script,
+        # they don't install the dependency tree, so lifecycle-script
+        # exposure isn't in play. Regression for a bare-``yarn`` regex
+        # that matched every ``yarn <subcommand>``.
+        for line in ("RUN yarn build", "RUN yarn test", "RUN yarn lint",
+                     "RUN yarn run coverage", "RUN yarn dlx tsc"):
+            text = (
+                "FROM node:20@sha256:0000000000000000000000000000000000"
+                "000000000000000000000000000001\n" + line + "\n"
+            )
+            f = run_check(text, "DF-024")
+            assert f.passed, f"{line!r} should not trip DF-024"
+
+    def test_passes_on_yarn_install_subcommand_after_flags(self):
+        # Bare yarn with only flags still installs; keep flagging it.
+        text = """\
+FROM node:20@sha256:0000000000000000000000000000000000000000000000000000000000000001
+RUN yarn --frozen-lockfile
+"""
+        f = run_check(text, "DF-024")
+        assert not f.passed
+
+    def test_passes_on_npm_info_init(self):
+        # ``npm info`` / ``npm init`` share the ``npm i`` prefix but are
+        # not installs. Regression for a missing trailing word boundary.
+        for line in ("RUN npm info left-pad", "RUN npm init -y",
+                     "RUN pnpm import"):
+            text = (
+                "FROM node:20@sha256:0000000000000000000000000000000000"
+                "000000000000000000000000000001\n" + line + "\n"
+            )
+            f = run_check(text, "DF-024")
+            assert f.passed, f"{line!r} should not trip DF-024"
+
 
 # ── DF-025 .npmrc / pip credentials baked into layer ─────────────────
 

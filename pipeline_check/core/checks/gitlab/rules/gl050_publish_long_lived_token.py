@@ -139,14 +139,20 @@ def _variables_text(variables: Any) -> str:
         return ""
     parts: list[str] = []
     for key, value in variables.items():
+        raw = value if isinstance(value, str) else (
+            value.get("value") if isinstance(value, dict) else None
+        )
+        # A variable whose value is the built-in ``$CI_JOB_TOKEN`` (the
+        # native, per-job GitLab Package Registry credential) is NOT a
+        # long-lived external token, so drop the whole entry — otherwise
+        # its name (e.g. ``TWINE_PASSWORD``) matches ``_LONG_LIVED_RE``
+        # even though the value is the safe, auto-expiring token.
+        if isinstance(raw, str) and "CI_JOB_TOKEN" in raw:
+            continue
         if isinstance(key, str):
             parts.append(key)
-        if isinstance(value, str):
-            parts.append(value)
-        elif isinstance(value, dict):
-            inner = value.get("value")
-            if isinstance(inner, str):
-                parts.append(inner)
+        if isinstance(raw, str):
+            parts.append(raw)
     return "\n".join(parts)
 
 

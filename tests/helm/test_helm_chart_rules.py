@@ -427,6 +427,21 @@ class TestHELM008:
         ctx = _ctx_with_charts(_chart(chart_lock=self._lock(ts)))
         assert not check_helm008(ctx, _now=self.NOW).passed
 
+    def test_stale_lock_as_datetime_object_fails(self):
+        # ``yaml.safe_load`` turns an *unquoted* ISO-8601 ``generated:``
+        # into a ``datetime`` (the Helm default is unquoted). The parser
+        # must accept that, not just string timestamps (Part-C FN: the
+        # staleness check silently skipped every unquoted lock).
+        ts = self.NOW - timedelta(days=120)
+        ctx = _ctx_with_charts(_chart(chart_lock={"generated": ts}))
+        assert not check_helm008(ctx, _now=self.NOW).passed
+
+    def test_recent_lock_as_naive_datetime_passes(self):
+        # A naive datetime (no tz) is treated as UTC.
+        ts = (self.NOW - timedelta(days=10)).replace(tzinfo=None)
+        ctx = _ctx_with_charts(_chart(chart_lock={"generated": ts}))
+        assert check_helm008(ctx, _now=self.NOW).passed
+
     def test_unparseable_generated_silently_passes(self):
         # Garbage timestamp -> can't decide, don't false-positive.
         ctx = _ctx_with_charts(_chart(chart_lock=self._lock("garbage")))

@@ -77,3 +77,23 @@ class TestGL046ModelPinning:
         """
         f = run_check(cfg, "GL-046")
         assert f.passed
+
+
+def test_gl046_single_segment_model_to_local_dir_not_flagged():
+    # Regression (2026-07 audit): --local-dir models/gpt2 is a flag value,
+    # not the model id; the actual single-segment model gpt2 is canonical.
+    cfg = """
+    fetch:
+      script:
+        - huggingface-cli download gpt2 --local-dir models/gpt2
+    """
+    assert run_check(cfg, "GL-046").passed
+
+
+def test_gl046_third_party_model_still_flagged():
+    cfg = """
+    fetch:
+      script:
+        - huggingface-cli download vendor/llm --local-dir models/llm
+    """
+    assert not run_check(cfg, "GL-046").passed

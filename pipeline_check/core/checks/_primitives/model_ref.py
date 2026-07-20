@@ -77,6 +77,35 @@ def _line_windows(body: str) -> list[str]:
     return out
 
 
+#: Extract the ``repo_id=`` kwarg value from a Python fetch call.
+_REPO_ID_KWARG_RE = re.compile(r"repo_id\s*=\s*['\"]([^'\"]+)", re.IGNORECASE)
+#: The first string literal argument to a Python fetch call.
+_FIRST_STRING_ARG_RE = re.compile(r"['\"]([^'\"]+)['\"]")
+
+
+def _fetched_ref(window: str, anchor: re.Match[str]) -> str | None:
+    """Extract the model reference the fetch call actually targets.
+
+    For the CLI forms (``huggingface-cli download`` / ``hf download``) the
+    model is the first positional (non-flag) argument. For the Python
+    forms it is the ``repo_id=`` kwarg or the first string-literal arg.
+    Extracting it positionally avoids matching an unrelated slash-shaped
+    token elsewhere in the command (``--local-dir models/gpt2``).
+    """
+    rest = window[anchor.end():]
+    if "download" in anchor.group(0).lower():
+        for tok in rest.split():
+            if tok.startswith("-"):
+                continue
+            return tok
+        return None
+    kw = _REPO_ID_KWARG_RE.search(rest)
+    if kw:
+        return kw.group(1)
+    s = _FIRST_STRING_ARG_RE.search(rest)
+    return s.group(1) if s else None
+
+
 def unpinned_model_id(body: str) -> str | None:
     """Return the offending repo id in *body*, or ``None``.
 
@@ -88,11 +117,15 @@ def unpinned_model_id(body: str) -> str | None:
     and does not fire.
     """
     for window in _line_windows(body):
-        if not _FETCH_ANCHOR_RE.search(window):
+        anchor = _FETCH_ANCHOR_RE.search(window)
+        if anchor is None:
             continue
         if _REVISION_RE.search(window):
             continue
-        repo = _REPO_ID_RE.search(window)
+        ref = _fetched_ref(window, anchor)
+        if ref is None:
+            continue
+        repo = _REPO_ID_RE.search(ref)
         if repo:
             return repo.group(1)
     return None

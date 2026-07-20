@@ -9,7 +9,7 @@ Two groups:
 
 **Terraform-native** (IDs with TF- prefix, no AWS runtime analogue,
 because the signal only exists in declarative source):
-    TF-001    aws_iam_access_key resource declares a long-lived key       CRIT  CICD-SEC-6
+    TF-001    aws_iam_access_key resource declares a long-lived key       HIGH  CICD-SEC-6
     TF-002    Resource attribute contains a hard-coded secret shape        CRIT  CICD-SEC-6
     TF-003    CodeBuild VPC shares its VPC with a public subnet            HIGH  CICD-SEC-7
 
@@ -20,20 +20,20 @@ would flood reports with spurious findings.
 """
 from __future__ import annotations
 
+import re
 from typing import Any
 
-from .._patterns import PLACEHOLDER_MARKER_RE, SECRET_NAME_RE, SECRET_VALUE_RE
+from .._patterns import (
+    PLACEHOLDER_MARKER_RE,
+    SECRET_NAME_RE,
+    SECRET_VALUE_RE,
+    eventbridge_target_is_wildcard,
+)
 from ..base import Finding, Severity
 from .base import TerraformBaseCheck, TerraformContext
 
 # Resource attributes scanned by LMB-003 / SSM-001 / CB-001 already, skip
 # here so operators don't see the same plaintext twice under two IDs.
-_TF002_SKIP_TYPES = {
-    "aws_lambda_function",      # LMB-003
-    "aws_ssm_parameter",        # SSM-001
-    "aws_codebuild_project",    # CB-001
-}
-
 # Resource types whose plaintext inputs routinely carry strings that
 # look secret-shaped but aren't (e.g. ARNs, connection strings of
 # public AWS endpoints). The blanket scan is intentionally narrow.
@@ -121,7 +121,7 @@ def _eb002(ctx: TerraformContext) -> list[Finding]:
     out: list[Finding] = []
     for t in ctx.resources("aws_cloudwatch_event_target"):
         arn = t.values.get("arn", "") or ""
-        if "*" not in arn:
+        if not eventbridge_target_is_wildcard(arn):
             continue
         out.append(Finding(
             check_id="EB-002",
@@ -195,7 +195,9 @@ def _tf001_iam_access_key(ctx: TerraformContext) -> list[Finding]:
         out.append(Finding(
             check_id="TF-001",
             title="aws_iam_access_key resource declares a long-lived IAM access key",
-            severity=Severity.CRITICAL,
+            # Matches RULE.severity (HIGH); the emitted Finding used to
+            # hardcode CRITICAL, disagreeing with docs / explain / MCP.
+            severity=Severity.HIGH,
             resource=k.address,
             description=(
                 f"Plan creates a long-lived access key for IAM user {user!r}. "
@@ -221,8 +223,6 @@ def _tf001_iam_access_key(ctx: TerraformContext) -> list[Finding]:
 def _tf002_plan_secrets(ctx: TerraformContext) -> list[Finding]:
     out: list[Finding] = []
     for r in ctx.resources():
-        if r.type in _TF002_SKIP_TYPES:
-            continue
         if r.type not in _TF002_SCAN_TYPES:
             continue
         hits = _scan_values(r.values)
@@ -287,17 +287,27 @@ def _walk(node: object, path: str, hits: list[tuple[str, str]]) -> None:
 # TF-003. CodeBuild VPC shares its VPC with a public subnet
 # ---------------------------------------------------------------------------
 
+_SUBNET_REF_RE = re.compile(r"aws_subnet\.([A-Za-z0-9_-]+)")
+
+
 def _tf003_codebuild_public_subnet(ctx: TerraformContext) -> list[Finding]:
-    # Build {vpc_id: [addresses of public subnets]} for subnets whose
-    # vpc_id is resolvable.
+    # Index aws_subnet publicity by resource name and (when resolvable)
+    # by AWS subnet id, plus keep the vpc-wide public-subnet map for the
+    # fallback when vpc_config.subnets can't be correlated.
+    public_by_name: dict[str, bool] = {}
+    public_by_id: dict[str, bool] = {}
     public_by_vpc: dict[str, list[str]] = {}
     for sn in ctx.resources("aws_subnet"):
-        if not sn.values.get("map_public_ip_on_launch"):
+        pub = bool(sn.values.get("map_public_ip_on_launch"))
+        public_by_name[sn.name] = pub
+        sid = sn.values.get("id")
+        if isinstance(sid, str) and sid:
+            public_by_id[sid] = pub
+        if not pub:
             continue
         vpc_id = sn.values.get("vpc_id")
-        if not isinstance(vpc_id, str) or not vpc_id:
-            continue
-        public_by_vpc.setdefault(vpc_id, []).append(sn.address)
+        if isinstance(vpc_id, str) and vpc_id:
+            public_by_vpc.setdefault(vpc_id, []).append(sn.address)
     out: list[Finding] = []
     for p in ctx.resources("aws_codebuild_project"):
         cfg = (p.values.get("vpc_config") or [None])[0]
@@ -307,24 +317,62 @@ def _tf003_codebuild_public_subnet(ctx: TerraformContext) -> list[Finding]:
         if not isinstance(vpc_id, str) or not vpc_id:
             # Unresolvable vpc_id, cannot reason; stay silent.
             continue
-        public = public_by_vpc.get(vpc_id, [])
+
+        # Prefer the subnets the project actually attaches. Only when a
+        # referenced subnet resolves to a public one is the project
+        # exposed; a public subnet elsewhere in the VPC is irrelevant.
+        referenced_public: list[str] = []
+        resolved_any = False
+        for sref in cfg.get("subnets") or []:
+            if not isinstance(sref, str):
+                continue
+            ref_public: bool | None = None
+            m = _SUBNET_REF_RE.search(sref)
+            if m and m.group(1) in public_by_name:
+                ref_public = public_by_name[m.group(1)]
+            elif sref in public_by_id:
+                ref_public = public_by_id[sref]
+            if ref_public is not None:
+                resolved_any = True
+                if ref_public:
+                    referenced_public.append(sref)
+
+        if resolved_any:
+            passed = not referenced_public
+            desc = (
+                f"CodeBuild vpc_config.subnets reference public subnet(s) "
+                f"{referenced_public}; builds run with a public-IP-eligible "
+                "ENI."
+                if referenced_public else
+                "CodeBuild vpc_config.subnets reference only private "
+                "subnets."
+            )
+        else:
+            # subnets unresolved at plan time: fall back to the VPC-wide
+            # heuristic (a public subnet anywhere in the VPC is a weaker
+            # signal, but better than losing the check entirely).
+            public = public_by_vpc.get(vpc_id, [])
+            passed = not public
+            desc = (
+                f"CodeBuild vpc_id {vpc_id!r} contains public subnet(s) "
+                f"{public} and vpc_config.subnets could not be resolved to "
+                "confirm which the project attaches; verify the attached "
+                "subnets are private."
+                if public else
+                f"CodeBuild vpc_id {vpc_id!r} has no public subnets in the "
+                "plan."
+            )
         out.append(Finding(
             check_id="TF-003",
             title="CodeBuild VPC shares its VPC with a public subnet",
             severity=Severity.HIGH,
             resource=p.address,
-            description=(
-                f"CodeBuild vpc_id {vpc_id!r} also contains public subnet(s) "
-                f"{public}. If vpc_config.subnets happens to include one, "
-                "builds run with a public-IP-eligible ENI."
-                if public else
-                f"CodeBuild vpc_id {vpc_id!r} has no public subnets in the plan."
-            ),
+            description=desc,
             recommendation=(
                 "Place CodeBuild in private subnets with a NAT gateway for "
                 "egress; set ``map_public_ip_on_launch = false`` on the "
                 "subnets referenced by vpc_config.subnets."
             ),
-            passed=not public,
+            passed=passed,
         ))
     return out

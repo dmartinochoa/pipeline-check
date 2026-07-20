@@ -68,7 +68,14 @@ def _parse_generated(value: object) -> datetime | None:
     ``2024-01-02T15:04:05.000Z`` or
     ``2024-01-02T15:04:05+00:00``. We accept both common forms by
     normalizing the trailing ``Z`` to ``+00:00`` before parsing.
+
+    ``yaml.safe_load`` turns an *unquoted* ISO-8601 timestamp (valid
+    YAML) straight into a ``datetime``, so accept that directly —
+    otherwise the staleness check silently skipped every lock whose
+    ``generated:`` field wasn't quoted (the Helm default).
     """
+    if isinstance(value, datetime):
+        return value if value.tzinfo is not None else value.replace(tzinfo=UTC)
     if not isinstance(value, str):
         return None
     s = value.strip()

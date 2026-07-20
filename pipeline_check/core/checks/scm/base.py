@@ -296,6 +296,15 @@ class SCMRepoSnapshot:
     #: the prefix doesn't match a known pattern, ``None`` when no
     #: token was provided. SCM-049 reads this slot.
     token_type: str | None = None
+    #: ``GET /repos/{owner}/{repo}/private-vulnerability-reporting``.
+    #: Returns ``{"enabled": bool}``. This is a dedicated endpoint —
+    #: private vulnerability reporting is NOT part of the repo_meta
+    #: ``security_and_analysis`` block, so SCM-016 reads it here rather
+    #: than off ``repo_meta``. ``None`` when the endpoint failed (token
+    #: lacks scope, GHES version without the feature, fetch error), in
+    #: which case SCM-016 passes with an "unavailable" note instead of
+    #: firing on every repo.
+    private_vulnerability_reporting: dict[str, Any] | None = None
 
 
 @dataclass(slots=True)
@@ -386,6 +395,7 @@ class SCMContext:
         outside_collaborators: list[dict[str, Any]] | None = None
         rulesets: list[dict[str, Any]] | None = None
         repo_languages: dict[str, int] | None = None
+        private_vulnerability_reporting: dict[str, Any] | None = None
         if isinstance(repo_meta, dict):
             raw_ap = fetcher.fetch(f"repos/{owner}/{name}/actions/permissions")
             if isinstance(raw_ap, dict):
@@ -472,6 +482,17 @@ class SCMContext:
                     k: v for k, v in raw_languages.items()
                     if isinstance(k, str) and isinstance(v, int)
                 }
+            # Private vulnerability reporting has its own endpoint; it
+            # is NOT in the repo_meta ``security_and_analysis`` block.
+            # 200 returns ``{"enabled": bool}``; 404 / failure -> None,
+            # so SCM-016 passes with an "unavailable" note rather than
+            # firing on every repo (the field never appears in the
+            # ``GET /repos`` payload it used to read).
+            raw_pvr = fetcher.fetch(
+                f"repos/{owner}/{name}/private-vulnerability-reporting"
+            )
+            if isinstance(raw_pvr, dict):
+                private_vulnerability_reporting = raw_pvr
         # Infer the token type from its prefix so SCM-049 can
         # recommend fine-grained tokens over classic PATs.
         token_type: str | None = None
@@ -526,6 +547,7 @@ class SCMContext:
             repo_languages=repo_languages,
             codespace_secrets=codespace_secrets,
             token_type=token_type,
+            private_vulnerability_reporting=private_vulnerability_reporting,
         )
         ctx = cls(repos=[snapshot])
         ctx.files_scanned = 1
@@ -971,15 +993,14 @@ def active_rulesets_targeting_default(
                             exists but doesn't protect ``main``.
 
     Non-active rulesets (``evaluate`` / ``disabled``) are filtered
-    out — they're SCM-029's surface. Push-targeted rulesets are also
-    filtered out: they fire on every push but use a different rule
-    shape (file size / path / extension filters) that can't carry
-    the SCM-032..040 rule types, so classifying them as scoped-away
-    would emit a confusing "doesn't target the default branch"
-    failure for a ruleset that does. Tag-targeted rulesets stay in
-    scope of the branch-rule checks only when their ref_name filter
-    matches the default branch, which it generally won't; they
-    surface as scoped_away. Returns three empty lists when
+    out — they're SCM-029's surface. Push- and tag-targeted rulesets
+    are also filtered out: they use a different rule shape (push: file
+    size / path / extension; tag: release-tag protection) that can't
+    carry the SCM-032..042 branch rule types and never target the
+    default branch, so classifying them as scoped-away would emit a
+    confusing "doesn't target the default branch" failure for every
+    branch rule (adding a release-tag ruleset would flip all eleven
+    from pass to fail). Returns three empty lists when
     ``snapshot.rulesets`` is ``None``.
     """
     if snapshot.rulesets is None:
@@ -994,7 +1015,18 @@ def active_rulesets_targeting_default(
         if rs.get("_detail_unavailable") is True:
             unavailable.append(rs)
             continue
-        if rs.get("target") == "push":
+        if rs.get("target") in ("push", "tag"):
+            # Push-targeted rulesets fire on every push but use a
+            # different rule shape (file size / path / extension) that
+            # can't carry the SCM-032..042 branch rule types. Tag-
+            # targeted rulesets protect release tags, again a different
+            # surface. Neither ever targets the default branch, so
+            # letting them fall into ``scoped_away`` meant a repo whose
+            # only ruleset is a release-tag ruleset reported 11
+            # simultaneous "doesn't target the default branch" failures
+            # even when legacy branch protection fully covered main.
+            # Drop both so they neither satisfy nor fail the branch
+            # rules.
             continue
         if ruleset_targets_default_branch(rs, default):
             targeting.append(rs)

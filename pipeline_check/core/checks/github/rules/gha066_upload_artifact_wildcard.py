@@ -136,9 +136,15 @@ def _is_workspace_wildcard(path_line: str) -> bool:
     # Exact-match shapes
     if line in _WORKSPACE_WILDCARDS:
         return True
-    # ``${{ github.workspace }}`` or ``${{ github.workspace }}/**``
+    # ``${{ github.workspace }}`` and its ``/**`` sweeps are workspace-
+    # wide, but a bounded subdirectory (``${{ github.workspace }}/dist``)
+    # is scoped and safe. Strip the expression and flag only when the
+    # remainder is the whole tree.
     if "github.workspace" in line:
-        return True
+        remainder = re.sub(
+            r"\$\{\{\s*github\.workspace\s*\}\}", "", line,
+        ).strip()
+        return remainder in ("", "/", "/**", "/**/*", "/.")
     # ``./**``, ``./**/*`` and similar bare-prefix expansions
     if line.startswith("./") and (line == "./**" or line == "./**/*"):
         return True

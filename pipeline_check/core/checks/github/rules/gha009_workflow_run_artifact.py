@@ -110,6 +110,12 @@ def check(path: str, doc: dict[str, Any]) -> Finding:
             blob = f"{uses} {run}".lower()
             if (
                 isinstance(uses, str) and "actions/download-artifact" in uses
+                # ``dawidd6/action-download-artifact`` is the canonical
+                # cross-run downloader for ``workflow_run`` workflows (the
+                # only option before ``download-artifact@v4`` grew
+                # ``run-id``), i.e. this rule's exact target scenario.
+                or isinstance(uses, str)
+                and "dawidd6/action-download-artifact" in uses
                 or "gh run download" in blob
                 or "gh api repos/" in blob and "/artifacts/" in blob
             ):

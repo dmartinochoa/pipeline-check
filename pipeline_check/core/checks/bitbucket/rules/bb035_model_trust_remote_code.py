@@ -19,7 +19,7 @@ from ..._primitives.model_trust import TRUST_REMOTE_CODE_RE
 from ..._yaml_lines import line_of as _line_of
 from ...base import Finding, Location, Severity
 from ...rule import Rule
-from ..base import iter_steps, step_scripts
+from ..base import iter_steps, step_scripts_all
 
 RULE = Rule(
     id="BB-035",
@@ -49,7 +49,7 @@ def check(path: str, doc: dict[str, Any]) -> Finding:
     offenders: list[str] = []
     locations: list[Location] = []
     for loc, step in iter_steps(doc):
-        if any(TRUST_REMOTE_CODE_RE.search(s) for s in step_scripts(step)):
+        if any(TRUST_REMOTE_CODE_RE.search(s) for s in step_scripts_all(step)):
             offenders.append(loc)
             line = _line_of(step) if isinstance(step, dict) else None
             locations.append(Location(path=path, start_line=line, end_line=line))

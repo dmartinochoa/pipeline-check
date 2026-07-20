@@ -6,10 +6,19 @@ from ...rule import Rule
 from ..base import KubernetesContext, iter_volumes, iter_workload_pod_specs, manifest_location
 
 #: Host paths whose mount inside a container amounts to cluster takeover.
+#: The runtime sockets are listed under both ``/var/run`` and ``/run``:
+#: ``/var/run`` is a symlink to ``/run`` on every modern distro, and
+#: containerd's documented default socket is the ``/run`` form, which
+#: real DaemonSets (log collectors, builders, monitoring) mount routinely.
 _SENSITIVE_PREFIXES: tuple[str, ...] = (
     "/var/run/docker.sock",
+    "/run/docker.sock",
     "/var/run/crio/crio.sock",
+    "/run/crio/crio.sock",
     "/var/run/containerd/containerd.sock",
+    "/run/containerd/containerd.sock",
+    "/var/run/cri-dockerd.sock",
+    "/run/cri-dockerd.sock",
     "/var/lib/kubelet",
     "/var/lib/docker",
     "/etc/kubernetes",

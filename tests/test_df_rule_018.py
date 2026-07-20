@@ -62,6 +62,31 @@ class TestDF018ChownSystemPath:
         ))
         assert f.passed
 
+    def test_passes_on_chown_usr_src_app(self):
+        # The official ``node`` image documents ``/usr/src/app`` as the
+        # WORKDIR; ``chown -R node:node /usr/src/app`` is the standard,
+        # safe pattern (source tree, no trusted binaries on PATH).
+        f = r18.check(_df(
+            "FROM node:20\n"
+            "RUN chown -R node:node /usr/src/app\n"
+        ))
+        assert f.passed
+
+    def test_passes_on_chown_usr_share_webroot(self):
+        f = r18.check(_df(
+            "FROM nginx:1.27\n"
+            "RUN chown -R nginx:nginx /usr/share/nginx/html\n"
+        ))
+        assert f.passed
+
+    def test_still_fails_on_chown_usr_local_bin(self):
+        # The carve-out must not leak into the executable dirs.
+        f = r18.check(_df(
+            "FROM debian:12.5\n"
+            "RUN chown -R app:app /usr/local/bin\n"
+        ))
+        assert not f.passed
+
     def test_passes_when_no_chown(self):
         f = r18.check(_df("FROM debian:12.5\nRUN echo hello\n"))
         assert f.passed

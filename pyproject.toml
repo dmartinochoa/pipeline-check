@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "pipeline-check"
-version = "1.18.0"
+version = "1.18.1"
 description = "Security scanner for CI/CD pipelines, IaC, and cloud: GitHub Actions, GitLab CI, Terraform, Kubernetes, and more, scored against the OWASP CI/CD Top 10."
 readme = "README.md"
 license = "MIT"

@@ -868,3 +868,30 @@ class TestKMS002AccountRootBaseline:
             "Principal": {"AWS": "arn:aws:iam::111122223333:role/root"},
             "Action": "kms:*", "Resource": "*"}]}
         assert _wildcard_kms(doc) == ["X"]
+
+
+class TestCP005NegatedProdNames:
+    """CP-005 split ``pre-prod`` / ``non-prod`` into a ``prod`` token and
+    flagged a non-production (staging) stage as production."""
+
+    def test_pre_prod_not_production(self):
+        assert cp005._name_matches_prod("pre-prod") is False
+        assert cp005._name_matches_prod("PreProd") is False
+        assert cp005._name_matches_prod("pre-production") is False
+
+    def test_non_prod_not_production(self):
+        assert cp005._name_matches_prod("non-prod") is False
+        assert cp005._name_matches_prod("NonProd") is False
+
+    def test_staging_prod_not_production(self):
+        assert cp005._name_matches_prod("staging-prod") is False
+
+    def test_real_prod_still_matches(self):
+        assert cp005._name_matches_prod("prod") is True
+        assert cp005._name_matches_prod("ProdDeploy") is True
+        assert cp005._name_matches_prod("deploy-prod") is True
+        assert cp005._name_matches_prod("Production") is True
+
+    def test_unrelated_names_still_ignored(self):
+        assert cp005._name_matches_prod("Product") is False
+        assert cp005._name_matches_prod("reproduce") is False

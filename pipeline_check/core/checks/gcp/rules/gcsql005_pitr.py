@@ -31,7 +31,12 @@ def check(catalog: ResourceCatalog) -> list[Finding]:
         name = inst.get("name", "<unnamed>")
         settings = inst.get("settings", {})
         backup_config = settings.get("backupConfiguration", {})
-        pitr = backup_config.get("pointInTimeRecoveryEnabled", False)
+        # PITR is surfaced differently per engine: PostgreSQL / SQL
+        # Server use ``pointInTimeRecoveryEnabled``; MySQL (the most
+        # common engine) uses ``binaryLogEnabled``. Either enables PITR.
+        pitr = bool(
+            backup_config.get("pointInTimeRecoveryEnabled", False)
+        ) or bool(backup_config.get("binaryLogEnabled", False))
         if pitr:
             findings.append(Finding(
                 check_id=RULE.id,

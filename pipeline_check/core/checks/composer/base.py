@@ -432,6 +432,19 @@ def is_floating_constraint(spec: str) -> bool:
     # 40-char hex commit hash is an exact pin (rare via composer
     # but supported on VCS-backed entries with a ``#<sha>`` suffix
     # handled at the URL level).
+    #
+    # An exact pre-release / build-metadata pin (``10.0.0-RC1``,
+    # ``1.2.3+build``) still names a single release. Composer's range
+    # form uses a spaced `` -`` (already handled above), so a bare
+    # ``-`` / ``+`` here introduces a stability/build suffix; drop it
+    # before the digit-segment check so the pin isn't misread as
+    # floating.
+    cut = min(
+        (i for i in (body.find("-"), body.find("+")) if i != -1),
+        default=-1,
+    )
+    if cut != -1:
+        body = body[:cut]
     parts = body.split(".")
     if not parts:
         return True

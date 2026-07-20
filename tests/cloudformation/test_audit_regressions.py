@@ -12,6 +12,9 @@ from pipeline_check.core.checks.cloudformation.ecr import ECRChecks
 from pipeline_check.core.checks.cloudformation.extended import ExtendedChecks
 from pipeline_check.core.checks.cloudformation.phase3 import Phase3Checks
 from pipeline_check.core.checks.cloudformation.rules import (
+    ca001_domain_encryption as ca001,
+)
+from pipeline_check.core.checks.cloudformation.rules import (
     ca003_domain_policy_public as ca003,
 )
 from pipeline_check.core.checks.cloudformation.rules import (
@@ -359,10 +362,48 @@ class TestCCM002KmsIntrinsic:
 
 
 class TestCCM003LiteralArn:
-    """CCM-003: literal DestinationArn triggers flag; intrinsic refs pass."""
+    """CCM-003: a literal DestinationArn fires only when it is provably
+    cross-account; same-account and uncorrelatable literals pass."""
 
-    def test_literal_arn_fires(self):
-        # A literal SNS ARN in DestinationArn must be flagged.
+    def test_cross_account_literal_arn_fires(self):
+        # The template's own account (via a parameter default) is
+        # 111111111111; the trigger destination lives in 999988887777.
+        ctx = make_context(
+            {
+                "Repo": r("Repo", "AWS::CodeCommit::Repository", {
+                    "RepositoryName": "my-repo",
+                    "Triggers": [{"Name": "t1",
+                                  "DestinationArn": "arn:aws:sns:us-east-1:999988887777:repo-events",
+                                  "Events": ["all"]}],
+                }),
+            },
+            Parameters={"HomeAccount": {"Default": "111111111111"}},
+        )
+        f = _find(ctx, "CCM-003")
+        assert f and f[0].passed is False
+
+    def test_same_account_literal_arn_passes(self):
+        # A literal ARN in the *same* account as the template's sibling
+        # ARN (an IAM role ARN in 111111111111) must not fire. This is
+        # the false positive the flag-every-literal check produced.
+        ctx = make_context({
+            "Build": r("Build", "AWS::CodeBuild::Project", {
+                "Name": "p",
+                "ServiceRole": "arn:aws:iam::111111111111:role/build",
+            }),
+            "Repo": r("Repo", "AWS::CodeCommit::Repository", {
+                "RepositoryName": "my-repo",
+                "Triggers": [{"Name": "t1",
+                              "DestinationArn": "arn:aws:sns:us-east-1:111111111111:repo-events",
+                              "Events": ["all"]}],
+            }),
+        })
+        f = _find(ctx, "CCM-003")
+        assert f and f[0].passed is True
+
+    def test_uncorrelatable_literal_arn_passes(self):
+        # No in-account signal anywhere in the template: cross-account
+        # membership can't be proven, so the trigger is not failed.
         ctx = make_context({
             "Repo": r("Repo", "AWS::CodeCommit::Repository", {
                 "RepositoryName": "my-repo",
@@ -372,7 +413,7 @@ class TestCCM003LiteralArn:
             }),
         })
         f = _find(ctx, "CCM-003")
-        assert f and f[0].passed is False
+        assert f and f[0].passed is True
 
     def test_intrinsic_destination_passes(self):
         # A trigger whose DestinationArn is a Ref (not a literal string)
@@ -580,3 +621,44 @@ class TestScalarNestedBlockCrashes:
         # Regression: proper nested dicts still evaluate.
         assert _s3003_versioning(
             {"VersioningConfiguration": {"Status": "Enabled"}}, "b").passed is True
+
+
+class TestCA001IntrinsicCmk:
+    """CA-001 flagged a CodeArtifact domain whose CMK is referenced via
+    an intrinsic (``!GetAtt`` / ``!Ref`` to an in-template KMS key) as
+    "not encrypted" because ``as_str`` returns "" for intrinsic dicts."""
+
+    def _resources(self, encryption_key):
+        return {
+            "Key": r("Key", "AWS::KMS::Key", {}),
+            "D": r("D", "AWS::CodeArtifact::Domain",
+                   {"DomainName": "corp", "EncryptionKey": encryption_key}),
+        }
+
+    def test_getatt_cmk_passes(self):
+        ctx = make_context(self._resources({"Fn::GetAtt": ["Key", "Arn"]}))
+        f = next(x for x in ca001.check(ctx) if x.check_id == "CA-001")
+        assert f.passed is True
+
+    def test_ref_cmk_passes(self):
+        ctx = make_context(self._resources({"Ref": "Key"}))
+        f = next(x for x in ca001.check(ctx) if x.check_id == "CA-001")
+        assert f.passed is True
+
+    def test_no_encryption_key_still_fails(self):
+        resources = {"D": r("D", "AWS::CodeArtifact::Domain",
+                            {"DomainName": "corp"})}
+        f = next(x for x in ca001.check(make_context(resources))
+                 if x.check_id == "CA-001")
+        assert f.passed is False
+
+    def test_intrinsic_to_non_kms_still_fails(self):
+        # A Ref to something that isn't a KMS resource must not pass.
+        resources = {
+            "Bucket": r("Bucket", "AWS::S3::Bucket", {}),
+            "D": r("D", "AWS::CodeArtifact::Domain",
+                   {"DomainName": "corp", "EncryptionKey": {"Ref": "Bucket"}}),
+        }
+        f = next(x for x in ca001.check(make_context(resources))
+                 if x.check_id == "CA-001")
+        assert f.passed is False

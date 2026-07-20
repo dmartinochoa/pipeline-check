@@ -933,7 +933,7 @@ Declare an ``aws_cloudwatch_event_rule`` whose ``event_pattern`` matches ``aws.c
 <span class="pg-sev pg-sev--high">HIGH</span> <span class="pg-tag pg-tag--owasp">CICD-SEC-8</span> <span class="pg-tag pg-tag--cwe">CWE-441</span>
 </div>
 
-Reads ``aws_cloudwatch_event_target.arn``. A literal ``*`` in the ARN is the offending shape, even when EventBridge allows it at the API level, it makes the target opaque to any reviewer trying to trace event flow.
+Reads ``aws_cloudwatch_event_target.arn``. A literal ``*`` in the ARN is the offending shape, even when EventBridge allows it at the API level, it makes the target opaque to any reviewer trying to trace event flow. A CloudWatch Logs target ARN, whose documented form ends in ``:log-group:/name:*`` (the mandatory log-stream selector), is not treated as a wildcard target.
 
 <div class="pg-rule__rec" markdown>
 
@@ -1673,7 +1673,7 @@ Replace static keys with role-based access: an ``aws_iam_role`` plus an OIDC ``a
 <span class="pg-sev pg-sev--critical">CRITICAL</span> <span class="pg-tag pg-tag--owasp">CICD-SEC-6</span> <span class="pg-tag pg-tag--cwe">CWE-312</span>
 </div>
 
-Walks every value of the stateful data-store resources (``aws_db_instance``, ``aws_rds_cluster``, ``aws_redshift_cluster``, ``aws_elasticache_replication_group``, ``aws_docdb_cluster``, ``aws_neptune_cluster``, ``aws_opensearch_domain``, ``aws_memorydb_cluster``). Fires when a string leaf matches a credential shape (AKIA/ASIA, ``ghp_``, JWT, …) OR when a secret-named attribute (``*password``, ``*token``, …) carries a non-placeholder literal.
+Walks every value of the stateful data-store resources (``aws_db_instance``, ``aws_rds_cluster``, ``aws_redshift_cluster``, ``aws_elasticache_replication_group``, ``aws_docdb_cluster``, ``aws_neptune_cluster``, ``aws_opensearch_domain``, ``aws_memorydb_cluster``, ``aws_secretsmanager_secret_version`` whose ``secret_string`` is a common paste site for literal tokens). Fires when a string leaf matches a credential shape (AKIA/ASIA, ``ghp_``, JWT, …) OR when a secret-named attribute (``*password``, ``*token``, …) carries a non-placeholder literal.
 
 <div class="pg-rule__rec" markdown>
 

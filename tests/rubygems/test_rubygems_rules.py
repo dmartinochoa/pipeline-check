@@ -147,6 +147,19 @@ class TestGEM002:
         )
         assert findings["GEM-002"].passed
 
+    def test_skips_multiline_git_entry(self, tmp_path):
+        # A git gem whose ``git:`` option sits on a continuation line
+        # must be recognized as git (not reported as a version-less
+        # floating gem). Part-C FN: the parser only read the first line.
+        findings = _scan(
+            tmp_path,
+            "source 'https://rubygems.org'\n"
+            "gem 'rails',\n"
+            "    git: 'https://github.com/rails/rails.git',\n"
+            "    branch: 'main'\n",
+        )
+        assert findings["GEM-002"].passed
+
     def test_fires_on_range(self, tmp_path):
         findings = _scan(
             tmp_path,
@@ -242,6 +255,20 @@ class TestGEM005:
             "source 'https://rubygems.org'\ngem 'rails', '7.0.4'\n",
         )
         assert findings["GEM-005"].passed
+
+    def test_fires_on_multiline_branch_pin(self, tmp_path):
+        # A git gem with a mutable ``branch:`` on a continuation line
+        # must still be flagged (Part-C FN: the parser stopped at the
+        # first physical line, so ``is_git`` was False and GEM-005
+        # never inspected it).
+        findings = _scan(
+            tmp_path,
+            "source 'https://rubygems.org'\n"
+            "gem 'x',\n"
+            "    git: 'https://github.com/x/y',\n"
+            "    branch: 'main'\n",
+        )
+        assert not findings["GEM-005"].passed
 
 
 # ── GEM-006 ────────────────────────────────────────────────

@@ -79,3 +79,27 @@ class TestGHA098:
         """
         f = run_check(wf, "GHA-098")
         assert not f.passed
+
+
+def test_gha098_transitive_scan_ancestor_passes():
+    # Regression (2026-07 audit): a scan that gates an intermediate job
+    # (scan -> build -> deploy) is a valid upstream gate.
+    wf = """
+    on: push
+    jobs:
+      scan:
+        runs-on: ubuntu-latest
+        steps:
+          - uses: aquasecurity/trivy-action@master
+      build:
+        needs: scan
+        runs-on: ubuntu-latest
+        steps:
+          - run: make build
+      deploy:
+        needs: build
+        runs-on: ubuntu-latest
+        steps:
+          - run: kubectl apply -f .
+    """
+    assert run_check(wf, "GHA-098").passed

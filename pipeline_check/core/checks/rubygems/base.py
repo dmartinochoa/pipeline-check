@@ -265,6 +265,30 @@ def _strip_comments(line: str) -> str:
     return line[:h]
 
 
+def _join_continuation_lines(text: str, pos: int, rest: str) -> str:
+    """Append Ruby continuation lines to *rest*.
+
+    A method-arg list continues onto the next physical line when the
+    current line ends with a trailing ``,`` (or an explicit ``\\``).
+    *pos* is the offset just past the first line's captured ``rest``;
+    each continuation line is comment-stripped and folded in with a
+    single space so :func:`_parse_options` sees the whole options hash.
+    """
+    nl = text.find("\n", pos)
+    while nl != -1:
+        core = rest.rstrip()
+        if not core.endswith((",", "\\")):
+            break
+        core = core.rstrip("\\").rstrip()
+        nxt = text.find("\n", nl + 1)
+        line = _strip_comments(text[nl + 1: nxt if nxt != -1 else len(text)])
+        if not line.strip():
+            break
+        rest = f"{core} {line.strip()}"
+        nl = nxt
+    return rest
+
+
 def _parse_options(rest: str) -> dict[str, str]:
     """Extract the options hash from a ``gem`` line tail.
 
@@ -427,6 +451,15 @@ def _parse_gemfile(path: str, text: str) -> GemFile:
         offset = m.start()
         name = m.group("name")
         rest = _strip_comments(m.group("rest"))
+        # Ruby continues a method-arg list onto the next physical line
+        # when the line ends with a trailing ``,`` (or ``\``). The
+        # single-line ``_GEM_RE`` stops at the newline, so a gem whose
+        # ``git:`` / ``branch:`` / ``ref:`` options sit on continuation
+        # lines would parse as a plain, version-less gem. Pull those
+        # lines in before parsing. ``offset`` is unchanged, so the
+        # reported line number still points at the ``gem`` statement.
+        if rest.rstrip().endswith((",", "\\")):
+            rest = _join_continuation_lines(text, m.end(), rest)
         version = _parse_version(rest)
         options = _parse_options(rest)
 

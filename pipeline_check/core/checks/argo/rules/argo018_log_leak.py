@@ -50,9 +50,13 @@ def check(ctx: ArgoContext) -> Finding:
                 src = container.get("source")
                 if isinstance(src, str):
                     texts.append(src)
-                args = container.get("args")
-                if isinstance(args, list):
-                    texts += [a for a in args if isinstance(a, str)]
+                # ``command`` and ``args`` both carry executed shell: the
+                # ``command: ["sh","-c","<script>"]`` idiom puts the whole
+                # body in ``command``. Scan each string element of both.
+                for field in ("command", "args"):
+                    value = container.get(field)
+                    if isinstance(value, list):
+                        texts += [a for a in value if isinstance(a, str)]
                 for text in texts:
                     for h in scan_script_for_leaked_secrets(text):
                         offenders.append(

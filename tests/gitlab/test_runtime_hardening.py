@@ -175,6 +175,40 @@ class TestGL023TLSBypass:
         f = run_check(cfg, "GL-023")
         assert not f.passed
 
+    def test_fails_on_global_variables_tls_bypass(self):
+        # The idiomatic GitLab way to set an env var puts the name in
+        # the ``variables:`` key; the value-only blob scan missed it
+        # (A6 FN). Structural walk must catch it.
+        cfg = """
+        variables:
+          NODE_TLS_REJECT_UNAUTHORIZED: "0"
+          GIT_SSL_NO_VERIFY: "true"
+        stages: [install]
+        install_job:
+          stage: install
+          image: node:20.10.0
+          script: [npm install]
+          timeout: 30 minutes
+        """
+        f = run_check(cfg, "GL-023")
+        assert not f.passed
+        assert "NODE_TLS_REJECT_UNAUTHORIZED" in f.description or \
+            "GIT_SSL_NO_VERIFY" in f.description
+
+    def test_fails_on_job_level_variables_tls_bypass(self):
+        cfg = """
+        stages: [install]
+        install_job:
+          stage: install
+          image: python:3.12
+          variables:
+            PYTHONHTTPSVERIFY: "0"
+          script: [pip install requests]
+          timeout: 30 minutes
+        """
+        f = run_check(cfg, "GL-023")
+        assert not f.passed
+
     def test_passes_when_no_tls_bypass(self):
         cfg = """
         stages: [fetch]
@@ -182,6 +216,23 @@ class TestGL023TLSBypass:
           stage: fetch
           image: alpine:3.19.1
           script: [curl -fsSL https://example.com/data]
+          timeout: 30 minutes
+        """
+        f = run_check(cfg, "GL-023")
+        assert f.passed
+
+    def test_passes_on_benign_variables_block(self):
+        # A normal variables: block must not false-fire from the
+        # structural reconstruction.
+        cfg = """
+        variables:
+          NODE_ENV: production
+          DEPLOY_URL: https://example.com
+        stages: [build]
+        build_job:
+          stage: build
+          image: node:20.10.0
+          script: [npm run build]
           timeout: 30 minutes
         """
         f = run_check(cfg, "GL-023")

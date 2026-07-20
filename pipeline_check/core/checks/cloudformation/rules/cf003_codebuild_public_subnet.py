@@ -20,10 +20,15 @@ RULE = Rule(
         "duration of the build."
     ),
     docs_note=(
-        "When ``AWS::CodeBuild::Project.Properties.VpcConfig.VpcId`` "
-        "resolves to a concrete reference, walks every "
-        "``AWS::EC2::Subnet`` in the same VPC and fires if any has "
-        "``MapPublicIpOnLaunch: true``."
+        "Resolves the subnets a project actually runs in "
+        "(``VpcConfig.Subnets``, which is a list of ``!Ref`` to "
+        "in-template ``AWS::EC2::Subnet`` resources) and fires only "
+        "when one of *those* has ``MapPublicIpOnLaunch: true``. A "
+        "public subnet elsewhere in the same VPC (the standard "
+        "public/private split) does not trip the rule; the project "
+        "has to be placed on one. Subnets given as literal ids, "
+        "parameters, or imports can't be correlated statically and "
+        "are left unflagged."
     ),
     exploit_example=(
         "# Vulnerable: the CodeBuild project's VpcConfig points\n"

@@ -3,7 +3,13 @@ from __future__ import annotations
 
 from ...base import Finding, Location, Severity
 from ...rule import Rule
-from ..base import RequirementsFile, has_option, iter_specs
+from ..base import (
+    RequirementsFile,
+    has_option,
+    is_editable_or_local,
+    is_url_or_vcs,
+    iter_specs,
+)
 
 RULE = Rule(
     id="PYPI-002",
@@ -111,6 +117,10 @@ def check(rf: RequirementsFile) -> Finding:
     locations: list[Location] = []
     for line in iter_specs(rf):
         if line.flags and any(f.startswith("--hash=") for f in line.flags):
+            continue
+        # An editable / local-path / URL / VCS install cannot be
+        # hash-pinned, so its lack of ``--hash=`` is not a finding.
+        if is_url_or_vcs(line.body) or is_editable_or_local(line.body):
             continue
         snippet = line.body if len(line.body) <= 60 else line.body[:57] + "..."
         offenders.append(f"L{line.line_no}: {snippet}")

@@ -1,6 +1,7 @@
 """Tests for AZAPP-001..005 App Service rules."""
 from __future__ import annotations
 
+from types import SimpleNamespace
 from unittest.mock import MagicMock
 
 from pipeline_check.core.checks.azure_cloud.rules import (
@@ -31,7 +32,7 @@ def _web_app(
     min_tls: str = "1.2",
     identity_type: str = "SystemAssigned",
     remote_debugging: bool = False,
-    ftp_state: str = "Disabled",
+    ftps_state: str = "Disabled",
 ) -> dict:
     app = MagicMock()
     app.name = name
@@ -43,7 +44,7 @@ def _web_app(
     config = MagicMock()
     config.min_tls_version = min_tls
     config.remote_debugging_enabled = remote_debugging
-    config.ftp_state = ftp_state
+    config.ftps_state = ftps_state
 
     return {"app": app, "config": config}
 
@@ -181,7 +182,7 @@ class TestAzapp004:
 
 class TestAzapp005:
     def test_ftp_allallowed_fails(self, make_catalog):
-        entry = _web_app(ftp_state="AllAllowed")
+        entry = _web_app(ftps_state="AllAllowed")
         catalog = make_catalog(**{"appservice:web_apps": [entry]})
         findings = azapp005.check(catalog)
         assert len(findings) == 1
@@ -189,14 +190,14 @@ class TestAzapp005:
         assert findings[0].check_id == "AZAPP-005"
 
     def test_ftp_disabled_passes(self, make_catalog):
-        entry = _web_app(ftp_state="Disabled")
+        entry = _web_app(ftps_state="Disabled")
         catalog = make_catalog(**{"appservice:web_apps": [entry]})
         findings = azapp005.check(catalog)
         assert len(findings) == 1
         assert findings[0].passed is True
 
     def test_ftps_only_passes(self, make_catalog):
-        entry = _web_app(ftp_state="FtpsOnly")
+        entry = _web_app(ftps_state="FtpsOnly")
         catalog = make_catalog(**{"appservice:web_apps": [entry]})
         findings = azapp005.check(catalog)
         assert len(findings) == 1
@@ -214,3 +215,40 @@ class TestAzapp005:
         catalog = make_catalog(**{"appservice:web_apps": []})
         findings = azapp005.check(catalog)
         assert findings == []
+
+    # Regression (2026-07 audit, finding AZAPP-005): the real Azure
+    # ``SiteConfig`` exposes ``ftps_state``, not ``ftp_state``. Using a
+    # SimpleNamespace (no attribute auto-vivification, unlike MagicMock)
+    # pins the correct attribute name — a config with only ``ftps_state``
+    # set must resolve, and a secure value must pass.
+    def test_real_siteconfig_ftps_state_disabled_passes(self, make_catalog):
+        app = SimpleNamespace(name="realapp")
+        config = SimpleNamespace(ftps_state="Disabled")
+        catalog = make_catalog(
+            **{"appservice:web_apps": [{"app": app, "config": config}]}
+        )
+        findings = azapp005.check(catalog)
+        assert len(findings) == 1
+        assert findings[0].passed is True
+
+    def test_real_siteconfig_ftps_state_allallowed_fails(self, make_catalog):
+        app = SimpleNamespace(name="realapp")
+        config = SimpleNamespace(ftps_state="AllAllowed")
+        catalog = make_catalog(
+            **{"appservice:web_apps": [{"app": app, "config": config}]}
+        )
+        findings = azapp005.check(catalog)
+        assert len(findings) == 1
+        assert findings[0].passed is False
+
+    def test_legacy_ftp_state_attribute_still_read(self, make_catalog):
+        # Older SDKs spelled the attribute ``ftp_state``; the fallback
+        # keeps those shapes working.
+        app = SimpleNamespace(name="legacyapp")
+        config = SimpleNamespace(ftp_state="FtpsOnly")
+        catalog = make_catalog(
+            **{"appservice:web_apps": [{"app": app, "config": config}]}
+        )
+        findings = azapp005.check(catalog)
+        assert len(findings) == 1
+        assert findings[0].passed is True

@@ -130,12 +130,16 @@ def check(snapshot: SCMRepoSnapshot) -> Finding:
             ),
             recommendation=RULE.recommendation, passed=True,
         )
-    # The Bitbucket hydrator normalizes ``allow_force_pushes`` and
-    # ``allow_deletions`` from the kind presence. ``False`` on either
-    # one means the corresponding write-kind restriction *is*
-    # configured (force / delete is prevented). The ``push`` kind
-    # doesn't have a normalized slot, but its presence is the
-    # load-bearing signal here.
+    # The ``push`` kind (Bitbucket's "Prevent push" / Write-access
+    # restriction) is the primary write-side control but has no
+    # GitHub-shaped slot; the hydrator surfaces it via the raw
+    # ``_bitbucket_restriction_kinds`` list. ``force`` / ``delete`` do
+    # have normalized slots (``allow_force_pushes`` / ``allow_deletions``
+    # set to ``enabled: False`` when the restriction is present).
+    raw_kinds = protection.get("_bitbucket_restriction_kinds")
+    push_restricted = (
+        isinstance(raw_kinds, list) and "push" in raw_kinds
+    )
     allow_force: Any = protection.get("allow_force_pushes")
     allow_delete: Any = protection.get("allow_deletions")
     force_restricted = (
@@ -146,10 +150,12 @@ def check(snapshot: SCMRepoSnapshot) -> Finding:
         isinstance(allow_delete, dict)
         and allow_delete.get("enabled") is False
     )
-    has_write_kind = force_restricted or delete_restricted
+    has_write_kind = push_restricted or force_restricted or delete_restricted
     passed = has_write_kind
     if passed:
         kinds = []
+        if push_restricted:
+            kinds.append("push")
         if force_restricted:
             kinds.append("force")
         if delete_restricted:

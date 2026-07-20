@@ -271,6 +271,25 @@ class TestGHA050PublishWithoutOIDC:
         assert not f.passed
         assert "npm publish" in f.description.lower() or "long-lived" in f.description.lower()
 
+    def test_fails_on_job_level_node_auth_token(self):
+        # The publish token is very commonly set at job scope, not on
+        # the publish step. Job/workflow env inherits into the step, so
+        # the rule must fold it in (A6 FN: only step env was scanned).
+        wf = """
+        name: release
+        on: push
+        jobs:
+          release:
+            runs-on: ubuntu-latest
+            permissions: { contents: read }
+            env:
+              NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+            steps:
+              - run: npm publish
+        """
+        f = run_check(wf, "GHA-050")
+        assert not f.passed
+
     def test_fails_on_twine_upload_with_pypi_token(self):
         wf = """
         name: release

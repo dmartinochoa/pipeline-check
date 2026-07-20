@@ -644,12 +644,8 @@ class TestSCM016:
     def test_enabled_passes(self):
         snap = SCMRepoSnapshot(
             owner="o", name="r",
-            repo_meta={
-                "default_branch": "main",
-                "security_and_analysis": {
-                    "private_vulnerability_reporting": {"status": "enabled"},
-                },
-            },
+            repo_meta={"default_branch": "main"},
+            private_vulnerability_reporting={"enabled": True},
         )
         f = _by_id(_findings(snap), "SCM-016")
         assert f.passed
@@ -657,16 +653,53 @@ class TestSCM016:
     def test_disabled_fails(self):
         snap = SCMRepoSnapshot(
             owner="o", name="r",
-            repo_meta={
-                "default_branch": "main",
-                "security_and_analysis": {
-                    "private_vulnerability_reporting": {"status": "disabled"},
-                },
-            },
+            repo_meta={"default_branch": "main"},
+            private_vulnerability_reporting={"enabled": False},
         )
         f = _by_id(_findings(snap), "SCM-016")
         assert not f.passed
         assert f.severity == Severity.LOW
+
+    # Regression (2026-07 audit, finding SCM-016): PVR state lives behind
+    # the dedicated ``/private-vulnerability-reporting`` endpoint, not in
+    # the repo_meta ``security_and_analysis`` block the rule used to read.
+    # A realistic admin-scoped ``security_and_analysis`` block (which
+    # never carries a PVR key) must NOT make the rule fire — the endpoint
+    # slot being absent means "unavailable", so the rule passes.
+    def test_security_and_analysis_block_without_pvr_slot_passes(self):
+        snap = SCMRepoSnapshot(
+            owner="o", name="r",
+            repo_meta={
+                "default_branch": "main",
+                "security_and_analysis": {
+                    "secret_scanning": {"status": "enabled"},
+                    "dependabot_security_updates": {"status": "enabled"},
+                },
+            },
+            private_vulnerability_reporting=None,
+        )
+        f = _by_id(_findings(snap), "SCM-016")
+        assert f.passed
+        assert "unavailable" in f.description.lower()
+
+    def test_endpoint_unavailable_passes_silently(self):
+        snap = SCMRepoSnapshot(
+            owner="o", name="r",
+            repo_meta={"default_branch": "main"},
+            private_vulnerability_reporting=None,
+        )
+        f = _by_id(_findings(snap), "SCM-016")
+        assert f.passed
+        assert "unavailable" in f.description.lower()
+
+    def test_non_github_platform_skips(self):
+        snap = SCMRepoSnapshot(
+            owner="o", name="r", platform="gitlab",
+            repo_meta={"default_branch": "main"},
+        )
+        f = _by_id(_findings(snap), "SCM-016")
+        assert f.passed
+        assert "gitlab" in f.description.lower()
 
 
 # ── SCM-017: CODEOWNERS file presence ───────────────────────────────
@@ -1378,13 +1411,16 @@ class TestWholePackBehavior:
         )
         findings = _findings(snap)
         failures = sorted(f.check_id for f in findings if not f.passed)
-        # Branch-protection root cause + the 5 security-feature
+        # Branch-protection root cause + the 4 security-feature
         # rules that are independent of branch protection +
         # SCM-017 (CODEOWNERS file presence, independent of
-        # protection).
+        # protection). SCM-016 is NOT here: its private-vulnerability-
+        # reporting endpoint isn't populated on this synthetic
+        # snapshot, so it passes with an "unavailable" note rather
+        # than inferring "disabled" from an absent field.
         assert failures == [
             "SCM-001", "SCM-003", "SCM-004", "SCM-005",
-            "SCM-015", "SCM-016", "SCM-017",
+            "SCM-015", "SCM-017",
         ]
 
     def test_archived_snapshot_only_branch_protection_fires(self):
@@ -3422,6 +3458,100 @@ class TestSCM042MergeQueue:
         assert "no legacy branch-protection" in f.description.lower()
 
 
+# ── Cross-ruleset aggregation: layered org + repo rulesets ──────────
+#
+# GitHub aggregates rules across every ruleset targeting a ref (most
+# restrictive wins). A mainstream layered config is an org-level
+# ruleset that requires the gate plus a repo-level ruleset that only
+# enforces, e.g., commit-message hygiene. The default branch is fully
+# gated, so SCM-032..042 must not fail against the hygiene ruleset just
+# because it individually lacks the gate.
+
+
+class TestRulesetGateAggregation:
+    @staticmethod
+    def _hygiene_ruleset() -> dict:
+        return _active_ruleset(
+            [{"type": "commit_message_pattern",
+              "parameters": {"pattern": "^(feat|fix)"}}],
+            name="commit-message-hygiene", rs_id=2,
+        )
+
+    def test_scm032_pr_review_covered_by_sibling_passes(self):
+        snap = SCMRepoSnapshot(
+            owner="o", name="r", repo_meta={"default_branch": "main"},
+            rulesets=[
+                _active_ruleset(
+                    [{"type": "pull_request",
+                      "parameters": {"required_approving_review_count": 2}}],
+                    name="org-require-prs", rs_id=1,
+                ),
+                self._hygiene_ruleset(),
+            ],
+        )
+        f = _by_id(_findings(snap), "SCM-032")
+        assert f.passed, f.description
+
+    def test_scm033_status_checks_covered_by_sibling_passes(self):
+        snap = SCMRepoSnapshot(
+            owner="o", name="r", repo_meta={"default_branch": "main"},
+            rulesets=[
+                _active_ruleset(
+                    [{"type": "required_status_checks",
+                      "parameters": {"required_status_checks": [
+                          {"context": "build"}]}}],
+                    name="org-require-checks", rs_id=1,
+                ),
+                self._hygiene_ruleset(),
+            ],
+        )
+        f = _by_id(_findings(snap), "SCM-033")
+        assert f.passed, f.description
+
+    def test_scm037_dismissal_covered_by_sibling_pr_rule_passes(self):
+        # One PR ruleset dismisses stale reviews, a second PR ruleset
+        # does not. Aggregation makes dismissal enforced on the branch.
+        snap = SCMRepoSnapshot(
+            owner="o", name="r", repo_meta={"default_branch": "main"},
+            rulesets=[
+                _active_ruleset(
+                    [{"type": "pull_request",
+                      "parameters": {
+                          "required_approving_review_count": 1,
+                          "dismiss_stale_reviews_on_push": True}}],
+                    name="org-prs", rs_id=1,
+                ),
+                _active_ruleset(
+                    [{"type": "pull_request",
+                      "parameters": {
+                          "required_approving_review_count": 1,
+                          "dismiss_stale_reviews_on_push": False}}],
+                    name="repo-prs", rs_id=2,
+                ),
+            ],
+        )
+        f = _by_id(_findings(snap), "SCM-037")
+        assert f.passed, f.description
+
+    def test_no_ruleset_carries_gate_still_fails(self):
+        # When no targeting ruleset carries the gate, the rule still
+        # fires (aggregation doesn't weaken a genuinely missing gate).
+        snap = SCMRepoSnapshot(
+            owner="o", name="r", repo_meta={"default_branch": "main"},
+            rulesets=[
+                _active_ruleset(
+                    [{"type": "required_signatures"}],
+                    name="signing-only", rs_id=1,
+                ),
+                self._hygiene_ruleset(),
+            ],
+        )
+        f = _by_id(_findings(snap), "SCM-032")
+        assert not f.passed
+        # Both rulesets are named — neither carries the PR-review gate.
+        assert "signing-only" in f.description
+
+
 # ── SCM-043: tag-ruleset signed commits ─────────────────────────────
 
 
@@ -3563,6 +3693,21 @@ class TestSCM044AdminBypassSigning:
         f = _by_id(_findings(snap), "SCM-044")
         assert not f.passed
 
+    def test_archived_repo_skipped(self):
+        # An archived repo is read-only; every sibling rule skips it,
+        # SCM-044 must too (it used to fire on frozen protection).
+        snap = SCMRepoSnapshot(
+            owner="o", name="r",
+            repo_meta={"default_branch": "main", "archived": True},
+            default_branch_protection={
+                "required_signatures": {"enabled": True},
+                "enforce_admins": {"enabled": False},
+            },
+        )
+        f = _by_id(_findings(snap), "SCM-044")
+        assert f.passed
+        assert "archived" in f.description
+
 
 # ── SCM-045: code scanning query suite ──────────────────────────────
 
@@ -3608,6 +3753,22 @@ class TestSCM045QuerySuite:
         f = _by_id(_findings(snap), "SCM-045")
         assert f.passed
 
+    def test_null_query_suite_not_evaluated(self):
+        # ``configured`` without a query_suite must not be reported as
+        # an "unset" suite that is ≥extended. Pass without the claim.
+        snap = SCMRepoSnapshot(
+            owner="o", name="r",
+            code_scanning_default_setup={
+                "state": "configured",
+                "query_suite": None,
+            },
+        )
+        f = _by_id(_findings(snap), "SCM-045")
+        assert f.passed
+        assert "could not be evaluated" in f.description
+        assert "unset" not in f.description
+        assert "extended" not in f.description
+
 
 # ── SCM-046: code scanning paused ───────────────────────────────────
 
@@ -3624,6 +3785,10 @@ class TestSCM046Paused:
         f = _by_id(_findings(snap), "SCM-046")
         assert not f.passed
         assert "schedule" in f.description.lower()
+        # Downgraded to LOW: push/PR scans still run, so this is a
+        # periodic-rescan gap, not an absence of scanning.
+        assert f.severity == Severity.LOW
+        assert "no scan output ever lands" not in f.description
 
     def test_weekly_schedule_passes(self):
         snap = SCMRepoSnapshot(
@@ -3760,6 +3925,35 @@ class TestSCM047LanguageCoverage:
         )
         f = _by_id(_findings(snap), "SCM-047")
         assert f.passed
+
+    # Regression (2026-07 audit, finding SCM-047): the default-setup
+    # ``languages`` enum spells C/C++ as ``c-cpp``, not ``cpp``. With the
+    # old mapping a C/C++ repo could never pass even when default setup
+    # analyzed it.
+    def test_cpp_repo_with_c_cpp_scanning_passes(self):
+        snap = SCMRepoSnapshot(
+            owner="o", name="r",
+            code_scanning_default_setup={
+                "state": "configured",
+                "languages": ["c-cpp"],
+            },
+            repo_languages={"C++": 90000, "C": 10000},
+        )
+        f = _by_id(_findings(snap), "SCM-047")
+        assert f.passed
+
+    def test_cpp_repo_without_c_cpp_scanning_fails(self):
+        snap = SCMRepoSnapshot(
+            owner="o", name="r",
+            code_scanning_default_setup={
+                "state": "configured",
+                "languages": ["python"],
+            },
+            repo_languages={"C++": 90000, "Python": 10000},
+        )
+        f = _by_id(_findings(snap), "SCM-047")
+        assert not f.passed
+        assert "C++" in f.description
 
 
 # ── Default-branch scoping: rulesets exist but scope away from main ──
@@ -3953,9 +4147,13 @@ class TestRulesetScopedAwayFromDefault:
         assert not f.passed
         assert "all-except-main" in f.description
 
-    def test_tag_target_ruleset_is_scoped_away(self):
-        # target == "tag" means the ruleset never applies to
-        # branches; same effect as scope-elsewhere include.
+    def test_tag_target_ruleset_does_not_fail_branch_rules(self):
+        # A tag-targeted ruleset protects release tags, not branches.
+        # It must NOT flip the branch rule to fail (the audit FP where
+        # adding a release-tag ruleset flipped all 11 SCM-032..042 rules
+        # even when legacy branch protection covered main). It falls
+        # through to the "no ruleset targets the default branch" pass,
+        # the same as having no rulesets at all.
         rs = _active_ruleset(
             [{"type": "required_signatures"}], name="tags-only",
         )
@@ -3965,8 +4163,10 @@ class TestRulesetScopedAwayFromDefault:
             rulesets=[rs],
         )
         f = _by_id(_findings(snap), "SCM-036")
-        assert not f.passed
-        assert "tags-only" in f.description
+        assert f.passed
+        assert "no active rulesets target the default branch" in (
+            f.description.lower()
+        )
 
     def test_glob_matching_default_branch_passes(self):
         # ``refs/heads/**`` matches the default branch; the rule
@@ -4018,6 +4218,30 @@ class TestRulesetScopedAwayFromDefault:
         assert "needs-admin" not in f.description  # labels not enumerated for unavail
         assert "Additionally" in f.description
         assert "detail-endpoint errors" in f.description
+
+    def test_tag_ruleset_does_not_flip_all_branch_rules(self):
+        # Audit FP: a repo whose only ruleset is an active release-tag
+        # ruleset (deletion/non_fast_forward/required_signatures on
+        # refs/tags/v*) must not flip any of SCM-032..042 to fail. With
+        # zero rulesets all 11 pass; adding the tag ruleset must not
+        # worsen the posture.
+        snap = SCMRepoSnapshot(
+            owner="o", name="r", repo_meta={"default_branch": "main"},
+            rulesets=[_active_tag_ruleset([
+                {"type": "required_signatures"},
+                {"type": "deletion"},
+                {"type": "non_fast_forward"},
+            ])],
+        )
+        findings = _findings(snap)
+        branch_rule_ids = [f"SCM-{n:03d}" for n in range(32, 43)]
+        offenders = [
+            fid for fid in branch_rule_ids
+            if not _by_id(findings, fid).passed
+        ]
+        assert not offenders, (
+            f"tag ruleset flipped branch rules to fail: {offenders}"
+        )
 
 
 # ── Snapshot hydration: from_repo wires the new endpoints ──────────
@@ -4360,6 +4584,18 @@ class TestSCM048:
         snap = SCMRepoSnapshot(owner="acme", name="r", codespace_secrets=[])
         assert _by_id(_findings(snap), "SCM-048").passed
 
+    def test_null_name_all_visibility_fails_without_crash(self):
+        # A secret with a JSON null ``name`` used to raise TypeError in
+        # the description join, getting the whole rule swallowed by the
+        # framework guard. It must fire cleanly with a placeholder name.
+        snap = SCMRepoSnapshot(
+            owner="acme", name="r",
+            codespace_secrets=[{"name": None, "visibility": "all"}],
+        )
+        f = _by_id(_findings(snap), "SCM-048")
+        assert not f.passed
+        assert "(unnamed)" in f.description
+
 
 class TestSCM049:
     def test_classic_pat_fails(self):
@@ -4428,10 +4664,14 @@ class TestSCM052:
 
 
 class TestSCM053:
+    # merge_requests_author_approval is read from the project approvals
+    # endpoint, stashed as _gitlab_approvals (2026-07 audit, SCM-053).
     def test_author_self_approval_allowed_fails(self):
         snap = SCMRepoSnapshot(
             owner="o", name="r", platform="gitlab",
-            repo_meta={"_gitlab_project": {"merge_requests_author_approval": True}},
+            repo_meta={"_gitlab_approvals": {
+                "merge_requests_author_approval": True,
+            }},
         )
         f = _by_id(_findings(snap), "SCM-053")
         assert not f.passed
@@ -4440,9 +4680,24 @@ class TestSCM053:
     def test_author_self_approval_disabled_passes(self):
         snap = SCMRepoSnapshot(
             owner="o", name="r", platform="gitlab",
-            repo_meta={"_gitlab_project": {"merge_requests_author_approval": False}},
+            repo_meta={"_gitlab_approvals": {
+                "merge_requests_author_approval": False,
+            }},
         )
         assert _by_id(_findings(snap), "SCM-053").passed
+
+    def test_approvals_unavailable_passes_with_note(self):
+        # No _gitlab_approvals slot, and a stray value on the project
+        # payload must not be read as the setting.
+        snap = SCMRepoSnapshot(
+            owner="o", name="r", platform="gitlab",
+            repo_meta={"_gitlab_project": {
+                "merge_requests_author_approval": True,
+            }},
+        )
+        f = _by_id(_findings(snap), "SCM-053")
+        assert f.passed
+        assert "unavailable" in f.description.lower()
 
 
 class TestSCM054:
@@ -4475,6 +4730,19 @@ class TestSCM054:
         )
         assert _by_id(_findings(snap), "SCM-054").passed
 
+    def test_missing_fork_policy_passes_with_unavailable_note(self):
+        # A private repo whose payload carries no ``fork_policy`` must
+        # not be reported as allowing public forks (audit FP). It passes
+        # with an unavailable note.
+        snap = SCMRepoSnapshot(
+            owner="o", name="r", platform="bitbucket",
+            repo_meta={"_bitbucket_repo": {"is_private": True}},
+        )
+        f = _by_id(_findings(snap), "SCM-054")
+        assert f.passed
+        assert "could not be read" in f.description
+        assert "allows public forks" not in f.description
+
 
 class TestSCM055:
     def test_no_write_side_restriction_fails(self):
@@ -4497,6 +4765,22 @@ class TestSCM055:
             },
         )
         assert _by_id(_findings(snap), "SCM-055").passed
+
+    def test_push_kind_restriction_passes(self):
+        # Only a ``push`` kind present (force / delete both still
+        # allowed). The push restriction is a write-side control, so
+        # SCM-055 must pass. Regression for the audit FP.
+        snap = SCMRepoSnapshot(
+            owner="o", name="r", platform="bitbucket",
+            default_branch_protection={
+                "allow_force_pushes": {"enabled": True},
+                "allow_deletions": {"enabled": True},
+                "_bitbucket_restriction_kinds": ["push"],
+            },
+        )
+        f = _by_id(_findings(snap), "SCM-055")
+        assert f.passed
+        assert "push" in f.description
 
 
 # ── Org-wide fan-out: SCMContext.for_org ────────────────────────────

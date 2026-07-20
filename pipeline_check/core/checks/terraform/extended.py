@@ -20,8 +20,10 @@ IAM-008  OIDC-federated role missing audience/subject pin       HIGH    CICD-SEC
 from __future__ import annotations
 
 import json
+import re
 from typing import Any
 
+from .._context import statement_is_constrained
 from .._iam_policy import (
     is_oidc_trust_stmt,
     iter_allow,
@@ -65,19 +67,50 @@ class ExtendedChecks(TerraformBaseCheck):
 # CodeBuild
 # ---------------------------------------------------------------------------
 
+#: ``project_name = aws_codebuild_project.ci.name`` stays an opaque
+#: reference string in ``--tf-source`` (HCL) mode, so a literal-name
+#: join silently drops the webhook. Capture the referenced resource name.
+_PROJECT_REF_RE = re.compile(
+    r"\$\{aws_codebuild_project\.([A-Za-z0-9_-]+)\.name\}"
+)
+
+
+def index_codebuild_webhooks(ctx: TerraformContext) -> dict[str, dict[str, Any]]:
+    """Map each webhook by whatever ``project_name`` resolves to.
+
+    Keyed by the literal project name (plan mode) or, when
+    ``project_name`` is an unresolved ``${aws_codebuild_project.<res>.name}``
+    reference (HCL source mode), the referenced resource name.
+    """
+    webhooks: dict[str, dict[str, Any]] = {}
+    for w in ctx.resources("aws_codebuild_webhook"):
+        pn = w.values.get("project_name")
+        if not isinstance(pn, str) or not pn:
+            continue
+        m = _PROJECT_REF_RE.fullmatch(pn.strip())
+        webhooks[m.group(1) if m else pn] = w.values
+    return webhooks
+
+
+def webhook_for_project(
+    webhooks: dict[str, dict[str, Any]], project: Any,
+) -> dict[str, Any] | None:
+    """Join a project to its webhook by literal name, then resource name."""
+    literal = project.values.get("name")
+    if isinstance(literal, str) and literal in webhooks:
+        return webhooks[literal]
+    return webhooks.get(project.name)
+
+
 def _codebuild_checks(ctx: TerraformContext) -> list[Finding]:
     projects = list(ctx.resources("aws_codebuild_project"))
-    webhooks = {
-        w.values.get("project_name", ""): w.values
-        for w in ctx.resources("aws_codebuild_webhook")
-    }
+    webhooks = index_codebuild_webhooks(ctx)
     out: list[Finding] = []
     for r in projects:
-        name = r.values.get("name") or r.name
         out.append(_cb008(r.values, r.address))
         out.append(_cb009(r.values, r.address))
         out.append(_cb011(r.values, r.address))
-        hook = webhooks.get(name)
+        hook = webhook_for_project(webhooks, r)
         if hook is not None:
             out.append(_cb010(hook, r.address))
     return out
@@ -339,13 +372,42 @@ def _secretsmanager_checks(ctx: TerraformContext) -> list[Finding]:
         r.values.get("secret_id", ""): r.values
         for r in ctx.resources("aws_secretsmanager_secret_rotation")
     }
+    # A rotation whose ``secret_id = aws_secretsmanager_secret.x.id`` is
+    # a value computed at apply time; ``terraform plan`` omits it, so it
+    # lands here as an empty key. When one exists we can't prove which
+    # secret it rotates, so an otherwise-unmatched secret is reported as
+    # "could not correlate" rather than a false HIGH on every fresh plan.
+    unresolved_rotation = any(
+        not (isinstance(sid, str) and sid) for sid in rotations
+    )
     out: list[Finding] = []
     for secret in ctx.resources("aws_secretsmanager_secret"):
         name = secret.values.get("name") or secret.name
         has_rot = any(
-            sid == name or sid == secret.values.get("arn") or sid == f"${{aws_secretsmanager_secret.{secret.name}.id}}"
+            sid == name
+            or sid == secret.values.get("arn")
+            or sid == f"${{aws_secretsmanager_secret.{secret.name}.id}}"
+            or sid == f"${{aws_secretsmanager_secret.{secret.name}.arn}}"
             for sid in rotations
         )
+        if not has_rot and unresolved_rotation:
+            out.append(Finding(
+                check_id="SM-001",
+                title="Secrets Manager secret has no rotation configured",
+                severity=Severity.HIGH,
+                resource=secret.address,
+                description=(
+                    "An aws_secretsmanager_secret_rotation exists but its "
+                    "``secret_id`` is a value computed at apply time, which "
+                    "``terraform plan`` leaves unresolved, so it can't be "
+                    "correlated to this secret. Re-scan the applied state "
+                    "to evaluate rotation; not failing on an unresolved "
+                    "plan-time reference."
+                ),
+                recommendation="Declare an aws_secretsmanager_secret_rotation for this secret.",
+                passed=True,
+            ))
+            continue
         out.append(Finding(
             check_id="SM-001",
             title="Secrets Manager secret has no rotation configured",
@@ -362,9 +424,13 @@ def _secretsmanager_checks(ctx: TerraformContext) -> list[Finding]:
     for policy in ctx.resources("aws_secretsmanager_secret_policy"):
         raw = policy.values.get("policy")
         doc = _parse_policy(raw)
+        # A wildcard principal narrowed by a scoping condition (the
+        # AWS-documented ``aws:PrincipalOrgID`` cross-account pattern,
+        # source-VPC/IP restrictions, ...) is not world-open, so skip it
+        # the same way ``has_wildcard_action`` does.
         offenders = [
             idx for idx, stmt in enumerate(iter_allow(doc))
-            if public_principal(stmt)
+            if public_principal(stmt) and not statement_is_constrained(stmt)
         ]
         out.append(Finding(
             check_id="SM-002",

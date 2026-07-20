@@ -18,7 +18,12 @@ silent when the value is unresolved, rather than false-matching.
 """
 from __future__ import annotations
 
-from .._patterns import PLACEHOLDER_MARKER_RE, SECRET_NAME_RE, SECRET_VALUE_RE
+from .._patterns import (
+    PLACEHOLDER_MARKER_RE,
+    SECRET_NAME_RE,
+    SECRET_VALUE_RE,
+    eventbridge_target_is_wildcard,
+)
 from ..base import Finding, Severity
 from .base import (
     CloudFormationBaseCheck,
@@ -127,7 +132,7 @@ def _eb002(ctx: CloudFormationContext) -> list[Finding]:
             arn = as_str(target.get("Arn")) or (
                 resolve_literal(target.get("Arn"), params) or ""
             )
-            if "*" not in arn:
+            if not eventbridge_target_is_wildcard(arn):
                 continue
             tid = target.get("Id") or f"Targets[{idx}]"
             out.append(Finding(
@@ -297,35 +302,38 @@ def _walk(node: object, path: str, hits: list[tuple[str, str]]) -> None:
 # ---------------------------------------------------------------------------
 
 def _cf003_codebuild_public_subnet(ctx: CloudFormationContext) -> list[Finding]:
-    params = ctx.parameter_defaults
-    public_by_vpc: dict[str, list[str]] = {}
+    # Logical IDs of every subnet whose MapPublicIpOnLaunch is provably
+    # true. A CodeBuild project is only exposed when *its own*
+    # VpcConfig.Subnets reference one of these, not merely because the
+    # VPC (which nearly always has a public tier too) contains one.
+    public_subnet_ids: set[str] = set()
     for sn in ctx.resources("AWS::EC2::Subnet"):
-        if not _is_public(sn.properties.get("MapPublicIpOnLaunch")):
-            continue
-        vpc_id = resolve_literal(sn.properties.get("VpcId"), params)
-        if not vpc_id:
-            continue
-        public_by_vpc.setdefault(vpc_id, []).append(sn.address)
+        if _is_public(sn.properties.get("MapPublicIpOnLaunch")):
+            public_subnet_ids.add(sn.logical_id)
     out: list[Finding] = []
     for p in ctx.resources("AWS::CodeBuild::Project"):
         cfg = p.properties.get("VpcConfig")
         if not isinstance(cfg, dict) or not cfg:
             continue
-        vpc_id = resolve_literal(cfg.get("VpcId"), params)
-        if not vpc_id:
+        referenced = _ref_logical_ids(cfg.get("Subnets"))
+        if not referenced:
+            # Subnets is absent, a parameter/import, or an Fn::Split of
+            # an opaque list. We can't correlate the placement to an
+            # in-template subnet, so we can't prove a public one is used.
             continue
-        public = public_by_vpc.get(vpc_id, [])
+        public = sorted(lid for lid in referenced if lid in public_subnet_ids)
         out.append(Finding(
             check_id="CF-003",
             title="CodeBuild project's VPC contains a public subnet",
             severity=Severity.HIGH,
             resource=p.address,
             description=(
-                f"CodeBuild VpcId {vpc_id!r} also contains public subnet(s) "
-                f"{public}. If VpcConfig.Subnets happens to include one, "
-                "builds run with a public-IP-eligible ENI."
+                "CodeBuild VpcConfig.Subnets references public subnet(s) "
+                f"{public} (MapPublicIpOnLaunch: true); builds run with a "
+                "public-IP-eligible ENI."
                 if public else
-                f"CodeBuild VpcId {vpc_id!r} has no public subnets in the template."
+                "Every subnet referenced by CodeBuild VpcConfig.Subnets is "
+                "private (MapPublicIpOnLaunch is not true)."
             ),
             recommendation=(
                 "Place CodeBuild in private subnets with a NAT gateway "
@@ -335,6 +343,25 @@ def _cf003_codebuild_public_subnet(ctx: CloudFormationContext) -> list[Finding]:
             passed=not public,
         ))
     return out
+
+
+def _ref_logical_ids(value: object) -> list[str]:
+    """Logical IDs referenced by a ``Subnets`` list via ``{"Ref": id}``.
+
+    CodeBuild's ``VpcConfig.Subnets`` is a list of subnet references,
+    idiomatically ``!Ref MySubnet``. Anything that isn't a bare ``Ref``
+    to an in-template resource (a literal subnet id, an ``Fn::ImportValue``,
+    a parameter) yields no logical id and is left for the caller to treat
+    as un-correlatable.
+    """
+    if not isinstance(value, list):
+        return []
+    ids: list[str] = []
+    for item in value:
+        if (isinstance(item, dict) and len(item) == 1
+                and isinstance(item.get("Ref"), str)):
+            ids.append(item["Ref"])
+    return ids
 
 
 def _is_public(value: object) -> bool:

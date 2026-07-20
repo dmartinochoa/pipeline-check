@@ -240,17 +240,35 @@ def _step_attestation_explicitly_disabled(
     return None
 
 
-def _step_uses_long_lived_secret(step: dict[str, Any]) -> bool:
-    """True when the step references a long-lived registry secret."""
-    env = step.get("env")
-    if isinstance(env, dict):
-        for value in env.values():
-            if isinstance(value, str) and _LONG_LIVED_RE.search(value):
-                return True
-            # Also match the bare key form (``NPM_TOKEN: ${{ secrets.X }}``)
-        for key in env:
-            if isinstance(key, str) and _LONG_LIVED_RE.search(key):
-                return True
+def _env_references_long_lived(env: Any) -> bool:
+    """True when an env map binds a long-lived registry token."""
+    if not isinstance(env, dict):
+        return False
+    for value in env.values():
+        if isinstance(value, str) and _LONG_LIVED_RE.search(value):
+            return True
+    # Also match the bare key form (``NPM_TOKEN: ${{ secrets.X }}``).
+    for key in env:
+        if isinstance(key, str) and _LONG_LIVED_RE.search(key):
+            return True
+    return False
+
+
+def _step_uses_long_lived_secret(
+    step: dict[str, Any], *extra_envs: Any,
+) -> bool:
+    """True when the step references a long-lived registry secret.
+
+    ``extra_envs`` carries the job- and workflow-level ``env:`` maps,
+    which inherit into the step. The token is commonly set at job scope
+    (``env: NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}``), so scanning
+    only the step env missed it.
+    """
+    if _env_references_long_lived(step.get("env")):
+        return True
+    for env in extra_envs:
+        if _env_references_long_lived(env):
+            return True
     with_block = step.get("with")
     if isinstance(with_block, dict):
         # ``pypa/gh-action-pypi-publish`` accepts a ``password`` input;
@@ -276,6 +294,7 @@ def check(path: str, doc: dict[str, Any]) -> Finding:
     # an attacker can land code in. Order-preserving dict for
     # reproducibility.
     anchor_jobs: dict[str, None] = {}
+    wf_env = doc.get("env")
     for job_id, job in iter_jobs(doc):
         # A protected environment compensates for a static token; a
         # raw string (``environment: production``) and the dict form
@@ -283,6 +302,7 @@ def check(path: str, doc: dict[str, Any]) -> Finding:
         env_field = job.get("environment")
         if env_field:
             continue
+        job_env = job.get("env")
         for idx, step in enumerate(iter_steps(job)):
             # Attestation-explicitly-disabled has its own publish-step
             # detection (the docker-build-push case isn't in
@@ -294,7 +314,7 @@ def check(path: str, doc: dict[str, Any]) -> Finding:
             )
             is_pub, label = _step_publishes(step)
             fail_reason: str | None = None
-            if is_pub and _step_uses_long_lived_secret(step):
+            if is_pub and _step_uses_long_lived_secret(step, job_env, wf_env):
                 fail_reason = f"long-lived token, no environment ({label})"
             elif attestation_disabled is not None:
                 fail_reason = (

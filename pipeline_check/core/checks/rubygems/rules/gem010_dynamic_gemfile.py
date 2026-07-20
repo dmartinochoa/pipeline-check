@@ -95,6 +95,10 @@ _DYNAMIC_PATTERNS: tuple[tuple[str, re.Pattern[str]], ...] = (
     ("File.read",       re.compile(r"\bFile\s*\.\s*read\b")),
 )
 
+#: The ``ruby`` directive form that pins the interpreter version, e.g.
+#: ``ruby File.read('.ruby-version').strip`` or ``ruby file: ".ruby-version"``.
+_RUBY_VERSION_LINE_RE = re.compile(r"^\s*ruby\s+(?:File\s*\.\s*read\b|file:)")
+
 
 def _strip_comments(line: str) -> str:
     """Drop ``# ...`` trailing comments; ``#{...}`` is interpolation
@@ -122,9 +126,15 @@ def check(pom: GemFile) -> Finding:
         if not body.strip():
             continue
         for label, pat in _DYNAMIC_PATTERNS:
-            if pat.search(body):
-                offenders.append((label, ln))
-                break
+            if not pat.search(body):
+                continue
+            # ``ruby File.read('.ruby-version').strip`` pins the Ruby
+            # version, not a gem list — the single most common
+            # non-dynamic ``File.read`` in a real Gemfile.
+            if label == "File.read" and _RUBY_VERSION_LINE_RE.match(body):
+                continue
+            offenders.append((label, ln))
+            break
 
     if not offenders:
         return Finding(

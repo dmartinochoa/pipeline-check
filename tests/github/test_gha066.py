@@ -147,3 +147,33 @@ class TestGHA066UploadArtifactWildcard:
         """
         # Stay silent rather than guess at action defaults.
         assert run_check(wf, "GHA-066").passed
+
+
+def test_gha066_workspace_subdir_not_flagged():
+    # Regression (2026-07 audit): a bounded subdirectory under the
+    # workspace is scoped, not a workspace-wide sweep.
+    wf = """
+    on: push
+    jobs:
+      build:
+        runs-on: ubuntu-latest
+        steps:
+          - uses: actions/upload-artifact@v4
+            with:
+              path: ${{ github.workspace }}/dist
+    """
+    assert run_check(wf, "GHA-066").passed
+
+
+def test_gha066_bare_workspace_still_flagged():
+    wf = """
+    on: push
+    jobs:
+      build:
+        runs-on: ubuntu-latest
+        steps:
+          - uses: actions/upload-artifact@v4
+            with:
+              path: ${{ github.workspace }}
+    """
+    assert not run_check(wf, "GHA-066").passed

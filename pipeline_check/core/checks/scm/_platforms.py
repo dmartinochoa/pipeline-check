@@ -132,6 +132,10 @@ def gitlab_context_for_repo(
         default_branch = "main"
 
     push_rule_raw = fetcher.fetch(f"projects/{encoded}/push_rule")
+    # Merge-request approval settings live on their own endpoint, NOT
+    # on the project payload. ``merge_requests_author_approval`` (the
+    # field SCM-053 reads) is here, not on ``GET /projects/:id``.
+    approvals_raw = fetcher.fetch(f"projects/{encoded}/approvals")
 
     stats = project.get("statistics")
     raw_size = stats.get("repository_size") if isinstance(stats, dict) else None
@@ -155,6 +159,9 @@ def gitlab_context_for_repo(
         "_gitlab_project": project,
         "_gitlab_push_rule": (
             push_rule_raw if isinstance(push_rule_raw, dict) else None
+        ),
+        "_gitlab_approvals": (
+            approvals_raw if isinstance(approvals_raw, dict) else None
         ),
     }
 
@@ -572,6 +579,13 @@ def _bitbucket_protection(
         },
         "allow_force_pushes": {"enabled": allow_force},
         "allow_deletions": {"enabled": allow_delete},
+        # The ``push`` kind (Bitbucket's "Prevent push" / Write-access
+        # restriction) has no GitHub-shaped slot, but it's the primary
+        # write-side control. Surface the raw restriction kinds present
+        # on the default branch so SCM-055 can count it.
+        "_bitbucket_restriction_kinds": [
+            k for k in by_kind if isinstance(k, str)
+        ],
         "required_status_checks": (
             {"strict": True, "contexts": ["pipeline"]}
             if pipeline_required else {}

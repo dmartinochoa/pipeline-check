@@ -113,20 +113,18 @@ RULE = Rule(
 )
 
 
-# Match a JSON policy fragment with both wildcards present anywhere
-# in a window. Single-line and multi-line variants. The DOTALL flag
-# accepts newlines between Action and Resource (the canonical IAM
-# JSON layout straddles multiple lines).
-_WILDCARD_RE = re.compile(
-    r'"Action"\s*:\s*(?:"\*"|\[\s*"\*"\s*\]).*?'
-    r'"Resource"\s*:\s*(?:"\*"|\[\s*"\*"\s*\])',
-    re.DOTALL,
-)
-_WILDCARD_REVERSE_RE = re.compile(
-    r'"Resource"\s*:\s*(?:"\*"|\[\s*"\*"\s*\]).*?'
-    r'"Action"\s*:\s*(?:"\*"|\[\s*"\*"\s*\])',
-    re.DOTALL,
-)
+# Match a JSON policy fragment with both wildcards present anywhere in a
+# window. The key quote is optional and may be single or double: real
+# Pulumi source rarely double-quotes keys — TS/JS pass object literals to
+# ``JSON.stringify`` with BARE keys (``Action: "*"``) and Python dict
+# literals use SINGLE quotes (``{'Action': '*'}``). ``\bAction\b`` keeps
+# ``myAction`` / ``Actions`` from matching the bare form. Values stay
+# quoted (they survive ``JSON.stringify``). DOTALL accepts newlines
+# between the two keys (the canonical multi-line IAM layout).
+_ACTION_WC = r'''["']?\bAction\b["']?\s*:\s*(?:["']\*["']|\[\s*["']\*["']\s*\])'''
+_RESOURCE_WC = r'''["']?\bResource\b["']?\s*:\s*(?:["']\*["']|\[\s*["']\*["']\s*\])'''
+_WILDCARD_RE = re.compile(_ACTION_WC + r'.*?' + _RESOURCE_WC, re.DOTALL)
+_WILDCARD_REVERSE_RE = re.compile(_RESOURCE_WC + r'.*?' + _ACTION_WC, re.DOTALL)
 
 
 def check(ctx: PulumiContext) -> Finding:

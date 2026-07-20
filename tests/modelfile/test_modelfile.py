@@ -66,6 +66,13 @@ class TestModel001UnpinnedBaseModel:
         f = run_check("FROM library/mistral:latest\n", "MODEL-001")
         assert not f.passed
 
+    def test_fails_on_trailing_colon_empty_tag(self):
+        # ``llama3:`` (trailing colon, no tag) resolves to the registry
+        # default, just as unpinned as a bare name (Part-C FN: the empty
+        # tag string was treated as pinned).
+        f = run_check("FROM llama3:\n", "MODEL-001")
+        assert not f.passed
+
     def test_passes_on_specific_tag(self):
         f = run_check("FROM llama3:8b-instruct-q4_0\n", "MODEL-001")
         assert f.passed

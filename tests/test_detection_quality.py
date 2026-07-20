@@ -182,6 +182,28 @@ class TestPkgNoLockfileGoInstall:
         assert PKG_NO_LOCKFILE_RE.search(cmd.lower()), f"missed: {cmd}"
 
 
+class TestPkgNoLockfilePoetryCargo:
+    """Regression (2026-07 audit, GHA-021 / GL-021): ``poetry install``
+    enforces ``poetry.lock`` (it is not a lock-bypassing command) and
+    ``cargo install --locked`` enforces ``Cargo.lock``."""
+
+    @pytest.mark.parametrize("cmd", [
+        "poetry install",
+        "poetry install --no-interaction",
+        "poetry install --only main",
+        "cargo install --locked ripgrep",
+        "cargo install ripgrep --locked",
+    ])
+    def test_lockfile_enforcing_not_flagged(self, cmd):
+        assert not PKG_NO_LOCKFILE_RE.search(cmd.lower()), f"false positive: {cmd}"
+
+    @pytest.mark.parametrize("cmd", [
+        "cargo install ripgrep",
+    ])
+    def test_unlocked_cargo_still_flagged(self, cmd):
+        assert PKG_NO_LOCKFILE_RE.search(cmd.lower()), f"missed: {cmd}"
+
+
 # ────────────────────────────────────────────────────────────────────────
 # UNTRUSTED_CONTEXT_RE — GitHub Actions script injection
 # ────────────────────────────────────────────────────────────────────────
@@ -209,7 +231,6 @@ class TestUntrustedContextRE:
         "${{ github.event.discussion.body }}",
         "${{ github.head_ref }}",
         "${{ github.ref_name }}",
-        "${{ github.actor }}",
         "${{ inputs.user_name }}",
         "${{ github.event.pages[0].page_name }}",
         "${{ github.event.pages.page_name }}",
@@ -226,6 +247,12 @@ class TestUntrustedContextRE:
         "${{ github.event.number }}",
         "${{ runner.os }}",
         "${{ env.MY_VAR }}",
+        # Regression (2026-07 audit, GHA-003): a GitHub login is
+        # ``[A-Za-z0-9-]`` (+ ``[bot]``), so it can't carry shell
+        # metacharacters; zizmor / CodeQL classify github.actor as safe.
+        "${{ github.actor }}",
+        "${{ github.actor_id }}",
+        "${{ github.triggering_actor }}",
     ])
     def test_safe_contexts_not_flagged(self, expr):
         assert not self.re.search(expr), f"false positive: {expr}"

@@ -212,6 +212,28 @@ class TestGHA033SecretEchoed:
         f = run_check(wf, "GHA-033")
         assert not f.passed
 
+    def test_fails_on_secret_env_var_echoed_at_job_scope(self):
+        # The secret is bound at JOB scope (the more common placement)
+        # and echoed from a step. Job/workflow env inherits into the
+        # step, so the leak must fire (A6 FN: only step env was scanned).
+        wf = """
+        name: ci
+        on: push
+        permissions: { contents: read }
+        jobs:
+          build:
+            runs-on: ubuntu-latest
+            timeout-minutes: 30
+            env:
+              TOKEN: ${{ secrets.DEPLOY_KEY }}
+            steps:
+              - run: |
+                  set -x
+                  curl -H "Authorization: Bearer $TOKEN" https://api.example.com/
+        """
+        f = run_check(wf, "GHA-033")
+        assert not f.passed
+
     def test_passes_when_secret_used_inline_only(self):
         wf = """
         name: ci

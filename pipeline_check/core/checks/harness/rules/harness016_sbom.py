@@ -27,12 +27,15 @@ RULE = Rule(
     ),
     docs_note=(
         "Detection mirrors GHA-007 / BK-010 / CC-007 / TKN-010 / DR-020, "
-        "the shared SBOM-token catalog (syft, cyclonedx, spdx, bom, trivy "
-        "sbom) is searched across every string in the pipeline document. "
-        "The rule only fires on artifact-producing pipelines (``docker "
-        "build`` / ``docker push`` / ``buildah`` / ``kaniko`` / etc.) so "
-        "lint / test-only pipelines don't trip it. The Harness analog of "
-        "BK-010 / TKN-010."
+        "the shared SBOM-token catalog (``syft``, ``cyclonedx``, "
+        "``cdxgen``, ``anchore/sbom-action``, ``spdx-sbom-generator``, "
+        "``microsoft/sbom-tool``, or ``trivy`` combined with an "
+        "``sbom`` / ``cyclonedx`` flag) is searched across every string in "
+        "the pipeline document. The rule only fires on artifact-producing "
+        "pipelines (``docker build`` / ``docker push`` / ``buildah`` / "
+        "``kaniko`` / Harness ``BuildAndPush*`` step / etc.) so lint / "
+        "test-only pipelines don't trip it. The Harness analog of BK-010 "
+        "/ TKN-010."
     ),
 )
 

@@ -120,6 +120,13 @@ def _insecure_plan() -> list[dict]:
             "name": "bad",
             "source": [{"type": "GITHUB", "buildspec": "version: 0.2\nphases:\n  build:\n    commands: echo"}],
             "environment": [{"image": "ghcr.io/corp/builder:latest"}],
+            # VPC-configured and attaching the open-egress SG below, so
+            # PBAC-003 (CodeBuild-scoped) has something to fire on.
+            "vpc_config": [{
+                "vpc_id": "vpc-1",
+                "security_group_ids": ["${aws_security_group.open.id}"],
+                "subnets": [],
+            }],
         }),
         _r("aws_codebuild_webhook.bad", "aws_codebuild_webhook", "bad", {
             "project_name": "bad",
@@ -145,7 +152,7 @@ def _insecure_plan() -> list[dict]:
         # CodeArtifact
         _r("aws_codeartifact_domain.d", "aws_codeartifact_domain", "d", {"domain": "corp"}),
         _r("aws_codeartifact_repository.r", "aws_codeartifact_repository", "r", {
-            "external_connections": ["public:npmjs"],
+            "external_connections": [{"external_connection_name": "public:npmjs"}],
         }),
         _r("aws_codeartifact_domain_permissions_policy.dp",
            "aws_codeartifact_domain_permissions_policy", "dp",

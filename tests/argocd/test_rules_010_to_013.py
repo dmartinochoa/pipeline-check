@@ -186,6 +186,38 @@ class TestARGOCD012:
         f = run_check(y, "ARGOCD-012")
         assert f.passed
 
+    def test_passes_on_products_namespace_substring(self):
+        # ``products`` merely embeds ``prod``; a staging project for a
+        # "products" service must not be treated as production (Part-C
+        # FP: bare substring match).
+        y = """
+        apiVersion: argoproj.io/v1alpha1
+        kind: AppProject
+        metadata: { name: products, namespace: argocd }
+        spec:
+          sourceRepos: ['*']
+          destinations:
+            - server: https://kubernetes.default.svc
+              namespace: product-catalog
+        """
+        f = run_check(y, "ARGOCD-012")
+        assert f.passed
+
+    def test_fires_on_delimited_prod_namespace(self):
+        # ``prod-eu`` is a real production namespace (delimited token).
+        y = """
+        apiVersion: argoproj.io/v1alpha1
+        kind: AppProject
+        metadata: { name: eu, namespace: argocd }
+        spec:
+          sourceRepos: ['*']
+          destinations:
+            - server: https://kubernetes.default.svc
+              namespace: prod-eu
+        """
+        f = run_check(y, "ARGOCD-012")
+        assert not f.passed
+
 
 # ── ARGOCD-013 ──────────────────────────────────────────────────
 

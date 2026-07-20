@@ -81,6 +81,14 @@ RULE = Rule(
 # ``(1,3]``, ``[1.0,)``, ``(,2.0]``) or the legacy floating literals.
 _RANGE_PREFIX_RE = re.compile(r"^\s*[\[\(]")
 _FLOATING_LITERALS: frozenset[str] = frozenset({"LATEST", "RELEASE"})
+# Gradle dynamic-version forms. MVN-001 also runs on build.gradle
+# PomFiles, and these resolve to a later release at build time exactly
+# like a Maven range. ``latest.release`` / ``latest.integration`` are
+# Gradle's dynamic literals; ``1.+`` / ``2.0.+`` / a bare ``+`` are the
+# wildcard forms (MVN-008/009 already treat ``.+`` as floating).
+_GRADLE_DYNAMIC_LITERALS: frozenset[str] = frozenset(
+    {"LATEST.RELEASE", "LATEST.INTEGRATION"}
+)
 
 
 def _is_floating(version: str) -> bool:
@@ -88,6 +96,10 @@ def _is_floating(version: str) -> bool:
     if not v:
         return False
     if v.upper() in _FLOATING_LITERALS:
+        return True
+    if v.upper() in _GRADLE_DYNAMIC_LITERALS:
+        return True
+    if v == "+" or v.endswith(".+"):
         return True
     return bool(_RANGE_PREFIX_RE.match(v))
 

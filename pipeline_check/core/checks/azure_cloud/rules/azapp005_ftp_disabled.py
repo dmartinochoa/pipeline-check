@@ -44,9 +44,17 @@ def check(catalog: ResourceCatalog) -> list[Finding]:
         app = entry["app"]
         config = entry.get("config")
         name = getattr(app, "name", "<unnamed>")
-        ftp_state = str(
-            getattr(config, "ftp_state", "AllAllowed"),
-        ).lower() if config else "allallowed"
+        # Azure's ``SiteConfig`` exposes the FTP setting as
+        # ``ftps_state`` (AllAllowed / FtpsOnly / Disabled); older SDK
+        # versions spelled it ``ftp_state``. Prefer the current name and
+        # fall back to the legacy one so both shapes resolve.
+        if config is None:
+            ftp_state = "allallowed"
+        else:
+            raw = getattr(config, "ftps_state", None)
+            if raw is None:
+                raw = getattr(config, "ftp_state", "AllAllowed")
+            ftp_state = str(raw).lower()
         passed = ftp_state in _ACCEPTABLE_STATES
         if passed:
             desc = (

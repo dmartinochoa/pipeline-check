@@ -88,6 +88,27 @@ class TestK8S014SensitiveHostPath:
         }), "K8S-014")
         assert not f.passed
 
+    def test_fails_on_run_containerd_sock_mount(self):
+        # containerd's documented default socket is the ``/run`` form
+        # (``/var/run`` is a symlink to ``/run``); real DaemonSets mount
+        # it routinely (B4 FN: only the ``/var/run`` twins were listed).
+        f = run_check(pod(pod_spec_extra={
+            "volumes": [{
+                "name": "crt",
+                "hostPath": {"path": "/run/containerd/containerd.sock"},
+            }],
+        }), "K8S-014")
+        assert not f.passed
+
+    def test_fails_on_run_docker_sock_mount(self):
+        f = run_check(pod(pod_spec_extra={
+            "volumes": [{
+                "name": "dock",
+                "hostPath": {"path": "/run/docker.sock"},
+            }],
+        }), "K8S-014")
+        assert not f.passed
+
     def test_fails_on_etc_mount(self):
         f = run_check(pod(pod_spec_extra={
             "volumes": [{"name": "etc", "hostPath": {"path": "/etc"}}],

@@ -18,12 +18,17 @@ they're all avoidable by pinning to a current major.
 """
 from __future__ import annotations
 
+import re
 from typing import Any
 
 from ..._yaml_lines import line_of as _line_of
 from ...base import Finding, Location, Severity
 from ...rule import Rule
 from ..base import iter_jobs
+
+#: ``runs-on: ${{ matrix.os }}`` — an OS matrix is the most common way a
+#: deprecated image reaches a job, so resolve the referenced axis.
+_MATRIX_REF_RE = re.compile(r"\$\{\{\s*matrix\.([A-Za-z_][A-Za-z0-9_]*)\s*\}\}")
 
 RULE = Rule(
     id="GHA-068",
@@ -138,11 +143,45 @@ def _runs_on_labels(value: Any) -> list[str]:
     return []
 
 
+def _matrix_runs_on_labels(job: dict[str, Any], value: Any) -> list[str]:
+    """Resolve ``runs-on: ${{ matrix.<key> }}`` to the axis's values.
+
+    Reads both ``strategy.matrix.<key>`` (the list axis) and any
+    ``strategy.matrix.include[*].<key>`` entries, normalized to lowercase.
+    """
+    refs = [value] if isinstance(value, str) else (
+        [v for v in value if isinstance(v, str)] if isinstance(value, list) else []
+    )
+    keys = [m.group(1) for ref in refs if (m := _MATRIX_REF_RE.search(ref))]
+    if not keys:
+        return []
+    strategy = job.get("strategy")
+    matrix = strategy.get("matrix") if isinstance(strategy, dict) else None
+    if not isinstance(matrix, dict):
+        return []
+    out: list[str] = []
+    for key in keys:
+        axis = matrix.get(key)
+        if isinstance(axis, list):
+            out += [str(v).strip().lower() for v in axis
+                    if isinstance(v, (str, int, float))]
+        include = matrix.get("include")
+        if isinstance(include, list):
+            for entry in include:
+                if isinstance(entry, dict) and isinstance(
+                    entry.get(key), (str, int, float)
+                ):
+                    out.append(str(entry[key]).strip().lower())
+    return out
+
+
 def check(path: str, doc: dict[str, Any]) -> Finding:
     offenders: list[str] = []
     locations: list[Location] = []
     for job_id, job in iter_jobs(doc):
-        for label in _runs_on_labels(job.get("runs-on")):
+        runs_on = job.get("runs-on")
+        labels = _runs_on_labels(runs_on) + _matrix_runs_on_labels(job, runs_on)
+        for label in labels:
             note = _DEPRECATED_RUNNERS.get(label)
             if note is None:
                 continue

@@ -47,9 +47,12 @@ def check(ctx: ArgoContext) -> Finding:
                 src = container.get("source")
                 if isinstance(src, str):
                     texts.append(src)
-                args = container.get("args")
-                if isinstance(args, list):
-                    texts += [a for a in args if isinstance(a, str)]
+                # ``command: ["sh","-c","<script>"]`` puts the shell body
+                # in ``command``; scan both ``command`` and ``args``.
+                for field in ("command", "args"):
+                    value = container.get(field)
+                    if isinstance(value, list):
+                        texts += [a for a in value if isinstance(a, str)]
                 for text in texts:
                     for h in shell_eval.scan(text):
                         offenders.append(

@@ -147,6 +147,22 @@ class TestCOMPOSER002:
         )
         assert not findings["COMPOSER-002"].passed
 
+    def test_passes_on_prerelease_exact_pin(self, tmp_path):
+        # ``10.0.0-RC1`` names one exact pre-release, not a range; the
+        # stability suffix must not read as floating (Part-C FN).
+        findings = _scan(
+            tmp_path,
+            {"name": "x", "require": {"monolog/monolog": "10.0.0-RC1"}},
+        )
+        assert findings["COMPOSER-002"].passed
+
+    def test_passes_on_build_metadata_pin(self, tmp_path):
+        findings = _scan(
+            tmp_path,
+            {"name": "x", "require": {"monolog/monolog": "1.2.3+build.5"}},
+        )
+        assert findings["COMPOSER-002"].passed
+
 
 # ── COMPOSER-003 ─────────────────────────────────────────────
 
