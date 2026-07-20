@@ -36,7 +36,7 @@ jobs:
           persist-credentials: false
 
       - name: Set up Python 3.12
-        uses: actions/setup-python@ece7cb06caefa5fff74198d8649806c4678c61a1  # v6.3.0
+        uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97  # v7.0.0
         with:
           python-version: "3.12"
           cache: "pip"
@@ -68,7 +68,7 @@ jobs:
 
       - name: Upload SARIF to GitHub code scanning
         if: always()
-        uses: github/codeql-action/upload-sarif@54f647b7e1bb85c95cddabcd46b0c578ec92bc1a  # v4.36.3
+        uses: github/codeql-action/upload-sarif@7188fc363630916deb702c7fdcf4e481b751f97a  # v4.37.1
         with:
           sarif_file: pipeline-check.sarif
           category: pipeline-check-dogfood
@@ -119,7 +119,7 @@ jobs:
         # be pinned to a full-length commit SHA" policy refuses to
         # run. Bump this back to a release tag once a v1.0.2+ (or
         # whatever cuts after) is published.
-        uses: dmartinochoa/pipeline-check@e8b6f2de9fef91175bfbbaaa5ccd218b89763db8  # post-v1.0.1 SHA-pin fix
+        uses: dmartinochoa/pipeline-check@3727f4b8aa426ade52fb7976bc9a153a1489432e  # post-v1.0.1 SHA-pin fix
         with:
           pipeline: github
           path: .github/workflows
@@ -128,7 +128,7 @@ jobs:
 
       - name: Upload SARIF to GitHub code scanning
         if: always()
-        uses: github/codeql-action/upload-sarif@54f647b7e1bb85c95cddabcd46b0c578ec92bc1a  # v4.36.3
+        uses: github/codeql-action/upload-sarif@7188fc363630916deb702c7fdcf4e481b751f97a  # v4.37.1
         with:
           sarif_file: pipeline-check.sarif
           category: pipeline-check-dogfood-published

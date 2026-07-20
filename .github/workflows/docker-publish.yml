@@ -57,7 +57,7 @@ jobs:
         # Used only to read the package version out of pyproject.toml
         # via ``tomllib``. The image itself is built inside the
         # Dockerfile's own python:3.12-slim base.
-        uses: actions/setup-python@ece7cb06caefa5fff74198d8649806c4678c61a1  # v6.3.0
+        uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97  # v7.0.0
         with:
           python-version: "3.12"
 
@@ -189,7 +189,7 @@ jobs:
         # failed build still surfaces its findings on the Security tab
         # rather than vanishing with the job.
         if: always() && hashFiles('scout-cves.sarif') != ''
-        uses: github/codeql-action/upload-sarif@54f647b7e1bb85c95cddabcd46b0c578ec92bc1a  # v4.36.3
+        uses: github/codeql-action/upload-sarif@7188fc363630916deb702c7fdcf4e481b751f97a  # v4.37.1
         with:
           sarif_file: scout-cves.sarif
           category: docker-scout
