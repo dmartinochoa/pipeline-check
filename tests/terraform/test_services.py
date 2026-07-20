@@ -38,11 +38,21 @@ def test_ca001_cmk_passes():
 # ---------- CA-002 ----------
 
 def test_ca002_public_fails():
+    # external_connections is a nested block: plan JSON / HCL both emit a
+    # list of dicts, not the string list an older fixture assumed.
     r = _r("aws_codeartifact_repository.r", "aws_codeartifact_repository", "r", {
-        "external_connections": ["public:npmjs"],
+        "external_connections": [{"external_connection_name": "public:npmjs"}],
     })
     f = next(x for x in _run([r]) if x.check_id == "CA-002")
     assert not f.passed
+
+
+def test_ca002_private_passes():
+    r = _r("aws_codeartifact_repository.r", "aws_codeartifact_repository", "r", {
+        "external_connections": [],
+    })
+    f = next(x for x in _run([r]) if x.check_id == "CA-002")
+    assert f.passed
 
 
 # ---------- CA-003 ----------

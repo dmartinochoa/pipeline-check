@@ -37,23 +37,28 @@ RULE = Rule(
         "patterns for compliance) and forget that the PR-review "
         "gate is a separate rule type that has to be added "
         "explicitly.\n\n"
-        "SCM-032 evaluates rulesets in isolation: it does not "
-        "consult legacy branch-protection state, so it fires on "
-        "any active ruleset that lacks a PR-review rule, even "
-        "when legacy branch protection on the same ref provides "
-        "the required-review gate. SCM-002 covers the legacy "
-        "branch-protection side; the two rules together describe "
-        "the full review-control surface."
+        "SCM-032 aggregates across rulesets the way GitHub does: "
+        "the default branch is covered when any ruleset targeting "
+        "it carries a PR-review rule, so a layered config (an "
+        "org-level ruleset that requires reviews plus a repo-level "
+        "ruleset that only enforces a commit-message pattern) "
+        "passes. It fires only when no ruleset targeting the "
+        "default branch requires a PR review. It stays within the "
+        "ruleset layer and doesn't consult legacy branch "
+        "protection; SCM-002 covers that side, and the two "
+        "together describe the full review-control surface."
     ),
     docs_note=(
-        "For every active ruleset (``enforcement: \"active\"``) with "
-        "an evaluable detail body, walks the ``rules`` array "
-        "looking for an entry with ``type: \"pull_request\"`` whose "
+        "Across the active rulesets targeting the default branch, "
+        "looks for an entry with ``type: \"pull_request\"`` whose "
         "``parameters.required_approving_review_count`` is at "
-        "least 1. Fires when none is found. Non-active rulesets "
-        "are SCM-029's surface; rulesets with unavailable detail "
-        "are surfaced with an evaluation-gap note (the same "
-        "pattern SCM-030 uses).\n\n"
+        "least 1. Fires only when none of them carries one "
+        "(GitHub aggregates rules across every ruleset targeting a "
+        "ref). Non-active rulesets are SCM-029's surface; rulesets "
+        "with unavailable detail are surfaced with an evaluation-"
+        "gap note (the same pattern SCM-030 uses). Tag- and push-"
+        "targeted rulesets are ignored (they don't protect "
+        "branches).\n\n"
         "Pairs with SCM-002 (legacy branch-protection required "
         "reviews) and SCM-029 (ruleset not enforced). The three "
         "rules together cover the required-review surface: "
@@ -221,11 +226,14 @@ def check(snapshot: SCMRepoSnapshot) -> Finding:
             ),
             recommendation=RULE.recommendation, passed=True,
         )
-    offenders: list[str] = []
-    for rs in targeting:
-        if _has_pr_review_rule(rs.get("rules")):
-            continue
-        offenders.append(ruleset_label(rs))
+    # GitHub aggregates rules across every ruleset targeting a ref, so
+    # the gate is satisfied when ANY targeting ruleset carries it. Fire
+    # only when none does (the whole targeting set then lists as the
+    # offenders: no ruleset on the default branch carries the gate).
+    covered = any(_has_pr_review_rule(rs.get("rules")) for rs in targeting)
+    offenders: list[str] = (
+        [] if covered else [ruleset_label(rs) for rs in targeting]
+    )
     unavailable_details = [ruleset_label(rs) for rs in unavailable]
     passed = not offenders
     if passed and unavailable_details:

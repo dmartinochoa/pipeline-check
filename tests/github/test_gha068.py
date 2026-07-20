@@ -43,6 +43,49 @@ class TestGHA068DeprecatedRunner:
         """
         assert not run_check(wf, "GHA-068").passed
 
+    def test_fails_on_matrix_os_with_deprecated_value(self):
+        # ``runs-on: ${{ matrix.os }}`` resolves through strategy.matrix;
+        # an OS matrix is the most common way a deprecated image appears
+        # (B4 FN: the matrix axis was never consulted).
+        wf = """
+        jobs:
+          build:
+            runs-on: ${{ matrix.os }}
+            strategy:
+              matrix:
+                os: [ubuntu-latest, ubuntu-20.04]
+            steps: [{run: echo}]
+        """
+        f = run_check(wf, "GHA-068")
+        assert not f.passed
+        assert "ubuntu-20.04" in f.description
+
+    def test_fails_on_matrix_include_deprecated_value(self):
+        wf = """
+        jobs:
+          build:
+            runs-on: ${{ matrix.os }}
+            strategy:
+              matrix:
+                os: [ubuntu-latest]
+                include:
+                  - os: macos-12
+            steps: [{run: echo}]
+        """
+        assert not run_check(wf, "GHA-068").passed
+
+    def test_passes_on_matrix_os_all_current(self):
+        wf = """
+        jobs:
+          build:
+            runs-on: ${{ matrix.os }}
+            strategy:
+              matrix:
+                os: [ubuntu-latest, ubuntu-24.04, macos-14]
+            steps: [{run: echo}]
+        """
+        assert run_check(wf, "GHA-068").passed
+
     def test_passes_on_ubuntu_latest(self):
         wf = """
         jobs:

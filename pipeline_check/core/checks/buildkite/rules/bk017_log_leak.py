@@ -40,10 +40,13 @@ RULE = Rule(
 def check(path: str, doc: dict[str, Any]) -> Finding:
     offenders: list[str] = []
     for idx, step in iter_command_steps(doc):
-        for cmd in step_commands(step):
-            hits = scan_script_for_leaked_secrets(cmd)
-            for h in hits:
-                offenders.append(f"{step_label(step, idx)}: {h}")
+        # Buildkite concatenates a ``commands:`` list into one script, so
+        # ``set -x`` enabled in one item traces secret-named vars used in
+        # later items. Join and scan once to match that execution model
+        # (scanning each item in isolation missed the cross-item leak).
+        script = "\n".join(step_commands(step))
+        for h in scan_script_for_leaked_secrets(script):
+            offenders.append(f"{step_label(step, idx)}: {h}")
     passed = not offenders
     desc = (
         "No step command prints a secret-named variable to the log."

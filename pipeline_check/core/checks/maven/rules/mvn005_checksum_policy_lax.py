@@ -64,7 +64,28 @@ def _is_central(url: str) -> bool:
     }
 
 
+def _is_gradle_pom(pom: PomFile) -> bool:
+    return pom.path.endswith((".gradle", ".gradle.kts"))
+
+
 def check(pom: PomFile) -> Finding:
+    # ``<checksumPolicy>`` is a Maven-XML concept with no build.gradle
+    # equivalent: a Gradle-parsed ``maven { url ... }`` repo always has
+    # ``checksum_policy=None``, so flagging it would fire on every Gradle
+    # HTTPS repo with a recommendation that can't be applied. Gradle's
+    # integrity mechanism is ``verification-metadata.xml`` (out of scope
+    # for this rule), so skip Gradle-origin files entirely.
+    if _is_gradle_pom(pom):
+        return Finding(
+            check_id=RULE.id, title=RULE.title, severity=RULE.severity,
+            resource=pom.path,
+            description=(
+                "Gradle build file; <checksumPolicy> is a Maven-XML "
+                "concept that does not apply. Gradle integrity is "
+                "enforced via verification-metadata.xml."
+            ),
+            recommendation=RULE.recommendation, passed=True,
+        )
     offenders: list[str] = []
     locations: list[Location] = []
     for repo in pom.repositories:

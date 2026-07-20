@@ -119,12 +119,26 @@ def check(snapshot: SCMRepoSnapshot) -> Finding:
             recommendation=RULE.recommendation, passed=True,
         )
     policy = repo.get("fork_policy")
+    if not isinstance(policy, str):
+        # The payload carries no ``fork_policy`` (older API / a token
+        # without full repository read scope). Don't assert a permissive
+        # policy that was never observed; pass with an unavailable note,
+        # matching how the rest of the pack degrades on missing data.
+        return Finding(
+            check_id=RULE.id, title=RULE.title, severity=RULE.severity,
+            resource=repo_resource(snapshot),
+            description=(
+                "Bitbucket ``fork_policy`` is absent from the repo "
+                "payload; fork posture could not be read. Not "
+                "asserting a permissive policy on missing data."
+            ),
+            recommendation=RULE.recommendation, passed=True,
+        )
     passed = policy in ("no_forks", "no_public_forks")
     desc = (
         f"Private repo restricts forks (``fork_policy: {policy}``)."
         if passed else
-        f"Private repo allows public forks (``fork_policy: "
-        f"{policy if isinstance(policy, str) else 'unknown'}``). "
+        f"Private repo allows public forks (``fork_policy: {policy}``). "
         f"Any workspace member can fork the repo into a personal "
         f"public workspace, exposing source plus full git history "
         f"to the public internet."

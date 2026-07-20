@@ -79,6 +79,24 @@ _ARTIFACT_TOKENS = (
     # are recognized.
     "kaniko",
     "gcr.io/kaniko-project/executor",
+    # DR-019/020/021 FN fix: Drone's canonical image-build/push plugins
+    # build and push a container image via a ``settings:`` block, so the
+    # doc blob never carries a ``docker build`` / ``docker push`` command.
+    # These are unambiguous image refs (``image: plugins/docker``), and
+    # ``plugins/kaniko`` already matched on the ``kaniko`` token above.
+    "plugins/docker",
+    "plugins/ecr",
+    "plugins/gcr",
+    "plugins/acr",
+    # HARNESS-016/017 FN fix: Harness's native CIE build steps
+    # (``type: BuildAndPushDockerRegistry`` / ECR / GCR / ACR / GAR)
+    # build+push an image with no ``docker build`` command in the doc.
+    # The lowercased step-type slug is unambiguous.
+    "buildandpushdockerregistry",
+    "buildandpushecr",
+    "buildandpushgcr",
+    "buildandpushacr",
+    "buildandpushgar",
     # GitHub Actions artifact + release flows. ``upload-artifact@`` is
     # anchored with ``@`` so ``actions/upload-pages-artifact@<ref>`` (a
     # docs/Pages site, not a software artifact) doesn't match.

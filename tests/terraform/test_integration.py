@@ -152,7 +152,7 @@ def _insecure_plan() -> list[dict]:
         # CodeArtifact
         _r("aws_codeartifact_domain.d", "aws_codeartifact_domain", "d", {"domain": "corp"}),
         _r("aws_codeartifact_repository.r", "aws_codeartifact_repository", "r", {
-            "external_connections": ["public:npmjs"],
+            "external_connections": [{"external_connection_name": "public:npmjs"}],
         }),
         _r("aws_codeartifact_domain_permissions_policy.dp",
            "aws_codeartifact_domain_permissions_policy", "dp",

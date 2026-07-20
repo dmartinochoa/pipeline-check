@@ -786,3 +786,16 @@ class TestBK017LogLeak:
         """
         f = run_check(cfg, "BK-017")
         assert f.passed
+
+    def test_fails_on_set_x_then_secret_in_later_command_item(self):
+        # Buildkite concatenates a ``commands:`` list into one script, so
+        # ``set -x`` in one item traces a secret var used in a later item
+        # (Part-C FN: items were scanned in isolation).
+        cfg = """
+        steps:
+          - commands:
+              - set -x
+              - 'curl -H "Authorization: Bearer $DEPLOY_TOKEN" https://x'
+        """
+        f = run_check(cfg, "BK-017")
+        assert not f.passed

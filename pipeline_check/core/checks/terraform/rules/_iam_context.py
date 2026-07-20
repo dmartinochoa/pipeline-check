@@ -45,6 +45,19 @@ def _role_is_cicd(values: dict[str, Any]) -> bool:
     return False
 
 
+def _strip_index(address: str) -> str:
+    i = address.find("[")
+    return address[:i] if i != -1 else address
+
+
+def _resource_addr_from_ref(ref: str, expected_type: str) -> str:
+    """``aws_iam_policy.ci.arn`` -> ``aws_iam_policy.ci`` (type-gated)."""
+    parts = ref.split(".")
+    if len(parts) >= 2 and parts[0] == expected_type:
+        return f"{parts[0]}.{parts[1]}"
+    return ""
+
+
 def cicd_role_view(
     ctx: TerraformContext,
 ) -> list[tuple[TerraformResource, list[str], list[tuple[str, dict[str, Any]]]]]:
@@ -55,6 +68,12 @@ def cicd_role_view(
     records, inline blocks on the role itself, and customer-managed
     ``aws_iam_policy`` records joined through
     ``aws_iam_role_policy_attachment``.
+
+    The attachment→policy join prefers literal ARNs (resolved plans), and
+    falls back to the plan ``configuration`` reference graph when the ARN
+    is computed at apply time (a plan that CREATES the policy — the
+    primary shift-left scenario, where both the attachment's ``policy_arn``
+    and the policy's ``arn`` are unknown and absent from planned_values).
     """
     cicd_roles: list[TerraformResource] = [
         r for r in ctx.resources("aws_iam_role") if _role_is_cicd(r.values)
@@ -62,12 +81,55 @@ def cicd_role_view(
     if not cicd_roles:
         return []
 
+    # Customer-managed policies, indexed by literal ARN (plan mode) and by
+    # resource address (for the configuration-reference fallback).
+    customer_policies_by_arn: dict[str, dict[str, Any]] = {}
+    customer_policies_by_addr: dict[str, dict[str, Any]] = {}
+    for r in ctx.resources("aws_iam_policy"):
+        doc = _parse(r.values.get("policy"))
+        arn = r.values.get("arn")
+        if isinstance(arn, str) and arn:
+            customer_policies_by_arn[arn] = doc
+        customer_policies_by_addr[_strip_index(r.address)] = doc
+
+    # Map every cicd role's resource address to the key the loop below
+    # uses (``name`` or resource-local name), so a config-ref join on an
+    # unknown ``role`` attribute lands on the right role.
+    role_name_by_addr: dict[str, str] = {}
+    for r in cicd_roles:
+        role_name_by_addr[_strip_index(r.address)] = str(
+            r.values.get("name") or r.name
+        )
+
     attachments: dict[str, list[str]] = {}
-    for r in ctx.resources("aws_iam_role_policy_attachment"):
-        role = r.values.get("role", "")
-        arn = r.values.get("policy_arn", "")
-        if role and arn:
-            attachments.setdefault(role, []).append(arn)
+    config_docs: dict[str, list[tuple[str, dict[str, Any]]]] = {}
+    for att in ctx.resources("aws_iam_role_policy_attachment"):
+        role_v = att.values.get("role")
+        # Resolve which role this attachment targets.
+        if isinstance(role_v, str) and role_v:
+            role_name = role_v
+        else:
+            role_name = ""
+            for ref in ctx.config_references(att.address, "role"):
+                addr = _resource_addr_from_ref(ref, "aws_iam_role")
+                if addr in role_name_by_addr:
+                    role_name = role_name_by_addr[addr]
+                    break
+            if not role_name:
+                continue
+        arn_v = att.values.get("policy_arn")
+        if isinstance(arn_v, str) and arn_v:
+            attachments.setdefault(role_name, []).append(arn_v)
+        else:
+            # Unknown ARN (create plan): join to the referenced policy
+            # through the configuration graph.
+            for ref in ctx.config_references(att.address, "policy_arn"):
+                addr = _resource_addr_from_ref(ref, "aws_iam_policy")
+                if addr in customer_policies_by_addr:
+                    config_docs.setdefault(role_name, []).append(
+                        (addr, customer_policies_by_addr[addr])
+                    )
+                    break
 
     inline_separate: dict[str, list[tuple[str, dict[str, Any]]]] = {}
     for r in ctx.resources("aws_iam_role_policy"):
@@ -78,18 +140,11 @@ def cicd_role_view(
         doc = _parse(r.values.get("policy"))
         inline_separate.setdefault(role, []).append((pname, doc))
 
-    customer_policies_by_arn: dict[str, dict[str, Any]] = {}
-    for r in ctx.resources("aws_iam_policy"):
-        doc = _parse(r.values.get("policy"))
-        arn = r.values.get("arn")
-        if arn:
-            customer_policies_by_arn[arn] = doc
-
     out: list[
         tuple[TerraformResource, list[str], list[tuple[str, dict[str, Any]]]]
     ] = []
     for r in cicd_roles:
-        role_name = r.values.get("name") or r.name
+        role_name = str(r.values.get("name") or r.name)
         managed_arns: list[str] = list(r.values.get("managed_policy_arns") or [])
         managed_arns.extend(attachments.get(role_name, []))
         policy_docs: list[tuple[str, dict[str, Any]]] = []
@@ -101,5 +156,6 @@ def cicd_role_view(
         for arn in managed_arns:
             if arn in customer_policies_by_arn:
                 policy_docs.append((arn, customer_policies_by_arn[arn]))
+        policy_docs.extend(config_docs.get(role_name, []))
         out.append((r, managed_arns, policy_docs))
     return out

@@ -993,15 +993,14 @@ def active_rulesets_targeting_default(
                             exists but doesn't protect ``main``.
 
     Non-active rulesets (``evaluate`` / ``disabled``) are filtered
-    out — they're SCM-029's surface. Push-targeted rulesets are also
-    filtered out: they fire on every push but use a different rule
-    shape (file size / path / extension filters) that can't carry
-    the SCM-032..040 rule types, so classifying them as scoped-away
-    would emit a confusing "doesn't target the default branch"
-    failure for a ruleset that does. Tag-targeted rulesets stay in
-    scope of the branch-rule checks only when their ref_name filter
-    matches the default branch, which it generally won't; they
-    surface as scoped_away. Returns three empty lists when
+    out — they're SCM-029's surface. Push- and tag-targeted rulesets
+    are also filtered out: they use a different rule shape (push: file
+    size / path / extension; tag: release-tag protection) that can't
+    carry the SCM-032..042 branch rule types and never target the
+    default branch, so classifying them as scoped-away would emit a
+    confusing "doesn't target the default branch" failure for every
+    branch rule (adding a release-tag ruleset would flip all eleven
+    from pass to fail). Returns three empty lists when
     ``snapshot.rulesets`` is ``None``.
     """
     if snapshot.rulesets is None:
@@ -1016,7 +1015,18 @@ def active_rulesets_targeting_default(
         if rs.get("_detail_unavailable") is True:
             unavailable.append(rs)
             continue
-        if rs.get("target") == "push":
+        if rs.get("target") in ("push", "tag"):
+            # Push-targeted rulesets fire on every push but use a
+            # different rule shape (file size / path / extension) that
+            # can't carry the SCM-032..042 branch rule types. Tag-
+            # targeted rulesets protect release tags, again a different
+            # surface. Neither ever targets the default branch, so
+            # letting them fall into ``scoped_away`` meant a repo whose
+            # only ruleset is a release-tag ruleset reported 11
+            # simultaneous "doesn't target the default branch" failures
+            # even when legacy branch protection fully covered main.
+            # Drop both so they neither satisfy nor fail the branch
+            # rules.
             continue
         if ruleset_targets_default_branch(rs, default):
             targeting.append(rs)

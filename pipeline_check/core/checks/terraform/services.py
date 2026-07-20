@@ -16,7 +16,7 @@ from .._iam_policy import (
     principal_is_only_account_root,
     public_principal,
 )
-from .._patterns import SECRET_NAME_RE, SECRET_VALUE_RE
+from .._patterns import SECRET_NAME_RE, SECRET_VALUE_RE, arn_account_id
 from ..base import Finding, Severity
 from .base import TerraformBaseCheck, TerraformContext
 
@@ -50,6 +50,17 @@ class ServiceChecks(TerraformBaseCheck):
 # CodeArtifact
 # ---------------------------------------------------------------------------
 
+def _external_connection_name(conn: object) -> str:
+    """Name of a CodeArtifact external connection, block or string form."""
+    if isinstance(conn, str):
+        return conn
+    if isinstance(conn, dict):
+        name = conn.get("external_connection_name")
+        if isinstance(name, str):
+            return name
+    return ""
+
+
 def _codeartifact(ctx: TerraformContext) -> list[Finding]:
     out: list[Finding] = []
     for d in ctx.resources("aws_codeartifact_domain"):
@@ -68,8 +79,19 @@ def _codeartifact(ctx: TerraformContext) -> list[Finding]:
             passed=passed,
         ))
     for r in ctx.resources("aws_codeartifact_repository"):
-        conns = r.values.get("external_connections") or []
-        public = [c for c in conns if isinstance(c, str) and c.startswith("public:")]
+        raw_conns = r.values.get("external_connections")
+        # ``external_connections`` is a nested block in the AWS provider
+        # schema, so plan JSON and HCL both surface a list of dicts
+        # (``{"external_connection_name": "public:npmjs"}``), not the
+        # string list an older fixture assumed. Accept both shapes.
+        if isinstance(raw_conns, dict):
+            raw_conns = [raw_conns]
+        elif not isinstance(raw_conns, list):
+            raw_conns = []
+        public = [
+            name for c in raw_conns
+            if (name := _external_connection_name(c)).startswith("public:")
+        ]
         out.append(Finding(
             check_id="CA-002",
             title="CodeArtifact repository has a public external connection",
@@ -163,38 +185,86 @@ def _codecommit(ctx: TerraformContext) -> list[Finding]:
             recommendation="Set kms_key_id to a CMK ARN.",
             passed=passed,
         ))
-    # CCM-003 cross-account triggers, static check compares trigger dest
-    # account against every aws_codecommit_trigger in the plan.
+    # CCM-003 cross-account triggers. A literal destination_arn is only a
+    # finding when its account differs from the account the plan runs in.
+    # The rule title is "different account", so a same-account literal ARN
+    # (the common case) must not fire.
+    self_accounts = _plan_self_accounts(ctx)
     for t in ctx.resources("aws_codecommit_trigger"):
         triggers = t.values.get("trigger") or []
-        offenders = []
+        cross_account: list[str] = []
+        uncorrelated: list[str] = []
         for trig in triggers:
             dest = (trig.get("destination_arn") or "").strip()
-            # If the ARN includes an account id that appears elsewhere in the
-            # plan's declared resources with a matching type, treat as same-account.
-            # Without an AWS account context in the plan, we flag any trigger
-            # whose destination is not a reference/interpolation, a literal
-            # ARN is suspicious and worth a manual review.
-            if dest and dest.count(":") >= 4 and "${" not in dest:
-                offenders.append(dest)
+            if not (dest and dest.count(":") >= 4 and "${" not in dest):
+                # A reference / interpolation, not a literal ARN.
+                continue
+            acct = arn_account_id(dest)
+            if not acct:
+                continue
+            if not self_accounts:
+                uncorrelated.append(dest)
+            elif acct not in self_accounts:
+                cross_account.append(dest)
+        if cross_account:
+            desc = (
+                f"Trigger destination_arn(s) in another account "
+                f"({cross_account}); the plan operates in "
+                f"{sorted(self_accounts)}."
+            )
+            passed = False
+        elif uncorrelated:
+            desc = (
+                f"Literal destination_arn(s) ({uncorrelated}) but the "
+                "plan has no aws_caller_identity or in-account ARN to "
+                "resolve the home account against, so cross-account "
+                "membership can't be proven from the plan. Re-scan with "
+                "an aws_caller_identity data source to evaluate; not "
+                "failing on an uncorrelatable literal."
+            )
+            passed = True
+        else:
+            desc = (
+                "All trigger destinations are plan-resource references "
+                "or resolve to the plan's own account."
+            )
+            passed = True
         out.append(Finding(
             check_id="CCM-003",
             title="CodeCommit trigger targets SNS/Lambda in a different account",
             severity=Severity.MEDIUM,
             resource=t.address,
-            description=(
-                f"Literal destination_arn(s) ({offenders}), verify these "
-                "stay within the repository's account."
-                if offenders else
-                "All destinations are plan-resource references."
-            ),
+            description=desc,
             recommendation=(
                 "Reference trigger destinations via Terraform resource "
                 "attributes instead of literal cross-account ARNs."
             ),
-            passed=not offenders,
+            passed=passed,
         ))
     return out
+
+
+def _plan_self_accounts(ctx: TerraformContext) -> set[str]:
+    """Account IDs the plan demonstrably operates in.
+
+    Sourced from ``aws_caller_identity`` data sources (``account_id`` /
+    ``id``) and from any literal ARN carried on a managed resource's
+    ``arn`` attribute. A trigger destination whose account is in this set
+    is same-account; one whose account is outside it is cross-account.
+    """
+    accounts: set[str] = set()
+    for d in ctx.data_sources("aws_caller_identity"):
+        for key in ("account_id", "id"):
+            val = d.values.get(key)
+            if isinstance(val, str) and val.isdigit() and len(val) == 12:
+                accounts.add(val)
+    for r in ctx.resources():
+        arn = r.values.get("arn")
+        if isinstance(arn, str):
+            acct = arn_account_id(arn)
+            if acct:
+                accounts.add(acct)
+    return accounts
 
 
 # ---------------------------------------------------------------------------

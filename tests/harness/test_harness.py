@@ -237,6 +237,35 @@ class TestHarness004LiteralSecret:
                if not f.passed]
         assert out == []
 
+    def test_flags_literal_secret_in_step_env_variables(self, tmp_path):
+        # A token pasted into a step's ``spec.envVariables`` (the most
+        # common placement) must fire — no pipeline/stage variable
+        # needed. Regression for the A6 false negative.
+        text = f"""\
+pipeline:
+  identifier: build
+  stages:
+    - stage:
+        identifier: ci
+        type: CI
+        spec:
+          execution:
+            steps:
+              - step:
+                  type: Run
+                  identifier: publish
+                  spec:
+                    image: node@sha256:{_DB}
+                    envVariables:
+                      GH_TOKEN: {_LEAKED_TOKEN}
+                    command: npm publish
+"""
+        out = [f for f in _for(_findings(_ctx(tmp_path, text)), "HARNESS-004")
+               if not f.passed]
+        assert len(out) == 1
+        assert "ci.publish.env.GH_TOKEN" in out[0].description
+        assert _LEAKED_TOKEN not in out[0].description
+
 
 _PIPE = """\
 pipeline:
@@ -603,6 +632,36 @@ class TestHarness014ShellEval:
         assert out and all(f.passed for f in out)
 
 
+# A pipeline whose only build step is Harness's native CIE build step
+# (``type: BuildAndPushDockerRegistry``) with no ``docker build`` /
+# ``docker push`` command text, plus an optional STO scanner step.
+_NATIVE_BUILD = """\
+pipeline:
+  identifier: build
+  stages:
+    - stage:
+        identifier: ci
+        type: CI
+        spec:
+          execution:
+            steps:
+              - step:
+                  type: BuildAndPushDockerRegistry
+                  identifier: build
+                  spec:
+                    repo: my/app
+                    tags: [latest]
+"""
+
+_NATIVE_BUILD_WITH_GRYPE = _NATIVE_BUILD + """\
+              - step:
+                  type: Grype
+                  identifier: scan
+                  spec:
+                    mode: orchestration
+"""
+
+
 class TestHarness015to018SupplyChainGates:
     def _build(self, *extra: str) -> str:
         cmd = "docker build -t app . && docker push app"
@@ -613,6 +672,25 @@ class TestHarness015to018SupplyChainGates:
     def _failing(self, tmp_path, text, rule_id):
         return [f for f in _for(_findings(_ctx(tmp_path, text)), rule_id)
                 if not f.passed]
+
+    def test_sbom_fires_on_native_build_step(self, tmp_path):
+        # ``BuildAndPushDockerRegistry`` produces an image; a build with
+        # no SBOM must fire (B4 FN: native build step was invisible to
+        # the artifact heuristic).
+        assert self._failing(tmp_path, _NATIVE_BUILD, "HARNESS-016")
+
+    def test_provenance_fires_on_native_build_step(self, tmp_path):
+        assert self._failing(tmp_path, _NATIVE_BUILD, "HARNESS-017")
+
+    def test_vuln_fires_on_native_build_without_scanner(self, tmp_path):
+        assert self._failing(tmp_path, _NATIVE_BUILD, "HARNESS-018")
+
+    def test_vuln_passes_with_native_sto_scanner_step(self, tmp_path):
+        # A native STO ``type: Grype`` step names the scanner as a bare
+        # scalar (no command text); it must count as scanning (B4 FN:
+        # only AquaTrivy was recognized before).
+        assert self._failing(tmp_path, _NATIVE_BUILD_WITH_GRYPE,
+                             "HARNESS-018") == []
 
     def test_signing_fails_on_unsigned_build(self, tmp_path):
         out = self._failing(tmp_path, self._build(), "HARNESS-015")

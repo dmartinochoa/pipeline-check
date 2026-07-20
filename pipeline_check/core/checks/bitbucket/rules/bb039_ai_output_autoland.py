@@ -25,7 +25,7 @@ from ..._primitives.agentic_cli import invokes_agentic_cli
 from ..._yaml_lines import line_of as _line_of
 from ...base import Finding, Location, Severity
 from ...rule import Rule
-from ..base import iter_steps, step_scripts
+from ..base import iter_steps, step_scripts_all
 
 RULE = Rule(
     id="BB-039",
@@ -83,7 +83,7 @@ def check(path: str, doc: dict[str, Any]) -> Finding:
     for loc, step in iter_steps(doc):
         agent: str | None = None
         autoland: str | None = None
-        for line in step_scripts(step):
+        for line in step_scripts_all(step):
             if agent is None:
                 agent = invokes_agentic_cli(line)
             if autoland is None:

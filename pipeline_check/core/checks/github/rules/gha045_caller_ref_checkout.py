@@ -118,9 +118,14 @@ RULE = Rule(
 )
 
 
-# ``${{ inputs.<name> }}`` reference inside a string value. The
-# input-name capture is unused, we only need to know one is present.
-_INPUTS_REF_RE = re.compile(r"\$\{\{\s*inputs\.[A-Za-z_][A-Za-z0-9_]*\s*\}\}")
+# ``${{ inputs.<name> }}`` reference inside a string value, plus the
+# equally-valid ``workflow_dispatch`` spelling
+# ``${{ github.event.inputs.<name> }}``. The input-name capture is
+# unused, we only need to know one is present. ``\b`` before ``inputs``
+# keeps ``xinputs.y`` from matching.
+_INPUTS_REF_RE = re.compile(
+    r"\$\{\{\s*(?:github\.event\.)?inputs\.[A-Za-z_][A-Za-z0-9_]*\s*\}\}"
+)
 
 # A workflow accepts an input if it has ``workflow_dispatch`` or
 # ``workflow_call`` triggers. Bare-key ``on:`` is normalized by

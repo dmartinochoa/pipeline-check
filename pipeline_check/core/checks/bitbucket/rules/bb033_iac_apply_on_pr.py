@@ -6,7 +6,7 @@ from typing import Any
 from ..._primitives.deploy_names import IAC_APPLY_RE
 from ...base import Finding, Severity
 from ...rule import Rule
-from ..base import iter_steps, step_scripts
+from ..base import iter_steps, step_scripts_all
 
 RULE = Rule(
     id="BB-033",
@@ -75,23 +75,12 @@ RULE = Rule(
 )
 
 
-def _step_scripts_all(step: dict[str, Any]) -> list[str]:
-    """Every `script:` and `after-script:` line in *step*."""
-    out = step_scripts(step)
-    after = step.get("after-script")
-    if isinstance(after, list):
-        out += [s for s in after if isinstance(s, str)]
-    elif isinstance(after, str):
-        out.append(after)
-    return out
-
-
 def check(path: str, doc: dict[str, Any]) -> Finding:
     offenders: list[str] = []
     for location, step in iter_steps(doc):
         if not location.startswith("pull-requests"):
             continue
-        if any(IAC_APPLY_RE.search(line) for line in _step_scripts_all(step)):
+        if any(IAC_APPLY_RE.search(line) for line in step_scripts_all(step)):
             offenders.append(location)
     passed = not offenders
     desc = (

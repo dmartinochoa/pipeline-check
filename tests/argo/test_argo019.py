@@ -40,3 +40,21 @@ class TestARGO019ShellEval:
     def test_passes_on_direct_command(self):
         f = run_check(_wf('./scripts/dispatch.sh "$BUILD_CMD"'), "ARGO-019")
         assert f.passed
+
+    def test_fails_on_eval_in_container_command(self):
+        # ``eval`` placed directly in ``command`` was never scanned
+        # (Part-C FN: only source + args were read).
+        wf = (
+            "apiVersion: argoproj.io/v1alpha1\n"
+            "kind: Workflow\n"
+            "metadata: {name: w}\n"
+            "spec:\n"
+            "  entrypoint: main\n"
+            "  templates:\n"
+            "    - name: main\n"
+            "      container:\n"
+            "        image: alpine:3\n"
+            '        command: ["sh", "-c", "eval \\"$BUILD_CMD\\""]\n'
+        )
+        f = run_check(wf, "ARGO-019")
+        assert not f.passed

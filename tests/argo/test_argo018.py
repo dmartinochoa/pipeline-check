@@ -40,3 +40,21 @@ class TestARGO018LogLeak:
     def test_passes_on_safe_existence_check(self):
         f = run_check(_wf('[ -n "$TOKEN" ] && echo set || echo unset'), "ARGO-018")
         assert f.passed
+
+    def test_fails_on_leak_in_container_command(self):
+        # ``command: ["sh","-c","<script>"]`` puts the shell body in
+        # ``command``, which was never scanned (Part-C FN).
+        wf = (
+            "apiVersion: argoproj.io/v1alpha1\n"
+            "kind: Workflow\n"
+            "metadata: {name: w}\n"
+            "spec:\n"
+            "  entrypoint: main\n"
+            "  templates:\n"
+            "    - name: main\n"
+            "      container:\n"
+            "        image: alpine:3\n"
+            '        command: ["sh", "-c", "echo token is $AWS_SECRET_ACCESS_KEY"]\n'
+        )
+        f = run_check(wf, "ARGO-018")
+        assert not f.passed

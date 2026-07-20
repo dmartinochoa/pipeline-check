@@ -105,7 +105,11 @@ def _trigger_includes_pr_without_offset(trigger: Any) -> bool:
         return False
     event = trigger.get("event")
     if event is None:
-        return False
+        # No ``event`` key (e.g. a ``branch``-only trigger, or ``{}``).
+        # Drone's default event scope is *every* event, so PRs — including
+        # fork PRs targeting the branch filter — still run the pipeline.
+        # This is the same exposure as a missing ``trigger:`` block.
+        return True
     # event can be a scalar string, a list, or a dict with
     # ``include`` / ``exclude`` keys.
     include: list[str] = []
@@ -155,9 +159,9 @@ def check(pipeline: Pipeline) -> Finding:
             check_id=RULE.id, title=RULE.title, severity=RULE.severity,
             resource=pipeline.path,
             description=(
-                f"Pipeline {name!r} trigger.event includes "
-                f"pull_request without an offsetting exclude; "
-                f"fork PRs run the pipeline."
+                f"Pipeline {name!r} trigger has no event filter (or its "
+                f"``event`` include covers pull_request without an "
+                f"offsetting exclude); fork PRs run the pipeline."
             ),
             recommendation=RULE.recommendation, passed=False,
         )

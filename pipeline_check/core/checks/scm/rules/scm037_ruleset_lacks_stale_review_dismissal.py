@@ -160,17 +160,20 @@ def check(snapshot: SCMRepoSnapshot) -> Finding:
             ),
             recommendation=RULE.recommendation, passed=True,
         )
-    offenders: list[str] = []
-    for rs in targeting:
-        result = _dismisses_stale_reviews(rs.get("rules"))
-        if result is None:
-            # No ``pull_request`` rule on this ruleset — SCM-032
-            # surface. Skip; we only flag the gap when the rule
-            # exists and is misconfigured.
-            continue
-        if result:
-            continue
-        offenders.append(ruleset_label(rs))
+    # GitHub aggregates rules across every targeting ruleset, so stale
+    # -review dismissal is enforced when ANY targeting ruleset's
+    # ``pull_request`` rule sets it. Rulesets without a ``pull_request``
+    # rule at all (result is None) are SCM-032's surface, not ours.
+    pr_rulesets = [
+        rs for rs in targeting
+        if _dismisses_stale_reviews(rs.get("rules")) is not None
+    ]
+    covered = any(
+        _dismisses_stale_reviews(rs.get("rules")) for rs in pr_rulesets
+    )
+    offenders: list[str] = (
+        [] if covered else [ruleset_label(rs) for rs in pr_rulesets]
+    )
     unavailable = [ruleset_label(rs) for rs in unavailable_rs]
     passed = not offenders
     if passed and unavailable:

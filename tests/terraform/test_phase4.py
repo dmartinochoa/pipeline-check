@@ -75,6 +75,15 @@ def test_eb002_specific_target_passes():
     assert not any(x.check_id == "EB-002" for x in _run([t]))
 
 
+def test_eb002_cloudwatch_logs_target_passes():
+    # Log-group target ARNs end in the mandatory ``:*`` stream selector;
+    # that isn't a fan-out wildcard and must not trip EB-002.
+    t = _r("aws_cloudwatch_event_target.t", "aws_cloudwatch_event_target", "t", {
+        "arn": "arn:aws:logs:us-east-1:1:log-group:/aws/events/pipeline:*",
+    })
+    assert not any(x.check_id == "EB-002" for x in _run([t]))
+
+
 # ──────────────────────────────────────────────────────────────────────
 # CW-001 — alarm on CodeBuild FailedBuilds
 # ──────────────────────────────────────────────────────────────────────

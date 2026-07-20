@@ -332,6 +332,32 @@ class TestBitbucketHydration:
         findings = _findings_by_id(ctx)
         assert findings["SCM-001"].resource == "bitbucket:w/r"
 
+    def test_push_kind_restriction_satisfies_scm055(self):
+        # A ``push``-kind ("Prevent push" / Write-access) restriction is
+        # Bitbucket's primary write-side control. SCM-055 must not flag a
+        # branch guarded only by it as push-unrestricted (regression for
+        # the audit FP where the push kind had no normalized slot).
+        f = FakeFetcher({
+            "repositories/acme/widget": {
+                "mainbranch": {"name": "main"},
+                "size": 1024, "is_private": True,
+            },
+            "repositories/acme/widget/branch-restrictions": {
+                "values": [
+                    {"kind": "push", "pattern": "main",
+                     "groups": [{"slug": "release"}]},
+                ],
+            },
+        })
+        ctx = bitbucket_context_for_repo("acme", "widget", f)
+        snap = ctx.repos[0]
+        proto = snap.default_branch_protection
+        assert isinstance(proto, dict)
+        assert proto["_bitbucket_restriction_kinds"] == ["push"]
+        findings = _findings_by_id(ctx)
+        assert findings["SCM-055"].passed
+        assert "push" in findings["SCM-055"].description
+
     def test_meta_fetch_failure_records_warning(self):
         f = FakeFetcher({})
         ctx = bitbucket_context_for_repo("w", "r", f)

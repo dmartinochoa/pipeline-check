@@ -39,12 +39,12 @@ Click a control ID to jump to the per-control section with the full check list. 
 | [`PR.PS-02`](#ctrl-pr-ps-02) | Software is maintained, replaced, and removed commensurate with risk | 54 | 8C · 14H · 21M · 11L |
 | [`PR.PS-04`](#ctrl-pr-ps-04) | Log records are generated and made available for continuous monitoring | 41 | 5H · 15M · 5L · 16I |
 | [`PR.PS-05`](#ctrl-pr-ps-05) | Installation and execution of unauthorized software are prevented | 117 | 23C · 80H · 9M · 5L |
-| [`PR.PS-06`](#ctrl-pr-ps-06) | Secure software development practices are integrated, and their performance is monitored throughout the SDLC | 98 | 2C · 29H · 58M · 9L |
+| [`PR.PS-06`](#ctrl-pr-ps-06) | Secure software development practices are integrated, and their performance is monitored throughout the SDLC | 98 | 2C · 29H · 57M · 10L |
 | [`PR.IR-01`](#ctrl-pr-ir-01) | Networks and environments are protected from unauthorized logical access and usage | 86 | 14C · 46H · 24M · 2L |
 | [`PR.IR-03`](#ctrl-pr-ir-03) | Mechanisms are implemented to achieve resilience requirements in normal and adverse situations | 13 | 3H · 8M · 2L |
 | [`DE.CM-01`](#ctrl-de-cm-01) | Networks and network services are monitored to find potentially adverse events | 5 | 4M · 1L |
 | [`DE.CM-06`](#ctrl-de-cm-06) | External service provider activities and services are monitored | 6 | 1C · 3H · 2M |
-| [`DE.CM-09`](#ctrl-de-cm-09) | Computing hardware and software, runtime environments, and their data are monitored | 54 | 9H · 23M · 6L · 16I |
+| [`DE.CM-09`](#ctrl-de-cm-09) | Computing hardware and software, runtime environments, and their data are monitored | 54 | 9H · 22M · 7L · 16I |
 | [`DE.AE-03`](#ctrl-de-ae-03) | Information is correlated from multiple sources | 5 | 1H · 2M · 2L |
 | [`RS.MA-01`](#ctrl-rs-ma-01) | The incident response plan is executed once an incident is declared | 6 | 3M · 3L |
 | [`RC.RP-01`](#ctrl-rc-rp-01) | The recovery portion of the incident response plan is executed once initiated | 3 | 1H · 2M |
@@ -1280,7 +1280,7 @@ pipeline_check --pipeline aws --standard nist_csf_2 --standard owasp_cicd_top_10
 | [`SCM-043`](../providers/scm_github.md#scm-043) | Tag-targeted ruleset doesn't require signed commits | <span class="pg-sev pg-sev--medium">MEDIUM</span> | [SCM](../providers/scm_github.md) |  |
 | [`SCM-044`](../providers/scm_github.md#scm-044) | Default-branch signed-commits requirement bypassed for admins | <span class="pg-sev pg-sev--medium">MEDIUM</span> | [SCM](../providers/scm_github.md) |  |
 | [`SCM-045`](../providers/scm_github.md#scm-045) | Default code scanning uses the limited query suite | <span class="pg-sev pg-sev--low">LOW</span> | [SCM](../providers/scm_github.md) |  |
-| [`SCM-046`](../providers/scm_github.md#scm-046) | Default code scanning is configured but paused | <span class="pg-sev pg-sev--medium">MEDIUM</span> | [SCM](../providers/scm_github.md) |  |
+| [`SCM-046`](../providers/scm_github.md#scm-046) | Default code scanning has no periodic scan schedule | <span class="pg-sev pg-sev--low">LOW</span> | [SCM](../providers/scm_github.md) |  |
 | [`SCM-047`](../providers/scm_github.md#scm-047) | Repo language excluded from default code-scanning coverage | <span class="pg-sev pg-sev--medium">MEDIUM</span> | [SCM](../providers/scm_github.md) |  |
 | [`SIGN-001`](../providers/aws.md#sign-001) | No AWS Signer profile defined for Lambda deploys | <span class="pg-sev pg-sev--medium">MEDIUM</span> | [AWS](../providers/aws.md) |  |
 | [`SIGN-002`](../providers/aws.md#sign-002) | AWS Signer profile is revoked or inactive | <span class="pg-sev pg-sev--high">HIGH</span> | [AWS](../providers/aws.md) |  |
@@ -1481,7 +1481,7 @@ pipeline_check --pipeline aws --standard nist_csf_2 --standard owasp_cicd_top_10
 | [`SCM-015`](../providers/scm_github.md#scm-015) | Secret scanning push protection is not enabled | <span class="pg-sev pg-sev--high">HIGH</span> | [SCM](../providers/scm_github.md) |  |
 | [`SCM-040`](../providers/scm_github.md#scm-040) | Active ruleset doesn't gate on code scanning results | <span class="pg-sev pg-sev--low">LOW</span> | [SCM](../providers/scm_github.md) |  |
 | [`SCM-045`](../providers/scm_github.md#scm-045) | Default code scanning uses the limited query suite | <span class="pg-sev pg-sev--low">LOW</span> | [SCM](../providers/scm_github.md) |  |
-| [`SCM-046`](../providers/scm_github.md#scm-046) | Default code scanning is configured but paused | <span class="pg-sev pg-sev--medium">MEDIUM</span> | [SCM](../providers/scm_github.md) |  |
+| [`SCM-046`](../providers/scm_github.md#scm-046) | Default code scanning has no periodic scan schedule | <span class="pg-sev pg-sev--low">LOW</span> | [SCM](../providers/scm_github.md) |  |
 | [`SCM-047`](../providers/scm_github.md#scm-047) | Repo language excluded from default code-scanning coverage | <span class="pg-sev pg-sev--medium">MEDIUM</span> | [SCM](../providers/scm_github.md) |  |
 | [`SM-000`](../providers/aws.md) | Secrets Manager API access failed | <span class="pg-sev pg-sev--info">INFO</span> | [AWS](../providers/aws.md) |  |
 | [`SSM-000`](../providers/aws.md) | SSM Parameter Store API access failed | <span class="pg-sev pg-sev--info">INFO</span> | [AWS](../providers/aws.md) |  |

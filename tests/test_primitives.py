@@ -799,23 +799,29 @@ class TestDeployNames:
         "test",
         "lint",
         "compile",
-        # Words that *contain* deploy as a substring but on a word
-        # boundary they don't — \b in the regex prevents this.
-        "redeployer",  # \bdeploy\b doesn't match because of preceding 're'
+        # Words that *contain* a keyword but are letter-adjacent on one
+        # side, so the not-a-letter lookarounds prevent a match.
+        "redeployer",   # 'deploy' preceded by 're'
+        "deployment",   # 'deploy' followed by 'ment'
+        "builddeploy",  # 'deploy' preceded by 'build'
     ])
     def test_unrelated_names_dont_match(self, name):
         assert deploy_names.DEPLOY_RE.search(name) is None
 
-    def test_underscore_separated_names_do_not_match(self):
-        """Python's ``\\b`` treats ``_`` as a word character, so
-        ``deploy_to_prod`` does NOT match the primitive's regex even
-        though autofix.py's looser ``_DEPLOY_NAME_RE`` does.
-
-        Callers that want to catch underscore-suffixed deploy names
-        must either split on ``_`` first or use their own regex —
-        the primitive prefers the false-negative over the false-
-        positive (``builddeploy`` would otherwise hit too)."""
-        assert deploy_names.DEPLOY_RE.search("deploy_to_prod") is None
+    @pytest.mark.parametrize("name", [
+        "deploy_to_prod",
+        "deploy_prod",
+        "prod_deploy",
+        "release_prod",
+        "publish_npm",
+    ])
+    def test_underscore_separated_names_match(self, name):
+        """``_`` is a word char, so the old ``\\b`` regex missed the
+        dominant CI naming form. The lookaround form treats ``_`` /
+        ``-`` / whitespace as delimiters and matches these, while
+        letter-adjacent forms (``deployment``, ``builddeploy``) stay
+        unmatched (covered by ``test_unrelated_names_dont_match``)."""
+        assert deploy_names.DEPLOY_RE.search(name) is not None
 
     @pytest.mark.parametrize("cmd", [
         "kubectl apply -f k8s/",

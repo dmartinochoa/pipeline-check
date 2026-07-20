@@ -31,7 +31,11 @@ RULE = Rule(
         "``chown user /etc`` is just as harmful, the recursive "
         "flag matters for the size of the blast radius, not for "
         "whether it's wrong. Application paths under ``/opt``, "
-        "``/srv``, ``/var/lib/<app>``, and ``/app`` are not flagged."
+        "``/srv``, ``/var/lib/<app>``, and ``/app`` are not flagged, "
+        "nor are the application source/data subtrees ``/usr/src`` "
+        "(the ``node`` image's ``/usr/src/app`` WORKDIR) and "
+        "``/usr/share`` (web/data roots); those hold no trusted "
+        "binaries on ``PATH``."
     ),
     exploit_example=(
         "# Vulnerable: the build hands the runtime user ownership\n"
@@ -65,6 +69,20 @@ _SYSTEM_PREFIXES: tuple[str, ...] = (
     "/root",
 )
 
+# Subtrees that live *under* a system prefix but hold application
+# source / data rather than trusted binaries on ``PATH``. The canonical
+# case is ``/usr/src/app`` (the WORKDIR the official ``node`` image
+# documents) and ``/usr/share/<app>`` web/data roots; ``chown``-ing
+# those to the runtime user is the normal, safe pattern. They are
+# checked before ``_SYSTEM_PREFIXES`` so the executable/library dirs
+# (``/usr/bin``, ``/usr/local/bin``, ``/usr/lib`` ...) still fire.
+_APP_SUBTREE_PREFIXES: tuple[str, ...] = (
+    "/usr/src",
+    "/usr/share",
+    "/usr/local/src",
+    "/usr/local/share",
+)
+
 # Match ``chown`` or ``chgrp`` followed by optional flags, an
 # owner-spec, and the first path argument. Owner-spec is a short
 # token without spaces (``user``, ``user:group``, numeric ``1001``,
@@ -78,11 +96,19 @@ _CHOWN_RE = re.compile(
 )
 
 
-def _path_under_system(path: str) -> bool:
-    for prefix in _SYSTEM_PREFIXES:
+def _path_under(path: str, prefixes: tuple[str, ...]) -> bool:
+    for prefix in prefixes:
         if path == prefix or path.startswith(prefix + "/"):
             return True
     return False
+
+
+def _path_under_system(path: str) -> bool:
+    if _path_under(path, _APP_SUBTREE_PREFIXES):
+        # An application source/data subtree that merely sits under a
+        # system prefix (``/usr/src/app``, ``/usr/share/nginx/html``).
+        return False
+    return _path_under(path, _SYSTEM_PREFIXES)
 
 
 def check(df: Dockerfile) -> Finding:

@@ -362,10 +362,48 @@ class TestCCM002KmsIntrinsic:
 
 
 class TestCCM003LiteralArn:
-    """CCM-003: literal DestinationArn triggers flag; intrinsic refs pass."""
+    """CCM-003: a literal DestinationArn fires only when it is provably
+    cross-account; same-account and uncorrelatable literals pass."""
 
-    def test_literal_arn_fires(self):
-        # A literal SNS ARN in DestinationArn must be flagged.
+    def test_cross_account_literal_arn_fires(self):
+        # The template's own account (via a parameter default) is
+        # 111111111111; the trigger destination lives in 999988887777.
+        ctx = make_context(
+            {
+                "Repo": r("Repo", "AWS::CodeCommit::Repository", {
+                    "RepositoryName": "my-repo",
+                    "Triggers": [{"Name": "t1",
+                                  "DestinationArn": "arn:aws:sns:us-east-1:999988887777:repo-events",
+                                  "Events": ["all"]}],
+                }),
+            },
+            Parameters={"HomeAccount": {"Default": "111111111111"}},
+        )
+        f = _find(ctx, "CCM-003")
+        assert f and f[0].passed is False
+
+    def test_same_account_literal_arn_passes(self):
+        # A literal ARN in the *same* account as the template's sibling
+        # ARN (an IAM role ARN in 111111111111) must not fire. This is
+        # the false positive the flag-every-literal check produced.
+        ctx = make_context({
+            "Build": r("Build", "AWS::CodeBuild::Project", {
+                "Name": "p",
+                "ServiceRole": "arn:aws:iam::111111111111:role/build",
+            }),
+            "Repo": r("Repo", "AWS::CodeCommit::Repository", {
+                "RepositoryName": "my-repo",
+                "Triggers": [{"Name": "t1",
+                              "DestinationArn": "arn:aws:sns:us-east-1:111111111111:repo-events",
+                              "Events": ["all"]}],
+            }),
+        })
+        f = _find(ctx, "CCM-003")
+        assert f and f[0].passed is True
+
+    def test_uncorrelatable_literal_arn_passes(self):
+        # No in-account signal anywhere in the template: cross-account
+        # membership can't be proven, so the trigger is not failed.
         ctx = make_context({
             "Repo": r("Repo", "AWS::CodeCommit::Repository", {
                 "RepositoryName": "my-repo",
@@ -375,7 +413,7 @@ class TestCCM003LiteralArn:
             }),
         })
         f = _find(ctx, "CCM-003")
-        assert f and f[0].passed is False
+        assert f and f[0].passed is True
 
     def test_intrinsic_destination_passes(self):
         # A trigger whose DestinationArn is a Ref (not a literal string)

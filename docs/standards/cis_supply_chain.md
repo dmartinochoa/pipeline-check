@@ -24,7 +24,7 @@ Click a control ID to jump to the per-control section with the full check list. 
 |---------|-------|-------:|--------------|
 | [`1.1.5`](#ctrl-1-1-5) | Ensure any change to code requires the review of additional strong authenticators | 25 | 10H · 13M · 2L |
 | [`1.1.6`](#ctrl-1-1-6) | Ensure any change to code is signed | 6 | 1H · 5M |
-| [`1.1.7`](#ctrl-1-1-7) | Ensure any change to code is automatically scanned for risks (SAST) | 8 | 1C · 4M · 3L |
+| [`1.1.7`](#ctrl-1-1-7) | Ensure any change to code is automatically scanned for risks (SAST) | 8 | 1C · 3M · 4L |
 | [`1.1.8`](#ctrl-1-1-8) | Ensure scanners are in place to identify and confirm presence of vulnerabilities (SCA) | 27 | 1C · 6H · 16M · 4L |
 | [`1.1.17`](#ctrl-1-1-17) | Ensure default branches' commits are protected from being deleted/rewritten | 17 | 1C · 6H · 7M · 3L |
 | [`1.3.4`](#ctrl-1-3-4) | Ensure organization identity is required for contribution (no long-lived personal tokens) | 61 | 3C · 41H · 16M · 1L |
@@ -122,7 +122,7 @@ pipeline_check --pipeline aws --standard cis_supply_chain --standard owasp_cicd_
 | [`SCM-039`](../providers/scm_github.md#scm-039) | Active ruleset doesn't pin a required workflow | <span class="pg-sev pg-sev--low">LOW</span> | [SCM](../providers/scm_github.md) |  |
 | [`SCM-040`](../providers/scm_github.md#scm-040) | Active ruleset doesn't gate on code scanning results | <span class="pg-sev pg-sev--low">LOW</span> | [SCM](../providers/scm_github.md) |  |
 | [`SCM-045`](../providers/scm_github.md#scm-045) | Default code scanning uses the limited query suite | <span class="pg-sev pg-sev--low">LOW</span> | [SCM](../providers/scm_github.md) |  |
-| [`SCM-046`](../providers/scm_github.md#scm-046) | Default code scanning is configured but paused | <span class="pg-sev pg-sev--medium">MEDIUM</span> | [SCM](../providers/scm_github.md) |  |
+| [`SCM-046`](../providers/scm_github.md#scm-046) | Default code scanning has no periodic scan schedule | <span class="pg-sev pg-sev--low">LOW</span> | [SCM](../providers/scm_github.md) |  |
 | [`SCM-047`](../providers/scm_github.md#scm-047) | Repo language excluded from default code-scanning coverage | <span class="pg-sev pg-sev--medium">MEDIUM</span> | [SCM](../providers/scm_github.md) |  |
 
 ### 1.1.8: Ensure scanners are in place to identify and confirm presence of vulnerabilities (SCA) { #ctrl-1-1-8 }

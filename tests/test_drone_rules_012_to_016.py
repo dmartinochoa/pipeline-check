@@ -98,6 +98,23 @@ class TestDR013PipelineNoTrigger:
         f = r13.check(p)
         assert not f.passed
 
+    def test_fires_on_branch_only_trigger_no_event_filter(self):
+        # A ``branch``-only trigger has no ``event`` filter; Drone's
+        # default scope is every event, so fork PRs targeting the branch
+        # still run (B4 FN: this used to pass as "excludes pull_request").
+        p = _pipeline(
+            trigger={"branch": ["main"]},
+            steps=[{"name": "build", "image": f"alpine:3{_DIGEST}"}],
+        )
+        assert not r13.check(p).passed
+
+    def test_fires_on_empty_trigger_dict(self):
+        p = _pipeline(
+            trigger={},
+            steps=[{"name": "build", "image": f"alpine:3{_DIGEST}"}],
+        )
+        assert not r13.check(p).passed
+
 
 # ── DR-014 ──────────────────────────────────────────────────────
 

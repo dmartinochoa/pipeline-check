@@ -281,3 +281,41 @@ MANAGED_IMAGE_RE = re.compile(r"aws/codebuild/standard:(\d+)\.\d+")
 
 # Bump when AWS releases a new standard image major version.
 LATEST_STANDARD_VERSION = 7
+
+
+_ARN_ACCOUNT_RE = re.compile(r"^arn:aws[a-z-]*:[^:]+:[^:]*:(\d{12}):")
+
+
+def arn_account_id(arn: str) -> str:
+    """Return the 12-digit AWS account id embedded in *arn*, or ``''``.
+
+    Works across partitions (``aws``, ``aws-us-gov``, ``aws-cn``). An
+    ARN whose account field is empty (e.g. an S3 bucket ARN) or a
+    non-ARN string yields ``''``.
+    """
+    m = _ARN_ACCOUNT_RE.match(arn or "")
+    return m.group(1) if m else ""
+
+
+def eventbridge_target_is_wildcard(arn: str) -> bool:
+    """True when an EventBridge target ARN carries a *fan-out* wildcard.
+
+    A ``*`` in the resource segment (``function:*``, ``:my-topic-*``)
+    broadens which resources receive the event and is the offending
+    shape EB-002 flags.
+
+    A CloudWatch Logs target is the documented exception: its ARN ends
+    in ``:*`` (the log-stream selector,
+    ``arn:aws:logs:<region>:<acct>:log-group:/name:*``). That trailing
+    wildcard is mandatory for a Logs target, not a fan-out, so it must
+    not be flagged. Shared by the aws / cloudformation / terraform
+    EB-002 rules so the carve-out stays in one place.
+    """
+    if not arn or "*" not in arn:
+        return False
+    if ":log-group:" in arn and arn.endswith(":*"):
+        # Drop the mandatory log-stream selector, then see whether any
+        # other (genuine fan-out) wildcard remains, e.g. a wildcard in
+        # the log-group name itself.
+        arn = arn[:-2]
+    return "*" in arn

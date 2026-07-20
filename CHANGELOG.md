@@ -12,6 +12,216 @@ release commit collapses this section into `## [X.Y.Z] - <date>`.
 
 ### Fixed
 
+- **Maven rules handle Gradle-parsed build files correctly.** MVN-001
+  and MVN-005 also run against `build.gradle` inputs, but MVN-001 missed
+  Gradle's dynamic-version forms (`1.+`, `2.0.+`, `latest.release`,
+  `latest.integration`) and MVN-005 fired on every Gradle `maven { url }`
+  repo with an inapplicable `<checksumPolicy>` XML remediation (a
+  Maven-only concept). MVN-001 now flags the dynamic forms; MVN-005 skips
+  Gradle-origin files (Gradle integrity is `verification-metadata.xml`).
+  Found by the 2026-07 rule audit.
+- **Parsers no longer drop non-string or continuation-line values.**
+  Several parsers silently skipped valid inputs: MODEL-001 treated a
+  trailing-colon ref (`llama3:`, an empty tag that resolves to the
+  registry default) as pinned; HELM-008 skipped every `Chart.lock` whose
+  unquoted `generated:` timestamp `yaml.safe_load` turned into a
+  `datetime` (the Helm default), so the staleness check never ran; and
+  the Gemfile parser only read a gem's first physical line, so a git gem
+  whose `git:`/`branch:` options sat on continuation lines was missed by
+  GEM-002 and GEM-005. Found by the 2026-07 rule audit.
+- **COMPOSER-002 treats a pre-release pin as pinned.** An exact
+  pre-release or build-metadata version (`10.0.0-RC1`, `1.2.3+build`)
+  names a single release, but the stability suffix made it read as a
+  floating constraint. Found by the 2026-07 rule audit.
+- **ARGOCD-012 matches `prod` as a delimited token.** A bare substring
+  test flagged staging projects whose namespace merely embedded `prod`
+  (`products`, `product-catalog`, `reproducer`); it now matches `prod` /
+  `production` on token boundaries. Found by the 2026-07 rule audit.
+- **AI/shell rules now scan every field the runner executes.** Several
+  rules only inspected one of the fields that actually run: Bitbucket's
+  AI/model rules (BB-035..039) skipped `after-script:`; Argo's log-leak
+  and shell-eval rules (ARGO-018/019) skipped a container's `command:`
+  (the `command: ["sh","-c","<script>"]` idiom); and Buildkite's
+  log-leak rule (BK-017) scanned each `commands:` item in isolation,
+  missing a `set -x` in one item that traces a secret used in a later
+  item (Buildkite concatenates the list into one script). Each now
+  covers the additional field. Found by the 2026-07 rule audit.
+- **Deploy-job detection matches underscore-separated names.** The
+  shared deploy-name regex used `\b` boundaries, but `_` is a word
+  character, so `deploy_prod` / `prod_deploy` / `release_prod` (the
+  dominant CI naming form) never matched — CircleCI CC-009 (approval
+  gate) and CC-013 (branch filter) both silently passed an ungated
+  deploy. The keyword is now delimited by not-a-letter-or-digit
+  lookarounds, so `_` / `-` / whitespace all separate it while
+  `deployment` / `undeploy` stay unmatched. Found by the 2026-07 rule
+  audit.
+- **GCNET-003 flags a `tcp` firewall rule with no ports.** In GCP an
+  `allowed` entry with `IPProtocol: tcp` and no `ports` list means every
+  TCP port, including 22 and 3389. The rule treated empty ports as
+  all-ports only for `protocol: all`, so an open `tcp` rule passed with
+  an actively-wrong "not on SSH or RDP ports" note. Found by the 2026-07
+  rule audit.
+- **K8S-014 flags the `/run/...` runtime-socket paths.** Only the
+  `/var/run/...` spellings were listed, but `/var/run` is a symlink to
+  `/run` and containerd's documented default socket is
+  `/run/containerd/containerd.sock`, which real DaemonSets mount. The
+  `/run` twins (and `cri-dockerd`) are now covered. Found by the 2026-07
+  rule audit.
+- **GHA-045 matches the `github.event.inputs.<name>` spelling.** The
+  caller-controlled-ref check only recognized `${{ inputs.<name> }}`,
+  missing the equally-valid `workflow_dispatch` form. Found by the
+  2026-07 rule audit.
+- **GHA-068 resolves `runs-on: ${{ matrix.os }}`.** An OS matrix is the
+  most common way a deprecated runner image reaches a job, but the rule
+  only read the literal `runs-on`; it now resolves the referenced
+  `strategy.matrix` axis (list and `include` entries). Found by the
+  2026-07 rule audit.
+- **PULUMI-005 matches bare and single-quoted policy keys.** Real Pulumi
+  source rarely double-quotes keys — TS/JS use bare keys
+  (`Action: "*"`), Python uses single quotes (`{'Action': '*'}`) — so
+  the rule's own exploit example didn't fire. The key quote is now
+  optional and may be single or double. Found by the 2026-07 rule audit.
+- **Drone DR-013 flags a `trigger:` with no event filter.** A
+  `branch`-only (or empty) `trigger:` has no `event` filter, and Drone's
+  default scope is every event, so fork PRs still run the pipeline. It
+  was treated as safe; it now fails like a missing `trigger:` block.
+  Found by the 2026-07 rule audit.
+- **Terraform IAM-004 (and IAM-002/006) correlate policies on a create
+  plan.** The `aws_iam_role_policy_attachment` → `aws_iam_policy` join
+  was keyed only on literal ARNs, but a `terraform plan` that *creates*
+  the policy leaves both ARNs computed/unknown, so a wildcard `PassRole`
+  (or wildcard-action) policy attached that way was never inspected and
+  silently passed. The join now falls back to the plan's `configuration`
+  reference graph when ARNs are unknown. Found by the 2026-07 rule audit.
+- **Terraform CA-002 reads the `external_connections` block shape.** The
+  public-upstream check only matched a string list, but the AWS provider
+  emits `external_connections` as a list of blocks
+  (`{external_connection_name = "public:npmjs"}`) in both plan and HCL
+  mode, so a public CodeArtifact connection never fired. Found by the
+  2026-07 rule audit.
+- **Terraform CB-010 joins webhooks declared with a project reference.**
+  In `--tf-source` mode `project_name = aws_codebuild_project.ci.name`
+  stays an opaque reference string, so the fork-PR webhook was dropped
+  and never evaluated. It now joins on the referenced resource name.
+  Found by the 2026-07 rule audit.
+- **Drone DR-019/020/021 recognize `plugins/docker` image builds.** The
+  signing, SBOM, and SLSA-provenance gates only fire on artifact-
+  producing pipelines, but the shared artifact heuristic missed Drone's
+  canonical build plugins (`plugins/docker` / `ecr` / `gcr` / `acr`),
+  which build and push via a `settings:` block with no `docker build`
+  command. An unsigned/un-attested native image build silently passed.
+  Found by the 2026-07 rule audit.
+- **Harness HARNESS-016/017 recognize native `BuildAndPush*` steps.**
+  The SBOM and provenance gates missed Harness's native CIE build steps
+  (`type: BuildAndPushDockerRegistry` / ECR / GCR / ACR / GAR), so a
+  native image build with no SBOM or provenance passed as not-
+  applicable. Found by the 2026-07 rule audit.
+- **HARNESS-018 recognizes native STO scanner steps.** Only `AquaTrivy`
+  was detected; a Security Testing Orchestration step named as a bare
+  `type: Grype` / `Snyk` / `Checkmarx` / ... carries no command text for
+  the CLI catalog to match, so real scans read as unscanned. STO step
+  types are now matched by their `type` slug. Found by the 2026-07 audit.
+- **GHA-009 recognizes `dawidd6/action-download-artifact`.** The
+  canonical cross-run artifact downloader for `workflow_run` workflows
+  (this rule's exact target scenario) was not in the download-detection
+  set, so an unverified privileged download passed. Found by the 2026-07
+  rule audit.
+- **GHA-005 / GHA-033 / GHA-050 now see job- and workflow-level `env:`.**
+  Three GitHub secret rules only scanned step-level `env:`, missing the
+  more common job- or workflow-scope placement (which inherits into the
+  step). GHA-005 (long-lived AWS keys), GHA-033 (secret echoed to log),
+  and GHA-050 (publish token without OIDC) each fold job- and
+  workflow-level env into their lookup, so their own documented exploit
+  examples fire. Found by the 2026-07 rule audit.
+- **HARNESS-004 scans step `spec.envVariables`.** A credential pasted
+  into a Run step's `envVariables` (the most common placement) was never
+  checked; only pipeline/stage `variables:` were. Step env is now walked
+  through the same secret-shape catalog. Found by the 2026-07 rule audit.
+- **GL-023 detects TLS-bypass env vars set via `variables:`.** GitLab's
+  idiomatic `variables: {NODE_TLS_REJECT_UNAUTHORIZED: "0"}` puts the
+  env-var name in the mapping key, which the value-only text scan never
+  saw. Global, `workflow:`, and per-job `variables:` blocks are now
+  walked structurally. Found by the 2026-07 rule audit.
+- **SCM-055 recognizes Bitbucket's `push`-kind branch restriction.** The
+  rule counted only the `force`/`delete` normalized slots, but the
+  `push` kind ("Prevent push" / Write-access, Bitbucket's primary
+  write-side control) had no slot, so a default branch guarded only by a
+  push restriction was flagged as allowing direct admin pushes. The
+  hydrator now surfaces the raw restriction kinds and the rule counts
+  `push`. Found by the 2026-07 rule audit.
+- **SCM-054 no longer asserts a permissive fork policy on missing data.**
+  A private Bitbucket repo whose payload carried no `fork_policy` was
+  reported as allowing public forks (`fork_policy: unknown`); it now
+  passes with an unavailable note. Found by the 2026-07 rule audit.
+- **SCM-048 handles a codespace secret with a null name.** A secret
+  whose `name` was JSON null raised `TypeError` in the description join,
+  so the framework guard swallowed the whole rule and a visibility-all
+  secret produced no finding. Null names now render as `(unnamed)`.
+  Found by the 2026-07 rule audit.
+- **SCM-046 downgraded to a periodic-scan-gap finding (LOW).** A
+  `configured` default code-scanning setup scans on push and pull
+  request regardless of `schedule`, so the old MEDIUM "no scan output
+  ever lands" claim was wrong. It now reports the narrower missing-
+  weekly-re-scan (stale-branch) gap at LOW. Found by the 2026-07 rule
+  audit.
+- **SCM-032..042 aggregate ruleset coverage across rulesets.** GitHub
+  applies the union of every ruleset targeting a ref, but the eleven
+  ruleset checks required *each* active ruleset to individually carry
+  the gate. A layered config (an org-level ruleset that requires PR
+  reviews plus a repo-level ruleset that only enforces a commit-message
+  pattern) was flagged as ungated even though the branch is fully
+  covered. Each rule now fires only when no ruleset targeting the
+  default branch carries the gate. Found by the 2026-07 rule audit.
+- **A tag-only ruleset no longer flips all eleven branch rules to
+  fail.** When active rulesets existed but none targeted the default
+  branch, every SCM-032..042 rule took the "scoped away" path and
+  failed, so adding a release-tag ruleset (the config SCM-043
+  recommends) turned eleven branch rules red even with legacy branch
+  protection covering `main`. Tag- and push-targeted rulesets are now
+  excluded from that trigger, matching how they can't carry branch
+  rule types. Found by the 2026-07 rule audit.
+- **SCM-044 skips archived repositories.** Unlike its sibling rules, the
+  admin-bypass signed-commits check never skipped archived (read-only)
+  repos, so a frozen protection config with `enforce_admins` off failed
+  even though no unsigned push is possible. It now skips archived repos.
+  Found by the 2026-07 rule audit.
+- **SCM-045 no longer claims an "unset" query suite is ≥extended.** A
+  `configured` default-setup response missing its `query_suite` passed
+  with a description asserting a ≥extended suite. A missing/null suite is
+  now reported as not-evaluated instead. Found by the 2026-07 rule audit.
+- **DF-024 no longer flags `yarn <subcommand>` or `npm info`/`init`.**
+  The install detector matched bare `yarn` followed by any subcommand
+  (`yarn build`, `yarn test`, `yarn lint`), and its missing trailing
+  word boundary matched the `i` in `npm info` / `npm init` / `pnpm
+  import`. It now matches `yarn install` / bare yarn and the real npm/
+  pnpm install verbs only. Found by the 2026-07 rule audit.
+- **DF-018 no longer flags application subtrees under `/usr`.** A
+  `chown -R node:node /usr/src/app` (the official `node` image's
+  documented WORKDIR) or a `chown` of a `/usr/share` web root was
+  treated as rewriting a system path. Those source/data subtrees, which
+  hold no trusted binaries on `PATH`, are now carved out while the
+  executable/library dirs (`/usr/bin`, `/usr/local/bin`, `/usr/lib`)
+  still fire. Found by the 2026-07 rule audit.
+- **CF-003 correlates the subnets CodeBuild actually runs on.** The
+  rule fired whenever a CodeBuild project's VPC contained any public
+  subnet, even when `VpcConfig.Subnets` referenced only private ones,
+  so the standard public/private VPC split always tripped it. It now
+  fires only when a referenced subnet has `MapPublicIpOnLaunch: true`.
+  Found by the 2026-07 rule audit.
+- **EB-002 no longer flags CloudWatch Logs target ARNs.** An
+  EventBridge target pointing at a log group has an ARN that ends in
+  `:log-group:/name:*` (the mandatory log-stream selector); that
+  trailing wildcard was read as a resource fan-out. A `log-group` ARN's
+  trailing `:*` is now ignored across the aws, cloudformation, and
+  terraform EB-002 rules. Found by the 2026-07 rule audit.
+- **CCM-003 fires only on genuinely cross-account triggers.** The
+  Terraform and CloudFormation checks flagged *any* literal
+  `destination_arn` / `DestinationArn`, including same-account ARNs,
+  despite the rule being titled "different account". They now resolve
+  the plan/template's own account (from `aws_caller_identity`, sibling
+  literal ARNs, or a parameter default) and flag a destination only when
+  its account is outside that set; an uncorrelatable literal is no
+  longer failed. Found by the 2026-07 rule audit.
 - **GitLab GL-003 no longer flags analyzer config variables.** GitLab
   Security-template config vars (`SECRET_DETECTION_EXCLUDED_PATHS`,
   `SECRET_DETECTION_HISTORIC_SCAN`), reference-suffix keys

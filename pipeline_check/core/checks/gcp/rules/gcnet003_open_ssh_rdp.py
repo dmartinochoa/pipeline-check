@@ -43,7 +43,12 @@ def _allows_dangerous_port(allowed_list: list[dict[str, object]]) -> list[str]:
             continue
         raw_ports = entry.get("ports")
         ports: list[object] = list(raw_ports) if isinstance(raw_ports, (list, tuple)) else []
-        if not ports and protocol == "all":
+        # An allowed entry with no ``ports`` list means *every* port of
+        # that protocol. For ``tcp`` (and ``all``) that includes 22 and
+        # 3389 — treating empty ports as all-ports only for ``all`` let a
+        # ``tcp``-with-no-ports rule pass with a wrong "not on SSH or RDP
+        # ports" note.
+        if not ports:
             found.extend(sorted(_DANGEROUS_PORTS))
             continue
         for port_spec in ports:

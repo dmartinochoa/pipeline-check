@@ -663,6 +663,26 @@ class TestGHA005AwsCredentials:
         )
         assert not f.passed
 
+    def test_job_level_env_access_key_reference_fails(self):
+        # Job-level env with a secrets-sourced AWS key is the same
+        # long-lived-key shape as step-level; it must fire too (A6 FN:
+        # only step/workflow scope was scanned for the secrets value).
+        f = _run(
+            """
+            on: push
+            jobs:
+              deploy:
+                runs-on: ubuntu-latest
+                env:
+                  AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+                  AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+                steps:
+                  - run: aws s3 sync . s3://bucket
+            """,
+            "GHA-005",
+        )
+        assert not f.passed
+
     def test_workflow_without_aws_passes(self):
         f = _run(
             """

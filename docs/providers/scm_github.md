@@ -224,7 +224,7 @@ compose SCM findings with workflow / Dockerfile findings:
 | [SCM-043](#scm-043) | Tag-targeted ruleset doesn't require signed commits | <span class="pg-sev pg-sev--medium">MEDIUM</span> |  |
 | [SCM-044](#scm-044) | Default-branch signed-commits requirement bypassed for admins | <span class="pg-sev pg-sev--medium">MEDIUM</span> |  |
 | [SCM-045](#scm-045) | Default code scanning uses the limited query suite | <span class="pg-sev pg-sev--low">LOW</span> |  |
-| [SCM-046](#scm-046) | Default code scanning is configured but paused | <span class="pg-sev pg-sev--medium">MEDIUM</span> |  |
+| [SCM-046](#scm-046) | Default code scanning has no periodic scan schedule | <span class="pg-sev pg-sev--low">LOW</span> |  |
 | [SCM-047](#scm-047) | Repo language excluded from default code-scanning coverage | <span class="pg-sev pg-sev--medium">MEDIUM</span> |  |
 | [SCM-048](#scm-048) | Org codespace secret scoped to all repos | <span class="pg-sev pg-sev--high">HIGH</span> |  |
 | [SCM-049](#scm-049) | Classic PAT used where a fine-grained token suffices | <span class="pg-sev pg-sev--medium">MEDIUM</span> |  |
@@ -1013,7 +1013,7 @@ If your team relies on auto-merge for throughput, the compensating controls are 
 <span class="pg-sev pg-sev--high">HIGH</span> <span class="pg-tag pg-tag--owasp">CICD-SEC-1</span> <span class="pg-tag pg-tag--owasp">CICD-SEC-5</span> <span class="pg-tag pg-tag--esf">ESF-S-CHANGE-CONTROL</span> <span class="pg-tag pg-tag--cwe">CWE-269</span> <span class="pg-tag pg-tag--cwe">CWE-862</span>
 </div>
 
-For every active ruleset (``enforcement: "active"``) with an evaluable detail body, walks the ``rules`` array looking for an entry with ``type: "pull_request"`` whose ``parameters.required_approving_review_count`` is at least 1. Fires when none is found. Non-active rulesets are SCM-029's surface; rulesets with unavailable detail are surfaced with an evaluation-gap note (the same pattern SCM-030 uses).
+Across the active rulesets targeting the default branch, looks for an entry with ``type: "pull_request"`` whose ``parameters.required_approving_review_count`` is at least 1. Fires only when none of them carries one (GitHub aggregates rules across every ruleset targeting a ref). Non-active rulesets are SCM-029's surface; rulesets with unavailable detail are surfaced with an evaluation-gap note (the same pattern SCM-030 uses). Tag- and push-targeted rulesets are ignored (they don't protect branches).
 
 Pairs with SCM-002 (legacy branch-protection required reviews) and SCM-029 (ruleset not enforced). The three rules together cover the required-review surface: SCM-002 for legacy BP, SCM-029 for the existence of an active ruleset, SCM-032 for whether that ruleset actually requires a PR.
 
@@ -1027,7 +1027,7 @@ Pairs with SCM-002 (legacy branch-protection required reviews) and SCM-029 (rule
 
 Add a ``pull_request`` rule to every active ruleset and set ``parameters.required_approving_review_count`` to at least 1 (Settings → Rules → <ruleset> → Add rule → Require a pull request before merging → Required approvals). An active ruleset without a PR-review gate is the same shape as legacy branch protection without required reviews (SCM-002): the ruleset is enforced — force-push denial, signed commits, status checks may all fire — but pushes / merges still go through without human review. Operators commonly create rulesets for specific governance signals (e.g., commit-message patterns for compliance) and forget that the PR-review gate is a separate rule type that has to be added explicitly.
 
-SCM-032 evaluates rulesets in isolation: it does not consult legacy branch-protection state, so it fires on any active ruleset that lacks a PR-review rule, even when legacy branch protection on the same ref provides the required-review gate. SCM-002 covers the legacy branch-protection side; the two rules together describe the full review-control surface.
+SCM-032 aggregates across rulesets the way GitHub does: the default branch is covered when any ruleset targeting it carries a PR-review rule, so a layered config (an org-level ruleset that requires reviews plus a repo-level ruleset that only enforces a commit-message pattern) passes. It fires only when no ruleset targeting the default branch requires a PR review. It stays within the ruleset layer and doesn't consult legacy branch protection; SCM-002 covers that side, and the two together describe the full review-control surface.
 
 </div>
 
@@ -1319,7 +1319,7 @@ Add a ``required_signatures`` rule to every active ruleset whose ``target == tag
 <span class="pg-sev pg-sev--medium">MEDIUM</span> <span class="pg-tag pg-tag--owasp">CICD-SEC-1</span> <span class="pg-tag pg-tag--owasp">CICD-SEC-6</span> <span class="pg-tag pg-tag--esf">ESF-S-CHANGE-CONTROL</span> <span class="pg-tag pg-tag--cwe">CWE-345</span>
 </div>
 
-Fires when ``required_signatures.enabled == True`` and ``enforce_admins.enabled`` is missing or ``False``. The rule passes silently in two cases: when signed commits aren't required at all (SCM-006 owns that surface) and when branch protection is missing entirely (SCM-001).
+Fires when ``required_signatures.enabled == True`` and ``enforce_admins.enabled`` is missing or ``False``. The rule passes silently in three cases: when signed commits aren't required at all (SCM-006 owns that surface), when branch protection is missing entirely (SCM-001), and when the repo is archived (read-only, so no unsigned push is possible).
 
 **Known false-positive modes**
 
@@ -1359,25 +1359,25 @@ In ``Settings → Code security → Code scanning → Default setup``, switch ``
 
 </div>
 
-<div class="pg-rule pg-rule--medium" markdown>
+<div class="pg-rule pg-rule--low" markdown>
 
-## SCM-046: Default code scanning is configured but paused { #scm-046 }
+## SCM-046: Default code scanning has no periodic scan schedule { #scm-046 }
 
 <div class="pg-rule__tags">
-<span class="pg-sev pg-sev--medium">MEDIUM</span> <span class="pg-tag pg-tag--owasp">CICD-SEC-10</span> <span class="pg-tag pg-tag--esf">ESF-V-VULN-MGMT</span> <span class="pg-tag pg-tag--cwe">CWE-1059</span>
+<span class="pg-sev pg-sev--low">LOW</span> <span class="pg-tag pg-tag--owasp">CICD-SEC-10</span> <span class="pg-tag pg-tag--esf">ESF-V-VULN-MGMT</span> <span class="pg-tag pg-tag--cwe">CWE-1059</span>
 </div>
 
-Reads ``schedule`` from the default code-scanning setup endpoint. Fires when ``state == configured`` AND schedule is ``None`` / ``"none"`` / missing. Passes silently when scanning is off entirely (SCM-003) or when a schedule is set.
+Reads ``schedule`` from the default code-scanning setup endpoint. Fires (LOW) when ``state == configured`` AND schedule is ``None`` / ``"none"`` / missing, flagging the missing *periodic* re-scan. Push/PR scans still run, so this is a stale-branch coverage gap, not an absence of scanning. Passes silently when scanning is off entirely (SCM-003) or when a schedule is set.
 
 **Known false-positive modes**
 
-- Repos that route scanning via a hand-authored workflow may keep default setup configured but unscheduled intentionally. Suppress per repo with a rationale that names the workflow file.
+- Repos that route scanning via a hand-authored workflow (which carries its own schedule) may keep default setup configured but unscheduled intentionally. Suppress per repo with a rationale that names the workflow file.
 
 <div class="pg-rule__rec" markdown>
 
 **Recommended action**
 
-Set ``schedule`` to ``weekly`` (or ``daily`` if CI minutes allow) on the default code-scanning setup, and confirm ``On push`` + ``On pull request`` triggers are enabled in ``Settings → Code security → Code scanning → Default setup → Edit configuration``. Without a schedule or event trigger, the setup record exists but no scan output ever lands; the Code Scanning UI stays empty and SCM-003 passes because ``state == configured``.
+Set ``schedule`` to ``weekly`` on the default code-scanning setup (``Settings → Code security → Code scanning → Default setup → Edit configuration``). Push and pull-request scans already run without it, so this only adds the periodic re-scan that catches newly-detectable issues in code that isn't currently being pushed (stale branches, a quiet default branch). It does not gate merges; SCM-003 covers whether scanning exists at all.
 
 </div>
 
