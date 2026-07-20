@@ -158,6 +158,20 @@ def test_eb002_specific_target_passes(make_catalog):
     assert eb002_wildcard_target.check(cat) == []
 
 
+def test_eb002_cloudwatch_logs_target_passes(make_catalog):
+    # A CloudWatch Logs target ARN is documented to end in ``:*`` (the
+    # log-stream selector); that trailing wildcard is mandatory, not a
+    # fan-out, so EB-002 must not flag it.
+    client = FakeClient()
+    client.set_paginator("list_rules", [{"Rules": [{"Name": "r"}]}])
+    client._responses["list_targets_by_rule"] = {"Targets": [
+        {"Id": "t",
+         "Arn": "arn:aws:logs:us-east-1:1:log-group:/aws/events/r:*"},
+    ]}
+    cat = make_catalog(events=client)
+    assert eb002_wildcard_target.check(cat) == []
+
+
 # ---------- CW-001 ----------
 
 def _cw001_cb_client():

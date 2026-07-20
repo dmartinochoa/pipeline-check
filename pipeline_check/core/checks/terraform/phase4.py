@@ -23,7 +23,12 @@ from __future__ import annotations
 import re
 from typing import Any
 
-from .._patterns import PLACEHOLDER_MARKER_RE, SECRET_NAME_RE, SECRET_VALUE_RE
+from .._patterns import (
+    PLACEHOLDER_MARKER_RE,
+    SECRET_NAME_RE,
+    SECRET_VALUE_RE,
+    eventbridge_target_is_wildcard,
+)
 from ..base import Finding, Severity
 from .base import TerraformBaseCheck, TerraformContext
 
@@ -116,7 +121,7 @@ def _eb002(ctx: TerraformContext) -> list[Finding]:
     out: list[Finding] = []
     for t in ctx.resources("aws_cloudwatch_event_target"):
         arn = t.values.get("arn", "") or ""
-        if "*" not in arn:
+        if not eventbridge_target_is_wildcard(arn):
             continue
         out.append(Finding(
             check_id="EB-002",

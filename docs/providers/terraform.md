@@ -933,7 +933,7 @@ Declare an ``aws_cloudwatch_event_rule`` whose ``event_pattern`` matches ``aws.c
 <span class="pg-sev pg-sev--high">HIGH</span> <span class="pg-tag pg-tag--owasp">CICD-SEC-8</span> <span class="pg-tag pg-tag--cwe">CWE-441</span>
 </div>
 
-Reads ``aws_cloudwatch_event_target.arn``. A literal ``*`` in the ARN is the offending shape, even when EventBridge allows it at the API level, it makes the target opaque to any reviewer trying to trace event flow.
+Reads ``aws_cloudwatch_event_target.arn``. A literal ``*`` in the ARN is the offending shape, even when EventBridge allows it at the API level, it makes the target opaque to any reviewer trying to trace event flow. A CloudWatch Logs target ARN, whose documented form ends in ``:log-group:/name:*`` (the mandatory log-stream selector), is not treated as a wildcard target.
 
 <div class="pg-rule__rec" markdown>
 

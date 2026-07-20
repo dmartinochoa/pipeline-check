@@ -59,6 +59,28 @@ class TestCC009DeployApproval:
         f = run_check(cfg, "CC-009")
         assert f.passed
 
+    def test_fails_on_underscore_deploy_job_name(self):
+        # ``deploy_prod`` is the dominant CI naming form; a ``\b`` regex
+        # missed it because ``_`` is a word char (B4 FN, shared
+        # deploy-name primitive).
+        cfg = """
+        version: 2.1
+        jobs:
+          deploy_prod:
+            docker:
+              - image: cimg/base@sha256:0000000000000000000000000000000000000000000000000000000000000001
+            steps:
+              - run:
+                  no_output_timeout: 30m
+                  command: ./ship.sh
+        workflows:
+          main:
+            jobs:
+              - deploy_prod
+        """
+        f = run_check(cfg, "CC-009")
+        assert not f.passed
+
 
 # ── CC-010 self-hosted runner ephemeral marker ──────────────────────
 
@@ -198,3 +220,22 @@ class TestCC013BranchFilter:
         """
         f = run_check(cfg, "CC-013")
         assert f.passed
+
+    def test_fails_on_underscore_deploy_job_name(self):
+        cfg = """
+        version: 2.1
+        jobs:
+          release_prod:
+            docker:
+              - image: cimg/base@sha256:0000000000000000000000000000000000000000000000000000000000000001
+            steps:
+              - run:
+                  no_output_timeout: 30m
+                  command: ./ship.sh
+        workflows:
+          main:
+            jobs:
+              - release_prod
+        """
+        f = run_check(cfg, "CC-013")
+        assert not f.passed

@@ -125,6 +125,63 @@ class TestIAM004:
         assert not _by(_run(plan), "IAM-004").passed
 
 
+class TestIAM004CreatePlanConfigRef:
+    """A plan that CREATES the policy has unknown ARNs on both the
+    attachment and the policy; the join must fall back to the
+    ``configuration`` reference graph. This exercises the production
+    rule-module path (``cicd_role_view``), not the test-only IAMChecks."""
+
+    @staticmethod
+    def _create_plan(action, resource):
+        from pipeline_check.core.checks.terraform.rules import (
+            iam002_wildcard_action as r2,
+        )
+        from pipeline_check.core.checks.terraform.rules import (
+            iam004_passrole as r4,
+        )
+        plan = {
+            "planned_values": {"root_module": {"child_modules": [], "resources": [
+                _role("ci"),
+                {"address": "aws_iam_policy.p", "mode": "managed",
+                 "type": "aws_iam_policy", "name": "p",
+                 "values": {"name": "ci-pol", "policy": json.dumps(
+                     {"Statement": [{"Effect": "Allow", "Action": action,
+                                     "Resource": resource}]})}},
+                # A create attachment: both role and policy_arn are computed,
+                # so values carry neither — only the configuration graph does.
+                {"address": "aws_iam_role_policy_attachment.a",
+                 "mode": "managed",
+                 "type": "aws_iam_role_policy_attachment", "name": "a",
+                 "values": {}},
+            ]}},
+            "configuration": {"root_module": {"resources": [
+                {"address": "aws_iam_role_policy_attachment.a",
+                 "type": "aws_iam_role_policy_attachment", "name": "a",
+                 "expressions": {
+                     "role": {"references": ["aws_iam_role.ci.name",
+                                             "aws_iam_role.ci"]},
+                     "policy_arn": {"references": ["aws_iam_policy.p.arn",
+                                                   "aws_iam_policy.p"]}}},
+            ]}},
+        }
+        ctx = TerraformContext(plan)
+        return r4.check(ctx), r2.check(ctx)
+
+    def test_passrole_wildcard_fires_via_config_ref(self):
+        iam004, _ = self._create_plan("iam:PassRole", "*")
+        assert any(not f.passed for f in iam004)
+
+    def test_wildcard_action_fires_via_config_ref(self):
+        # IAM-002 (wildcard action) was blinded by the same broken join.
+        _, iam002 = self._create_plan("*", "*")
+        assert any(not f.passed for f in iam002)
+
+    def test_scoped_policy_passes_via_config_ref(self):
+        iam004, _ = self._create_plan(
+            "iam:PassRole", "arn:aws:iam::123:role/target")
+        assert all(f.passed for f in iam004)
+
+
 class TestIAM005:
     def test_external_aws_principal_without_externalid_fails(self):
         trust = json.dumps({"Statement": [

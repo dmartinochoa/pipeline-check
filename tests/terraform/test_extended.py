@@ -76,6 +76,22 @@ def test_cb010_pr_without_actor_fails():
     assert not f.passed
 
 
+def test_cb010_hcl_ref_project_name_fails():
+    # In --tf-source (HCL) mode, ``project_name = aws_codebuild_project.p.name``
+    # stays an opaque ref string; the webhook must still join to the
+    # project via the referenced resource name (B4 FN: it was dropped).
+    project = _r("aws_codebuild_project.p", "aws_codebuild_project", "p",
+                 {"source": [{}]})
+    webhook = _r("aws_codebuild_webhook.w", "aws_codebuild_webhook", "w", {
+        "project_name": "${aws_codebuild_project.p.name}",
+        "filter_group": [{"filter": [
+            {"type": "EVENT", "pattern": "PULL_REQUEST_CREATED"},
+        ]}],
+    })
+    f = next(x for x in _run([project, webhook]) if x.check_id == "CB-010")
+    assert not f.passed
+
+
 def test_cb010_pr_with_actor_passes():
     project = _r("aws_codebuild_project.p", "aws_codebuild_project", "p", {
         "name": "p", "source": [{}],

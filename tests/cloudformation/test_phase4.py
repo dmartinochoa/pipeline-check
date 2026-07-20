@@ -78,6 +78,18 @@ def test_eb002_specific_target_passes():
     assert not any(x.check_id == "EB-002" for x in out)
 
 
+def test_eb002_cloudwatch_logs_target_passes():
+    # Log-group target ARNs end in the mandatory ``:*`` stream selector;
+    # not a fan-out wildcard, so EB-002 must stay silent.
+    out = _run({
+        "R": r("R", "AWS::Events::Rule", {
+            "Targets": [{"Id": "t1",
+                         "Arn": "arn:aws:logs:us-east-1:1:log-group:/aws/events/r:*"}],
+        }),
+    })
+    assert not any(x.check_id == "EB-002" for x in out)
+
+
 def test_eb002_intrinsic_target_silent():
     # Unresolved {"Fn::GetAtt": [...]} — cannot reason about prefix.
     out = _run({
@@ -220,14 +232,18 @@ def test_cf002_lambda_skipped():
 
 
 # ──────────────────────────────────────────────────────────────────────
-# CF-003 — CodeBuild VPC shares VPC with public subnet
+# CF-003 — CodeBuild project placed on a public subnet
 # ──────────────────────────────────────────────────────────────────────
 
-def test_cf003_public_subnet_in_vpc_fails():
+def test_cf003_project_references_public_subnet_fails():
+    # The project's VpcConfig.Subnets actually references the public
+    # subnet (!Ref Pub), so the build gets a public-IP-eligible ENI.
     out = _run({
         "P": r("P", "AWS::CodeBuild::Project", {
             "Name": "p",
-            "VpcConfig": {"VpcId": "vpc-aaa", "Subnets": ["subnet-x"], "SecurityGroupIds": ["sg-x"]},
+            "VpcConfig": {"VpcId": "vpc-aaa",
+                          "Subnets": [{"Ref": "Pub"}],
+                          "SecurityGroupIds": ["sg-x"]},
         }),
         "Pub": r("Pub", "AWS::EC2::Subnet", {
             "VpcId": "vpc-aaa", "MapPublicIpOnLaunch": True,
@@ -237,14 +253,22 @@ def test_cf003_public_subnet_in_vpc_fails():
     assert not f.passed
 
 
-def test_cf003_private_only_vpc_passes():
+def test_cf003_project_on_private_subnet_with_public_sibling_passes():
+    # Standard public/private VPC split: the project runs only on the
+    # private subnet even though a public subnet exists in the same VPC.
+    # This is the false positive the VPC-wide check used to produce.
     out = _run({
         "P": r("P", "AWS::CodeBuild::Project", {
             "Name": "p",
-            "VpcConfig": {"VpcId": "vpc-aaa", "Subnets": ["subnet-x"], "SecurityGroupIds": ["sg-x"]},
+            "VpcConfig": {"VpcId": "vpc-aaa",
+                          "Subnets": [{"Ref": "Priv"}],
+                          "SecurityGroupIds": ["sg-x"]},
         }),
         "Priv": r("Priv", "AWS::EC2::Subnet", {
             "VpcId": "vpc-aaa", "MapPublicIpOnLaunch": False,
+        }),
+        "Pub": r("Pub", "AWS::EC2::Subnet", {
+            "VpcId": "vpc-aaa", "MapPublicIpOnLaunch": True,
         }),
     })
     f = next(x for x in out if x.check_id == "CF-003")
@@ -256,37 +280,18 @@ def test_cf003_no_vpc_config_silent():
     assert not any(x.check_id == "CF-003" for x in out)
 
 
-def test_cf003_intrinsic_vpc_id_silent():
+def test_cf003_literal_subnet_ids_silent():
+    # Subnets given as literal ids can't be correlated to an in-template
+    # subnet, so the rule stays silent rather than guessing.
     out = _run({
         "P": r("P", "AWS::CodeBuild::Project", {
             "Name": "p",
-            "VpcConfig": {"VpcId": {"Ref": "VpcIdParam"}, "Subnets": ["subnet-x"], "SecurityGroupIds": ["sg-x"]},
+            "VpcConfig": {"VpcId": "vpc-aaa",
+                          "Subnets": ["subnet-x"],
+                          "SecurityGroupIds": ["sg-x"]},
+        }),
+        "Pub": r("Pub", "AWS::EC2::Subnet", {
+            "VpcId": "vpc-aaa", "MapPublicIpOnLaunch": True,
         }),
     })
     assert not any(x.check_id == "CF-003" for x in out)
-
-
-def test_cf003_ref_vpc_id_resolved_via_parameter_fails():
-    from pipeline_check.core.checks.cloudformation.base import CloudFormationContext
-    from pipeline_check.core.checks.cloudformation.phase4 import Phase4Checks
-
-    # Both the CodeBuild project's VpcId and the public subnet's VpcId
-    # are {"Ref": "VpcId"} — with a parameter default of "vpc-aaa" the
-    # resolver should match them and flag the shared-VPC case.
-    template = {
-        "Parameters": {"VpcId": {"Default": "vpc-aaa"}},
-        "Resources": {
-            "P": r("P", "AWS::CodeBuild::Project", {
-                "Name": "p",
-                "VpcConfig": {"VpcId": {"Ref": "VpcId"},
-                              "Subnets": ["subnet-x"],
-                              "SecurityGroupIds": ["sg-x"]},
-            }),
-            "Pub": r("Pub", "AWS::EC2::Subnet", {
-                "VpcId": {"Ref": "VpcId"}, "MapPublicIpOnLaunch": True,
-            }),
-        },
-    }
-    ctx = CloudFormationContext([("<in-memory>", template)])
-    f = next(x for x in Phase4Checks(ctx).run() if x.check_id == "CF-003")
-    assert not f.passed

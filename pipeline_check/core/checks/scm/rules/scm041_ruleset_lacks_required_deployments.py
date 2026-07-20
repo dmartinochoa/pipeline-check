@@ -168,11 +168,16 @@ def check(snapshot: SCMRepoSnapshot) -> Finding:
             ),
             recommendation=RULE.recommendation, passed=True,
         )
-    offenders: list[str] = []
-    for rs in targeting:
-        if _has_required_deployments_rule(rs.get("rules")):
-            continue
-        offenders.append(ruleset_label(rs))
+    # GitHub aggregates rules across every ruleset targeting a ref, so
+    # the gate is satisfied when ANY targeting ruleset carries it. Fire
+    # only when none does (the whole targeting set then lists as the
+    # offenders: no ruleset on the default branch carries the gate).
+    covered = any(
+        _has_required_deployments_rule(rs.get("rules")) for rs in targeting
+    )
+    offenders: list[str] = (
+        [] if covered else [ruleset_label(rs) for rs in targeting]
+    )
     unavailable = [ruleset_label(rs) for rs in unavailable_rs]
     passed = not offenders
     if passed and unavailable:

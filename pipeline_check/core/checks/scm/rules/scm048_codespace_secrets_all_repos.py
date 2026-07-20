@@ -99,10 +99,15 @@ def check(snapshot: SCMRepoSnapshot) -> Finding:
         )
     offenders: list[str] = []
     for secret in secrets:
-        visibility = secret.get("visibility")
-        name = secret.get("name", "(unnamed)")
-        if visibility == "all":
-            offenders.append(name)
+        if not isinstance(secret, dict):
+            continue
+        if secret.get("visibility") == "all":
+            # ``name`` can be a JSON null (key present, value None);
+            # ``.get(k, default)`` returns None in that case, and a
+            # later ``', '.join`` would raise TypeError and get the
+            # whole rule swallowed by the framework guard.
+            name = secret.get("name")
+            offenders.append(name if isinstance(name, str) else "(unnamed)")
     passed = not offenders
     desc = (
         f"All {len(secrets)} org codespace secret(s) are scoped to "

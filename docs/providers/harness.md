@@ -136,7 +136,7 @@ Drop ``privileged: true`` from the step. The flag removes the container's syscal
 <span class="pg-sev pg-sev--critical">CRITICAL</span> <span class="pg-fix pg-fix--rule" title="`--fix` will patch this rule">🔧 autofix</span> <span class="pg-tag pg-tag--owasp">CICD-SEC-6</span> <span class="pg-tag pg-tag--owasp">CICD-SEC-7</span> <span class="pg-tag pg-tag--esf">ESF-D-SECRETS</span> <span class="pg-tag pg-tag--cwe">CWE-798</span> <span class="pg-tag pg-tag--cwe">CWE-321</span>
 </div>
 
-Fires on a pipeline-level or stage-level ``variables:`` entry whose ``value`` is a credential-shaped literal (matched by the shared secret-shape catalog, ``find_secret_values``) rather than a ``<+secrets.getValue(...)>`` expression. ``type: Secret`` variables and any ``<+...>`` expression value are skipped (those are managed references, not literals); empty values are ignored. The value is redacted in the finding. Same value-shape model as the literal-secret rules across the other providers (DR-004 / BK-002 / TKN-005).
+Fires on a pipeline-level or stage-level ``variables:`` entry, or a step's ``spec.envVariables`` mapping value, that is a credential-shaped literal (matched by the shared secret-shape catalog, ``find_secret_values``) rather than a ``<+secrets.getValue(...)>`` expression. ``type: Secret`` variables and any ``<+...>`` expression value are skipped (those are managed references, not literals); empty values are ignored. The value is redacted in the finding. Same value-shape model as the literal-secret rules across the other providers (DR-004 / BK-002 / TKN-005).
 
 <div class="pg-rule__rec" markdown>
 
@@ -398,7 +398,7 @@ Add a signing step after the build: install cosign in the step image and call ``
 <span class="pg-sev pg-sev--medium">MEDIUM</span> <span class="pg-tag pg-tag--owasp">CICD-SEC-9</span> <span class="pg-tag pg-tag--esf">ESF-S-SBOM</span> <span class="pg-tag pg-tag--cwe">CWE-1357</span>
 </div>
 
-Detection mirrors GHA-007 / BK-010 / CC-007 / TKN-010 / DR-020, the shared SBOM-token catalog (syft, cyclonedx, spdx, bom, trivy sbom) is searched across every string in the pipeline document. The rule only fires on artifact-producing pipelines (``docker build`` / ``docker push`` / ``buildah`` / ``kaniko`` / etc.) so lint / test-only pipelines don't trip it. The Harness analog of BK-010 / TKN-010.
+Detection mirrors GHA-007 / BK-010 / CC-007 / TKN-010 / DR-020, the shared SBOM-token catalog (``syft``, ``cyclonedx``, ``cdxgen``, ``anchore/sbom-action``, ``spdx-sbom-generator``, ``microsoft/sbom-tool``, or ``trivy`` combined with an ``sbom`` / ``cyclonedx`` flag) is searched across every string in the pipeline document. The rule only fires on artifact-producing pipelines (``docker build`` / ``docker push`` / ``buildah`` / ``kaniko`` / Harness ``BuildAndPush*`` step / etc.) so lint / test-only pipelines don't trip it. The Harness analog of BK-010 / TKN-010.
 
 <div class="pg-rule__rec" markdown>
 
@@ -438,7 +438,7 @@ Emit a signed SLSA provenance attestation for the build: use ``cosign attest --p
 <span class="pg-sev pg-sev--medium">MEDIUM</span> <span class="pg-tag pg-tag--owasp">CICD-SEC-9</span> <span class="pg-tag pg-tag--esf">ESF-D-VULN-SCAN</span> <span class="pg-tag pg-tag--cwe">CWE-1104</span>
 </div>
 
-Detection mirrors GHA-020 / BK-012 / CC-020 / TKN-012 / DR-022, the shared scanner-token catalog (trivy, grype, snyk, clair, npm audit, pip-audit, etc.) is searched across every string in the pipeline document. Fires on any pipeline that runs no scanner (the build ships without a CVE signal). The Harness analog of BK-012 / TKN-012.
+Detection mirrors GHA-020 / BK-012 / CC-020 / TKN-012 / DR-022, the shared scanner-token catalog (trivy, grype, snyk, clair, npm audit, pip-audit, etc.) is searched across every string in the pipeline document. It additionally recognizes Harness's native Security Testing Orchestration steps by their ``type`` slug (``Grype`` / ``Snyk`` / ``Checkmarx`` / ``Owasp`` / ``Zap`` / ...), which carry no command text for the CLI catalog to match. Fires on any pipeline that runs no scanner (the build ships without a CVE signal). The Harness analog of BK-012 / TKN-012.
 
 <div class="pg-rule__rec" markdown>
 

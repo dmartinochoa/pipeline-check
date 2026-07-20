@@ -1,6 +1,7 @@
 """EB-002. EventBridge rule has a wildcard target ARN."""
 from __future__ import annotations
 
+from ..._patterns import eventbridge_target_is_wildcard
 from ...base import Finding, Severity
 from ...rule import Rule
 from .._catalog import ResourceCatalog
@@ -23,7 +24,10 @@ RULE = Rule(
         "match every resource that fits the prefix. This is rarely "
         "intentional, usually a copy-paste from a more permissive "
         "resource ARN, and means the rule fans out to a much "
-        "larger set of consumers than the author meant."
+        "larger set of consumers than the author meant. A "
+        "CloudWatch Logs target ARN, whose documented form ends in "
+        "``:log-group:/name:*`` (the mandatory log-stream selector), "
+        "is not treated as a fan-out wildcard."
     ),
     exploit_example=(
         "# Vulnerable: an EventBridge rule with a wildcard ARN\n"
@@ -63,7 +67,7 @@ def check(catalog: ResourceCatalog) -> list[Finding]:
         name = rule_row.get("Name", "<unnamed>")
         for target in catalog.eventbridge_targets(name):
             arn = target.get("Arn", "") or ""
-            if "*" in arn:
+            if eventbridge_target_is_wildcard(arn):
                 findings.append(Finding(
                     check_id=RULE.id, title=RULE.title, severity=RULE.severity,
                     resource=f"{name}/{target.get('Id', '?')}",

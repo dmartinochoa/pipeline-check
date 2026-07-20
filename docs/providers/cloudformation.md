@@ -627,7 +627,7 @@ Move the secret into Secrets Manager (or SSM Parameter Store SecureString) and r
 <span class="pg-sev pg-sev--high">HIGH</span> <span class="pg-tag pg-tag--owasp">CICD-SEC-7</span> <span class="pg-tag pg-tag--cwe">CWE-1327</span>
 </div>
 
-When ``AWS::CodeBuild::Project.Properties.VpcConfig.VpcId`` resolves to a concrete reference, walks every ``AWS::EC2::Subnet`` in the same VPC and fires if any has ``MapPublicIpOnLaunch: true``.
+Resolves the subnets a project actually runs in (``VpcConfig.Subnets``, which is a list of ``!Ref`` to in-template ``AWS::EC2::Subnet`` resources) and fires only when one of *those* has ``MapPublicIpOnLaunch: true``. A public subnet elsewhere in the same VPC (the standard public/private split) does not trip the rule; the project has to be placed on one. Subnets given as literal ids, parameters, or imports can't be correlated statically and are left unflagged.
 
 <div class="pg-rule__rec" markdown>
 
@@ -907,7 +907,7 @@ Declare an ``AWS::Events::Rule`` whose ``EventPattern`` matches the ``CodePipeli
 <span class="pg-sev pg-sev--high">HIGH</span> <span class="pg-tag pg-tag--owasp">CICD-SEC-8</span> <span class="pg-tag pg-tag--cwe">CWE-441</span>
 </div>
 
-Reads ``AWS::Events::Rule.Properties.Targets[*].Arn``. A literal ``*`` in the ARN is the offending shape — it makes the target opaque to any reviewer tracing event flow.
+Reads ``AWS::Events::Rule.Properties.Targets[*].Arn``. A literal ``*`` in the ARN is the offending shape — it makes the target opaque to any reviewer tracing event flow. A CloudWatch Logs target ARN, whose documented form ends in ``:log-group:/name:*`` (the mandatory log-stream selector), is not treated as a wildcard target.
 
 <div class="pg-rule__rec" markdown>
 

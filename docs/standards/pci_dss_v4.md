@@ -24,7 +24,7 @@ Click a control ID to jump to the per-control section with the full check list. 
 
 | Control | Title | Checks | Severity mix |
 |---------|-------|-------:|--------------|
-| [`6.3.1`](#ctrl-6-3-1) | Security vulnerabilities are identified and managed | 143 | 19C · 66H · 45M · 13L |
+| [`6.3.1`](#ctrl-6-3-1) | Security vulnerabilities are identified and managed | 143 | 19C · 66H · 44M · 14L |
 | [`6.3.3`](#ctrl-6-3-3) | All system components protected from known vulnerabilities by installing applicable patches | 190 | 14C · 87H · 76M · 13L |
 | [`6.4.1`](#ctrl-6-4-1) | Public-facing web apps are protected against attacks (secure build/config) | 151 | 23C · 70H · 46M · 12L |
 | [`6.4.3`](#ctrl-6-4-3) | Changes to systems are managed via documented change control | 85 | 4C · 32H · 40M · 9L |
@@ -201,7 +201,7 @@ pipeline_check --pipeline aws --standard pci_dss_v4 --standard owasp_cicd_top_10
 | [`SCM-039`](../providers/scm_github.md#scm-039) | Active ruleset doesn't pin a required workflow | <span class="pg-sev pg-sev--low">LOW</span> | [SCM](../providers/scm_github.md) |  |
 | [`SCM-040`](../providers/scm_github.md#scm-040) | Active ruleset doesn't gate on code scanning results | <span class="pg-sev pg-sev--low">LOW</span> | [SCM](../providers/scm_github.md) |  |
 | [`SCM-045`](../providers/scm_github.md#scm-045) | Default code scanning uses the limited query suite | <span class="pg-sev pg-sev--low">LOW</span> | [SCM](../providers/scm_github.md) |  |
-| [`SCM-046`](../providers/scm_github.md#scm-046) | Default code scanning is configured but paused | <span class="pg-sev pg-sev--medium">MEDIUM</span> | [SCM](../providers/scm_github.md) |  |
+| [`SCM-046`](../providers/scm_github.md#scm-046) | Default code scanning has no periodic scan schedule | <span class="pg-sev pg-sev--low">LOW</span> | [SCM](../providers/scm_github.md) |  |
 | [`SCM-047`](../providers/scm_github.md#scm-047) | Repo language excluded from default code-scanning coverage | <span class="pg-sev pg-sev--medium">MEDIUM</span> | [SCM](../providers/scm_github.md) |  |
 | [`TKN-012`](../providers/tekton.md#tkn-012) | No vulnerability scanning step | <span class="pg-sev pg-sev--medium">MEDIUM</span> | [Tekton](../providers/tekton.md) |  |
 

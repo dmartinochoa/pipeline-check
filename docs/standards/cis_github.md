@@ -46,7 +46,7 @@ Click a control ID to jump to the per-control section with the full check list. 
 | [`1.1.15`](#ctrl-1-1-15) | Ensure pushing/merging on default branches is restricted | 4 | 1H · 2M · 1L |
 | [`1.1.16`](#ctrl-1-1-16) | Ensure force push is denied | 3 | 2H · 1M |
 | [`1.1.17`](#ctrl-1-1-17) | Ensure branch deletion is denied | 4 | 2H · 1M · 1L |
-| [`1.1.18`](#ctrl-1-1-18) | Ensure any merging of code is automatically scanned for security | 6 | 3M · 3L |
+| [`1.1.18`](#ctrl-1-1-18) | Ensure any merging of code is automatically scanned for security | 6 | 2M · 4L |
 | [`1.1.19`](#ctrl-1-1-19) | Ensure any merging of code is automatically scanned for vulnerabilities | 1 | 1M |
 | [`1.1.20`](#ctrl-1-1-20) | Ensure any merging of code is automatically scanned for secrets | 2 | 2H |
 | [`1.2.5`](#ctrl-1-2-5) | Ensure all copies (forks) of code are tracked and accounted for | 1 | 1M |
@@ -59,7 +59,7 @@ Click a control ID to jump to the per-control section with the full check list. 
 | [`1.5.1`](#ctrl-1-5-1) | Ensure scanners are in place to identify and prevent sensitive data in code | 16 | 8C · 6H · 1M · 1L |
 | [`1.5.2`](#ctrl-1-5-2) | Ensure scanners are in place to secure CI/CD pipeline instructions | 64 | 12C · 42H · 9M · 1L |
 | [`1.5.3`](#ctrl-1-5-3) | Ensure scanners are in place to secure IaC instructions | 26 | 7C · 19H |
-| [`1.5.4`](#ctrl-1-5-4) | Ensure scanners are in place to identify and confirm presence of vulnerabilities | 8 | 1H · 6M · 1L |
+| [`1.5.4`](#ctrl-1-5-4) | Ensure scanners are in place to identify and confirm presence of vulnerabilities | 8 | 1H · 5M · 2L |
 
 ## Filter at runtime
 
@@ -228,7 +228,7 @@ pipeline_check --pipeline aws --standard cis_github --standard owasp_cicd_top_10
 | [`SCM-039`](../providers/scm_github.md#scm-039) | Active ruleset doesn't pin a required workflow | <span class="pg-sev pg-sev--low">LOW</span> | [SCM](../providers/scm_github.md) |  |
 | [`SCM-040`](../providers/scm_github.md#scm-040) | Active ruleset doesn't gate on code scanning results | <span class="pg-sev pg-sev--low">LOW</span> | [SCM](../providers/scm_github.md) |  |
 | [`SCM-045`](../providers/scm_github.md#scm-045) | Default code scanning uses the limited query suite | <span class="pg-sev pg-sev--low">LOW</span> | [SCM](../providers/scm_github.md) |  |
-| [`SCM-046`](../providers/scm_github.md#scm-046) | Default code scanning is configured but paused | <span class="pg-sev pg-sev--medium">MEDIUM</span> | [SCM](../providers/scm_github.md) |  |
+| [`SCM-046`](../providers/scm_github.md#scm-046) | Default code scanning has no periodic scan schedule | <span class="pg-sev pg-sev--low">LOW</span> | [SCM](../providers/scm_github.md) |  |
 | [`SCM-047`](../providers/scm_github.md#scm-047) | Repo language excluded from default code-scanning coverage | <span class="pg-sev pg-sev--medium">MEDIUM</span> | [SCM](../providers/scm_github.md) |  |
 
 ### 1.1.19: Ensure any merging of code is automatically scanned for vulnerabilities { #ctrl-1-1-19 }
@@ -447,7 +447,7 @@ pipeline_check --pipeline aws --standard cis_github --standard owasp_cicd_top_10
 | [`SCM-003`](../providers/scm_github.md#scm-003) | GitHub default code scanning is not enabled | <span class="pg-sev pg-sev--medium">MEDIUM</span> | [SCM](../providers/scm_github.md) |  |
 | [`SCM-005`](../providers/scm_github.md#scm-005) | Dependabot security updates are not enabled | <span class="pg-sev pg-sev--medium">MEDIUM</span> | [SCM](../providers/scm_github.md) |  |
 | [`SCM-045`](../providers/scm_github.md#scm-045) | Default code scanning uses the limited query suite | <span class="pg-sev pg-sev--low">LOW</span> | [SCM](../providers/scm_github.md) |  |
-| [`SCM-046`](../providers/scm_github.md#scm-046) | Default code scanning is configured but paused | <span class="pg-sev pg-sev--medium">MEDIUM</span> | [SCM](../providers/scm_github.md) |  |
+| [`SCM-046`](../providers/scm_github.md#scm-046) | Default code scanning has no periodic scan schedule | <span class="pg-sev pg-sev--low">LOW</span> | [SCM](../providers/scm_github.md) |  |
 | [`SCM-047`](../providers/scm_github.md#scm-047) | Repo language excluded from default code-scanning coverage | <span class="pg-sev pg-sev--medium">MEDIUM</span> | [SCM](../providers/scm_github.md) |  |
 
 ## Not covered

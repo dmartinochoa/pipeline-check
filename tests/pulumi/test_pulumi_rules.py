@@ -322,6 +322,45 @@ class TestPulumi005:
         findings = _scan(tmp_path)
         assert findings["PULUMI-005"].passed
 
+    def test_fires_on_bare_typescript_keys(self, tmp_path):
+        # TS/JS object literals fed to JSON.stringify use BARE keys; the
+        # rule's own exploit_example uses this form (B4 FN: only double-
+        # quoted keys matched).
+        _write_project(
+            tmp_path,
+            sources={
+                "index.ts": (
+                    "const policy = JSON.stringify({\n"
+                    "  Statement: [{\n"
+                    '    Effect: "Allow",\n'
+                    '    Action: "*",\n'
+                    '    Resource: "*",\n'
+                    "  }],\n"
+                    "});\n"
+                ),
+            },
+        )
+        findings = _scan(tmp_path)
+        assert not findings["PULUMI-005"].passed
+
+    def test_fires_on_single_quoted_python_keys(self, tmp_path):
+        _write_project(
+            tmp_path,
+            sources={
+                "__main__.py": (
+                    "policy = json.dumps({\n"
+                    "    'Statement': [{\n"
+                    "        'Effect': 'Allow',\n"
+                    "        'Action': '*',\n"
+                    "        'Resource': '*',\n"
+                    "    }]\n"
+                    "})\n"
+                ),
+            },
+        )
+        findings = _scan(tmp_path)
+        assert not findings["PULUMI-005"].passed
+
 
 # ── PULUMI-006 ──────────────────────────────────────────────────
 

@@ -34,6 +34,17 @@ def _build(*extra: str) -> Pipeline:
     ])
 
 
+def _plugin_build() -> Pipeline:
+    # The canonical Drone image build: ``plugins/docker`` builds and
+    # pushes via a ``settings:`` block with no ``docker build`` /
+    # ``docker push`` command, so the artifact heuristic used to miss it.
+    return _pipeline(steps=[
+        {"name": "publish", "image": f"plugins/docker{_DIGEST}",
+         "settings": {"repo": "my/app", "tags": "latest",
+                      "username": "u", "password": "p"}},
+    ])
+
+
 class TestDR019Signing:
     def test_metadata(self):
         assert r19.RULE.id == "DR-019"
@@ -50,6 +61,12 @@ class TestDR019Signing:
                               "commands": ["npm run lint"]}])
         assert r19.check(p).passed  # no artifacts -> not applicable
 
+    def test_fails_on_plugin_docker_build_without_signing(self):
+        # ``plugins/docker`` settings-block build produces an image;
+        # an unsigned one must fire (A/B4 FN: the plugin build was
+        # invisible to the artifact heuristic).
+        assert not r19.check(_plugin_build()).passed
+
 
 class TestDR020Sbom:
     def test_fails_on_build_without_sbom(self):
@@ -58,6 +75,9 @@ class TestDR020Sbom:
     def test_passes_with_syft(self):
         assert r20.check(_build("syft app -o cyclonedx-json")).passed
 
+    def test_fails_on_plugin_docker_build_without_sbom(self):
+        assert not r20.check(_plugin_build()).passed
+
 
 class TestDR021Provenance:
     def test_fails_on_build_without_provenance(self):
@@ -65,6 +85,9 @@ class TestDR021Provenance:
 
     def test_passes_with_attestation(self):
         assert r21.check(_build("cosign attest --predicate slsa.json app")).passed
+
+    def test_fails_on_plugin_docker_build_without_provenance(self):
+        assert not r21.check(_plugin_build()).passed
 
 
 class TestDR022VulnScanning:

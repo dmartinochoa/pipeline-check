@@ -21,7 +21,10 @@ RULE = Rule(
     docs_note=(
         "Reads ``AWS::Events::Rule.Properties.Targets[*].Arn``. A "
         "literal ``*`` in the ARN is the offending shape — it makes "
-        "the target opaque to any reviewer tracing event flow."
+        "the target opaque to any reviewer tracing event flow. A "
+        "CloudWatch Logs target ARN, whose documented form ends in "
+        "``:log-group:/name:*`` (the mandatory log-stream selector), "
+        "is not treated as a wildcard target."
     ),
     exploit_example=(
         "# Vulnerable: an EventBridge rule whose target ARN\n"

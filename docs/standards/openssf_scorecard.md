@@ -30,7 +30,7 @@ Click a control ID to jump to the per-control section with the full check list. 
 | [`Dangerous-Workflow`](#ctrl-dangerous-workflow) | No dangerous patterns in CI workflows (untrusted checkout, script injection) | 212 | 35C · 140H · 32M · 5L |
 | [`Dependency-Update-Tool`](#ctrl-dependency-update-tool) | Project uses an automated dependency-update tool (Dependabot / Renovate) | 7 | 7M |
 | [`Pinned-Dependencies`](#ctrl-pinned-dependencies) | Dependencies (actions, images, includes, packages) are pinned to immutable references from trusted sources | 201 | 11C · 116H · 65M · 9L |
-| [`SAST`](#ctrl-sast) | Project uses static analysis / vulnerability scanning | 21 | 3H · 16M · 2L |
+| [`SAST`](#ctrl-sast) | Project uses static analysis / vulnerability scanning | 21 | 3H · 15M · 3L |
 | [`SBOM`](#ctrl-sbom) | Releases publish a software bill of materials | 28 | 1H · 22M · 5L |
 | [`Signed-Releases`](#ctrl-signed-releases) | Release artifacts are cryptographically signed | 41 | 6H · 33M · 1L · 1I |
 | [`Token-Permissions`](#ctrl-token-permissions) | CI tokens are scoped to the minimum required permissions | 157 | 35C · 78H · 42M · 2L |
@@ -615,7 +615,7 @@ pipeline_check --pipeline aws --standard openssf_scorecard --standard owasp_cicd
 | [`SCM-003`](../providers/scm_github.md#scm-003) | GitHub default code scanning is not enabled | <span class="pg-sev pg-sev--medium">MEDIUM</span> | [SCM](../providers/scm_github.md) |  |
 | [`SCM-040`](../providers/scm_github.md#scm-040) | Active ruleset doesn't gate on code scanning results | <span class="pg-sev pg-sev--low">LOW</span> | [SCM](../providers/scm_github.md) |  |
 | [`SCM-045`](../providers/scm_github.md#scm-045) | Default code scanning uses the limited query suite | <span class="pg-sev pg-sev--low">LOW</span> | [SCM](../providers/scm_github.md) |  |
-| [`SCM-046`](../providers/scm_github.md#scm-046) | Default code scanning is configured but paused | <span class="pg-sev pg-sev--medium">MEDIUM</span> | [SCM](../providers/scm_github.md) |  |
+| [`SCM-046`](../providers/scm_github.md#scm-046) | Default code scanning has no periodic scan schedule | <span class="pg-sev pg-sev--low">LOW</span> | [SCM](../providers/scm_github.md) |  |
 | [`SCM-047`](../providers/scm_github.md#scm-047) | Repo language excluded from default code-scanning coverage | <span class="pg-sev pg-sev--medium">MEDIUM</span> | [SCM](../providers/scm_github.md) |  |
 | [`TKN-012`](../providers/tekton.md#tkn-012) | No vulnerability scanning step | <span class="pg-sev pg-sev--medium">MEDIUM</span> | [Tekton](../providers/tekton.md) |  |
 

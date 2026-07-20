@@ -1,12 +1,14 @@
 """CB-010 (Terraform). CodeBuild webhook allows fork-PR builds."""
 from __future__ import annotations
 
-from typing import Any
-
 from ...base import Finding, Severity
 from ...rule import Rule
 from ..base import TerraformContext
-from ..extended import _cb010
+from ..extended import (
+    _cb010,
+    index_codebuild_webhooks,
+    webhook_for_project,
+)
 
 RULE = Rule(
     id="CB-010",
@@ -56,14 +58,10 @@ RULE = Rule(
 
 
 def check(ctx: TerraformContext) -> list[Finding]:
-    webhooks: dict[str, dict[str, Any]] = {
-        w.values.get("project_name", ""): w.values
-        for w in ctx.resources("aws_codebuild_webhook")
-    }
+    webhooks = index_codebuild_webhooks(ctx)
     findings: list[Finding] = []
     for r in ctx.resources("aws_codebuild_project"):
-        name = r.values.get("name") or r.name
-        hook = webhooks.get(name)
+        hook = webhook_for_project(webhooks, r)
         if hook is not None:
             findings.append(_cb010(hook, r.address))
     return findings

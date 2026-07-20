@@ -420,6 +420,48 @@ def test_build_gradle_mvn006_flags_compromised_version(
     assert any("log4j-core" in f.description for f in failed)
 
 
+def test_build_gradle_mvn001_flags_dynamic_version(tmp_path: Path) -> None:
+    # Gradle dynamic-version forms (``1.+`` / ``latest.release``) are the
+    # exact floating pattern MVN-001 exists to catch (Part-C FN: only the
+    # Maven range grammar was recognized).
+    body = textwrap.dedent(
+        """\
+        repositories { mavenCentral() }
+        dependencies {
+            implementation 'org.example:foo:1.+'
+            implementation 'org.example:bar:latest.release'
+        }
+        """
+    )
+    (tmp_path / "build.gradle").write_text(body, encoding="utf-8")
+    ctx = MavenContext.from_path(tmp_path)
+    findings = list(MavenChecks(ctx).run())
+    mvn001 = [f for f in findings if f.check_id == "MVN-001"]
+    assert mvn001 and not mvn001[0].passed
+
+
+def test_build_gradle_mvn005_skips_gradle_repo(tmp_path: Path) -> None:
+    # ``<checksumPolicy>`` is a Maven-XML concept; a Gradle ``maven { url
+    # ... }`` repo can't declare one, so MVN-005 must not fire with an
+    # inapplicable XML remediation (Part-C FP).
+    body = textwrap.dedent(
+        """\
+        repositories {
+            mavenCentral()
+            maven { url 'https://internal.example.com/m2' }
+        }
+        dependencies {
+            implementation 'org.example:foo:1.2.3'
+        }
+        """
+    )
+    (tmp_path / "build.gradle").write_text(body, encoding="utf-8")
+    ctx = MavenContext.from_path(tmp_path)
+    findings = list(MavenChecks(ctx).run())
+    mvn005 = [f for f in findings if f.check_id == "MVN-005"]
+    assert mvn005 and all(f.passed for f in mvn005)
+
+
 def test_build_gradle_kts_picked_up_by_loader(tmp_path: Path) -> None:
     body = textwrap.dedent(
         """\

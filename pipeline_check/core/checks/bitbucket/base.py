@@ -127,3 +127,19 @@ def step_scripts(step: dict[str, Any]) -> list[str]:
     elif isinstance(script, str):
         out.append(script)
     return out
+
+
+def step_scripts_all(step: dict[str, Any]) -> list[str]:
+    """Every `script:` and `after-script:` line in *step*.
+
+    ``after-script:`` runs after the main script (even on failure) with
+    the same secret environment, so any rule that scans what a step
+    executes must cover it too. Use this instead of :func:`step_scripts`
+    unless the rule is specifically about the main-script phase only."""
+    out = step_scripts(step)
+    after = step.get("after-script")
+    if isinstance(after, list):
+        out += [s for s in after if isinstance(s, str)]
+    elif isinstance(after, str):
+        out.append(after)
+    return out

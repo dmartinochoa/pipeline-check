@@ -29,7 +29,7 @@ Click a control ID to jump to the per-control section with the full check list. 
 | [`CC6.6`](#ctrl-cc6-6) | Boundary-protection measures restrict access from outside the system boundary | 129 | 23C · 54H · 41M · 11L |
 | [`CC6.7`](#ctrl-cc6-7) | Data in transit is protected from unauthorized disclosure | 40 | 34H · 5M · 1L |
 | [`CC6.8`](#ctrl-cc6-8) | Controls prevent or detect the introduction of malicious software | 220 | 45C · 127H · 38M · 10L |
-| [`CC7.1`](#ctrl-cc7-1) | Detection procedures identify configuration changes that introduce vulnerabilities | 52 | 8C · 14H · 14M · 15L · 1I |
+| [`CC7.1`](#ctrl-cc7-1) | Detection procedures identify configuration changes that introduce vulnerabilities | 52 | 8C · 14H · 13M · 16L · 1I |
 | [`CC7.2`](#ctrl-cc7-2) | System components are monitored for anomalies indicative of malicious acts or failures | 57 | 6H · 27M · 8L · 16I |
 | [`CC7.3`](#ctrl-cc7-3) | Security events are evaluated to determine if they require response | 16 | 2H · 11M · 3L |
 | [`CC7.4`](#ctrl-cc7-4) | Identified security incidents trigger a response process | 9 | 6M · 3L |
@@ -816,7 +816,7 @@ pipeline_check --pipeline aws --standard soc2 --standard owasp_cicd_top_10
 | [`SCM-040`](../providers/scm_github.md#scm-040) | Active ruleset doesn't gate on code scanning results | <span class="pg-sev pg-sev--low">LOW</span> | [SCM](../providers/scm_github.md) |  |
 | [`SCM-042`](../providers/scm_github.md#scm-042) | Active ruleset doesn't require merge queue | <span class="pg-sev pg-sev--low">LOW</span> | [SCM](../providers/scm_github.md) |  |
 | [`SCM-045`](../providers/scm_github.md#scm-045) | Default code scanning uses the limited query suite | <span class="pg-sev pg-sev--low">LOW</span> | [SCM](../providers/scm_github.md) |  |
-| [`SCM-046`](../providers/scm_github.md#scm-046) | Default code scanning is configured but paused | <span class="pg-sev pg-sev--medium">MEDIUM</span> | [SCM](../providers/scm_github.md) |  |
+| [`SCM-046`](../providers/scm_github.md#scm-046) | Default code scanning has no periodic scan schedule | <span class="pg-sev pg-sev--low">LOW</span> | [SCM](../providers/scm_github.md) |  |
 | [`SCM-047`](../providers/scm_github.md#scm-047) | Repo language excluded from default code-scanning coverage | <span class="pg-sev pg-sev--medium">MEDIUM</span> | [SCM](../providers/scm_github.md) |  |
 | [`TKN-012`](../providers/tekton.md#tkn-012) | No vulnerability scanning step | <span class="pg-sev pg-sev--medium">MEDIUM</span> | [Tekton](../providers/tekton.md) |  |
 

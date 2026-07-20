@@ -25,7 +25,7 @@ from ..._primitives.unsafe_deser import unsafe_deser_label
 from ..._yaml_lines import line_of as _line_of
 from ...base import Finding, Location, Severity
 from ...rule import Rule
-from ..base import iter_steps, step_scripts
+from ..base import iter_steps, step_scripts_all
 
 RULE = Rule(
     id="BB-037",
@@ -59,7 +59,7 @@ def check(path: str, doc: dict[str, Any]) -> Finding:
     offenders: list[str] = []
     locations: list[Location] = []
     for loc, step in iter_steps(doc):
-        body = "\n".join(step_scripts(step))
+        body = "\n".join(step_scripts_all(step))
         label = unsafe_deser_label(body)
         if label is not None:
             offenders.append(f"{loc}: {label}")

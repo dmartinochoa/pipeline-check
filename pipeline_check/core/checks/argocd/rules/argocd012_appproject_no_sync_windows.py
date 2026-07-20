@@ -1,11 +1,20 @@
 """ARGOCD-012. AppProject defines no sync windows for production."""
 from __future__ import annotations
 
+import re
 from typing import Any
 
 from ...base import Finding, Severity
 from ...rule import Rule
 from ..base import ArgoCDContext, iter_appprojects
+
+#: ``prod`` / ``production`` as a delimited token, so ``products`` /
+#: ``product-catalog`` / ``reproducer`` (which merely embed the
+#: substring) aren't treated as production. ``prod-eu`` / ``prod_us`` /
+#: ``prod1`` / ``us-prod`` do match (not-a-letter boundaries).
+_PROD_TOKEN_RE = re.compile(
+    r"(?<![a-z])(?:production|prod)(?![a-z])", re.IGNORECASE
+)
 
 RULE = Rule(
     id="ARGOCD-012",
@@ -100,9 +109,6 @@ RULE = Rule(
 )
 
 
-_PROD_TOKENS: frozenset[str] = frozenset({"prod", "production"})
-
-
 def _looks_like_production(spec: dict[str, Any]) -> bool:
     destinations = spec.get("destinations")
     if not isinstance(destinations, list):
@@ -113,10 +119,7 @@ def _looks_like_production(spec: dict[str, Any]) -> bool:
         ns = dest.get("namespace")
         if not isinstance(ns, str):
             continue
-        lc = ns.lower()
-        if lc in _PROD_TOKENS:
-            return True
-        if "prod" in lc:
+        if _PROD_TOKEN_RE.search(ns):
             return True
     return False
 

@@ -96,11 +96,18 @@ RULE = Rule(
 # ``npm install`` / ``npm ci`` / ``npm i`` (not global), ``pnpm
 # install`` / ``pnpm i``, ``yarn install``, and bare ``yarn``
 # (the default yarn 1.x behavior is ``install``).
+#
+# The verb needs a trailing ``\b`` so ``npm i`` doesn't match the ``i``
+# in ``npm info`` / ``npm init`` and ``pnpm i`` doesn't match ``pnpm
+# import``. The yarn branch matches ``yarn install`` or a *bare* yarn
+# (end of command, a flag, or a shell separator after it) but not
+# ``yarn <subcommand>`` (``yarn build``, ``yarn test``, ``yarn lint``,
+# ``yarn dlx`` ...), none of which install the full dependency tree.
 _INSTALL_RE = re.compile(
     r"\b(?:"
-    r"npm\s+(?:install|ci|i)(?!\s+-g\b)(?!\s+--global\b)"
-    r"|pnpm\s+(?:install|i)(?!\s+-g\b)(?!\s+--global\b)"
-    r"|yarn(?:\s+install)?\b"
+    r"npm\s+(?:install|ci|i)\b(?!\s+-g\b)(?!\s+--global\b)"
+    r"|pnpm\s+(?:install|i)\b(?!\s+-g\b)(?!\s+--global\b)"
+    r"|yarn\b(?:\s+install\b|(?!\s+\w))"
     r")",
     re.IGNORECASE,
 )

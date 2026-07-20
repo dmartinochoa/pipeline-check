@@ -38,6 +38,20 @@ class TestBB035TrustRemoteCode:
         f = run_check(cfg, "BB-035")
         assert not f.passed
 
+    def test_fails_on_trust_remote_code_in_after_script(self):
+        # ``after-script:`` runs with the same secret env; the AI/model
+        # rules must scan it too (Part-C FN: only ``script:`` was read).
+        cfg = """
+        pipelines:
+          default:
+            - step:
+                script: [make]
+                after-script:
+                  - python -c "AutoModel.from_pretrained('acme/m', trust_remote_code=True)"
+        """
+        f = run_check(cfg, "BB-035")
+        assert not f.passed
+
     def test_passes_on_clean_pipeline(self):
         cfg = """
         pipelines:

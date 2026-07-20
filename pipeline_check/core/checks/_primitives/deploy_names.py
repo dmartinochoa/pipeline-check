@@ -1,9 +1,9 @@
 """Deploy-like job/workflow name regex.
 
 Every provider's "deployment gating" rule needs to decide which jobs are
-deployment jobs. The heuristic is a substring match on the job name, and
-the vocabulary is provider-independent: ``deploy``, ``release``,
-``publish``, ``promote``.
+deployment jobs. The heuristic is a delimited-segment match on the job
+name, and the vocabulary is provider-independent: ``deploy``,
+``release``, ``publish``, ``promote``.
 
 Owning the regex here means the vocabulary can grow (``rollout``,
 ``ship``) in one place instead of drifting across provider helpers.
@@ -12,7 +12,15 @@ from __future__ import annotations
 
 import re
 
-DEPLOY_RE = re.compile(r"(?i)\b(deploy|release|publish|promote)\b")
+# A ``\b`` boundary never sits at an underscore (``_`` is a word char),
+# so ``\bdeploy\b`` missed the dominant CI naming form ``deploy_prod`` /
+# ``prod_deploy`` / ``release_prod``. Use not-a-letter-or-digit
+# lookarounds instead so ``_`` / ``-`` / whitespace all delimit the
+# keyword, while ``deployment`` / ``undeploy`` (letter-adjacent) stay
+# unmatched.
+DEPLOY_RE = re.compile(
+    r"(?i)(?<![a-z0-9])(deploy|release|publish|promote)(?![a-z0-9])"
+)
 
 # Production-tier *environment name* regex. A deployment-environment name
 # that denotes the production tier, used by the "production deploy on an

@@ -26,7 +26,7 @@ from ..._primitives.tainted_variables import has_direct_taint
 from ..._yaml_lines import line_of as _line_of
 from ...base import Finding, Location, Severity
 from ...rule import Rule
-from ..base import iter_steps, step_scripts
+from ..base import iter_steps, step_scripts_all
 from ._helpers import UNTRUSTED_VAR_RE
 
 RULE = Rule(
@@ -80,7 +80,7 @@ def check(path: str, doc: dict[str, Any]) -> Finding:
     offenders: list[str] = []
     locations: list[Location] = []
     for loc, step in iter_steps(doc):
-        scripts = step_scripts(step)
+        scripts = step_scripts_all(step)
         tainted = _tainted_exports(scripts)
         for line in scripts:
             if not invokes_agentic_cli(line):

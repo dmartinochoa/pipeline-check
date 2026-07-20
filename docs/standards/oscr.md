@@ -100,7 +100,7 @@ Click a control ID to jump to the per-control section with the full check list. 
 | [`PE-2`](#ctrl-pe-2) | Runners / agents running with high user privileges | 47 | 11C · 24H · 10M · 2L |
 | [`DE-1`](#ctrl-de-1) | Bypass review using admin permission | 41 | 16H · 23M · 2L |
 | [`DE-2`](#ctrl-de-2) | SaaS sprawl | 1 | 1M |
-| [`DE-3`](#ctrl-de-3) | Misconfigured audit log settings | 33 | 3H · 7M · 7L · 16I |
+| [`DE-3`](#ctrl-de-3) | Misconfigured audit log settings | 33 | 3H · 6M · 8L · 16I |
 | [`DE-4`](#ctrl-de-4) | Misconfiguration of security measures | 92 | 1C · 14H · 56M · 21L |
 | [`DE-5`](#ctrl-de-5) | Malicious compiler / interpreter | 0 | — |
 | [`DE-6`](#ctrl-de-6) | Misconfigured traffic log settings | 2 | 1M · 1L |
@@ -1090,7 +1090,7 @@ _No checks in this scanner currently evidence this control. Open an issue if you
 | [`S3-004`](../providers/aws.md#s3-004) | Artifact bucket access logging not enabled | <span class="pg-sev pg-sev--low">LOW</span> | [AWS](../providers/aws.md) |  |
 | [`SCM-003`](../providers/scm_github.md#scm-003) | GitHub default code scanning is not enabled | <span class="pg-sev pg-sev--medium">MEDIUM</span> | [SCM](../providers/scm_github.md) |  |
 | [`SCM-045`](../providers/scm_github.md#scm-045) | Default code scanning uses the limited query suite | <span class="pg-sev pg-sev--low">LOW</span> | [SCM](../providers/scm_github.md) |  |
-| [`SCM-046`](../providers/scm_github.md#scm-046) | Default code scanning is configured but paused | <span class="pg-sev pg-sev--medium">MEDIUM</span> | [SCM](../providers/scm_github.md) |  |
+| [`SCM-046`](../providers/scm_github.md#scm-046) | Default code scanning has no periodic scan schedule | <span class="pg-sev pg-sev--low">LOW</span> | [SCM](../providers/scm_github.md) |  |
 | [`SCM-047`](../providers/scm_github.md#scm-047) | Repo language excluded from default code-scanning coverage | <span class="pg-sev pg-sev--medium">MEDIUM</span> | [SCM](../providers/scm_github.md) |  |
 | [`SM-000`](../providers/aws.md) | Secrets Manager API access failed | <span class="pg-sev pg-sev--info">INFO</span> | [AWS](../providers/aws.md) |  |
 | [`SSM-000`](../providers/aws.md) | SSM Parameter Store API access failed | <span class="pg-sev pg-sev--info">INFO</span> | [AWS](../providers/aws.md) |  |

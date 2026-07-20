@@ -537,6 +537,8 @@ Remove dependency-update commands from CI. Use lockfile-pinned install commands 
 
 Detects patterns that disable TLS certificate verification: `git config http.sslVerify false`, `NODE_TLS_REJECT_UNAUTHORIZED=0`, `npm config set strict-ssl false`, `curl -k`, `wget --no-check-certificate`, `PYTHONHTTPSVERIFY=0`, and `GOINSECURE=`. Disabling TLS verification allows MITM injection of malicious packages, repositories, or build tools.
 
+Also inspects every `variables:` mapping (global, `workflow:`, and per-job) structurally: GitLab's idiomatic way to set an env var puts the name in the key (`NODE_TLS_REJECT_UNAUTHORIZED: "0"`), which a value-only text scan misses.
+
 <div class="pg-rule__rec" markdown>
 
 **Recommended action**

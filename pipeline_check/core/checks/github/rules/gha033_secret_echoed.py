@@ -118,10 +118,9 @@ _SHELL_TRACE_RE = re.compile(
 )
 
 
-def _step_secret_env_vars(step: dict[str, Any]) -> set[str]:
-    """Names of step-level env vars whose value references ``secrets.*``."""
+def _secret_env_vars(env: Any) -> set[str]:
+    """Names of env vars in *env* whose value references ``secrets.*``."""
     out: set[str] = set()
-    env = step.get("env")
     if not isinstance(env, dict):
         return out
     for name, value in env.items():
@@ -195,12 +194,22 @@ def _shell_trace_with_secret_ref(
 
 def check(path: str, doc: dict[str, Any]) -> Finding:
     offenders: list[str] = []
+    # Secrets bound at workflow scope inherit into every job/step; a
+    # secret-bound name at any scope is in scope for the step's ``run:``.
+    # Only step env was scanned before, so job/workflow-level bindings
+    # (the more common placement) silently escaped the leak check.
+    wf_secret_env = _secret_env_vars(doc.get("env"))
     for job_id, job in iter_jobs(doc):
+        job_secret_env = _secret_env_vars(job.get("env"))
         for idx, step in enumerate(iter_steps(job)):
             run = step.get("run")
             if not isinstance(run, str):
                 continue
-            secret_env = _step_secret_env_vars(step)
+            secret_env = (
+                _secret_env_vars(step.get("env"))
+                | job_secret_env
+                | wf_secret_env
+            )
             if _scan_for_printed_secret(run, secret_env):
                 offenders.append(f"{job_id}[{idx}]")
                 continue

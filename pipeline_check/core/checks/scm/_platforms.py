@@ -579,6 +579,13 @@ def _bitbucket_protection(
         },
         "allow_force_pushes": {"enabled": allow_force},
         "allow_deletions": {"enabled": allow_delete},
+        # The ``push`` kind (Bitbucket's "Prevent push" / Write-access
+        # restriction) has no GitHub-shaped slot, but it's the primary
+        # write-side control. Surface the raw restriction kinds present
+        # on the default branch so SCM-055 can count it.
+        "_bitbucket_restriction_kinds": [
+            k for k in by_kind if isinstance(k, str)
+        ],
         "required_status_checks": (
             {"strict": True, "contexts": ["pipeline"]}
             if pipeline_required else {}

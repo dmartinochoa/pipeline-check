@@ -16,7 +16,7 @@ from typing import Any
 
 from .._context import statement_is_constrained
 from .._iam_policy import as_list, iter_allow, public_principal
-from .._patterns import SECRET_NAME_RE, SECRET_VALUE_RE
+from .._patterns import SECRET_NAME_RE, SECRET_VALUE_RE, arn_account_id
 from ..base import Finding, Severity
 from .base import (
     CloudFormationBaseCheck,
@@ -208,6 +208,7 @@ def _is_cmk_intrinsic(value: Any, ctx: CloudFormationContext) -> bool:
 
 def _codecommit(ctx: CloudFormationContext) -> list[Finding]:
     out: list[Finding] = []
+    self_accounts = _cfn_self_accounts(ctx)
     for r in ctx.resources("AWS::CodeCommit::Repository"):
         key = r.properties.get("KmsKeyId")
         key_str = as_str(key)
@@ -233,45 +234,107 @@ def _codecommit(ctx: CloudFormationContext) -> list[Finding]:
             recommendation="Set KmsKeyId to a customer-managed KMS key ARN.",
             passed=passed,
         ))
-        # CCM-003: CodeCommit triggers that specify a literal DestinationArn
-        # bypass the in-template resource graph and cannot be validated
-        # statically for account membership. Flag any literal ARN so
-        # reviewers can confirm the target stays within the same account.
-        # Destinations expressed via Fn::GetAtt / Ref on in-template
-        # SNS/Lambda resources are the recommended pattern and pass.
+        # CCM-003: a CodeCommit trigger with a literal DestinationArn is
+        # only a finding when that ARN's account differs from the
+        # account the stack deploys into. A same-account literal ARN is
+        # the common case and must not fire. When the template carries
+        # no in-account signal (a sibling literal ARN or a parameter
+        # default), cross-account membership can't be proven statically,
+        # so the trigger is not failed.
         triggers = r.properties.get("Triggers") or []
-        offenders: list[str] = []
+        cross_account: list[str] = []
+        uncorrelated: list[str] = []
         for trig in triggers:
             if not isinstance(trig, dict):
                 continue
             dest = trig.get("DestinationArn")
-            if isinstance(dest, str) and dest.count(":") >= 4:
-                # Literal ARN — the account field cannot be compared
-                # statically; flag for human review.
-                offenders.append(dest)
+            if not (isinstance(dest, str) and dest.count(":") >= 4):
+                continue
+            acct = arn_account_id(dest)
+            if not acct:
+                continue
+            if not self_accounts:
+                uncorrelated.append(dest)
+            elif acct not in self_accounts:
+                cross_account.append(dest)
         if triggers:
+            if cross_account:
+                desc = (
+                    f"Trigger DestinationArn(s) in another account "
+                    f"({cross_account}); the template's in-account ARNs "
+                    f"resolve to {sorted(self_accounts)}."
+                )
+                passed = False
+            elif uncorrelated:
+                desc = (
+                    f"Literal DestinationArn(s) in Triggers: {uncorrelated}. "
+                    "The template carries no in-account ARN or parameter "
+                    "default to resolve the deploy account against, so "
+                    "cross-account membership can't be proven statically; "
+                    "not failing on an uncorrelatable literal."
+                )
+                passed = True
+            else:
+                desc = (
+                    "All trigger destinations reference template resources "
+                    "or resolve to the template's own account."
+                )
+                passed = True
             out.append(Finding(
                 check_id="CCM-003",
-                title=(
-                    "CodeCommit trigger uses a literal DestinationArn "
-                    "that cannot be validated as same-account"
-                ),
+                title="CodeCommit trigger targets SNS/Lambda in a different account",
                 severity=Severity.MEDIUM,
                 resource=r.address,
-                description=(
-                    f"Literal DestinationArn(s) in Triggers: {offenders}. "
-                    "Static analysis cannot confirm these belong to the same "
-                    "account as the repository."
-                    if offenders else
-                    "All trigger destinations reference template resources, not literal ARNs."
-                ),
+                description=desc,
                 recommendation=(
                     "Reference trigger destinations via Fn::GetAtt / Ref on in-template "
-                    "SNS/Lambda resources instead of literal ARNs."
+                    "SNS/Lambda resources instead of literal cross-account ARNs."
                 ),
-                passed=not offenders,
+                passed=passed,
             ))
     return out
+
+
+def _cfn_self_accounts(ctx: CloudFormationContext) -> set[str]:
+    """Account IDs the template demonstrably deploys into.
+
+    Sourced from literal ARNs on resources *other than* CodeCommit
+    repositories (whose only literal ARNs are the trigger destinations
+    under evaluation) and from parameter defaults that are literal ARNs
+    or bare 12-digit account ids. A trigger destination whose account is
+    in this set is same-account; one whose account is outside it is
+    cross-account.
+    """
+    accounts: set[str] = set()
+    for value in ctx.parameter_defaults.values():
+        if isinstance(value, str):
+            acct = arn_account_id(value)
+            if acct:
+                accounts.add(acct)
+            elif value.isdigit() and len(value) == 12:
+                accounts.add(value)
+    for res in ctx.resources():
+        if res.type == "AWS::CodeCommit::Repository":
+            continue
+        for acct in _iter_arn_accounts(res.properties):
+            accounts.add(acct)
+    return accounts
+
+
+def _iter_arn_accounts(node: object) -> list[str]:
+    """Yield every account id from literal ARN strings anywhere in *node*."""
+    found: list[str] = []
+    if isinstance(node, dict):
+        for v in node.values():
+            found.extend(_iter_arn_accounts(v))
+    elif isinstance(node, list):
+        for v in node:
+            found.extend(_iter_arn_accounts(v))
+    elif isinstance(node, str):
+        acct = arn_account_id(node)
+        if acct:
+            found.append(acct)
+    return found
 
 
 # ---------------------------------------------------------------------------

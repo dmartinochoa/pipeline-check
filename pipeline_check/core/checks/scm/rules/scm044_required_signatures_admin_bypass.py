@@ -21,6 +21,7 @@ from ...base import Finding, Severity
 from ...rule import Rule
 from ..base import (
     SCMRepoSnapshot,
+    archived_state_label,
     default_branch_name,
     repo_resource,
 )
@@ -45,9 +46,11 @@ RULE = Rule(
     docs_note=(
         "Fires when ``required_signatures.enabled == True`` and "
         "``enforce_admins.enabled`` is missing or ``False``. The "
-        "rule passes silently in two cases: when signed commits "
-        "aren't required at all (SCM-006 owns that surface) and "
-        "when branch protection is missing entirely (SCM-001)."
+        "rule passes silently in three cases: when signed commits "
+        "aren't required at all (SCM-006 owns that surface), when "
+        "branch protection is missing entirely (SCM-001), and when "
+        "the repo is archived (read-only, so no unsigned push is "
+        "possible)."
     ),
     known_fp=(
         "Solo-maintainer repos where the single admin is also the "
@@ -65,6 +68,18 @@ def _is_enabled(payload: Any) -> bool:
 
 
 def check(snapshot: SCMRepoSnapshot) -> Finding:
+    if label := archived_state_label(snapshot):
+        # An archived repo is read-only; no unsigned push is possible,
+        # and every sibling rule (SCM-031..043/045) skips it. Match them.
+        return Finding(
+            check_id=RULE.id, title=RULE.title, severity=RULE.severity,
+            resource=repo_resource(snapshot),
+            description=(
+                f"Repo is {label}; signed-commits admin-bypass check "
+                "skipped."
+            ),
+            recommendation=RULE.recommendation, passed=True,
+        )
     branch = default_branch_name(snapshot)
     protection = snapshot.default_branch_protection
     if not isinstance(protection, dict):

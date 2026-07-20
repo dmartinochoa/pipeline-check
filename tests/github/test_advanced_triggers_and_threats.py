@@ -46,6 +46,29 @@ class TestGHA009WorkflowRunArtifact:
         f = run_check(wf, "GHA-009")
         assert not f.passed
 
+    def test_fails_on_dawidd6_download_action_without_verify(self):
+        # ``dawidd6/action-download-artifact`` is the canonical cross-run
+        # downloader for workflow_run workflows and this rule's exact
+        # target; it must be recognized as a download step (B4 FN).
+        wf = """
+        name: privileged-consume
+        on:
+          workflow_run:
+            workflows: ['ci']
+            types: [completed]
+        jobs:
+          consume:
+            runs-on: ubuntu-22.04
+            timeout-minutes: 10
+            permissions: { contents: read }
+            steps:
+              - uses: dawidd6/action-download-artifact@268677152d06ba59fcec7a7f0b5d961b6ccd7e1e
+                with: { name: build-output }
+              - run: ./run-binary
+        """
+        f = run_check(wf, "GHA-009")
+        assert not f.passed
+
     def test_passes_with_cosign_verify_attestation(self):
         wf = """
         name: privileged-consume
@@ -703,6 +726,30 @@ class TestGHA045CallerRefCheckout:
               - uses: actions/checkout@a5ac7e51b41094c92402da3b24376905380afc29
                 with:
                   ref: ${{ inputs.ref }}
+        """
+        f = run_check(wf, "GHA-045")
+        assert not f.passed
+
+    def test_fails_on_github_event_inputs_spelling(self):
+        # The older-but-valid ``${{ github.event.inputs.<name> }}``
+        # workflow_dispatch spelling must be matched too (B4 FN: only
+        # the ``inputs.<name>`` form was recognized).
+        wf = """
+        name: build
+        on:
+          workflow_dispatch:
+            inputs:
+              ref:
+                required: true
+        jobs:
+          build:
+            runs-on: ubuntu-22.04
+            timeout-minutes: 10
+            permissions: { contents: read }
+            steps:
+              - uses: actions/checkout@a5ac7e51b41094c92402da3b24376905380afc29
+                with:
+                  ref: ${{ github.event.inputs.ref }}
         """
         f = run_check(wf, "GHA-045")
         assert not f.passed

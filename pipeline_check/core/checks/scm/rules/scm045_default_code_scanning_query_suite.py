@@ -90,10 +90,24 @@ def check(snapshot: SCMRepoSnapshot) -> Finding:
             recommendation=RULE.recommendation, passed=True,
         )
     suite = setup.get("query_suite")
-    suite_label = suite if isinstance(suite, str) else "unset"
-    passed = suite_label != "default"
+    if not isinstance(suite, str) or not suite:
+        # ``state: "configured"`` without a ``query_suite`` (older API
+        # versions / partial payloads). We can't tell ``default`` from
+        # ``extended``, so don't affirm a ≥extended suite; pass without
+        # the claim rather than reporting an "unset (≥extended)" suite.
+        return Finding(
+            check_id=RULE.id, title=RULE.title, severity=RULE.severity,
+            resource=repo_resource(snapshot),
+            description=(
+                "Default code scanning is configured but the response "
+                "carries no ``query_suite``; the suite level could not "
+                "be evaluated."
+            ),
+            recommendation=RULE.recommendation, passed=True,
+        )
+    passed = suite != "default"
     desc = (
-        f"Default code scanning runs the ``{suite_label}`` query "
+        f"Default code scanning runs the ``{suite}`` query "
         f"suite (≥extended)."
         if passed else
         "Default code scanning is configured with the ``default`` "

@@ -48,7 +48,10 @@ def _unpinned(ref: str) -> bool:
     if ref_is_local(ref):
         return False
     tag = ref_tag(ref)
-    return tag is None or tag.lower() == "latest"
+    # ``ref_tag("llama3:")`` returns "" (a trailing colon with no tag),
+    # which is just as unpinned as a missing tag — resolves to the
+    # registry default, same as ``:latest``.
+    return not tag or not tag.strip() or tag.strip().lower() == "latest"
 
 
 def check(ctx: ModelfileContext) -> list[Finding]:

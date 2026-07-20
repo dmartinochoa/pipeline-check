@@ -39,7 +39,7 @@ Click a control ID to jump to the per-control section with the full check list. 
 | [`CICD-SEC-7`](#ctrl-cicd-sec-7) | Insecure System Configuration | 151 | 26C · 67H · 47M · 11L |
 | [`CICD-SEC-8`](#ctrl-cicd-sec-8) | Ungoverned Usage of 3rd-Party Services | 42 | 13C · 21H · 8M |
 | [`CICD-SEC-9`](#ctrl-cicd-sec-9) | Improper Artifact Integrity Validation | 141 | 3C · 44H · 80M · 13L · 1I |
-| [`CICD-SEC-10`](#ctrl-cicd-sec-10) | Insufficient Logging and Visibility | 89 | 22H · 34M · 17L · 16I |
+| [`CICD-SEC-10`](#ctrl-cicd-sec-10) | Insufficient Logging and Visibility | 89 | 22H · 33M · 18L · 16I |
 
 ## Filter at runtime
 
@@ -1467,7 +1467,7 @@ When the pipeline doesn't log its decisions, audits stall and incident response 
 | [`SCM-016`](../providers/scm_github.md#scm-016) | Private vulnerability reporting is not enabled | <span class="pg-sev pg-sev--low">LOW</span> | [SCM](../providers/scm_github.md) |  |
 | [`SCM-026`](../providers/scm_github.md#scm-026) | Webhook ships events insecurely (HTTP / no-TLS / no-secret) | <span class="pg-sev pg-sev--high">HIGH</span> | [SCM](../providers/scm_github.md) |  |
 | [`SCM-045`](../providers/scm_github.md#scm-045) | Default code scanning uses the limited query suite | <span class="pg-sev pg-sev--low">LOW</span> | [SCM](../providers/scm_github.md) |  |
-| [`SCM-046`](../providers/scm_github.md#scm-046) | Default code scanning is configured but paused | <span class="pg-sev pg-sev--medium">MEDIUM</span> | [SCM](../providers/scm_github.md) |  |
+| [`SCM-046`](../providers/scm_github.md#scm-046) | Default code scanning has no periodic scan schedule | <span class="pg-sev pg-sev--low">LOW</span> | [SCM](../providers/scm_github.md) |  |
 | [`SCM-047`](../providers/scm_github.md#scm-047) | Repo language excluded from default code-scanning coverage | <span class="pg-sev pg-sev--medium">MEDIUM</span> | [SCM](../providers/scm_github.md) |  |
 | [`SM-000`](../providers/aws.md) | Secrets Manager API access failed | <span class="pg-sev pg-sev--info">INFO</span> | [AWS](../providers/aws.md) |  |
 | [`SSM-000`](../providers/aws.md) | SSM Parameter Store API access failed | <span class="pg-sev pg-sev--info">INFO</span> | [AWS](../providers/aws.md) |  |
