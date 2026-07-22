@@ -138,7 +138,10 @@ _BUILD_TOOL_PATTERNS: tuple[tuple[str, re.Pattern[str]], ...] = (
     ("pnpm install",
      re.compile(r"^\s*(?:sudo\s+)?pnpm\s+(?:install|i)(?:\s|$)")),
     ("yarn install",
-     re.compile(r"^\s*(?:sudo\s+)?yarn(?:\s+install)?(?:\s|$)")),
+     # ``yarn install`` or bare ``yarn`` (which installs deps by
+     # default); NOT ``yarn <named-script>`` / ``yarn run x`` / ``yarn
+     # --version``, which don't run install-time lifecycle hooks.
+     re.compile(r"^\s*(?:sudo\s+)?yarn(?:\s+install\b|\s*$)")),
     ("bun install",
      re.compile(r"^\s*(?:sudo\s+)?bun\s+(?:install|i)(?:\s|$)")),
     ("deno install",

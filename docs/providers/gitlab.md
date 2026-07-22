@@ -1003,7 +1003,7 @@ Pin every `include: component:` to an immutable version: a 40-character commit S
 <span class="pg-sev pg-sev--medium">MEDIUM</span> <span class="pg-tag pg-tag--owasp">CICD-SEC-7</span> <span class="pg-tag pg-tag--esf">ESF-S-VULN-MGMT</span> <span class="pg-tag pg-tag--cwe">CWE-693</span>
 </div>
 
-Fires when a `*_DISABLED` variable for a GitLab-managed scanner (SAST, Secret Detection, Dependency Scanning, Container Scanning, DAST) is set to a truthy value (`"true"` / `"1"` / `"yes"`) at the top level or on a job. Both the plain scalar and the typed `{value:, description:}` variable form are read. Disabling a scanner pipeline-wide silently drops the finding stream the rest of your supply-chain controls assume exists.
+Fires when a `*_DISABLED` variable for a GitLab-managed scanner (SAST, Secret Detection, Dependency Scanning, Container Scanning, DAST) is set to any value other than an explicit falsy literal (`"false"` / `"0"` / `"no"` / empty) at the top level or on a job. Legacy GitLab templates disable the scanner on any non-empty value, so the rule over-approximates to that rather than only matching `"true"` / `"1"`. Both the plain scalar and the typed `{value:, description:}` variable form are read. Disabling a scanner pipeline-wide silently drops the finding stream the rest of your supply-chain controls assume exists.
 
 **Known false-positive modes**
 

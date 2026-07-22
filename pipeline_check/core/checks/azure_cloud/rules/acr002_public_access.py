@@ -36,7 +36,18 @@ def check(catalog: ResourceCatalog) -> list[Finding]:
     for registry in catalog.container_registries():
         name = getattr(registry, "name", "<unnamed>")
         public_access = getattr(registry, "public_network_access", "Enabled")
-        passed = str(public_access).lower() == "disabled"
+        # A registry that keeps public access "Enabled" but sets a
+        # network_rule_set default_action of "Deny" (with explicit
+        # allow-listed IPs/VNets) is a restricted deployment, not
+        # internet-open (mirrors how AKV-003 reads the default action).
+        nrs = getattr(registry, "network_rule_set", None)
+        default_action = (
+            str(getattr(nrs, "default_action", "")).lower() if nrs else ""
+        )
+        passed = (
+            str(public_access).lower() == "disabled"
+            or default_action == "deny"
+        )
         if passed:
             desc = (
                 f"Container registry '{name}' has public network "

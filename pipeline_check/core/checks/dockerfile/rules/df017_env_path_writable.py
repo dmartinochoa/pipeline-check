@@ -56,31 +56,42 @@ _WRITABLE_PREFIXES: tuple[str, ...] = (
 )
 
 
-def _path_offends(value: str) -> str | None:
-    """Return the offending PATH entry if it precedes ``$PATH`` / ``${PATH}``.
+_SYSTEM_BIN_DIRS = (
+    "/usr/local/sbin", "/usr/local/bin", "/usr/sbin", "/usr/bin",
+    "/sbin", "/bin",
+)
 
-    Only entries that come *before* the literal ``$PATH`` reference
-    matter, appending writable dirs at the end of PATH is harmless
-    because system bins still shadow them. We split on ``:`` and walk
-    until we see the existing-PATH marker; entries seen so far that
-    sit under a writable prefix are reported.
+
+def _is_writable(token: str) -> bool:
+    return any(
+        token == p or token.startswith(p + "/") for p in _WRITABLE_PREFIXES
+    )
+
+
+def _path_offends(value: str) -> str | None:
+    """Return the offending PATH entry that shadows the system bins.
+
+    When the value references the prior ``$PATH`` / ``${PATH}``, only a
+    writable dir *before* that marker shadows the inherited system bins.
+    When the value fully replaces PATH (no ``$PATH`` ref), a writable dir
+    only shadows the system bins if it comes *before* the first
+    system-bin directory in the list, appending one at the tail is
+    harmless because the earlier system bins win.
     """
-    parts = value.split(":")
-    for entry in parts:
-        token = entry.strip()
-        if token in ("$PATH", "${PATH}"):
-            return None
-        for prefix in _WRITABLE_PREFIXES:
-            if token == prefix or token.startswith(prefix + "/"):
+    parts = [entry.strip() for entry in value.split(":")]
+    if any(t in ("$PATH", "${PATH}") for t in parts):
+        for token in parts:
+            if token in ("$PATH", "${PATH}"):
+                return None
+            if _is_writable(token):
                 return token
-    # PATH set without referencing the prior PATH, same risk if the
-    # writable prefix appears anywhere because the new value is
-    # authoritative for every later directive.
-    for entry in parts:
-        token = entry.strip()
-        for prefix in _WRITABLE_PREFIXES:
-            if token == prefix or token.startswith(prefix + "/"):
-                return token
+        return None
+    first_sysbin = next(
+        (i for i, t in enumerate(parts) if t in _SYSTEM_BIN_DIRS), None,
+    )
+    for i, token in enumerate(parts):
+        if _is_writable(token) and (first_sysbin is None or i < first_sysbin):
+            return token
     return None
 
 

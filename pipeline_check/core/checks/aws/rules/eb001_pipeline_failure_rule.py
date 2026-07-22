@@ -44,7 +44,17 @@ def check(catalog: ResourceCatalog) -> list[Finding]:
         detail_types = doc.get("detail-type") or []
         if isinstance(detail_types, str):
             detail_types = [detail_types]
-        if any("CodePipeline Pipeline Execution State Change" in dt for dt in detail_types):
+        sources = doc.get("source") or []
+        if isinstance(sources, str):
+            sources = [sources]
+        # A pattern covers CodePipeline executions either via the
+        # detail-type (``CodePipeline Pipeline Execution State Change``)
+        # or a source-only pattern (``source: ["aws.codepipeline"]``).
+        covers_pipeline = any(
+            "CodePipeline Pipeline Execution State Change" in dt
+            for dt in detail_types
+        ) or "aws.codepipeline" in sources
+        if covers_pipeline:
             states = (doc.get("detail") or {}).get("state") or []
             if isinstance(states, str):
                 states = [states]

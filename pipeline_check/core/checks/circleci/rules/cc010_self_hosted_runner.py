@@ -24,9 +24,10 @@ RULE = Rule(
         "Self-hosted runners that persist between jobs leak filesystem "
         "and process state. A PR-triggered job writes to `/tmp`; a "
         "subsequent prod-deploy job on the same runner reads it. The "
-        "check looks for `resource_class` values containing "
-        "'self-hosted', if found, it checks for 'ephemeral' in the "
-        "value."
+        "check treats a namespaced `resource_class` (`<namespace>/"
+        "<name>`, the shape every self-hosted runner uses) or one "
+        "containing 'self-hosted' as a runner, then flags it when the "
+        "value carries no 'ephemeral' marker."
     ),
 )
 
@@ -38,7 +39,17 @@ def check(path: str, doc: dict[str, Any]) -> Finding:
         if not isinstance(resource_class, str):
             continue
         rc_lower = resource_class.lower()
-        if "self-hosted" not in rc_lower and "self_hosted" not in rc_lower:
+        # A CircleCI self-hosted runner uses a namespaced resource class
+        # (``<namespace>/<name>``, e.g. ``my-org/prod-runner``); managed
+        # classes never contain ``/``. The literal ``self-hosted`` token
+        # is only a convention, so keying on it alone misses most real
+        # runners.
+        is_runner = (
+            "self-hosted" in rc_lower
+            or "self_hosted" in rc_lower
+            or "/" in resource_class
+        )
+        if not is_runner:
             continue
         # Self-hosted runner detected, check for ephemeral marker.
         if "ephemeral" not in rc_lower:

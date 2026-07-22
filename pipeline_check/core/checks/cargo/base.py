@@ -305,6 +305,13 @@ def _normalize_dep(
     raw_reg = raw.get("registry")
     if isinstance(raw_reg, str) and raw_reg:
         registry = raw_reg
+    else:
+        # ``registry-index`` points a dep at an arbitrary index URL
+        # directly, bypassing crates.io the same way a named alternate
+        # registry does.
+        raw_reg_idx = raw.get("registry-index")
+        if isinstance(raw_reg_idx, str) and raw_reg_idx:
+            registry = raw_reg_idx
     from_workspace = bool(raw.get("workspace"))
     return CargoDependency(
         name=name, section=section, version=version,

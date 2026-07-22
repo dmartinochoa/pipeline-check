@@ -102,7 +102,10 @@ RULE = Rule(
 
 
 _AUTH_RE = re.compile(
-    r"://(?P<user>[^/@:\s\${]+):(?P<pass>[^/@\s\${][^/@\s]*)@",
+    # The password's first char excludes ``$``/``{`` (``${env:VAR}`` /
+    # ``${VAR}``) and ``%`` (``%NUGET_TOKEN%``), NuGet's env-expansion
+    # placeholders, so those aren't read as embedded literal credentials.
+    r"://(?P<user>[^/@:\s\${%]+):(?P<pass>[^/@\s\${%][^/@\s]*)@",
 )
 
 

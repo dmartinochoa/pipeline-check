@@ -89,6 +89,17 @@ _HOST_NS_RES = {
 _HOST_PATH_RE = re.compile(r'["\']?hostPath["\']?\s*:')
 
 
+def _json_has_key(obj: Any, key: str) -> bool:
+    """Whether *key* appears anywhere in a nested dict/list structure."""
+    if isinstance(obj, dict):
+        if key in obj:
+            return True
+        return any(_json_has_key(v, key) for v in obj.values())
+    if isinstance(obj, list):
+        return any(_json_has_key(i, key) for i in obj)
+    return False
+
+
 def _scan_pod_spec_patch(spec: dict[str, Any]) -> list[str]:
     out: list[str] = []
     psp = spec.get("podSpecPatch")
@@ -106,7 +117,9 @@ def _scan_pod_spec_patch(spec: dict[str, Any]) -> list[str]:
         for key in _HOST_NS_KEYS:
             if parsed.get(key) is True:
                 out.append(f"podSpecPatch {key}: true")
-        if "hostPath" in parsed:
+        # ``hostPath`` is nested under ``volumes[]``, not at the top
+        # level, so search the whole parsed structure for it.
+        if _json_has_key(parsed, "hostPath"):
             out.append("podSpecPatch hostPath")
         return out
     for key, regex in _HOST_NS_RES.items():

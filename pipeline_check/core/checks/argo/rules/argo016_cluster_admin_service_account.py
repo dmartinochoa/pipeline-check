@@ -5,7 +5,13 @@ from typing import Any
 
 from ...base import Confidence, Finding, Location, Severity
 from ...rule import Rule
-from ..base import ArgoContext, doc_location, workflow_spec
+from ..base import (
+    ArgoContext,
+    doc_location,
+    iter_templates,
+    template_name,
+    workflow_spec,
+)
 
 # ServiceAccount names that signal a cluster-wide admin binding. The
 # privilege itself lives in RBAC (a ClusterRoleBinding to ``cluster-admin``),
@@ -42,7 +48,8 @@ RULE = Rule(
     ),
     docs_note=(
         "Fires when a Workflow / CronWorkflow sets "
-        "``spec.serviceAccountName`` to a name that signals a "
+        "``spec.serviceAccountName`` (or a template's own "
+        "``serviceAccountName`` override) to a name that signals a "
         "cluster-wide admin binding (``cluster-admin``, or a name "
         "containing ``cluster-admin``, ``admin``, ``root``, "
         "``superuser``). The actual privilege lives in the RBAC "
@@ -95,6 +102,14 @@ def check(ctx: ArgoContext) -> Finding:
         if _is_admin_sa(sa):
             offenders.append(f"{doc.kind}/{doc.name}: {sa}")
             locations.append(doc_location(doc))
+        for idx, template in enumerate(iter_templates(doc)):
+            tsa = template.get("serviceAccountName")
+            if _is_admin_sa(tsa):
+                offenders.append(
+                    f"{doc.kind}/{doc.name} template "
+                    f"{template_name(template, idx)}: {tsa}"
+                )
+                locations.append(doc_location(doc, template))
     if examined == 0:
         return Finding(
             check_id=RULE.id, title=RULE.title, severity=RULE.severity,

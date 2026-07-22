@@ -403,3 +403,37 @@ class TestGCIAM006:
         })
         findings = gciam006_sa_key_age.check(cat)
         assert findings == []
+
+
+class TestAudit202607GciamLow:
+    """2026-07 audit LOW findings on GCIAM-003 / GCIAM-006."""
+
+    def test_gciam003_time_only_condition_does_not_scope(self, make_catalog):
+        pol = {"bindings": [{
+            "role": "roles/iam.serviceAccountTokenCreator",
+            "members": ["user:x@y.com"],
+            "condition": {"expression":
+                          "request.time < timestamp('2027-01-01T00:00:00Z')"}}]}
+        cat = make_catalog(**{"iam:project_policy": pol})
+        f = gciam003_sa_impersonation.check(cat)
+        assert f and any(x.passed is False for x in f)
+
+    def test_gciam003_resource_name_condition_scopes(self, make_catalog):
+        pol = {"bindings": [{
+            "role": "roles/iam.serviceAccountTokenCreator",
+            "members": ["user:x@y.com"],
+            "condition": {"expression":
+                          "resource.name == 'projects/-/serviceAccounts/sa'"}}]}
+        cat = make_catalog(**{"iam:project_policy": pol})
+        f = gciam003_sa_impersonation.check(cat)
+        assert f and all(x.passed for x in f)
+
+    def test_gciam006_unparseable_timestamp_is_surfaced(self, make_catalog):
+        cat = make_catalog(**{
+            "iam:service_accounts": [{"email": "sa@p.iam", "disabled": False}],
+            "iam:sa_keys:sa@p.iam": [
+                {"key_type": "USER_MANAGED", "name": "k1", "valid_after": ""}],
+        })
+        f = gciam006_sa_key_age.check(cat)
+        assert len(f) == 1 and f[0].passed is False
+        assert "unparseable" in f[0].description

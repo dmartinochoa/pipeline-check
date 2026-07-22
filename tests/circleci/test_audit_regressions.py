@@ -393,9 +393,10 @@ jobs:
 """)
         assert cc015.check("cfg.yml", doc).passed is True
 
-    def test_fires_when_no_run_steps_at_all(self):
-        # A job with only a checkout step and no run: block has no
-        # timeout configured.
+    def test_passes_when_no_author_run_steps(self):
+        # 2026-07 audit: a config with no author ``run:`` step (only a
+        # checkout / orb steps) has nothing to set ``no_output_timeout``
+        # on, so it is not applicable and must pass rather than fire.
         doc = _load("""
 version: 2.1
 jobs:
@@ -405,7 +406,7 @@ jobs:
     steps:
       - checkout
 """)
-        assert cc015.check("cfg.yml", doc).passed is False
+        assert cc015.check("cfg.yml", doc).passed is True
 
 
 # ── CC-019 commands block and when:/unless: false-negatives ─────────
@@ -680,3 +681,113 @@ workflows:
         assert cc024.check(".circleci/config.yml", doc).passed is True, (
             "CC-024 must pass (no artifact) on a test-only config"
         )
+
+
+class TestAudit202607LowCircleCI:
+    """2026-07 audit LOW findings on the CircleCI rules."""
+
+    @staticmethod
+    def _run(text, check_id):
+        from tests.circleci.conftest import run_check
+        return run_check(text, check_id)
+
+    def test_cc009_non_list_requires_does_not_crash(self):
+        cfg = (
+            "version: 2.1\n"
+            "jobs:\n"
+            "  deploy: { docker: [{image: cimg/base}], steps: [{run: make}] }\n"
+            "workflows:\n"
+            "  release:\n"
+            "    jobs:\n"
+            "      - deploy: { requires: {hold: yes} }\n"
+        )
+        # Must not raise TypeError on the unhashable dict entry.
+        f = self._run(cfg, "CC-009")
+        assert f is not None
+
+    def test_cc005_executor_env_aws_keys_fire(self):
+        cfg = (
+            "version: 2.1\n"
+            "executors:\n"
+            "  awsx:\n"
+            "    docker: [{image: cimg/base}]\n"
+            "    environment: { AWS_ACCESS_KEY_ID: AKIA, AWS_SECRET_ACCESS_KEY: x }\n"
+            "jobs:\n"
+            "  deploy: { executor: awsx, steps: [{run: aws s3 ls}] }\n"
+            "workflows: { w: { jobs: [deploy] } }\n"
+        )
+        assert self._run(cfg, "CC-005").passed is False
+
+    def test_cc004_executor_env_secret_fires(self):
+        cfg = (
+            "version: 2.1\n"
+            "executors:\n"
+            "  e1:\n"
+            "    docker: [{image: cimg/base}]\n"
+            "    environment: { DB_PASSWORD: hunter2 }\n"
+            "jobs:\n"
+            "  build: { executor: e1, steps: [{run: make}] }\n"
+            "workflows: { w: { jobs: [build] } }\n"
+        )
+        assert self._run(cfg, "CC-004").passed is False
+
+    def test_cc010_namespaced_runner_fires_managed_class_does_not(self):
+        base = (
+            "version: 2.1\n"
+            "jobs:\n"
+            "  build: {{ resource_class: {rc}, steps: [{{run: make}}] }}\n"
+            "workflows: {{ w: {{ jobs: [build] }} }}\n"
+        )
+        assert self._run(base.format(rc="my-org/linux-arm"), "CC-010").passed is False
+        assert self._run(base.format(rc="my-org/ephemeral-arm"), "CC-010").passed is True
+        assert self._run(base.format(rc="large"), "CC-010").passed is True
+
+    def test_cc011_only_fires_when_tests_run(self):
+        no_tests = (
+            "version: 2.1\n"
+            "jobs:\n"
+            "  build: { docker: [{image: cimg/base}], steps: [{run: make}] }\n"
+            "workflows: { w: { jobs: [build] } }\n"
+        )
+        assert self._run(no_tests, "CC-011").passed is True
+        with_tests = (
+            "version: 2.1\n"
+            "jobs:\n"
+            "  test: { docker: [{image: cimg/base}], steps: [{run: pytest}] }\n"
+            "workflows: { w: { jobs: [test] } }\n"
+        )
+        assert self._run(with_tests, "CC-011").passed is False
+
+
+class TestAudit202607LowCircleCIC2C3:
+    """2026-07 audit LOW findings (circleci_c2/c3 chunks)."""
+
+    @staticmethod
+    def _run(text, cid):
+        from tests.circleci.conftest import run_check
+        return run_check(text, cid)
+
+    def test_cc021_go_install_local_path_exempt(self):
+        local = ("version: 2.1\njobs: {b: {docker: [{image: x}], "
+                 "steps: [{run: go install ./cmd/tool}]}}\n"
+                 "workflows: {w: {jobs: [b]}}\n")
+        assert self._run(local, "CC-021").passed is True
+        remote = ("version: 2.1\njobs: {b: {docker: [{image: x}], "
+                  "steps: [{run: go install github.com/x/tool}]}}\n"
+                  "workflows: {w: {jobs: [b]}}\n")
+        assert self._run(remote, "CC-021").passed is False
+
+    def test_cc037_hyphenated_filename_not_an_agent(self):
+        fn = ("version: 2.1\njobs: {b: {docker: [{image: x}], steps: "
+              "[{run: python run-gemini-benchmark.py --branch $CIRCLE_BRANCH}]}}\n"
+              "workflows: {w: {jobs: [b]}}\n")
+        assert self._run(fn, "CC-037").passed is True
+        real = ("version: 2.1\njobs: {b: {docker: [{image: x}], steps: "
+                "[{run: 'gemini -p \"$CIRCLE_BRANCH\"'}]}}\n"
+                "workflows: {w: {jobs: [b]}}\n")
+        assert self._run(real, "CC-037").passed is False
+
+    def test_cc031_approval_job_not_flagged(self):
+        cfg = ("version: 2.1\nworkflows: {w: {jobs: [{gate: "
+               "{type: approval, role-arn: 'arn:aws:iam::1:role/x'}}]}}\n")
+        assert self._run(cfg, "CC-031").passed is True

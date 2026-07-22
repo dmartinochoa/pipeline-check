@@ -1,9 +1,20 @@
 """GEM-007. Multiple top-level Gemfile sources without per-gem scoping."""
 from __future__ import annotations
 
+from urllib.parse import urlparse
+
 from ...base import Finding, Severity
 from ...rule import Rule
 from ..base import GemFile
+
+_PUBLIC_RUBYGEMS_HOSTS = frozenset({"rubygems.org", "www.rubygems.org"})
+
+
+def _is_public_rubygems(url: str) -> bool:
+    """Return True when *url* is the canonical public rubygems.org host."""
+    host = urlparse(url.strip()).netloc.lower()
+    host = host.rsplit("@", 1)[-1].split(":", 1)[0]
+    return host in _PUBLIC_RUBYGEMS_HOSTS
 
 RULE = Rule(
     id="GEM-007",
@@ -65,12 +76,18 @@ RULE = Rule(
 
 def check(pom: GemFile) -> Finding:
     top_level = [s for s in pom.sources if s.is_top_level]
-    if len(top_level) <= 1:
+    non_public = [s for s in top_level if not _is_public_rubygems(s.url)]
+    # The dependency-confusion split needs 2+ top-level sources AND at
+    # least one non-public source (a private mirror the resolver can't
+    # unambiguously prefer). Two identical rubygems.org declarations are
+    # redundant, not a confusion vector.
+    if len(top_level) <= 1 or not non_public:
         return Finding(
             check_id=RULE.id, title=RULE.title, severity=RULE.severity,
             resource=pom.path,
             description=(
-                "Gemfile declares at most one top-level source."
+                "Gemfile declares at most one top-level source, or every "
+                "top-level source is the public rubygems.org."
             ),
             recommendation=RULE.recommendation, passed=True,
         )

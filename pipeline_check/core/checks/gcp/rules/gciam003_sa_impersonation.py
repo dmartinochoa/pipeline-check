@@ -49,7 +49,14 @@ def check(catalog: ResourceCatalog) -> list[Finding]:
         if role not in _IMPERSONATION_ROLES:
             continue
         condition = binding.get("condition")
-        has_condition = bool(condition and condition.get("expression"))
+        expr = ""
+        if isinstance(condition, dict):
+            expr = str(condition.get("expression") or "")
+        # Only a condition that references ``resource.name`` actually
+        # narrows *which* service accounts can be impersonated; a
+        # time-bound (``request.time``) or other non-resource expression
+        # still permits impersonating every SA in the project.
+        has_condition = bool(expr) and "resource.name" in expr
         for member in binding.get("members", []):
             if has_condition:
                 findings.append(Finding(

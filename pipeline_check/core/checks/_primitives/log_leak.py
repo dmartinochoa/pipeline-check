@@ -25,7 +25,12 @@ _PRINT_CMD_RE = re.compile(
 )
 
 _ENV_DUMP_RE = re.compile(
-    r"(?:^|;|&&|\|\|)\s*(?:printenv|/usr/bin/printenv|env\b(?!\s+\S+=))",
+    # ``printenv`` always dumps. Bare ``env`` (optionally with flags)
+    # dumps only when it isn't running a command: ``env`` / ``env | grep``
+    # / ``env > f`` are dumps, but ``env -i ./cmd`` and ``env VAR=x cmd``
+    # run a program in a modified environment and dump nothing.
+    r"(?:^|;|&&|\|\|)\s*"
+    r"(?:printenv|/usr/bin/printenv|env\b(?:\s+-\S+)*\s*(?=$|[;&|<>]))",
     re.MULTILINE,
 )
 
@@ -61,6 +66,17 @@ def _extract_printed_var_names(
             if not _PRINT_CMD_RE.match(seg):
                 continue
             for m in var_pattern.finditer(seg):
+                # ``${VAR:+word}`` / ``${VAR:?word}`` print the alternate
+                # word (or an error) and never the variable's value, so a
+                # set-check of a secret is not a leak. ``:-`` / ``:=`` DO
+                # print the value when set, so those still count. (Only
+                # the POSIX brace form; the ADO ``$(VAR)`` regex never
+                # starts with ``${``.)
+                if (
+                    seg[m.start():m.start() + 2] == "${"
+                    and seg[m.end():m.end() + 2] in (":+", ":?")
+                ):
+                    continue
                 hits.append(m.group(1))
     return hits
 

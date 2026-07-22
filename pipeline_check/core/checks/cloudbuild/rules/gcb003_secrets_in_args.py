@@ -102,12 +102,27 @@ _GCLOUD_SECRETS_RE = re.compile(
     r"gcloud\s+(?:secrets\s+(?:versions\s+)?access|beta\s+secrets\s+versions\s+access)"
 )
 
+# Read-only metadata subcommands that reference a version URI without
+# revealing the secret value (``describe``, ``list``, ``get-iam-policy``).
+_SECRET_METADATA_RE = re.compile(
+    r"secrets\s+(?:versions\s+)?(?:describe|list)\b|get-iam-policy",
+)
+
 
 def _step_uses_secret_in_args(step: dict[str, Any]) -> list[str]:
     """Return the list of offending evidence strings for one step."""
     offenders: list[str] = []
+    joined = " ".join(step_strings(step)).lower()
+    # A metadata-only op (describe/list/get-iam-policy) that references a
+    # version URI doesn't reveal the value, so a bare URI in such a step
+    # isn't inline value exposure.
+    metadata_only = (
+        bool(_SECRET_METADATA_RE.search(joined)) and "access" not in joined
+    )
     for blob in step_strings(step):
         if _SECRET_URI_RE.search(blob):
+            if metadata_only:
+                continue
             offenders.append(f"secret URI: {blob[:80]}")
             continue
         if _GCLOUD_SECRETS_RE.search(blob):

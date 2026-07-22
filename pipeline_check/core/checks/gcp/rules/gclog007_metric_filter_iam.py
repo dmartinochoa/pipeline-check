@@ -30,8 +30,12 @@ def check(catalog: ResourceCatalog) -> list[Finding]:
     findings: list[Finding] = []
     metrics = catalog.log_metrics()
     resource = f"projects/{catalog.session.project_id}"
+    # Match case-insensitively: audit logs use ``SetIamPolicy`` but the
+    # compute API's methodNames are camelCase
+    # (``v1.compute.instances.setIamPolicy``), and Logging's ``:``
+    # has-operator is case-insensitive too.
     found = any(
-        "SetIamPolicy" in m.get("filter", "")
+        "setiampolicy" in m.get("filter", "").lower()
         for m in metrics
     )
     if found:

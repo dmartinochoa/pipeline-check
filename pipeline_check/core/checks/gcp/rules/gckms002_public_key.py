@@ -39,7 +39,11 @@ def check(catalog: ResourceCatalog) -> list[Finding]:
     public_members = {"allUsers", "allAuthenticatedUsers"}
     for binding in policy.get("bindings", []):
         role = binding.get("role", "")
-        if "cloudkms" not in role:
+        # Match the predefined ``roles/cloudkms.*`` roles and any custom
+        # role whose name signals KMS scope (e.g.
+        # ``projects/p/roles/kmsDecrypterCustom``). A public binding on
+        # such a role is a problem regardless of whether it's predefined.
+        if "kms" not in role.lower():
             continue
         members = set(binding.get("members", []))
         public = members & public_members

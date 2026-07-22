@@ -41,7 +41,11 @@ import re
 #: Any npm / pnpm verb that installs from package.json. ``\bi\b`` for
 #: ``npm i`` doesn't match ``install`` because ``i`` is mid-word.
 _NPM_INSTALL_RE = re.compile(
-    r"\b(?:npm|pnpm)\s+(?:ci|install|i)\b",
+    # Allow global flags (and their values) between ``npm`` and the
+    # install verb, e.g. ``npm --prefix ./app install``. Only flag
+    # tokens are skipped, so ``npm run install-deps`` (a named script)
+    # still doesn't match.
+    r"\b(?:npm|pnpm)\s+(?:-\S+\s+(?:[^-\s]\S*\s+)?)*(?:ci|install|i)\b",
     re.IGNORECASE,
 )
 
@@ -161,6 +165,14 @@ def has_hash_pinning_manager(body: str) -> bool:
     return bool(_HASH_PINNING_MANAGER_RE.search(body))
 
 
+def _is_local_path(tok: str) -> bool:
+    """Whether *tok* names a local filesystem path rather than a package."""
+    t = tok.strip("\"'")
+    if t == ".":
+        return True
+    return t.startswith(("./", "../", "/", ".\\", "..\\"))
+
+
 def is_real_pip_install_line(line: str) -> bool:
     """``True`` if *line* runs a non-tooling-only pip install.
 
@@ -205,6 +217,12 @@ def is_real_pip_install_line(line: str) -> bool:
         pkg_tokens.append(tok)
         i += 1
     if not pkg_tokens:
+        return False
+    # An install whose only targets are local paths (``.``, ``./pkg``,
+    # an ``-e .`` editable dir) can't use ``--require-hashes``: pip
+    # rejects hash mode for a local directory / editable requirement.
+    # So it isn't a hash-verifiable install site.
+    if all(_is_local_path(p) for p in pkg_tokens):
         return False
     for pkg in pkg_tokens:
         # Strip surrounding single or double quotes before splitting on

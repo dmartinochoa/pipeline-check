@@ -93,10 +93,11 @@ class GoReplace:
             return False
         if self.new_path.startswith(("./", "../", "/")):
             return True
-        # Windows absolute path. ``go`` itself supports these.
+        # Windows absolute path. ``go`` accepts both the backslash
+        # (``C:\local\fork``) and forward-slash (``C:/local/fork``) forms.
         if (
             len(self.new_path) >= 3
-            and self.new_path[1:3] == ":\\"
+            and self.new_path[1:3] in (":\\", ":/")
             and self.new_path[0].isalpha()
         ):
             return True

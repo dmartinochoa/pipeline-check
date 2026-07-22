@@ -155,7 +155,7 @@ Resolution rules:
 | [GHA-089](#gha-089) | Action upstream repo is archived | <span class="pg-sev pg-sev--medium">MEDIUM</span> |  |
 | [GHA-090](#gha-090) | Action SHA pin references a commit absent from the claimed repo | <span class="pg-sev pg-sev--high">HIGH</span> |  |
 | [GHA-091](#gha-091) | Action upstream repo is missing (takeover-eligible namespace) | <span class="pg-sev pg-sev--high">HIGH</span> |  |
-| [GHA-092](#gha-092) | PR head SHA captured then re-fetched (force-push race) | <span class="pg-sev pg-sev--high">HIGH</span> |  |
+| [GHA-092](#gha-092) | PR head read live then re-fetched (force-push race) | <span class="pg-sev pg-sev--high">HIGH</span> |  |
 | [GHA-093](#gha-093) | Living-off-the-Pipeline indicators (workflow-command abuse) | <span class="pg-sev pg-sev--high">HIGH</span> |  |
 | [GHA-094](#gha-094) | Action SHA pin matches the current tip of an upstream branch | <span class="pg-sev pg-sev--medium">MEDIUM</span> |  |
 | [GHA-095](#gha-095) | Action SHA pin does not match its version comment | <span class="pg-sev pg-sev--high">HIGH</span> |  |
@@ -2407,7 +2407,7 @@ Confirm the upstream namespace status. If the owner / repo was genuinely deleted
 
 <div class="pg-rule pg-rule--high" markdown>
 
-## GHA-092: PR head SHA captured then re-fetched (force-push race) { #gha-092 }
+## GHA-092: PR head read live then re-fetched (force-push race) { #gha-092 }
 
 <div class="pg-rule__tags">
 <span class="pg-sev pg-sev--high">HIGH</span> <span class="pg-tag pg-tag--owasp">CICD-SEC-1</span> <span class="pg-tag pg-tag--owasp">CICD-SEC-7</span> <span class="pg-tag pg-tag--esf">ESF-D-CODE-REVIEW</span> <span class="pg-tag pg-tag--cwe">CWE-367</span> <span class="pg-tag pg-tag--cwe">CWE-362</span>
@@ -2415,24 +2415,24 @@ Confirm the upstream namespace status. If the owner / repo was genuinely deleted
 
 Within a single job, step-order traversal looks for:
 
-1. A **capture** step, any step that reads ``github.event.pull_request.head.sha`` (either as a ``${{ }}`` interpolation in a ``run:`` body, in a step or job ``env:`` block, or via a ``run:`` body containing ``git rev-parse HEAD`` after an earlier checkout).
-2. A **fetch** step that follows it, an ``actions/checkout`` whose ``with.ref:`` contains the same ``${{ github.event.pull_request.head.sha }}`` expression.
+1. A **live read** of the PR head, a ``run:`` body invoking ``gh pr view`` / ``gh api .../pulls/<n>`` (both fetch the *current* head), or ``git rev-parse HEAD`` after a mutable-ref checkout (a checkout with no ``ref:``, or one whose ``ref`` is anything other than the pinned ``head.sha``). Each of these can resolve to a commit a contributor force-pushed after the trigger.
+2. A **fetch** step that follows it, an ``actions/checkout`` whose ``with.ref:`` is ``${{ github.event.pull_request.head.sha }}``.
 
-The fire condition is the *order*, capture-then-fetch with no intervening lock on the ref. Workflows that do the fetch FIRST (and only read the SHA after) are not TOCTOU-shaped because there's only one read; pipeline-check stays silent. Cross-job state isn't covered because GitHub-Actions doesn't share a filesystem between jobs by default; ``needs:`` data passing via ``outputs:`` is a separate shape (TAINT-002 territory).
+The fire condition is the *order*, live-read-then-fetch. A workflow that reads ``github.event.*.head.sha`` (in a ``run:`` / ``env:`` interpolation or a checkout ``ref``) and also checks it out is reading the same immutable payload constant twice, no race, and stays silent. Cross-job state isn't covered because GitHub Actions doesn't share a filesystem between jobs by default.
 
 **Known false-positive modes**
 
-- If the workflow genuinely wants to track HEAD-of-PR over time (e.g., a long-running review session that picks up additional commits between gate and merge), the TOCTOU shape isn't the bug, the design is. Suppress per-step with a rationale that explains the contract; pair with a branch-protection rule on the contributor side that blocks force-pushes to PR branches so the race window stays closed in practice.
+- If the workflow genuinely wants to track HEAD-of-PR over time (e.g., a long-running review session that picks up additional commits between gate and merge), the live-read shape isn't the bug, the design is. Suppress per-step with a rationale that explains the contract; pair with a branch-protection rule on the contributor side that blocks force-pushes to PR branches so the race window stays closed in practice.
 
 **Seen in the wild**
 
-- GitHub Security Lab "checkout-after-rev-parse" research (2024) and zizmor proposal #935: red-team demonstrations of contributor force-pushes landing un-reviewed code between a workflow's two reads of the PR head SHA. The attack works against PR-review gates, labeler gates, and any approval-by-SHA workflow that uses the snapshot value for the decision and a live re-read for the build.
+- GitHub Security Lab "checkout-after-rev-parse" research (2024) and zizmor proposal #935: red-team demonstrations of contributor force-pushes landing un-reviewed code between a workflow's live read of the PR head and a later checkout.
 
 <div class="pg-rule__rec" markdown>
 
 **Recommended action**
 
-Read the PR head SHA once and reuse the captured value for the actual checkout. ``actions/checkout`` accepts a ``ref:`` the workflow already resolved (``ref: ${{ steps.snap.outputs.sha }}`` after a ``steps.snap`` that captures the SHA from the event payload), so the same atom drives both the gate decision and the fetch. If a re-read is genuinely needed (you want the latest commit, accepting the race), drop the gate logic that depends on the earlier snapshot, the two are not the same primitive.
+Read the PR head once and reuse the captured value for both the gate and the checkout. Snapshot the immutable payload SHA (``echo "sha=${{ github.event.pull_request.head.sha }}" >> "$GITHUB_OUTPUT"``) and drive both the gate decision and ``actions/checkout`` (``ref: ${{ steps.snap.outputs.sha }}``) from that single atom, so a force-push can't desync them. Don't pair a live re-read (``gh pr view`` / ``gh api .../pulls/<n>`` / ``git rev-parse HEAD`` after a mutable checkout) with a second, independent read: that is the race. Pinning both sides to ``github.event.*.head.sha`` is already safe (the payload is a trigger-time constant).
 
 </div>
 
@@ -2540,7 +2540,7 @@ Queries the GitHub Advisory Database (``GET /advisories?type=reviewed&ecosystem=
 
 **Known false-positive modes**
 
-- Major-version tags (``@v4``) fire at MEDIUM confidence because the rule cannot resolve which patch level the tag currently points at. If the tag follows the latest release and the advisory is already patched, suppress per-finding with a rationale noting the tag is current. SHA pins with no version comment also fire conservatively; adding a ``# vX.Y.Z`` comment lets the rule match precisely.
+- Major-version tags (``@v4``) fire at MEDIUM confidence because the rule cannot resolve which patch level the tag currently points at. If the tag follows the latest release and the advisory is already patched, suppress per-finding with a rationale noting the tag is current. SHA-pinned refs also fire conservatively at MEDIUM confidence, since the exact version behind the SHA can't be confirmed from the ref alone.
 
 **Seen in the wild**
 

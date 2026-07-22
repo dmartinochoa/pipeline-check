@@ -38,9 +38,10 @@ RULE = Rule(
         "filesystem, the dangerous shape). The rule fires when "
         "any pipeline-level volume's ``host.path`` matches a "
         "sensitive prefix:\n\n"
-        "- ``/var/run/docker.sock`` — the canonical Docker-in-"
-        "Docker escape; equivalent to ``--privileged`` for "
-        "container takeover purposes;\n"
+        "- ``/var/run/docker.sock`` (and the ``/run`` twin, plus "
+        "the ``containerd`` / ``crio`` runtime sockets) — the "
+        "canonical container-runtime escape; equivalent to "
+        "``--privileged`` for container takeover purposes;\n"
         "- ``/var/lib/docker`` — exposes every image / "
         "container on the host;\n"
         "- ``/etc`` — config + credential files;\n"
@@ -107,8 +108,12 @@ RULE = Rule(
 # ``/var/lib/docker/...`` also fires).
 _SENSITIVE_PREFIXES: tuple[str, ...] = (
     "/var/run/docker.sock",
+    "/run/docker.sock",
+    "/var/run/containerd",
+    "/run/containerd",
+    "/var/run/crio",
+    "/run/crio",
     "/var/lib/docker",
-    "/var/run",
     "/etc",
     "/proc",
     "/sys",

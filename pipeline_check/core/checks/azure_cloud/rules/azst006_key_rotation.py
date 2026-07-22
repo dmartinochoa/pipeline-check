@@ -36,6 +36,12 @@ RULE = Rule(
 _MAX_AGE_DAYS = 90
 
 
+def _as_aware(dt: datetime) -> datetime:
+    """Treat a tz-naive datetime as UTC so it compares against the
+    tz-aware threshold without raising."""
+    return dt if dt.tzinfo is not None else dt.replace(tzinfo=UTC)
+
+
 def check(catalog: ResourceCatalog) -> list[Finding]:
     findings: list[Finding] = []
     now = datetime.now(tz=UTC)
@@ -65,9 +71,9 @@ def check(catalog: ResourceCatalog) -> list[Finding]:
         key1_time = getattr(key_creation, "key1", None)
         key2_time = getattr(key_creation, "key2", None)
         stale_keys: list[str] = []
-        if key1_time and key1_time < threshold:
+        if key1_time and _as_aware(key1_time) < threshold:
             stale_keys.append("key1")
-        if key2_time and key2_time < threshold:
+        if key2_time and _as_aware(key2_time) < threshold:
             stale_keys.append("key2")
 
         passed = len(stale_keys) == 0

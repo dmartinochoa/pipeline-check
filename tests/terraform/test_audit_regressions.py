@@ -470,3 +470,218 @@ class TestTf003SubnetScoping:
         f = [f for f in _tf003_codebuild_public_subnet(TerraformContext(plan))
              if f.check_id == "TF-003"]
         assert f and f[0].passed is False
+
+
+def _managed(addr, rtype, name, values):
+    return {"address": addr, "mode": "managed", "type": rtype,
+            "name": name, "values": values}
+
+
+class TestCodePipelineLowFindings:
+    """2026-07 audit LOW findings on the terraform CodePipeline family."""
+
+    def test_cp002_aws_managed_alias_is_not_customer_key(self):
+        # CP-002 FN: an ``alias/aws/s3`` encryption_key is the AWS-managed
+        # key, not a customer-managed one, so the store is not compliant.
+        from pipeline_check.core.checks.terraform.codepipeline import (
+            _cp002_artifact_encryption,
+        )
+        f = _cp002_artifact_encryption(
+            {"artifact_store": [{"location": "b",
+             "encryption_key": [{"id": "alias/aws/s3", "type": "KMS"}]}]}, "p")
+        assert f.passed is False
+        # a real CMK still passes
+        f = _cp002_artifact_encryption(
+            {"artifact_store": [{"location": "b",
+             "encryption_key": [{"id": "arn:aws:kms:us-east-1:1:key/x",
+                                 "type": "KMS"}]}]}, "p")
+        assert f.passed is True
+
+    def test_cp001_same_stage_parallel_approval_does_not_gate(self):
+        # CP-001 FN: an Approval and Deploy in the same stage with no
+        # run_order run in parallel, so the deploy is not gated.
+        from pipeline_check.core.checks.terraform.codepipeline import (
+            _cp001_approval_before_deploy,
+        )
+        stages = [{"name": "Release", "action": [
+            {"name": "a", "category": "Approval", "provider": "Manual"},
+            {"name": "d", "category": "Deploy"}]}]
+        assert _cp001_approval_before_deploy(stages, "p").passed is False
+        # a strictly-lower run_order approval in the same stage does gate
+        stages = [{"name": "Release", "action": [
+            {"name": "a", "category": "Approval", "run_order": 1},
+            {"name": "d", "category": "Deploy", "run_order": 2}]}]
+        assert _cp001_approval_before_deploy(stages, "p").passed is True
+
+    def test_cp005_prod_stage_without_deploy_action_does_not_fire(self):
+        # CP-005 FP: a prod-named stage that only runs tests is not a
+        # release gate.
+        from pipeline_check.core.checks.terraform.phase3 import (
+            _pbac005_cp005_cp007,
+        )
+        r = _managed("aws_codepipeline.p", "aws_codepipeline", "p", {
+            "name": "p", "role_arn": "r", "stage": [
+                {"name": "ProdSmokeTests",
+                 "action": [{"name": "t", "category": "Test"}]}]})
+        fs = [f for f in _pbac005_cp005_cp007(TerraformContext(_plan([r])))
+              if f.check_id == "CP-005"]
+        assert not fs
+        # a prod stage with a Deploy and no approval still fires
+        r = _managed("aws_codepipeline.p", "aws_codepipeline", "p", {
+            "name": "p", "role_arn": "r", "stage": [
+                {"name": "Prod",
+                 "action": [{"name": "d", "category": "Deploy"}]}]})
+        fs = [f for f in _pbac005_cp005_cp007(TerraformContext(_plan([r])))
+              if f.check_id == "CP-005"]
+        assert fs and fs[0].passed is False
+
+    def test_cp007_match_all_glob_is_open(self):
+        # CP-007 FN: ``includes = ["**"]`` matches every branch.
+        from pipeline_check.core.checks.terraform.phase3 import (
+            _pbac005_cp005_cp007,
+        )
+        def _trigger(includes):
+            return _managed("aws_codepipeline.p", "aws_codepipeline", "p", {
+                "name": "p", "pipeline_type": "V2", "role_arn": "r",
+                "stage": [], "trigger": [{
+                    "provider_type": "CodeStarSourceConnection",
+                    "git_configuration": [{"pull_request": [
+                        {"branches": {"includes": includes}}]}]}]})
+        fs = [f for f in _pbac005_cp005_cp007(
+            TerraformContext(_plan([_trigger(["**"])]))) if f.check_id == "CP-007"]
+        assert fs and fs[0].passed is False
+        fs = [f for f in _pbac005_cp005_cp007(
+            TerraformContext(_plan([_trigger(["main"])]))) if f.check_id == "CP-007"]
+        assert not fs
+
+    def test_cd002_custom_all_at_once_config_fires(self):
+        # CD-002 FN: a custom deployment config with minimum_healthy_hosts
+        # value 0 is semantically all-at-once.
+        from pipeline_check.core.checks.terraform.rules.cd002_all_at_once import (
+            check as cd002_check,
+        )
+        cfg = _managed(
+            "aws_codedeploy_deployment_config.c",
+            "aws_codedeploy_deployment_config", "c",
+            {"deployment_config_name": "all-in",
+             "minimum_healthy_hosts": [{"type": "HOST_COUNT", "value": 0}]})
+        grp = _managed(
+            "aws_codedeploy_deployment_group.g",
+            "aws_codedeploy_deployment_group", "g",
+            {"deployment_config_name": "all-in", "app_name": "a",
+             "deployment_group_name": "g"})
+        fs = [f for f in cd002_check(TerraformContext(_plan([cfg, grp])))
+              if not f.passed]
+        assert fs
+        # a graduated custom config (value 1) does not fire
+        cfg["values"]["minimum_healthy_hosts"] = [{"type": "HOST_COUNT",
+                                                   "value": 1}]
+        fs = [f for f in cd002_check(TerraformContext(_plan([cfg, grp])))
+              if not f.passed]
+        assert not fs
+
+
+class TestCodeBuildLowFindings:
+    """2026-07 audit LOW findings on the terraform CodeBuild rules."""
+
+    def test_cb001_null_env_var_name_does_not_crash(self):
+        from pipeline_check.core.checks.terraform.codebuild import (
+            _cb001_plaintext_secrets,
+        )
+        f = _cb001_plaintext_secrets(
+            {"environment": [{"environment_variable": [
+                {"name": None, "value": "x"}]}]}, "a")
+        assert f.check_id == "CB-001"  # no TypeError
+
+    def test_cb009_unresolved_image_reference_not_asserted_pinned(self):
+        from pipeline_check.core.checks.terraform.extended import _cb009
+        f = _cb009({"environment": [{"image": "${var.build_image}"}]}, "addr")
+        assert f.passed is True
+        assert "unresolved" in f.description
+        # a real tag image still fails
+        f2 = _cb009({"environment": [{"image": "myrepo/img:1.0"}]}, "addr")
+        assert f2.passed is False
+
+    def test_cb004_timeout_fire_and_pass(self):
+        from pipeline_check.core.checks.terraform.codebuild import (
+            _cb004_timeout,
+        )
+        # unset timeout fires
+        assert _cb004_timeout({}, "a").passed is False
+        # >= 480 fires
+        assert _cb004_timeout({"build_timeout": 480}, "a").passed is False
+        # a sensible value passes
+        assert _cb004_timeout({"build_timeout": 60}, "a").passed is True
+
+    def test_cb005_outdated_image_fire_and_pass(self):
+        from pipeline_check.core.checks.terraform.codebuild import (
+            _cb005_image_version,
+        )
+        outdated = {"environment": [{"image": "aws/codebuild/standard:5.0"}]}
+        assert _cb005_image_version(outdated, "a").passed is False
+        current = {"environment": [{"image": "aws/codebuild/standard:7.0"}]}
+        assert _cb005_image_version(current, "a").passed is True
+
+
+class TestTerraformC3LowFindings:
+    """2026-07 audit LOW findings (terraform_c3 chunk)."""
+
+    def test_iam001_govcloud_partition_admin_arn(self):
+        from pipeline_check.core.checks.terraform.iam import _iam001_admin_access
+        gov = _iam001_admin_access(
+            ["arn:aws-us-gov:iam::aws:policy/AdministratorAccess"], "ci")
+        assert gov.passed is False
+        china = _iam001_admin_access(
+            ["arn:aws-cn:iam::aws:policy/AdministratorAccess"], "ci")
+        assert china.passed is False
+        clean = _iam001_admin_access(
+            ["arn:aws:iam::aws:policy/ReadOnlyAccess"], "ci")
+        assert clean.passed is True
+
+    def test_ecr005_kms_dsse_is_customer_managed(self):
+        from pipeline_check.core.checks.terraform.ecr import _ecr005_kms_encryption
+        dsse = _ecr005_kms_encryption(
+            {"encryption_configuration": [
+                {"encryption_type": "KMS_DSSE",
+                 "kms_key": "arn:aws:kms:us-east-1:1:key/k"}]}, "r")
+        assert dsse.passed is True
+        aes = _ecr005_kms_encryption(
+            {"encryption_configuration": [{"encryption_type": "AES256"}]}, "r")
+        assert aes.passed is False
+
+    def test_ecr002_immutable_with_exclusion_description(self):
+        from pipeline_check.core.checks.terraform.ecr import _ecr002_tag_mutability
+        f = _ecr002_tag_mutability(
+            {"image_tag_mutability": "IMMUTABLE_WITH_EXCLUSION"}, "r")
+        assert f.passed is False
+        assert "IMMUTABLE_WITH_EXCLUSION" in f.description
+
+    def test_cwl_name_prefix_log_group_inspected(self):
+        from pipeline_check.core.checks.terraform.base import TerraformContext
+        from pipeline_check.core.checks.terraform.extended import _cw_logs_checks
+        plan = _plan([{
+            "address": "aws_cloudwatch_log_group.g", "mode": "managed",
+            "type": "aws_cloudwatch_log_group", "name": "g",
+            "values": {"name_prefix": "/aws/codebuild/app-"},
+        }])
+        fs = [f for f in _cw_logs_checks(TerraformContext(plan))
+              if f.check_id.startswith("CWL")]
+        assert {f.check_id for f in fs} == {"CWL-001", "CWL-002"}
+        assert all(f.passed is False for f in fs)
+
+
+class TestS3002NonListRuleGuard:
+    """2026-07 audit LOW: S3-002 crashed on a non-list ``rule`` value."""
+
+    def test_scalar_and_dict_rule_do_not_crash(self):
+        from pipeline_check.core.checks.terraform.s3 import _s3002_encryption
+        # a bare string used to raise AttributeError, a dict KeyError.
+        assert _s3002_encryption({"bucket": "b", "rule": "x"}, "b").passed is False
+        assert _s3002_encryption(
+            {"bucket": "b", "rule": {"apply_server_side_encryption_by_default": []}},
+            "b").passed is False
+        # the normal list form still evaluates correctly
+        ok = _s3002_encryption({"bucket": "b", "rule": [
+            {"apply_server_side_encryption_by_default": [
+                {"sse_algorithm": "aws:kms"}]}]}, "b")
+        assert ok.passed is True

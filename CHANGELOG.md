@@ -10,6 +10,485 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 PRs landing on `dev` between releases append entries below. The
 release commit collapses this section into `## [X.Y.Z] - <date>`.
 
+## [1.19.0] - 2026-07-22
+
+### Fixed
+
+- **SCM-006 is skipped on Bitbucket.** Bitbucket Cloud has no per-branch
+  signed-commit enforcement, so the rule's "enable Require signed commits"
+  recommendation isn't actionable there; it was failing every Bitbucket
+  repo. It now passes with a not-applicable note on Bitbucket snapshots
+  (GitHub and GitLab, which do support the control, are unchanged). Found
+  by the 2026-07 rule audit.
+- **Final 2026-07 audit LOW-severity cluster.** HARNESS-007 exempts narrow
+  read-only certificate subpaths under `/etc` (`/etc/ssl/certs`, `/etc/pki`,
+  `/etc/ca-certificates`) while still flagging a broad `/etc` mount;
+  HARNESS-019 correlates each stage's own `timeout` with its own steps, so
+  two id-less stages no longer collide and misattribute a stage-level
+  timeout; JF-032's exploit example uses a ref the rule actually flags
+  (`env.CHANGE_BRANCH`, not the author-controlled `env.JOB_BASE_NAME`);
+  K8S-032 requires a default-deny NetworkPolicy to declare both `Ingress`
+  and `Egress` (an ingress-only policy leaves egress open); GL-036 no
+  longer reads a `${TOKEN:+is set}` set-check as a secret echo (only
+  `:+` / `:?` are exempted; `:-` still prints the value); GL-043
+  over-approximates GitLab's legacy scanner-disable semantics (any
+  `*_DISABLED` value other than an explicit falsy literal disables the
+  scanner); DEV-010 treats a bare scalar `alwaysAllow: "*"` (not only the
+  list form) as blanket auto-approval; RUN-004 keys the OIDC-mint signal on
+  an actual cloud-federation exchange (`AssumeRoleWithWebIdentity` /
+  `workloadIdentityPools`), not the issuer host or `ACTIONS_ID_TOKEN_
+  REQUEST_*` env vars that show up in any env dump; and RUN-002 reports
+  privileged-trigger usage as passing context rather than a failing MEDIUM
+  (the actionable fork case stays with RUN-001). ORG-006 documents the
+  residual private-repo exposure of a `private`-visibility org secret in
+  its false-positive notes. Found by the 2026-07 rule audit.
+- **Cloud-provider and CI rule edge cases.** DF-012 matches `sudo` only
+  at a command position, so a mention inside an echoed string
+  (`echo "use sudo apt-get"`) isn't read as an invocation; ADO-035 now
+  follows a `##vso[task.setvariable]` capture of an untrusted macro across
+  steps, so a value stored in one step and fed to an agentic CLI in a
+  later step is flagged; ENTRA-002 no longer crashes on a present-but-null
+  `passwordCredentials` / `keyCredentials` array; CWL-001 (CloudFormation)
+  accepts a quoted `RetentionInDays: "30"` (CloudFormation coerces the
+  Integer property); GCSQL-004 skips SQL Server instances (which have no
+  IAM database-auth flag, so the check was an unactionable permanent
+  failure); and BB-011 fires the `aws configure set` branch only for a
+  literal key value, not a `$`-referenced secured variable (the shape the
+  rule recommends). Found by the 2026-07 rule audit.
+- **Package-manager rule edge cases.** CARGO-005 now treats a
+  `registry-index` URL dependency key as an alternate registry; CARGO-011's
+  build.rs comment stripper is string-literal-aware, so a `//` inside a URL
+  literal no longer eats a following egress/exec idiom; COMPOSER-002 reads
+  a 40-char commit hash as an exact pin (matching its docstring);
+  COMPOSER-006 catches a pipe into a `sudo`/`env`-wrapped interpreter and
+  into `powershell` / `pwsh`; HELM-004 requires a full three-component
+  `X.Y.Z` for an exact dependency pin (a bare `1.2` / `1` is a Masterminds
+  range); MVN-016 matches the Gradle lazy-property `allowInsecureProtocol
+  .set(true)` form; MODEL-003 emits its pickle-format note for the literal
+  `.pkl` / `.pickle` / `.joblib` / `.dill` / `.ckpt` extensions; GEM-007
+  fires only when at least one of multiple top-level Gemfile sources is not
+  the public rubygems.org (two identical public sources are redundant, not
+  a dependency-confusion split); GEM-010 now matches a line-scoped `load`
+  directive (its docs_note already claimed it); NUGET-017 counts a
+  `disabledPackageSources` entry as disabled only for `true` (NuGet's
+  `bool.TryParse` rejects `1` / `yes`, leaving the gallery enabled); and
+  NUGET-018 no longer flags an `$(Pkg…)` import that resolves to a
+  user-defined `PropertyGroup` property rather than a GeneratePathProperty
+  package path. Found by the 2026-07 rule audit.
+- **HELM-013 no longer flags a missing `type:`.** Omitting `type:` is
+  legitimate (Helm 3 defaults it to `application`), so the rule now fires
+  only on a present-but-invalid value. Found by the 2026-07 rule audit.
+- **HELM-017 comment / indirection edge cases.** It no longer reads a
+  commented-out `{{/* tpl .Values.x */}}` action as a live SSTI sink, and
+  it now catches the indirect shape where a `.Values` value is bound to a
+  `$var` and then passed through `tpl $var`. Found by the 2026-07 rule
+  audit.
+- **More GitHub Actions detection edge cases.** GHA-005 no longer reads a
+  malformed string-scalar `with:` via substring membership (a bare
+  `with: role-to-assume` was misclassified as an OIDC config); GHA-114
+  treats `push.branches-ignore` + `tags` as unrestricted (branches-ignore
+  is itself a branch filter, so every non-ignored branch still reaches the
+  publish path); GHA-116 now scans a reusable-workflow call job's
+  job-level `with:` / `secrets:` mappings for `toJSON(secrets)` (a call job
+  has no steps); and GHA-119 / GHA-123 scan real command chunks so an
+  agent name that appears only in a comment or an `echo` string isn't read
+  as an agentic-CLI invocation. Found by the 2026-07 rule audit.
+- **Argo / Cloud Build / Buildkite / Drone rule edge cases.** ARGO-016
+  now also flags a template's own `serviceAccountName` override (not just
+  the workflow-level `spec.serviceAccountName`); GCB-024 detects a
+  `docker push` issued from the `script:` step form; GCB-023 no longer
+  counts Cloud Build's `$$`-escaped literal shell var (`$$_SHELLVAR`) as
+  an undeclared user substitution; BK-015 adds
+  `BUILDKITE_PULL_REQUEST_TITLE` to its tainted-variable set (and drops
+  the dead `BUILDKITE_BUILD_MESSAGE`), matching BK-003; DR-004 recurses
+  into a plugin's nested `settings:` sub-maps so a buried literal
+  credential is still classified; and DR-007 scopes the host-mount check
+  to the actual container-runtime sockets (docker / containerd / crio,
+  under `/var/run` and `/run`) instead of the over-broad bare `/var/run`.
+  Found by the 2026-07 rule audit.
+- **GHA-092 no longer flags the immutable-payload-SHA pinning pattern.**
+  It treated a workflow that reads `${{ github.event.pull_request.head.
+  sha }}` for a gate and then checks out that same ref as a TOCTOU race,
+  but the event payload is a trigger-time constant — both reads resolve
+  identically, so pinning both sides is in fact the recommended defense.
+  The rule now fires only when one read is genuinely live (`gh pr view` /
+  `gh api .../pulls/<n>`, or `git rev-parse HEAD` after a mutable
+  checkout) followed by the pinned re-fetch. Found by the 2026-07 rule
+  audit.
+- **GCRUN-001 checks IAM invoker bindings, not ingress.** The rule
+  claimed "unauthenticated access" but only tested
+  `ingress=INGRESS_TRAFFIC_ALL` (the default for every `gcloud run
+  deploy`), so it failed services that require IAM auth. It now reads the
+  service IAM policy and flags only `allUsers` / `allAuthenticatedUsers`
+  bound to `roles/run.invoker` — the actual unauthenticated-access
+  condition. Found by the 2026-07 rule audit.
+- **Terraform CodePipeline / CodeDeploy edge cases.** Five low-severity
+  accuracy fixes: CP-002 no longer counts the AWS-managed `alias/aws/s3`
+  key as customer-managed encryption; CP-001 stops passing an Approval
+  and Deploy in the same stage at the same `run_order` (they run in
+  parallel, so the approval doesn't gate the deploy); CP-005 no longer
+  flags a prod-named stage that contains no Deploy action (a test-only
+  stage isn't a release gate); CP-007 now treats a match-all glob
+  (`includes = ["**"]`) as an open branch filter; and CD-002 now flags a
+  custom `aws_codedeploy_deployment_config` that is semantically
+  all-at-once (`minimum_healthy_hosts` value 0 or a `AllAtOnce` traffic
+  routing config), not just the three managed names. Found by the 2026-07
+  rule audit.
+- **CB-010 docs match its behavior.** The rule's note and exploit example
+  cited `PULL_REQUEST_MERGED`, which runs post-merge on the base branch
+  and isn't a fork-controlled event, so the rule never matched it. The
+  wording now names the three pre-merge events it actually keys on. Found
+  by the 2026-07 rule audit.
+- **GCP log-metric filters recognize equivalent `methodName` forms.**
+  GCLOG-007/008/009/010 matched a single resource.type or exact
+  methodName token case-sensitively, so real filters written against the
+  audit-log `methodName` (`v1.compute.instances.setIamPolicy`,
+  `compute.firewalls.*`, `compute.routes.*`, the `cloudsql.instances`
+  has-operator prefix) were reported as missing. Matching is now
+  case-insensitive and accepts the methodName equivalents. Found by the
+  2026-07 rule audit.
+- **GCLOG-001 flags audit-log exemptions and matches its recommendation.**
+  The catalog dropped each audit config's `exempted_members`, so an
+  allServices config with all three log types but broad exemptions (the
+  exact condition CIS GCP 2.1 forbids) passed; the rule now captures and
+  fails on exemptions. Its recommendation also said "ADMIN_READ and
+  DATA_WRITE" while the code requires all three log types. Found by the
+  2026-07 rule audit.
+- **GCKMS-002 catches KMS-scoped custom roles.** A `cloudkms` substring
+  gate skipped custom roles (`projects/p/roles/kmsDecrypterCustom`) bound
+  to `allUsers`; the gate now matches any KMS-scoped role name. GCKMS-004
+  and GCLOG-006 recommendation/notes were also reworded to match what the
+  code actually checks. Found by the 2026-07 rule audit.
+- **Jenkins text rules ignore Groovy comments.** JF-016, JF-018, JF-021,
+  JF-022, and JF-023 scanned raw Jenkinsfile text, so a pattern mentioned
+  in a `//` comment (a policy note, a "don't do this" reminder) fired the
+  rule; and JF-015 counted a `timeout(...)` that appeared only in a
+  comment as a real wrapper. All now scan the comment-stripped body.
+  JF-027 also now recognizes the standalone `fingerprint '<glob>'` step,
+  not just `fingerprint: true`. Found by the 2026-07 rule audit.
+- **CircleCI env and runner detection edge cases.** CC-004 and CC-005
+  scanned only job-level `environment:` blocks, missing secret-like and
+  AWS keys declared on an executor definition or a docker image (both now
+  covered via a shared `iter_env_blocks`). CC-009 no longer raises on a
+  non-list `requires:` (a `dict`/nested-list entry). CC-010 now treats a
+  namespaced `resource_class` (`<namespace>/<name>`, the shape every
+  self-hosted runner uses) as a runner, not just values containing the
+  literal `self-hosted`. CC-011 no longer flags a deploy-only or
+  lint-only config that runs no tests. Found by the 2026-07 rule audit.
+- **GitHub Actions secret-leak and gating edge cases.** GHA-087 now
+  recognizes the last-N-chars slice `${TOKEN: -8}` (the space before a
+  negative offset is what makes it a slice, not a default-value
+  expansion); GHA-093 now treats `tee -a "$GITHUB_STEP_SUMMARY"` as a
+  summary sink, not just `>`/`>>` redirects; GHA-097 now detects the
+  `enablePullRequestAutoMerge` GraphQL mutation and `gh api ...
+  auto_merge`, matching what its docs already claimed; and GHA-098 no
+  longer counts a security scan that runs *after* the deploy step in the
+  same job as a gate (scan-before-ship is the point). GHA-096's false-
+  positive note dropped a version-comment tip the rule doesn't act on.
+  Found by the 2026-07 rule audit.
+- **NPM-001 floating-range detection is more precise.** It no longer
+  flags an exact version whose prerelease or build tail ends in `.x`
+  (`1.2.3-alpha.x`, `1.2.3+build.x`) as a wildcard, and it now catches
+  three genuinely floating forms it missed: an empty spec (npm resolves
+  it to `*`), a hyphen range (`1.2.3 - 2.3.4`), and a `||` union
+  (`1.0.0 || 2.0.0`). NPM-011 dropped a redundant `.env` pattern already
+  covered by its sibling. Found by the 2026-07 rule audit.
+- **More GitHub Actions detection edge cases.** GHA-060 no longer flags
+  `pip install --no-deps -e .` (a local editable install fetches nothing
+  from a registry, so hash verification is inapplicable); GHA-062 now
+  reads the `attribute.repository.matches('myorg/.*')` WIF predicate its
+  docs already described, not just `startsWith`; GHA-063 only flags an
+  actor-substring gate when the compared literal actually names a bot
+  (`contains(github.actor, 'preview')` is no longer a false alarm);
+  GHA-065 now scans mapping keys for zero-width/bidi characters, not just
+  values (a Trojan-Source char smuggled into an env-var name); and
+  GHA-069 stopped treating `release-drafter/release-drafter` (which uses
+  `GITHUB_TOKEN`, not OIDC) as an OIDC consumer. Found by the 2026-07
+  rule audit.
+- **OCI attestation rules: a crash guard and two accuracy fixes.**
+  ATTEST-007 no longer raises (and aborts the whole OCI scan) on a
+  non-list `packages` / `components` value in an SBOM attestation.
+  ATTEST-002 now accepts the scp-style git URI `git@github.com:owner/
+  repo.git` (previously flagged as malformed) and, for SLSA v1
+  provenance, ties the pinned-source check to the dependency whose URI
+  matches the source repo rather than accepting any dependency's digest
+  (a base-image digest no longer masks an unpinned source). OCI-004's
+  note now mentions it also fires on foreign/nondistributable layer
+  media types, and OCI-002 documents referrer/cosign attestations as a
+  single-platform false-positive surface. Found by the 2026-07 rule
+  audit.
+- **SCM branch-protection shape and empty-repo edge cases.** SCM-007 and
+  SCM-009 now read the legacy bare-boolean `allow_force_pushes: true` /
+  `allow_deletions: true` shape (the branch-protection PUT-body form),
+  matching SCM-010, so those settings are no longer misread as blocked.
+  SCM-001's empty-repo guard no longer suppresses a real unprotected
+  repo that reports `size: 0` (KB rounding / post-push recalculation lag)
+  when the repo has detected languages, and a dead operator-precedence
+  clause in the Bitbucket default-branch matcher was removed. Found by
+  the 2026-07 rule audit.
+- **Azure-cloud rule accuracy fixes.** AZST-006 no longer crashes on a
+  timezone-naive `key_creation_time` (a naive value is treated as UTC).
+  AZSQL-003 treats the newer `public_network_access = SecuredByPerimeter`
+  (Network Security Perimeter) as not internet-open, not just `Disabled`.
+  AZVM-004 recognizes Windows `patch_settings.patch_mode =
+  AutomaticByPlatform` as auto-patching (matching the Linux branch).
+  AZVM-001 was retitled and reworded to say "not encrypted with a
+  customer-managed key or Azure Disk Encryption" — every Azure managed
+  disk is SSE-encrypted by default, so the old "disks are not encrypted"
+  wording was inaccurate about what the rule actually checks. Found by
+  the 2026-07 rule audit.
+- **Cloud Build substitution and install detection edge cases.** GCB-004
+  no longer flags the escaped literal `$$_TAG` (Cloud Build's `$$` means a
+  literal `$`) and now catches a digit-first user substitution (`${_1}`).
+  GCB-013 detects a `git+` install whose URL sits on a separate `args`
+  entry (`entrypoint: pip, args: [install, "git+https://..."]`), not just
+  the `bash -c "pip install git+..."` form. GCB-003 no longer flags a
+  read-only Secret Manager metadata op (`gcloud secrets versions
+  describe`/`list`, `get-iam-policy`) that references a version URI
+  without revealing the value. Found by the 2026-07 rule audit.
+- **GCP compute/IAM rule accuracy fixes.** GCCE-002 recognizes the
+  alternate truthy `enable-oslogin` spellings (`1`, `y`, `yes`), not only
+  `TRUE`. GCIAM-003 only credits an IAM condition that references
+  `resource.name` as scoping impersonation; a time-bound condition that
+  still permits impersonating every service account no longer passes.
+  GCIAM-006 surfaces a service-account key whose creation timestamp can't
+  be parsed (previously it vanished from the report) so its rotation age
+  gets manual review. Found by the 2026-07 rule audit.
+- **GitHub Actions rule accuracy fixes.** GHA-035 recognizes a
+  case-variant `uses: Actions/github-script` (action refs are
+  case-insensitive). GHA-044's yarn matcher no longer flags a named
+  script (`yarn lint`, `yarn run dev`, `yarn --version`) as an install; it
+  matches only `yarn install` and a bare `yarn`. GHA-031 skips `#` comment
+  lines, so a migration note mentioning `::set-output::` doesn't fire when
+  the live line already uses `$GITHUB_OUTPUT`. GHA-033 dropped a dead
+  unused regex. Found by the 2026-07 rule audit.
+- **GitLab rule false-negative fixes.** GL-002 now propagates variable
+  taint through a chain (`B: $A` where `A: $CI_COMMIT_MESSAGE`) to a
+  fixpoint. GL-004 only treats a deploy job as gated when *every*
+  reachable `rules:` entry is `when: manual`, so a job that is manual on
+  one branch but auto-runs via a catch-all entry is flagged. GL-010
+  scopes the verification search to the job that actually ingests the
+  cross-project artifact, so a `cosign verify` in an unrelated job no
+  longer silences it. GL-013 unwraps the `{value: ...}` variable form and
+  detects a literal `AWS_SECRET_ACCESS_KEY=` export (secret keys never
+  start with `AKIA`). Found by the 2026-07 rule audit.
+- **Jenkins rule accuracy fixes.** JF-001 treats a prerelease/build-suffix
+  semver tag (`v1.4.2-rc1`) as a pinned ref, not a floating one. JF-009
+  and JF-012 recognize the Groovy method-call forms `image('name:tag')`
+  and `load('file.groovy')`, not only the space-delimited directive
+  forms. JF-004 flags a `withCredentials` binding whose variables are AWS
+  key names (`usernameVariable: 'AWS_ACCESS_KEY_ID'`) even when the
+  `credentialsId` string doesn't contain "aws". Found by the 2026-07 rule
+  audit.
+- **Kubernetes rule fixes.** K8S-011 honors the deprecated
+  `spec.serviceAccount` alias (kubectl copies it into
+  `serviceAccountName`), so an older manifest binding a dedicated SA is no
+  longer reported as running on the default. K8S-007's note was reworded
+  to match the code (a container passes on `runAsNonRoot: true` alone; a
+  non-zero `runAsUser` isn't required because the kubelet enforces it).
+  Two British spellings that slipped past the English-variant guard were
+  corrected (the neighbor/neighbor-ing pair in K8S-015/016, and the
+  normalize verb in several module docstrings), and the guard's word list
+  was extended so they can't recur. Found by the 2026-07 rule audit.
+- **NuGet rule accuracy fixes.** NUGET-014 no longer flags a `%VAR%`
+  environment placeholder in a source URL (`https://user:%NUGET_TOKEN%@
+  ...`) as an embedded credential, matching how it already skips the
+  `${...}` form. NUGET-006 requires a `packages.lock.json` co-located
+  with each project rather than any lock file in the tree, so a sibling
+  project's lock no longer masks a project that has none. Found by the
+  2026-07 rule audit.
+- **Tekton rules cover more shapes.** TKN-015 matches the bracket-notation
+  param reference `$(params['name'])`, not just the dot form. TKN-016
+  walks a PipelineRun's inline `spec.pipelineSpec.tasks[*].taskRef` for
+  unpinned remote resolvers, not only the top-level `pipelineRef`. And the
+  shared step-script iterator now includes the exec form (`command:
+  ["sh","-c"], args: [...]`), so the log-leak (TKN-017) and shell-eval
+  (TKN-018) rules — along with the other script-scanning Tekton rules —
+  see steps that run code without a `script:` field. Found by the 2026-07
+  rule audit.
+- **Terraform CodeBuild rule fixes.** CB-001 no longer raises on an
+  `environment_variable` whose `name` is explicitly `null`. CB-009 stops
+  asserting "tag-pinned" on an unresolved HCL image reference
+  (`${var.build_image}`); it reports the pin state as undetermined
+  instead. Found by the 2026-07 rule audit.
+- **More Terraform AWS-resource rule fixes.** The Terraform IAM-001 now
+  matches an `AdministratorAccess` ARN in the GovCloud / China partitions
+  (`arn:aws-us-gov:...`, `arn:aws-cn:...`), like the AWS-runtime rule.
+  ECR-005 accepts `KMS_DSSE` (dual-layer KMS with a customer key) as
+  compliant, not just `KMS`. ECR-002's finding text now names the actual
+  `image_tag_mutability` value (e.g. `IMMUTABLE_WITH_EXCLUSION`) instead
+  of always saying "MUTABLE". And CWL-001/CWL-002 inspect a CodeBuild log
+  group declared with `name_prefix` (not only `name`). Found by the
+  2026-07 rule audit.
+- **S3-002 (Terraform) no longer crashes on a non-list `rule`.** A
+  best-effort HCL parse can surface `rule` as an attribute-form dict or a
+  bare string; the encryption check now guards it with `_first` instead
+  of indexing `rule[0]` directly. Found by the 2026-07 rule audit.
+- **LMB-004 (Terraform) docs match the code.** The note claimed it fires
+  on "any other wildcard form"; it actually matches an exact `"*"`
+  principal that isn't scoped by `source_account` / `source_arn`, so the
+  wording was corrected. Found by the 2026-07 rule audit.
+- **Argo rule fixes.** ARGO-005 no longer flags a parameter passed as a
+  discrete `args` element to a non-shell container (`command: ["myctl"],
+  args: [..., "{{param}}"]`) as injection; it scans `args` only when the
+  command is a shell (`sh -c`) or absent. ARGO-004 finds a `hostPath`
+  nested under `volumes[]` in a JSON-form `podSpecPatch`, not just a
+  top-level key. ARGO-015 also scans workflow-global input artifacts
+  (`spec.arguments.artifacts`), not only per-template `inputs.artifacts`.
+  Found by the 2026-07 rule audit.
+- **AWS Secrets Manager rule fixes.** SM-001 no longer over-strips a
+  secret reference whose name ends in a 6-character segment (`my-secret`
+  → `my`), so a CI/CD reference that omits AWS's random ARN suffix still
+  matches the live secret. SM-002 guards against a resource policy that
+  parsed to a non-object (list/scalar) before walking its statements.
+  Found by the 2026-07 rule audit.
+- **Bitbucket cache-key and after-script rule fixes.** BB-018 stops
+  flagging `$BITBUCKET_PR_DESTINATION_BRANCH` (the PR *target* branch is a
+  repo-owned protected name, not author-controlled), and its note was
+  corrected to drop the never-detected "PR ID". BB-019 now scans a
+  scalar-string `after-script` (not only the list form) and matches
+  lowercase secret variable names. Found by the 2026-07 rule audit.
+- **Dependency-install detection edge cases (shared primitive).** The npm
+  install matcher now allows a global flag before the subcommand
+  (`npm --prefix ./app install`) while still ignoring named scripts
+  (`npm run install-deps`) — this improves BB-030 and every rule that
+  reuses it. And a pip install whose only targets are local paths
+  (`pip install -e .`, `pip install .`) is no longer treated as a
+  hash-verifiable install, since pip refuses `--require-hashes` for a
+  local directory or editable requirement (BB-031, GHA-060, and
+  siblings). Found by the 2026-07 rule audit.
+- **Buildkite rule fixes.** BK-016 scans only command bodies, so a shell
+  idiom mentioned in a label or env value (`label: "Run eval $CONFIG
+  checks"`) no longer fires. The shared env-dump matcher no longer flags
+  `env -i ./cmd` (a clean-environment invocation dumps nothing), while
+  `env` / `env | grep` / `env > file` still count (BK-017 and siblings).
+  And the Buildkite taint graph (TAINT-005) identifies producer/consumer
+  steps by index rather than display label, so two steps that share a
+  label no longer collapse and hide a cross-step taint path. Found by the
+  2026-07 rule audit.
+- **CloudFormation CodeBuild / CodeArtifact rule fixes.** CB-004's
+  unset-timeout finding no longer misstates the risk as "AWS maximum"
+  (CodeBuild's default is 60 minutes, not the 480 ceiling). CB-006 now
+  also inspects `SecondarySources` for inline long-lived-token auth, not
+  just the primary `Source`. CA-002 handles an `ExternalConnections`
+  written as a scalar string (`public:pypi`), which was previously
+  iterated character by character and missed. Found by the 2026-07 rule
+  audit.
+- **CloudFormation IAM / CodeBuild crash guards.** IAM-005 no longer
+  raises on a malformed non-dict `Condition` value, and PBAC-001 no
+  longer raises on a scalar `VpcConfig`. IAM-005's wording was also
+  corrected: the static template has no account context, so it can't
+  confirm a principal is cross-account; the note and finding now say it
+  flags any AWS-principal trust lacking `sts:ExternalId` (harmless to
+  require on same-account trust). Found by the 2026-07 rule audit.
+- **Dockerfile rule fixes.** DF-016 recognizes the legacy space-separated
+  `LABEL key value` form, so provenance labels written that way aren't
+  reported missing. DF-017 no longer flags a writable directory appended
+  after the system bins in a fully-replaced `PATH` (the earlier system
+  bins still win); only a writable dir *before* them shadows anything.
+  DF-019 detects a credential file copied via the JSON-array form
+  (`COPY [".npmrc", "/root/.npmrc"]`), not just the shell form. Found by
+  the 2026-07 rule audit.
+- **Drone rule fixes.** DR-016 detects the bare `$VAR` image
+  interpolation form (`image: app:$DRONE_TAG`), not only `${VAR}`, while
+  still ignoring the `$$` literal-dollar escape. The shared shell-eval
+  matcher no longer treats a positional/special parameter (`$@`, `$?`,
+  `$#`, ...) inside `sh -c '...'` as a dangerous variable re-invocation,
+  so the documented-safe `sh -c 'exec "$@"'` idiom stops firing (DR-017
+  and siblings). Found by the 2026-07 rule audit.
+- **More GCP rule fixes.** GCNET-003 recognizes the numeric IANA protocol
+  `6` (TCP) in a firewall `allowed` entry, not only the string `tcp`, so
+  an open-to-`0.0.0.0/0` SSH/RDP rule written that way is caught.
+  GCLOG-011 now requires an affirmative custom-role-change filter — a
+  `resource.type="iam_role"` match (not a negated `!=`) or the
+  `google.iam.admin.v1.(Create|Update|Delete)Role` method names — instead
+  of a bare `iam_role` substring, which both missed methodName-only
+  filters and accepted filters that merely mention (or exclude) the type.
+  Found by the 2026-07 rule audit.
+- **GitLab rule fixes.** GL-017's docker-privileged matcher no longer
+  spans newlines in the concatenated document blob, so a benign `docker
+  run` on one line plus an unrelated `--privileged` mention on another no
+  longer false-fires. GL-021 detects a bare `yarn` line (which implicitly
+  runs `yarn install`), not only the explicit `yarn install`. And GL-028
+  now flags a bare-major service tag (`postgres:16`) as unpinned, matching
+  the rule's own recommendation, while a minor-pinned tag (`:16.2`)
+  passes. Found by the 2026-07 rule audit.
+- **GitLab AI / taint-tracking fixes.** The model-revision pin check now
+  requires a commit-ish (7-40 hex) like its `@<sha>` form, so a movable
+  `revision='main'` / tag no longer counts as a pin (GL-046 and the
+  GitHub twin). GL-048's variable-reference matcher gained a trailing
+  word boundary, so a tainted `$TITLE` no longer matches the sanitized
+  `$TITLE_SAFE`. And the GitLab dotenv-taint graph (TAINT-004) now
+  recognizes a `printf "NAME=%s" "$VAR" > file` write, not only the
+  `echo` form. Found by the 2026-07 rule audit.
+- **Go module rule fixes.** GOMOD-009 now recognizes all three Go
+  pseudo-version forms (including the pre-release-base
+  `v1.2.3-rc.0.<ts>-<hash>`) as commit pins rather than pre-release
+  requires, and flags any SemVer pre-release identifier
+  (`-preview`, `-M1`, `-snapshot`, `-canary`, ...), not just a fixed
+  `rc/alpha/beta/pre/dev` list. GOMOD-002/012 treat a Windows
+  forward-slash drive path (`C:/local/fork`) as a local replace, so it's
+  no longer misread as an `host:port` target. Found by the 2026-07 rule
+  audit.
+- **Kubernetes rule fixes.** K8S-017 routes AKIA matching through the
+  vendor-example filter, so a documentation key (`AKIAIOSFODNN7EXAMPLE`)
+  copied into a manifest no longer trips a CRITICAL. K8S-024 notes when a
+  container has only a `startupProbe` (which gates startup, not ongoing
+  health), instead of claiming it declares no probe at all. K8S-020's
+  title now names the `admin` role it actually matches, alongside
+  `cluster-admin` and `system:masters`. Found by the 2026-07 rule audit.
+- **Pulumi rule fixes.** PULUMI-006's Python `StackReference` matcher
+  gained a leading word boundary, so a helper like `getStackReference(`
+  no longer matches as a substring. PULUMI-009 scans each project's own
+  directory for runtime-matching sources, so a project with no entry
+  point isn't excused by a sibling project's files. PULUMI-001's note was
+  corrected to state that an absent `secretsprovider` only fires when an
+  `encryptionsalt` is present (a stack with neither has no secrets to
+  protect). Found by the 2026-07 rule audit.
+- **SCM rule fixes.** SCM-027 evaluates an outside collaborator that
+  carries only a `role_name` (not the full `permissions` dict), so a
+  partial payload with a `write`/`admin` role is flagged instead of being
+  affirmed read-only. SCM-024's note dropped a "with at least one
+  configured policy" claim the code doesn't verify, and SCM-030's exploit
+  example now uses a `RepositoryRole` bypass actor (the rule deliberately
+  carves out `Integration`/GitHub-App actors, so the old Integration
+  example didn't actually fire). Found by the 2026-07 rule audit.
+- **More Tekton rule fixes.** TKN-013 no longer reports a sidecar as
+  running as root when it sets a non-zero `runAsUser` (which already
+  establishes non-root) even without an explicit `runAsNonRoot`. TKN-005
+  scans a literal secret in a PipelineRun/TaskRun `spec.params[].value`
+  (the run-time param shape), not only a Task's `default`. TKN-006 treats
+  a `timeouts.pipeline: "0"` (Tekton's explicit "no timeout") as unset,
+  since running forever is the DoS condition the rule targets. Found by
+  the 2026-07 rule audit.
+- **AWS CodeBuild / EventBridge rule fixes.** CB-010 now honors the
+  webhook `excludeMatchedPattern` flag: a deny-list `ACTOR_ACCOUNT_ID`
+  filter (which still lets non-listed forks through) is no longer treated
+  as protection, and an exclude-mode `EVENT` filter (e.g. on `PUSH`) is
+  recognized as still covering PR events. EB-001 accepts a source-only
+  EventBridge pattern (`source: ["aws.codepipeline"]` + a FAILED state
+  filter) as pipeline-failure coverage, not only the detail-type form.
+  CCM-003's stale comment about `list_repositories` carrying an ARN was
+  corrected. Found by the 2026-07 rule audit.
+- **Azure rule fixes.** ADO-011 no longer treats a `template:` key nested
+  in a task's `inputs:` as a PR-editable local template include. ACR-002
+  treats a registry with public access "Enabled" but a `network_rule_set`
+  default action of "Deny" as network-restricted, not internet-open.
+  AKV-004/AKV-005 no longer raise on a key/secret item whose `kid`/`id`
+  is explicitly `null`. AZMON-002 no longer lets one indefinite-retention
+  (days=0) log category mask a short-retention sibling. AZNW-001 detects
+  the IPv6 any-source (`::/0`) allow rule on SSH/RDP ports. Found by the
+  2026-07 rule audit.
+- **CircleCI rule fixes.** CC-015 no longer fires on an orb-only /
+  workflow-only config that has no author `run:` step to set
+  `no_output_timeout` on. CC-021 exempts a local-path `go install
+  ./cmd/tool` (built from the repo's own go.mod/go.sum). The shared
+  agentic-CLI matcher now requires the agent name in command position, so
+  a hyphenated filename (`run-gemini-benchmark.py`) no longer looks like a
+  Gemini invocation (CC-037 and every AI-prompt-injection rule). And
+  CC-031 skips `type: approval` jobs, which run no steps and can't assume
+  a role. Found by the 2026-07 rule audit.
+
 ## [1.18.1] - 2026-07-20
 
 ### Fixed

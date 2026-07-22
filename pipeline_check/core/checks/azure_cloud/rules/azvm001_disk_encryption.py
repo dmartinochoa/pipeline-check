@@ -1,4 +1,4 @@
-"""AZVM-001. Virtual machine disks are not encrypted."""
+"""AZVM-001. VM disks not encrypted with a customer-managed key / ADE."""
 from __future__ import annotations
 
 from ...base import Finding, Severity
@@ -7,7 +7,7 @@ from .._catalog import ResourceCatalog
 
 RULE = Rule(
     id="AZVM-001",
-    title="Virtual machine disks are not encrypted",
+    title="VM disks not encrypted with a customer-managed key or ADE",
     severity=Severity.HIGH,
     owasp=("CICD-SEC-9",),
     cwe=("CWE-311",),
@@ -18,10 +18,14 @@ RULE = Rule(
         "attacks on the underlying storage."
     ),
     docs_note=(
-        "Unencrypted VM disks expose data to offline attacks. An "
-        "attacker who gains access to the storage account backing "
-        "a VM can mount the VHD and read all data, including "
-        "pipeline agent credentials and build artifacts."
+        "All Azure managed disks are SSE-encrypted at rest with "
+        "platform-managed keys by default; this rule checks for the "
+        "stronger customer-managed key (disk encryption set) or Azure "
+        "Disk Encryption (ADE), which keep the key outside Azure's "
+        "default control. A disk with neither can be read by an "
+        "attacker who compromises the platform key path or the "
+        "storage backing the VHD, including pipeline agent credentials "
+        "and build artifacts."
     ),
     exploit_example=(
         "An attacker with storage account access snapshots an "
@@ -67,11 +71,13 @@ def check(catalog: ResourceCatalog) -> list[Finding]:
         passed = len(unencrypted_disks) == 0
         if passed:
             desc = (
-                f"VM '{name}' has all disks encrypted."
+                f"VM '{name}' has all disks encrypted with a "
+                "customer-managed key or Azure Disk Encryption."
             )
         else:
             desc = (
-                f"VM '{name}' has unencrypted disks: "
+                f"VM '{name}' has disks without a customer-managed key "
+                f"or Azure Disk Encryption (platform-managed SSE only): "
                 f"{', '.join(unencrypted_disks)}."
             )
         findings.append(Finding(

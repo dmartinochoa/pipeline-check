@@ -121,7 +121,15 @@ def _codeartifact(ctx: CloudFormationContext) -> list[Finding]:
                 passed=not offenders,
             ))
     for r in ctx.resources("AWS::CodeArtifact::Repository"):
-        conns = r.properties.get("ExternalConnections") or []
+        raw_conns = r.properties.get("ExternalConnections")
+        # CFN types this as a list, but a single connection may be
+        # written as a scalar string; normalize so it isn't iterated
+        # character by character.
+        conns = (
+            [raw_conns] if isinstance(raw_conns, str)
+            else raw_conns if isinstance(raw_conns, list)
+            else []
+        )
         public = [c for c in conns if isinstance(c, str) and c.startswith("public:")]
         out.append(Finding(
             check_id="CA-002",

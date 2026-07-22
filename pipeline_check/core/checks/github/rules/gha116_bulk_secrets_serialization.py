@@ -164,6 +164,14 @@ def check(path: str, doc: dict[str, Any]) -> Finding:
                 if _hit(val):
                     offenders.append(f"{job_id}[{idx}] with")
                     job_hit = True
+        # Reusable-workflow call jobs (``jobs.<id>.uses:``) have no steps;
+        # their job-level ``with:`` / ``secrets:`` mappings carry values
+        # across the call boundary and must be scanned too.
+        for kind in ("with", "secrets"):
+            for val in _env_values(job.get(kind)):
+                if _hit(val):
+                    offenders.append(f"{job_id} (call {kind})")
+                    job_hit = True
         if job_hit:
             anchor_jobs.add(job_id)
 

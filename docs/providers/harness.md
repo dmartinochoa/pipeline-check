@@ -204,7 +204,7 @@ Remove TLS-bypass flags from the step command. The common offenders are ``curl -
 <span class="pg-sev pg-sev--high">HIGH</span> <span class="pg-tag pg-tag--owasp">CICD-SEC-5</span> <span class="pg-tag pg-tag--esf">ESF-D-RUNTIME-HARDENING</span> <span class="pg-tag pg-tag--esf">ESF-D-LEAST-PRIV</span> <span class="pg-tag pg-tag--cwe">CWE-250</span> <span class="pg-tag pg-tag--cwe">CWE-732</span>
 </div>
 
-Harness CI Kubernetes infrastructure (``stage.spec.infrastructure.spec.volumes``) accepts ``EmptyDir`` / ``PersistentVolumeClaim`` (safe) or ``HostPath`` (a bind mount of the build node's filesystem, the dangerous shape). The rule fires when a ``HostPath`` volume's ``spec.path`` matches a sensitive prefix: ``/var/run/docker.sock`` (the canonical container-escape socket), ``/var/lib/docker``, ``/var/run``, ``/etc``, ``/proc``, ``/sys``, or ``/`` (full host root). ``EmptyDir`` / PVC volumes pass. Same model as DR-007 / K8S-019 across providers.
+Harness CI Kubernetes infrastructure (``stage.spec.infrastructure.spec.volumes``) accepts ``EmptyDir`` / ``PersistentVolumeClaim`` (safe) or ``HostPath`` (a bind mount of the build node's filesystem, the dangerous shape). The rule fires when a ``HostPath`` volume's ``spec.path`` matches a sensitive prefix: ``/var/run/docker.sock`` (the canonical container-escape socket), ``/var/lib/docker``, ``/var/run``, ``/etc``, ``/proc``, ``/sys``, or ``/`` (full host root). ``EmptyDir`` / PVC volumes pass, as do narrow read-only certificate subpaths under ``/etc`` (``/etc/ssl/certs``, ``/etc/pki``, ``/etc/ca-certificates``), a benign CA-injection pattern. Same model as DR-007 / K8S-019 across providers.
 
 **Known false-positive modes**
 

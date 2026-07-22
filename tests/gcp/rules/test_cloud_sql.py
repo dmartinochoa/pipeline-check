@@ -18,12 +18,14 @@ def _sql_instance(
     require_ssl: bool = False,
     iam_auth: bool = False,
     pitr: bool = False,
+    database_version: str = "",
 ) -> dict:
     flags = []
     if iam_auth:
         flags.append({"name": "cloudsql.iam_authentication", "value": "on"})
     return {
         "name": name,
+        "databaseVersion": database_version,
         "settings": {
             "ipConfiguration": {
                 "ipv4Enabled": ipv4_enabled,
@@ -165,6 +167,19 @@ class TestGCSQL004:
     def test_no_instances_returns_empty(self, make_catalog):
         cat = make_catalog(**{"cloudsql:instances": []})
         assert gcsql004_iam_auth.check(cat) == []
+
+    def test_sqlserver_engine_is_skipped(self, make_catalog):
+        # SQL Server has no IAM database auth flag; flagging it is an
+        # unactionable false positive (2026-07 audit LOW).
+        cat = make_catalog(**{"cloudsql:instances": [
+            _sql_instance(iam_auth=False,
+                          database_version="SQLSERVER_2019_STANDARD")]})
+        assert gcsql004_iam_auth.check(cat) == []
+        # a MySQL instance without IAM auth still fires
+        cat2 = make_catalog(**{"cloudsql:instances": [
+            _sql_instance(iam_auth=False, database_version="MYSQL_8_0")]})
+        findings = gcsql004_iam_auth.check(cat2)
+        assert len(findings) == 1 and findings[0].passed is False
 
 
 # -----------------------------------------------------------------------

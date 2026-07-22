@@ -64,8 +64,18 @@ _LABEL_KEY_RE = re.compile(
 def _present_labels(df: Dockerfile) -> set[str]:
     keys: set[str] = set()
     for ins in iter_instructions(df, directive="LABEL"):
-        for m in _LABEL_KEY_RE.finditer(ins.args):
-            keys.add(m.group("key"))
+        args = ins.args.strip()
+        if not args:
+            continue
+        first = args.split(None, 1)[0]
+        if "=" in first:
+            # ``LABEL k=v k2=v2`` form (one or more pairs).
+            for m in _LABEL_KEY_RE.finditer(args):
+                keys.add(m.group("key"))
+        else:
+            # Legacy ``LABEL key value`` (whitespace) form: the first
+            # token is the single key, the rest of the line is the value.
+            keys.add(first.strip("\"'"))
     return keys
 
 

@@ -85,6 +85,16 @@ def _tainted_vars(variables_block: Any) -> set[str]:
     return tainted
 
 
+# ``echo "##vso[task.setvariable variable=NAME]<value>"`` writes a
+# pipeline variable at runtime. Capture the name and the trailing value
+# so a NAME whose value carries an untrusted macro taints later steps.
+_SETVAR_RE = re.compile(
+    r"##vso\[task\.setvariable\s+variable=([A-Za-z0-9_.]+)[^\]]*\]"
+    r"([^\"'\n]*)",
+    re.IGNORECASE,
+)
+
+
 def _ado_ref_re(name: str) -> re.Pattern[str]:
     """Match every ADO reference syntax for *name*: ``$(VAR)`` / ``$env:VAR``
     / ``${VAR}`` / ``$VAR``."""
@@ -101,7 +111,9 @@ def check(path: str, doc: dict[str, Any]) -> Finding:
     pipeline_tainted = _tainted_vars(doc.get("variables"))
     for job_loc, job in iter_jobs(doc):
         job_tainted = pipeline_tainted | _tainted_vars(job.get("variables"))
-        tainted_res = [_ado_ref_re(name) for name in job_tainted]
+        # ``task.setvariable`` names carrying an untrusted macro accumulate
+        # across steps in document order (a capture step taints later ones).
+        setvar_tainted: set[str] = set()
         for step_loc, step in iter_steps(job):
             bodies: list[str] = [
                 step[key] for key in ("script", "bash", "pwsh", "powershell")
@@ -110,6 +122,9 @@ def check(path: str, doc: dict[str, Any]) -> Finding:
             inputs = step.get("inputs")
             if isinstance(inputs, dict) and isinstance(inputs.get("script"), str):
                 bodies.append(inputs["script"])
+            tainted_res = [
+                _ado_ref_re(name) for name in (job_tainted | setvar_tainted)
+            ]
             for body in bodies:
                 if not invokes_agentic_cli(body):
                     continue
@@ -127,6 +142,12 @@ def check(path: str, doc: dict[str, Any]) -> Finding:
                             path=path, start_line=step_line, end_line=step_line,
                         ))
                     break
+            # Record any setvariable that stores an untrusted macro so a
+            # later step referencing that name is flagged.
+            for body in bodies:
+                for m in _SETVAR_RE.finditer(body):
+                    if UNTRUSTED_VAR_RE.search(m.group(2)):
+                        setvar_tainted.add(m.group(1))
     passed = not offenders
     desc = (
         "No agentic-CLI script ingests attacker-controllable build/PR "

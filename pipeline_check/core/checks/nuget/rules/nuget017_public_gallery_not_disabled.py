@@ -100,7 +100,10 @@ RULE = Rule(
 
 
 _MSBUILD_NS = re.compile(r"^\{[^}]+\}")
-_TRUTHY = {"true", "1", "yes"}
+# NuGet parses a disabledPackageSources value with ``bool.TryParse``,
+# which accepts only ``true`` / ``false`` (case-insensitive). ``1`` /
+# ``yes`` leave the source ENABLED, so only ``true`` counts as disabled.
+_TRUTHY = {"true"}
 
 
 def _strip_ns(tag: str) -> str:

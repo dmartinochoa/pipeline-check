@@ -129,7 +129,6 @@ _OIDC_CONSUMER_PREFIXES: tuple[str, ...] = (
     "pypa/gh-action-pypi-publish",
     "rubygems/release-gem",
     "crates-io/publish-action",
-    "release-drafter/release-drafter",
     # Sigstore signing pack
     "sigstore/cosign-installer",
     "sigstore/gh-action-sigstore-python",

@@ -117,11 +117,23 @@ def _is_credential_source(src: str) -> bool:
 
 def _sources(args: str) -> list[str]:
     """Return COPY/ADD source tokens (everything except the destination
-    and any leading ``--flag=value`` tokens)."""
+    and any leading ``--flag=value`` tokens).
+
+    Handles both the shell form (``COPY src dest``) and the JSON-array
+    exec form (``COPY ["src", "dest"]``).
+    """
     tokens = args.split()
     # Drop leading flags (``--from=...``, ``--chown=...``, ``--chmod=...``).
     while tokens and tokens[0].startswith("--"):
         tokens.pop(0)
+    rest = " ".join(tokens).strip()
+    if rest.startswith("[") and rest.endswith("]"):
+        # JSON-array exec form: strip brackets/quotes off each element.
+        tokens = [
+            t.strip().strip("\"'")
+            for t in rest[1:-1].split(",")
+            if t.strip()
+        ]
     # Final token is the destination; preceding ones are sources.
     return tokens[:-1] if len(tokens) >= 2 else []
 

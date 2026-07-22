@@ -71,13 +71,27 @@ def _group_covers_pr(group: list[dict[str, Any]]) -> bool:
             continue
         pattern = filt.get("pattern", "") or ""
         events = {e.strip() for e in pattern.split(",") if e.strip()}
-        if events & _PR_EVENTS:
+        if filt.get("excludeMatchedPattern"):
+            # Exclude-mode matches every event NOT listed, so PR events
+            # are covered unless every PR event is in the exclude set
+            # (e.g. an ``excludeMatchedPattern`` on ``PUSH`` still lets
+            # PR builds through).
+            if not (_PR_EVENTS <= events):
+                return True
+        elif events & _PR_EVENTS:
             return True
     return False
 
 
 def _group_has_actor_filter(group: list[dict[str, Any]]) -> bool:
-    return any(filt.get("type") == "ACTOR_ACCOUNT_ID" for filt in group)
+    # An ACTOR_ACCOUNT_ID filter only restricts to specific accounts when
+    # it's an allow-list; ``excludeMatchedPattern`` makes it a deny-list
+    # that still lets any non-listed fork through.
+    return any(
+        filt.get("type") == "ACTOR_ACCOUNT_ID"
+        and not filt.get("excludeMatchedPattern")
+        for filt in group
+    )
 
 
 def check(catalog: ResourceCatalog) -> list[Finding]:

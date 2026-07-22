@@ -82,6 +82,12 @@ def _declared_user_subs(doc: dict[str, Any]) -> set[str]:
 
 
 def _referenced_user_subs(text: str) -> set[str]:
+    # ``$$`` is Cloud Build's escape for a literal ``$`` handed to the
+    # shell, not a substitution reference. Drop escaped pairs before
+    # matching so ``$$_SHELLVAR`` isn't counted as an undeclared sub.
+    # (Replacing with ``""`` — not ``"$"`` — keeps a real trailing sub in
+    # an odd run like ``$$$_FOO`` while dropping the escaped literal.)
+    text = text.replace("$$", "")
     return {m.group("name") for m in _USER_SUB_RE.finditer(text)}
 
 

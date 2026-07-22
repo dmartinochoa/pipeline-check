@@ -94,14 +94,77 @@ _PROCESS_RE = re.compile(
 _INCLUDE_RE = re.compile(
     r"\binclude!\s*\(|\binclude_str!\s*\(|\binclude_bytes!\s*\(",
 )
-_LINE_COMMENT_RE = re.compile(r"//[^\n]*")
-_BLOCK_COMMENT_RE = re.compile(r"/\*.*?\*/", re.DOTALL)
+_CHAR_LITERAL_RE = re.compile(r"'(?:\\.|[^'\\])'")
 
 
 def _strip_comments(text: str) -> str:
-    """Drop ``/* ... */`` block comments and ``// ...`` line comments
-    so an idiom mentioned only in a comment doesn't trip the rule."""
-    return _LINE_COMMENT_RE.sub("", _BLOCK_COMMENT_RE.sub("", text))
+    """Drop ``/* ... */`` block and ``// ...`` line comments while
+    skipping over Rust string / char literals.
+
+    A naive ``//[^\\n]*`` strip is string-literal-unaware: the ``//`` in
+    a URL literal (``"http://x"``) reads as a comment start and eats the
+    rest of the physical line, hiding a following idiom. This scanner
+    walks the text and only treats ``//`` / ``/*`` as a comment when it
+    is not inside a string, raw string, or char literal.
+    """
+    out: list[str] = []
+    i, n = 0, len(text)
+    while i < n:
+        c = text[i]
+        # Raw string: r"...", r#"..."#, r##"..."##, ...
+        if c == "r" and i + 1 < n and text[i + 1] in ('"', "#"):
+            j = i + 1
+            hashes = 0
+            while j < n and text[j] == "#":
+                hashes += 1
+                j += 1
+            if j < n and text[j] == '"':
+                closing = '"' + "#" * hashes
+                end = text.find(closing, j + 1)
+                if end == -1:
+                    out.append(text[i:])
+                    break
+                out.append(text[i:end + len(closing)])
+                i = end + len(closing)
+                continue
+        if c == '"':
+            j = i + 1
+            while j < n:
+                if text[j] == "\\":
+                    j += 2
+                    continue
+                if text[j] == '"':
+                    j += 1
+                    break
+                j += 1
+            out.append(text[i:j])
+            i = j
+            continue
+        if c == "'":
+            m = _CHAR_LITERAL_RE.match(text, i)
+            if m:
+                out.append(m.group(0))
+                i = m.end()
+                continue
+            # A lifetime (``'a``) has no closing quote; emit and advance.
+            out.append(c)
+            i += 1
+            continue
+        if c == "/" and i + 1 < n and text[i + 1] == "/":
+            end = text.find("\n", i)
+            if end == -1:
+                break
+            i = end
+            continue
+        if c == "/" and i + 1 < n and text[i + 1] == "*":
+            end = text.find("*/", i + 2)
+            if end == -1:
+                break
+            i = end + 2
+            continue
+        out.append(c)
+        i += 1
+    return "".join(out)
 
 
 def check(manifest: CargoFile) -> Finding:

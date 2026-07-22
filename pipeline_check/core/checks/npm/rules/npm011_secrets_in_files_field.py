@@ -108,9 +108,9 @@ RULE = Rule(
 # of segment so ``src/.env`` matches but ``my.envelope`` doesn't.
 _SECRET_PATTERNS: tuple[tuple[re.Pattern[str], str], ...] = (
     # ``.env`` and ``.env.<suffix>``. ``.env.example`` matches too;
-    # known FP documented in the recommendation.
+    # known FP documented in the recommendation. The ``(?:\.|$)`` tail
+    # already covers a bare ``.env``, so no separate ``.env$`` entry.
     (re.compile(r"(?:^|/)\.env(?:\.|$)", re.IGNORECASE), ".env file"),
-    (re.compile(r"(?:^|/)\.env$", re.IGNORECASE), ".env file"),
     # ``.npmrc`` (the npm auth-token file).
     (re.compile(r"(?:^|/)\.npmrc$", re.IGNORECASE), ".npmrc (auth tokens)"),
     # TLS / signing key extensions.

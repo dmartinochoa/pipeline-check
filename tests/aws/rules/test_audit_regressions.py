@@ -895,3 +895,72 @@ class TestCP005NegatedProdNames:
     def test_unrelated_names_still_ignored(self):
         assert cp005._name_matches_prod("Product") is False
         assert cp005._name_matches_prod("reproduce") is False
+
+
+class TestAudit202607LowAwsC5:
+    """2026-07 audit LOW findings (aws_c5 chunk)."""
+
+    def test_sm001_reference_without_random_suffix_matches(self):
+        from pipeline_check.core.checks.aws.rules.sm001_rotation import (
+            _reference_matches,
+        )
+        ref = "arn:aws:secretsmanager:us-east-1:123456789012:secret:my-secret"
+        arn = ("arn:aws:secretsmanager:us-east-1:123456789012:"
+               "secret:my-secret-AbCdEf")
+        assert _reference_matches(ref, "my-secret", arn) is True
+        # precision preserved: no bleed onto a different secret
+        assert _reference_matches(
+            ref, "my-secret-staging",
+            "arn:aws:secretsmanager:us-east-1:1:secret:my-secret-staging-XyZ123",
+        ) is False
+
+    def test_sm002_non_dict_policy_does_not_crash(self):
+        from pipeline_check.core.checks.aws.rules import (
+            sm002_public_policy as sm002,
+        )
+        cat = MagicMock()
+        cat.secrets.return_value = [{"Name": "s", "ARN": "arn:aws:...:secret:s"}]
+        # a resource policy that parsed to a JSON array would crash
+        # iter_allow; the guard skips it instead.
+        cat.secret_resource_policy.return_value = []
+        findings = sm002.check(cat)
+        assert all(f.passed for f in findings)
+
+
+class TestAudit202607LowAwsC1toC3:
+    """2026-07 audit LOW findings (aws_c1/c2/c3 chunks)."""
+
+    def test_cb010_exclude_matched_pattern_semantics(self):
+        from pipeline_check.core.checks.aws.rules import cb010_fork_pr_builds as cb10
+        cat = MagicMock()
+        # deny-list actor filter (excludeMatchedPattern) isn't protective
+        cat.codebuild_projects.return_value = [{"name": "p", "webhook":
+            {"filterGroups": [[
+                {"type": "EVENT", "pattern": "PULL_REQUEST_CREATED"},
+                {"type": "ACTOR_ACCOUNT_ID", "pattern": "999",
+                 "excludeMatchedPattern": True}]]}}]
+        assert any(f.passed is False for f in cb10.check(cat))
+        # allow-list actor is protective
+        cat.codebuild_projects.return_value = [{"name": "p", "webhook":
+            {"filterGroups": [[
+                {"type": "EVENT", "pattern": "PULL_REQUEST_CREATED"},
+                {"type": "ACTOR_ACCOUNT_ID", "pattern": "999"}]]}}]
+        assert all(f.passed for f in cb10.check(cat))
+        # exclude-mode EVENT on PUSH still covers PR events
+        cat.codebuild_projects.return_value = [{"name": "p", "webhook":
+            {"filterGroups": [[
+                {"type": "EVENT", "pattern": "PUSH",
+                 "excludeMatchedPattern": True}]]}}]
+        assert any(f.passed is False for f in cb10.check(cat))
+
+    def test_eb001_source_only_pattern_covers_failures(self):
+        from pipeline_check.core.checks.aws.rules import (
+            eb001_pipeline_failure_rule as eb1,
+        )
+        cat = MagicMock()
+        cat.eventbridge_rules.return_value = [{"EventPattern":
+            '{"source":["aws.codepipeline"],"detail":{"state":["FAILED"]}}'}]
+        assert eb1.check(cat)[0].passed is True
+        cat.eventbridge_rules.return_value = [
+            {"EventPattern": '{"source":["aws.other"]}'}]
+        assert eb1.check(cat)[0].passed is False

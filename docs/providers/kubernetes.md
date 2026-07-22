@@ -79,7 +79,7 @@ Four rules target non-workload kinds:
 | [K8S-017](#k8s-017) | Container env value carries a credential-shaped literal | <span class="pg-sev pg-sev--critical">CRITICAL</span> |  |
 | [K8S-018](#k8s-018) | Secret stringData/data carries a credential-shaped literal | <span class="pg-sev pg-sev--critical">CRITICAL</span> |  |
 | [K8S-019](#k8s-019) | Workload deployed in the 'default' namespace | <span class="pg-sev pg-sev--low">LOW</span> |  |
-| [K8S-020](#k8s-020) | ClusterRoleBinding grants cluster-admin or system:masters | <span class="pg-sev pg-sev--critical">CRITICAL</span> | <span class="pg-fix" title="`--fix` will patch this rule">🔧 fix</span> |
+| [K8S-020](#k8s-020) | ClusterRoleBinding grants cluster-admin, admin, or system:masters | <span class="pg-sev pg-sev--critical">CRITICAL</span> | <span class="pg-fix" title="`--fix` will patch this rule">🔧 fix</span> |
 | [K8S-021](#k8s-021) | Role or ClusterRole grants wildcard verbs+resources | <span class="pg-sev pg-sev--high">HIGH</span> |  |
 | [K8S-022](#k8s-022) | Service exposes SSH (port 22) | <span class="pg-sev pg-sev--medium">MEDIUM</span> |  |
 | [K8S-023](#k8s-023) | Namespace missing Pod Security Admission enforcement label | <span class="pg-sev pg-sev--high">HIGH</span> |  |
@@ -235,7 +235,7 @@ Set ``securityContext.allowPrivilegeEscalation: false`` on every container. The 
 <span class="pg-sev pg-sev--high">HIGH</span> <span class="pg-fix pg-fix--rule" title="`--fix` will patch this rule">🔧 autofix</span> <span class="pg-tag pg-tag--owasp">CICD-SEC-7</span> <span class="pg-tag pg-tag--esf">ESF-D-LEAST-PRIV</span> <span class="pg-tag pg-tag--cwe">CWE-250</span>
 </div>
 
-A container is considered safe when EITHER its own securityContext OR the pod-level securityContext sets ``runAsNonRoot: true`` and a non-zero ``runAsUser``. An explicit ``runAsUser: 0`` always fails, even if ``runAsNonRoot`` is unset.
+A container is considered safe when EITHER its own securityContext OR the pod-level securityContext sets ``runAsNonRoot: true`` (and ``runAsUser``, when set, is non-zero). The kubelet enforces ``runAsNonRoot`` at container start, so an explicit non-zero ``runAsUser`` isn't required. An explicit ``runAsUser: 0`` always fails, even if ``runAsNonRoot`` is unset.
 
 <div class="pg-rule__rec" markdown>
 
@@ -413,7 +413,7 @@ Init containers and ephemeral containers are also checked: a leaking init contai
 
 **Recommended action**
 
-Set ``resources.limits.memory`` on every container. Without a memory limit, a leaking or compromised container can consume the node's RAM until the kernel OOM-kills neighbouring pods, taking down workloads that share the node. Pair the limit with a ``requests.memory`` to inform the scheduler.
+Set ``resources.limits.memory`` on every container. Without a memory limit, a leaking or compromised container can consume the node's RAM until the kernel OOM-kills neighboring pods, taking down workloads that share the node. Pair the limit with a ``requests.memory`` to inform the scheduler.
 
 </div>
 
@@ -433,7 +433,7 @@ Lower severity than K8S-015 because CPU throttling is self-healing (workloads sl
 
 **Recommended action**
 
-Set ``resources.limits.cpu`` on every container. CPU throttling is the kernel's defense against a neighbour consuming all node cycles, without a limit, a compromised container can stall everything else on the node, including the kubelet. Pair the limit with a ``requests.cpu`` for scheduling.
+Set ``resources.limits.cpu`` on every container. CPU throttling is the kernel's defense against a neighbor consuming all node cycles, without a limit, a compromised container can stall everything else on the node, including the kubelet. Pair the limit with a ``requests.cpu`` for scheduling.
 
 </div>
 
@@ -501,7 +501,7 @@ Set ``metadata.namespace`` to a dedicated namespace per workload (or per environ
 
 <div class="pg-rule pg-rule--critical" markdown>
 
-## K8S-020: ClusterRoleBinding grants cluster-admin or system:masters { #k8s-020 }
+## K8S-020: ClusterRoleBinding grants cluster-admin, admin, or system:masters { #k8s-020 }
 
 <div class="pg-rule__tags">
 <span class="pg-sev pg-sev--critical">CRITICAL</span> <span class="pg-fix pg-fix--rule" title="`--fix` will patch this rule">🔧 autofix</span> <span class="pg-tag pg-tag--owasp">CICD-SEC-2</span> <span class="pg-tag pg-tag--owasp">CICD-SEC-5</span> <span class="pg-tag pg-tag--esf">ESF-D-LEAST-PRIV</span> <span class="pg-tag pg-tag--cwe">CWE-732</span>

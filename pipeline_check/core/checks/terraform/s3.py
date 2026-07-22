@@ -145,11 +145,13 @@ def _s3002_encryption(
     encrypted = False
     algo = "unknown"
     if values:
-        rules = values.get("rule", []) or []
-        if rules:
-            apply = _first(rules[0].get("apply_server_side_encryption_by_default"))
-            algo = apply.get("sse_algorithm") or "unknown"
-            encrypted = bool(algo and algo != "unknown")
+        # ``_first`` guards a non-list / scalar ``rule`` (best-effort HCL
+        # parsing can surface an attribute-form dict or a bare string) so
+        # ``rule[0]`` never raises.
+        rule0 = _first(values.get("rule"))
+        apply = _first(rule0.get("apply_server_side_encryption_by_default"))
+        algo = apply.get("sse_algorithm") or "unknown"
+        encrypted = bool(algo and algo != "unknown")
     desc = (
         f"Artifact bucket is encrypted with {algo}."
         if encrypted else

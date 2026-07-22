@@ -91,15 +91,6 @@ RULE = Rule(
     ),
 )
 
-#: Print-like commands whose first non-flag argument is what we treat
-#: as the printed value. Matched as the first token in a logical line.
-_PRINT_HEAD_RE = re.compile(
-    r"(?:^|\n|\s|;|&|\|)"
-    r"(?:echo|printf|cat|tee|print)"
-    r"(?:\s+-\w+)*"
-    r"\s+",
-)
-
 #: A ``${{ secrets.NAME }}`` (or ``env.NAME`` referencing a secret)
 #: directly in a printed argument. Uses double-brace markers literal.
 _PRINTED_SECRET_CTX_RE = re.compile(

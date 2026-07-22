@@ -262,7 +262,20 @@ def _cw_logs(ctx: CloudFormationContext) -> list[Finding]:
         if not name.startswith("/aws/codebuild/"):
             continue
         retention = r.properties.get("RetentionInDays")
-        has_retention = isinstance(retention, (int, float)) and retention > 0
+        # CloudFormation coerces a quoted Integer property ("30"), so a
+        # numeric string is a valid retention value, not "unset".
+        if isinstance(retention, bool):
+            retention_num: float | None = None
+        elif isinstance(retention, (int, float)):
+            retention_num = float(retention)
+        elif isinstance(retention, str):
+            try:
+                retention_num = float(retention.strip())
+            except ValueError:
+                retention_num = None
+        else:
+            retention_num = None
+        has_retention = retention_num is not None and retention_num > 0
         out.append(Finding(
             check_id="CWL-001",
             title="CodeBuild log group has no retention policy",

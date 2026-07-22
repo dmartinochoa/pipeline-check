@@ -373,7 +373,7 @@ class TestIgnoreFile:
         p3.write_text('{"findings": ["just a string"]}')
         assert load_baseline(p3) == set()
 
-    def test_flat_ignore_empty_resource_normalises_to_none(self, tmp_path):
+    def test_flat_ignore_empty_resource_normalizes_to_none(self, tmp_path):
         """``CB-001:`` (colon, no resource) is the user asking for a blanket
         suppression. It must not be stored as an empty-string resource —
         that would only match findings with exact empty resource strings,

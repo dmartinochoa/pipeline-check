@@ -144,6 +144,21 @@ def check(ctx: TektonContext) -> Finding:
             if reason:
                 offenders.append(f"{doc.kind}/{doc.name} {ref_key}: {reason}")
                 locations.append(doc_location(doc))
+            # A PipelineRun can embed the pipeline inline via
+            # ``spec.pipelineSpec`` whose tasks carry their own
+            # ``taskRef`` resolvers; walk those too.
+            pspec = spec.get("pipelineSpec") if isinstance(spec, dict) else None
+            if isinstance(pspec, dict):
+                for _section, task in _pipeline_refs({"spec": pspec}):
+                    task_reason = _ref_unpinned(task.get("taskRef"))
+                    if task_reason:
+                        name = task.get("name")
+                        label = name if isinstance(name, str) and name else "?"
+                        offenders.append(
+                            f"{doc.kind}/{doc.name} pipelineSpec "
+                            f"{label}: {task_reason}"
+                        )
+                        locations.append(doc_location(doc, task))
 
     if examined == 0:
         return RULE.pass_finding(

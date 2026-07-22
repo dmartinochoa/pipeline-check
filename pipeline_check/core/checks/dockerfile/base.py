@@ -76,7 +76,7 @@ def parse_dockerfile(text: str) -> tuple[Instruction, ...]:
     """Return the list of directives in *text*.
 
     Joins line continuations (``\\`` at end of physical line),
-    discards full-line comments, and normalises directive names to
+    discards full-line comments, and normalizes directive names to
     upper case. Lines that don't match a known directive are silently
     skipped, the goal is best-effort detection, not strict parsing.
     """

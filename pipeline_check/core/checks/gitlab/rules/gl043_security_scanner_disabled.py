@@ -15,7 +15,13 @@ _SCANNER_DISABLE_VARS: dict[str, str] = {
     "CONTAINER_SCANNING_DISABLED": "Container Scanning",
     "DAST_DISABLED": "DAST",
 }
-_TRUTHY = {"true", "1", "yes"}
+#: Values that leave the scanner ENABLED. Everything else disables it:
+#: legacy GitLab templates (pre-15.4) switch a scanner off on ANY
+#: non-empty ``*_DISABLED`` value (``except: variables: [$X_DISABLED]``),
+#: and the pipeline file doesn't record the GitLab version, so
+#: over-approximate to the legacy semantics rather than only honoring
+#: ``true`` / ``1``.
+_NOT_DISABLING = {"", "false", "0", "no"}
 
 RULE = Rule(
     id="GL-043",
@@ -39,9 +45,13 @@ RULE = Rule(
     docs_note=(
         "Fires when a `*_DISABLED` variable for a GitLab-managed scanner "
         "(SAST, Secret Detection, Dependency Scanning, Container "
-        "Scanning, DAST) is set to a truthy value (`\"true\"` / `\"1\"` / "
-        "`\"yes\"`) at the top level or on a job. Both the plain scalar "
-        "and the typed `{value:, description:}` variable form are read. "
+        "Scanning, DAST) is set to any value other than an explicit "
+        "falsy literal (`\"false\"` / `\"0\"` / `\"no\"` / empty) at the "
+        "top level or on a job. Legacy GitLab templates disable the "
+        "scanner on any non-empty value, so the rule over-approximates "
+        "to that rather than only matching `\"true\"` / `\"1\"`. Both the "
+        "plain scalar and the typed `{value:, description:}` variable "
+        "form are read. "
         "Disabling a scanner pipeline-wide silently drops the finding "
         "stream the rest of your supply-chain controls assume exists."
     ),
@@ -82,7 +92,7 @@ def _disabled_scanners(variables: Any) -> list[str]:
         val = _scalar(variables.get(var))
         if val is None:
             continue
-        if str(val).strip().lower() in _TRUTHY:
+        if str(val).strip().lower() not in _NOT_DISABLING:
             out.append(label)
     return out
 

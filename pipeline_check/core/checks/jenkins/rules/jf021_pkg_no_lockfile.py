@@ -27,7 +27,7 @@ RULE = Rule(
 )
 
 def check(jf: Jenkinsfile) -> Finding:
-    matches = PKG_NO_LOCKFILE_RE.findall(jf.text.lower())
+    matches = PKG_NO_LOCKFILE_RE.findall(jf.text_no_comments.lower())
     passed = not matches
     desc = (
         "All package install commands enforce lockfile integrity."

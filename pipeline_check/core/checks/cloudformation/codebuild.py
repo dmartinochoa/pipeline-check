@@ -175,11 +175,18 @@ def _cb004_timeout(properties: dict[str, Any], address: str) -> Finding:
         except ValueError:
             numeric_value = None
     passed = numeric_value is not None and numeric_value < _MAX_SENSIBLE_TIMEOUT
-    desc = (
-        f"Build timeout is set to {timeout} minutes."
-        if passed else
-        f"Build timeout is {timeout or 'default'} minutes (AWS maximum)."
-    )
+    if passed:
+        desc = f"Build timeout is set to {timeout} minutes."
+    elif not timeout:
+        desc = (
+            "No build timeout is set; CodeBuild defaults to 60 minutes. "
+            "Set an explicit TimeoutInMinutes appropriate for the build."
+        )
+    else:
+        desc = (
+            f"Build timeout is {timeout} minutes, at or above the "
+            f"{_MAX_SENSIBLE_TIMEOUT}-minute maximum."
+        )
     return Finding(
         check_id="CB-004",
         title="No build timeout configured",
@@ -224,35 +231,53 @@ def _cb005_image_version(properties: dict[str, Any], address: str) -> Finding:
 def _cb006_source_auth(
     properties: dict[str, Any], source_creds: dict[str, str], address: str,
 ) -> Finding:
-    source = properties.get("Source") or {}
-    if is_intrinsic(source):
-        source = {}
-    src_type = as_str(source.get("Type"))
-    if src_type not in _EXTERNAL_SOURCE_TYPES:
+    # Inspect the primary Source and every SecondarySources entry, which
+    # can carry the same inline long-lived-token auth.
+    candidate_sources: list[dict[str, Any]] = []
+    primary = properties.get("Source") or {}
+    if isinstance(primary, dict) and not is_intrinsic(primary):
+        candidate_sources.append(primary)
+    secondary = properties.get("SecondarySources")
+    if isinstance(secondary, list):
+        candidate_sources.extend(
+            s for s in secondary if isinstance(s, dict) and not is_intrinsic(s)
+        )
+
+    external_types: list[str] = []
+    offending: set[str] = set()
+    for source in candidate_sources:
+        src_type = as_str(source.get("Type"))
+        if src_type not in _EXTERNAL_SOURCE_TYPES:
+            continue
+        external_types.append(src_type)
+        inline_auth = source.get("Auth") or {}
+        inline_auth_type = as_str(inline_auth.get("Type"))
+        side_auth_type = source_creds.get(src_type, "")
+        offending.update(
+            t for t in (inline_auth_type, side_auth_type)
+            if t in _LONG_LIVED_TOKEN_AUTH
+        )
+
+    if not external_types:
         return Finding(
             check_id="CB-006",
             title="CodeBuild source auth uses long-lived token",
             severity=Severity.HIGH,
             resource=address,
             description=(
-                f"Source type is {src_type or 'not external'}; long-lived-token "
+                "No external (GitHub / Bitbucket) source; long-lived-token "
                 "check not applicable."
             ),
             recommendation="No action required.",
             passed=True,
         )
 
-    inline_auth = source.get("Auth") or {}
-    inline_auth_type = as_str(inline_auth.get("Type"))
-    side_auth_type = source_creds.get(src_type, "")
-    offending = {
-        t for t in (inline_auth_type, side_auth_type)
-        if t in _LONG_LIVED_TOKEN_AUTH
-    }
+    src_type = external_types[0]
     passed = not offending
     if passed:
         desc = (
-            f"Source ({src_type}) does not use a long-lived OAuth or PAT token."
+            f"Source ({', '.join(sorted(set(external_types)))}) does not use "
+            "a long-lived OAuth or PAT token."
         )
     else:
         desc = (

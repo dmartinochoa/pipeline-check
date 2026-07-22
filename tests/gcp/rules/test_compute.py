@@ -224,3 +224,19 @@ class TestGCCE005:
     def test_no_instances_returns_empty(self, make_catalog):
         cat = make_catalog(**{"compute:instances": []})
         assert gcce005_project_ssh_keys.check(cat) == []
+
+
+class TestAudit202607GCCE002:
+    """GCCE-002 now accepts alternate truthy enable-oslogin spellings."""
+
+    def test_numeric_one_is_enabled(self, make_catalog):
+        cat = make_catalog(**{"compute:instances": [
+            {"name": "i", "metadata": {"enable-oslogin": "1"}}]})
+        f = gcce002_os_login.check(cat)
+        assert f and f[0].passed is True
+
+    def test_false_still_flagged(self, make_catalog):
+        cat = make_catalog(**{"compute:instances": [
+            {"name": "i", "metadata": {"enable-oslogin": "false"}}]})
+        f = gcce002_os_login.check(cat)
+        assert f and f[0].passed is False

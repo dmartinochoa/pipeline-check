@@ -40,7 +40,10 @@ def check(catalog: ResourceCatalog) -> list[Finding]:
         public_access = str(
             getattr(server, "public_network_access", "Enabled"),
         ).lower()
-        passed = public_access == "disabled"
+        # Only "Enabled" is internet-open. "Disabled" and the newer
+        # "SecuredByPerimeter" (Network Security Perimeter governs
+        # access) are not publicly reachable.
+        passed = public_access != "enabled"
         if passed:
             desc = (
                 f"SQL Server '{name}' has public network access "

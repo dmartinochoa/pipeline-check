@@ -469,3 +469,55 @@ class TestADO027ExplicitTaskForm:
             "      script: 'make build'\n"
         )
         assert ado027.check("azure-pipelines.yml", doc).passed is True
+
+
+class TestAudit202607LowAzureC1:
+    """2026-07 audit LOW finding (azure_c1 chunk)."""
+
+    @staticmethod
+    def run_check(text, cid):
+        from tests.azure.conftest import run_check
+        return run_check(text, cid)
+
+    def test_ado011_template_in_task_inputs_not_flagged(self):
+        inputs = (
+            "pr: [main]\n"
+            "steps:\n"
+            "  - task: SomeTask@1\n"
+            "    inputs:\n"
+            "      template: mytemplate.json\n"
+        )
+        assert self.run_check(inputs, "ADO-011").passed is True
+        real = (
+            "pr: [main]\n"
+            "steps:\n"
+            "  - template: local-steps.yml\n"
+        )
+        assert self.run_check(real, "ADO-011").passed is False
+
+
+class TestAudit202607LowAzureC3:
+    """2026-07 audit LOW finding (azure_c3 chunk)."""
+
+    @staticmethod
+    def run_check(text, cid):
+        from tests.azure.conftest import run_check
+        return run_check(text, cid)
+
+    def test_ado035_setvariable_cross_step_taint(self):
+        # A macro captured to a pipeline var via task.setvariable in one
+        # step and fed to an agentic CLI in a later step must be flagged.
+        wf = (
+            "steps:\n"
+            "  - bash: 'echo \"##vso[task.setvariable variable=MSG]"
+            "$(Build.SourceVersionMessage)\"'\n"
+            "  - bash: 'claude \"$(MSG)\"'\n"
+        )
+        assert self.run_check(wf, "ADO-035").passed is False
+        # a clean pipeline var fed to the agent stays safe
+        safe = (
+            "steps:\n"
+            "  - bash: 'echo \"##vso[task.setvariable variable=MSG]hello\"'\n"
+            "  - bash: 'claude \"$(MSG)\"'\n"
+        )
+        assert self.run_check(safe, "ADO-035").passed is True

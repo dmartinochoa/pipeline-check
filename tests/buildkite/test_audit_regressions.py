@@ -198,3 +198,57 @@ class TestBK009BuildkiteArtifactUpload:
         assert bk009.check("pipeline.yml", doc).passed is True, (
             "BK-009 must pass (no artifact) on a test-only pipeline"
         )
+
+
+class TestAudit202607LowBuildkiteC2:
+    """2026-07 audit LOW findings (buildkite_c2 chunk)."""
+
+    @staticmethod
+    def run_check(text, cid):
+        from tests.buildkite.conftest import run_check
+        return run_check(text, cid)
+
+    def test_bk016_shell_idiom_in_label_not_flagged(self):
+        label = (
+            "steps:\n"
+            "  - label: \"Run eval $CONFIG sanity checks\"\n"
+            "    command: make test\n"
+        )
+        assert self.run_check(label, "BK-016").passed is True
+        cmd = "steps:\n  - command: eval \"$USER_INPUT\"\n"
+        assert self.run_check(cmd, "BK-016").passed is False
+
+    def test_bk017_env_dash_i_clean_env_not_a_dump(self):
+        clean = "steps:\n  - command: \"env -i ./clean-build.sh\"\n"
+        assert self.run_check(clean, "BK-017").passed is True
+
+    def test_taint005_shared_label_does_not_collapse_steps(self):
+        wf = (
+            "steps:\n"
+            "  - label: build\n"
+            "    command: 'buildkite-agent meta-data set \"t\" "
+            "\"$BUILDKITE_PULL_REQUEST_TITLE\"'\n"
+            "  - label: build\n"
+            "    command: 'buildkite-agent meta-data get t'\n"
+        )
+        assert self.run_check(wf, "TAINT-005").passed is False
+
+
+class TestAudit202607LowBuildkiteC1:
+    """2026-07 audit LOW findings (buildkite_c1 chunk)."""
+
+    @staticmethod
+    def run_check(text, cid):
+        from tests.buildkite.conftest import run_check
+        return run_check(text, cid)
+
+    def test_bk015_pull_request_title_taints_agents_queue(self):
+        # BK-015 advertised $BUILDKITE_PULL_REQUEST_* but its tainted set
+        # omitted BUILDKITE_PULL_REQUEST_TITLE (attacker-controllable), so a
+        # queue interpolated from it slipped through.
+        wf = (
+            "steps:\n"
+            "  - agents: {queue: \"q-$BUILDKITE_PULL_REQUEST_TITLE\"}\n"
+            "    command: make\n"
+        )
+        assert self.run_check(wf, "BK-015").passed is False

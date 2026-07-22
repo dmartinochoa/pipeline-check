@@ -154,6 +154,10 @@ Turn off ``Allow GitHub Actions to create and approve pull requests`` (Org Setti
 
 Reads ``GET /orgs/{org}/actions/secrets`` and fires when any secret has ``visibility: all``. ``selected`` and ``private`` pass. The endpoint returns secret names and visibility only, never values; names are listed so the operator can find them. Needs a token with the ``admin:org`` (or secrets) scope; when unavailable the rule passes with a note. The repo-level analog is SCM-048 (org codespace secret scoped to all repos).
 
+**Known false-positive modes**
+
+- A ``private``-visibility org secret passes here, but it is still readable by every private / internal repo in the org, a residual exposure (a script injection in any low-trust private repo can exfiltrate it). The rule intentionally flags only ``all`` visibility to avoid firing on the common private-scoped case; scope a genuinely sensitive secret to ``selected`` repositories rather than leaving it org-wide even at ``private`` visibility.
+
 <div class="pg-rule__rec" markdown>
 
 **Recommended action**

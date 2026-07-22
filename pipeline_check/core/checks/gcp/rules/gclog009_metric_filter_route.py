@@ -29,9 +29,13 @@ def check(catalog: ResourceCatalog) -> list[Finding]:
     findings: list[Finding] = []
     metrics = catalog.log_metrics()
     resource = f"projects/{catalog.session.project_id}"
+    # Accept both the resource.type token and the equivalent
+    # methodName-based filter (``compute.routes.insert|delete``),
+    # case-insensitively.
     found = any(
-        "gce_route" in m.get("filter", "")
+        tok in m.get("filter", "").lower()
         for m in metrics
+        for tok in ("gce_route", "compute.routes")
     )
     if found:
         findings.append(Finding(

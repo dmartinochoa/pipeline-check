@@ -8,7 +8,7 @@ from ..._primitives.oci_refs import extract_image_anchors_from_strings
 from ...base import Finding, ResourceAnchor, Severity
 from ...rule import Rule
 from ..base import iter_jobs, job_scripts
-from ._helpers import DEPLOY_RE, rules_manual
+from ._helpers import DEPLOY_RE, rules_fully_manual
 
 RULE = Rule(
     id="GL-004",
@@ -75,7 +75,10 @@ def check(path: str, doc: dict[str, Any]) -> Finding:
             )
         if not is_deploy:
             continue
-        manual = job.get("when") == "manual" or rules_manual(job.get("rules"))
+        manual = (
+            job.get("when") == "manual"
+            or rules_fully_manual(job.get("rules"))
+        )
         has_env = bool(job.get("environment"))
         if not (manual or has_env):
             ungated.append(name)

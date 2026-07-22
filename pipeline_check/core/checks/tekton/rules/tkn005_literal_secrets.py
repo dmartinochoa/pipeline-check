@@ -120,10 +120,14 @@ def _scan_params(spec: dict[str, Any]) -> list[str]:
         if not isinstance(p, dict):
             continue
         name = p.get("name", "")
-        default = p.get("default")
-        if isinstance(name, str) and isinstance(default, str):
-            if _looks_like_secret(name, default):
+        if not isinstance(name, str):
+            continue
+        # ``default`` is the Task/ClusterTask param shape; ``value`` is
+        # the PipelineRun/TaskRun shape. Both can carry a literal secret.
+        for candidate in (p.get("default"), p.get("value")):
+            if isinstance(candidate, str) and _looks_like_secret(name, candidate):
                 out.append(f"param {name}")
+                break
     return out
 
 

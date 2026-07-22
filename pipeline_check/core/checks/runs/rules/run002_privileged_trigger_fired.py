@@ -59,11 +59,15 @@ def check(ctx: RunsContext) -> list[Finding]:
         severity=RULE.severity,
         resource=repo_resource(ctx),
         description=(
-            f"{sum(counts.values())} recent run(s) fired on a privileged "
-            f"trigger ({summary}). The pwn-request attack surface is "
-            "exercised in production; audit those workflows for "
-            "PR-controlled content handling."
+            f"Context: {sum(counts.values())} recent run(s) fired on a "
+            f"privileged trigger ({summary}). Using these triggers is not "
+            "itself a finding; the pwn-request surface is live, so audit "
+            "those workflows for PR-controlled content handling. RUN-001 "
+            "flags the actionable case (a run from a fork)."
         ),
         recommendation=RULE.recommendation,
-        passed=False,
+        # Informational/context, not a vulnerability on its own (the
+        # actionable fork case is RUN-001), so this passes rather than
+        # failing every repo that legitimately uses these triggers.
+        passed=True,
     )]

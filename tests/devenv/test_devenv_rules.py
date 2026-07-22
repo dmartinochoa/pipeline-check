@@ -460,6 +460,15 @@ class TestDEV010:
         )
         assert not f.passed
 
+    def test_fires_on_scalar_wildcard(self):
+        # A bare scalar "*" (not wrapped in a list) is still blanket
+        # auto-approval (2026-07 audit LOW FN).
+        f = run_check(
+            '{"mcpServers": {"gh": {"command": "npx", "alwaysAllow": "*"}}}',
+            KIND_MCP_CONFIG, "DEV-010",
+        )
+        assert not f.passed
+
     def test_passes_on_named_allowlist(self):
         # A scoped, named-tool grant is an intentional bounded choice.
         f = run_check(

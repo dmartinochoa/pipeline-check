@@ -1,4 +1,4 @@
-"""K8S-020. ClusterRoleBinding grants ``cluster-admin`` or ``system:masters``."""
+"""K8S-020. ClusterRoleBinding grants ``cluster-admin``, ``admin``, or ``system:masters``."""
 from __future__ import annotations
 
 from typing import Any
@@ -18,7 +18,7 @@ _ADMIN_ROLES: frozenset[str] = frozenset({
 
 RULE = Rule(
     id="K8S-020",
-    title="ClusterRoleBinding grants cluster-admin or system:masters",
+    title="ClusterRoleBinding grants cluster-admin, admin, or system:masters",
     severity=Severity.CRITICAL,
     owasp=("CICD-SEC-2", "CICD-SEC-5"),
     esf=("ESF-D-LEAST-PRIV",),

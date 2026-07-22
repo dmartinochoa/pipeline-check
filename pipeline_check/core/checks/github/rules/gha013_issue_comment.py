@@ -123,7 +123,7 @@ def check(path: str, doc: dict[str, Any]) -> Finding:
     locations: list[Location] = []
     if not passed:
         # Anchor on the workflow's ``on:`` block, that's where the
-        # missing guard lives. The loader's str-key shim normalises
+        # missing guard lives. The loader's str-key shim normalizes
         # the YAML 1.1 ``on`` -> ``True`` quirk, so a plain ``"on"``
         # lookup is sufficient. Falls back to the doc's own line
         # when ``on:`` somehow isn't a dict.

@@ -16,10 +16,12 @@ def _run_service(
     service_account: str = "",
     min_instance_count: int = 0,
     vpc_connector: str = "",
+    iam_policy: list | None = None,
 ) -> dict:
     return {
         "name": name,
         "ingress": ingress,
+        "iam_policy": iam_policy if iam_policy is not None else [],
         "template": {
             "service_account": service_account,
             "scaling": {"min_instance_count": min_instance_count},
@@ -29,37 +31,61 @@ def _run_service(
 
 
 # -----------------------------------------------------------------------
-# GCRUN-001: Unauthenticated access
+# GCRUN-001: Unauthenticated access (IAM run.invoker for allUsers)
 # -----------------------------------------------------------------------
 
 class TestGCRUN001:
-    def test_all_ingress_fails(self, make_catalog):
+    def test_allusers_invoker_fails(self, make_catalog):
         cat = make_catalog(**{
-            "cloudrun:services": [_run_service(ingress="INGRESS_TRAFFIC_ALL")],
+            "cloudrun:services": [_run_service(iam_policy=[
+                {"role": "roles/run.invoker", "members": ["allUsers"]},
+            ])],
         })
         findings = gcrun001_unauthenticated.check(cat)
         assert len(findings) == 1
         assert findings[0].passed is False
         assert findings[0].check_id == "GCRUN-001"
+        assert "allUsers" in findings[0].description
 
-    def test_internal_only_passes(self, make_catalog):
+    def test_all_authenticated_users_invoker_fails(self, make_catalog):
         cat = make_catalog(**{
-            "cloudrun:services": [
-                _run_service(ingress="INGRESS_TRAFFIC_INTERNAL_ONLY"),
-            ],
+            "cloudrun:services": [_run_service(iam_policy=[
+                {"role": "roles/run.invoker",
+                 "members": ["allAuthenticatedUsers"]},
+            ])],
         })
         findings = gcrun001_unauthenticated.check(cat)
-        assert len(findings) == 1
+        assert findings[0].passed is False
+
+    def test_named_invoker_passes(self, make_catalog):
+        cat = make_catalog(**{
+            "cloudrun:services": [_run_service(iam_policy=[
+                {"role": "roles/run.invoker",
+                 "members": ["serviceAccount:caller@proj.iam.gserviceaccount.com"]},
+            ])],
+        })
+        findings = gcrun001_unauthenticated.check(cat)
         assert findings[0].passed is True
 
-    def test_internal_lb_passes(self, make_catalog):
+    def test_ingress_all_but_iam_restricted_passes(self, make_catalog):
+        # The false positive the old ingress-only check produced: a
+        # default ingress=ALL service that still requires IAM auth.
         cat = make_catalog(**{
             "cloudrun:services": [
-                _run_service(ingress="INGRESS_TRAFFIC_INTERNAL_LOAD_BALANCER"),
+                _run_service(ingress="INGRESS_TRAFFIC_ALL", iam_policy=[]),
             ],
         })
         findings = gcrun001_unauthenticated.check(cat)
-        assert len(findings) == 1
+        assert findings[0].passed is True
+
+    def test_public_member_on_non_invoker_role_passes(self, make_catalog):
+        # allUsers on a viewer role is not invoke access.
+        cat = make_catalog(**{
+            "cloudrun:services": [_run_service(iam_policy=[
+                {"role": "roles/run.viewer", "members": ["allUsers"]},
+            ])],
+        })
+        findings = gcrun001_unauthenticated.check(cat)
         assert findings[0].passed is True
 
     def test_no_services_returns_empty(self, make_catalog):

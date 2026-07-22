@@ -202,7 +202,9 @@ def _iam005_external_trust(properties: dict[str, Any], role_name: str) -> Findin
         aws = principal.get("AWS") if isinstance(principal, dict) else None
         if not aws:
             continue
-        conditions = stmt.get("Condition") or {}
+        conditions = stmt.get("Condition")
+        if not isinstance(conditions, dict):
+            conditions = {}
         has_external_id = any(
             "sts:ExternalId" in (inner or {})
             for inner in conditions.values()
@@ -212,11 +214,14 @@ def _iam005_external_trust(properties: dict[str, Any], role_name: str) -> Findin
             bad.append(f"stmt[{idx}]")
     passed = not bad
     desc = (
-        f"Trust policy on '{role_name}' either has no external AWS principals or "
-        "every such statement enforces sts:ExternalId."
+        f"Trust policy on '{role_name}' has no AWS-principal trust "
+        "statement without an sts:ExternalId condition."
         if passed else
-        f"Trust policy on '{role_name}' allows assumption by an external AWS "
-        f"principal in {bad} without requiring sts:ExternalId."
+        f"Trust policy on '{role_name}' allows assumption by an AWS "
+        f"principal in {bad} without requiring sts:ExternalId. (The "
+        "static template can't confirm whether the account is external; "
+        "ExternalId is the confused-deputy defense for cross-account "
+        "trust and is harmless for same-account trust.)"
     )
     return Finding(
         check_id="IAM-005",

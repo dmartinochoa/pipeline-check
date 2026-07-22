@@ -43,11 +43,13 @@ RULE = Rule(
         "transition into KMS-managed encryption."
     ),
     docs_note=(
-        "Reads ``Pulumi.<stack>.yaml`` and fires for any stack "
-        "where ``secretsprovider`` is missing or set to "
-        "``passphrase``. The presence of ``encryptionsalt`` is an "
-        "additional signal (Pulumi writes the salt only for "
-        "passphrase-backed stacks). Cloud-KMS providers store an "
+        "Reads ``Pulumi.<stack>.yaml`` and fires for a "
+        "passphrase-backed stack: either ``secretsprovider`` is "
+        "``passphrase``, or ``secretsprovider`` is absent but an "
+        "``encryptionsalt`` is present (Pulumi writes the salt only "
+        "for passphrase-backed stacks). A stack with neither a "
+        "provider nor a salt has no encrypted secrets to protect, so "
+        "it doesn't fire. Cloud-KMS providers store an "
         "``encryptedkey`` field instead; either signal is enough "
         "to pass the rule.\n\n"
         "Skipped when the project has no stack files (no stack "

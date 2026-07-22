@@ -142,9 +142,11 @@ _UNTRUSTED_CONTEXTS: tuple[str, ...] = (
 #: Direct ``${{ secrets.<name> }}`` context expression in a body.
 _SECRET_CTX_RE = re.compile(r"\$\{\{\s*secrets\.[A-Za-z_]\w*\s*\}\}")
 
-#: Redirect into the Summary file, both spellings.
+#: Redirect into the Summary file, both spellings, plus the
+#: ``tee (-a) "$GITHUB_STEP_SUMMARY"`` show-and-record idiom.
 _SUMMARY_SINK_RE = re.compile(
-    r">>?\s*\"?\$\{?GITHUB_STEP_SUMMARY\}?\"?",
+    r">>?\s*\"?\$\{?GITHUB_STEP_SUMMARY\}?\"?"
+    r"|\btee\b[^\n]*GITHUB_STEP_SUMMARY",
 )
 
 #: Workflow-command directives that carry message text to log lines.

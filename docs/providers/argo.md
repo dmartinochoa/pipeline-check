@@ -390,7 +390,7 @@ Pull every input artifact over HTTPS. Replace ``http://`` with ``https://`` in a
 <span class="pg-sev pg-sev--critical">CRITICAL</span> <span class="pg-tag pg-tag--owasp">CICD-SEC-2</span> <span class="pg-tag pg-tag--esf">ESF-D-IAM</span> <span class="pg-tag pg-tag--cwe">CWE-269</span> <span class="pg-tag pg-tag--cwe">CWE-250</span>
 </div>
 
-Fires when a Workflow / CronWorkflow sets ``spec.serviceAccountName`` to a name that signals a cluster-wide admin binding (``cluster-admin``, or a name containing ``cluster-admin``, ``admin``, ``root``, ``superuser``). The actual privilege lives in the RBAC ``ClusterRoleBinding``, which isn't visible in the Workflow, so this is a name-based heuristic (MEDIUM confidence) for the common copy-paste shape; the broader case (an innocuously-named SA bound to cluster-admin) needs the RBAC manifest. Distinct from ARGO-003, which flags the *default* SA.
+Fires when a Workflow / CronWorkflow sets ``spec.serviceAccountName`` (or a template's own ``serviceAccountName`` override) to a name that signals a cluster-wide admin binding (``cluster-admin``, or a name containing ``cluster-admin``, ``admin``, ``root``, ``superuser``). The actual privilege lives in the RBAC ``ClusterRoleBinding``, which isn't visible in the Workflow, so this is a name-based heuristic (MEDIUM confidence) for the common copy-paste shape; the broader case (an innocuously-named SA bound to cluster-admin) needs the RBAC manifest. Distinct from ARGO-003, which flags the *default* SA.
 
 <div class="pg-rule__rec" markdown>
 

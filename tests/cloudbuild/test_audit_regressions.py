@@ -379,3 +379,99 @@ steps:
         assert gcb008.check("cb.yaml", doc).passed is True, (
             "GCB-008 must still pass when trivy appears in args"
         )
+
+
+class TestAudit202607LowCloudBuild:
+    """2026-07 audit LOW findings on the Cloud Build rules."""
+
+    @staticmethod
+    def _run(text, cid):
+        from tests.cloudbuild.conftest import run_check
+        return run_check(text, cid)
+
+    def test_gcb013_split_args_git_install_fires(self):
+        cfg = (
+            "steps:\n"
+            "  - name: python:3.12\n"
+            "    entrypoint: pip\n"
+            "    args: [install, \"git+https://github.com/acme/helper.git\"]\n"
+        )
+        assert self._run(cfg, "GCB-013").passed is False
+        pinned = (
+            "steps:\n"
+            "  - name: python:3.12\n"
+            "    entrypoint: pip\n"
+            "    args: [install, \"git+https://github.com/acme/helper.git@"
+            "abcdef1234567890abcdef1234567890abcdef12\"]\n"
+        )
+        assert self._run(pinned, "GCB-013").passed is True
+
+    def test_gcb003_metadata_describe_is_not_value_exposure(self):
+        describe = (
+            "steps:\n"
+            "  - name: gcr.io/cloud-builders/gcloud\n"
+            "    args: [secrets, versions, describe, "
+            "\"projects/p/secrets/api/versions/5\"]\n"
+        )
+        assert self._run(describe, "GCB-003").passed is True
+        access = (
+            "steps:\n"
+            "  - name: gcr.io/cloud-builders/gcloud\n"
+            "    args: [secrets, versions, access, "
+            "\"projects/p/secrets/api/versions/5\"]\n"
+        )
+        assert self._run(access, "GCB-003").passed is False
+
+    def test_gcb004_escaped_and_digit_first_substitutions(self):
+        escaped = (
+            "options: { dynamicSubstitutions: true }\n"
+            "steps:\n"
+            "  - name: gcr.io/x\n"
+            "    entrypoint: bash\n"
+            "    args: [-c, \"echo $$_TAG\"]\n"
+        )
+        assert self._run(escaped, "GCB-004").passed is True
+        digit_first = (
+            "options: { dynamicSubstitutions: true }\n"
+            "steps:\n"
+            "  - name: gcr.io/x\n"
+            "    entrypoint: bash\n"
+            "    args: [-c, \"echo ${_1}\"]\n"
+        )
+        assert self._run(digit_first, "GCB-004").passed is False
+
+    def test_gcb024_push_via_script_field_fires(self):
+        # A docker push issued from the ``script:`` step form was invisible
+        # to the images-missing check.
+        cfg = (
+            "steps:\n"
+            "  - name: gcr.io/cloud-builders/docker\n"
+            "    script: docker push gcr.io/foo/bar:v1\n"
+        )
+        assert self._run(cfg, "GCB-024").passed is False
+        declared = (
+            "steps:\n"
+            "  - name: gcr.io/cloud-builders/docker\n"
+            "    script: docker push gcr.io/foo/bar:v1\n"
+            "images: [gcr.io/foo/bar:v1]\n"
+        )
+        assert self._run(declared, "GCB-024").passed is True
+
+    def test_gcb023_escaped_shell_var_not_undeclared_sub(self):
+        # ``$$_SHELLVAR`` is an escaped literal shell var, not a Cloud Build
+        # user substitution.
+        escaped = (
+            "steps:\n"
+            "  - name: ubuntu\n"
+            "    entrypoint: bash\n"
+            "    args: [-c, \"echo $$_SHELLVAR\"]\n"
+        )
+        assert self._run(escaped, "GCB-023").passed is True
+        # a genuinely undeclared single-``$`` user sub still fires
+        undeclared = (
+            "steps:\n"
+            "  - name: ubuntu\n"
+            "    entrypoint: bash\n"
+            "    args: [-c, \"echo $_UNDECLARED\"]\n"
+        )
+        assert self._run(undeclared, "GCB-023").passed is False

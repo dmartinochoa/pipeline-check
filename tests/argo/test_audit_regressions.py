@@ -638,3 +638,97 @@ class TestARGO002InitContainerSidecarPrivileged:
         """
         f = run_check(cfg, "ARGO-002")
         assert not f.passed
+
+
+class TestAudit202607LowArgo:
+    """2026-07 audit LOW findings on the Argo rules."""
+
+    def test_argo005_non_shell_argv_param_not_flagged(self):
+        safe = (
+            "apiVersion: argoproj.io/v1alpha1\n"
+            "kind: Workflow\n"
+            "metadata: {name: w}\n"
+            "spec:\n"
+            "  templates:\n"
+            "    - name: t\n"
+            "      container:\n"
+            "        image: myctl:1\n"
+            "        command: [\"myctl\"]\n"
+            "        args: [\"scale\", \"--replicas\", "
+            "\"{{inputs.parameters.replicas}}\"]\n"
+        )
+        assert run_check(safe, "ARGO-005").passed is True
+        shell = (
+            "apiVersion: argoproj.io/v1alpha1\n"
+            "kind: Workflow\n"
+            "metadata: {name: w}\n"
+            "spec:\n"
+            "  templates:\n"
+            "    - name: t\n"
+            "      container:\n"
+            "        image: alpine\n"
+            "        command: [\"sh\", \"-c\"]\n"
+            "        args: [\"echo {{inputs.parameters.x}}\"]\n"
+        )
+        assert run_check(shell, "ARGO-005").passed is False
+
+    def test_argo004_json_nested_hostpath(self):
+        wf = (
+            "apiVersion: argoproj.io/v1alpha1\n"
+            "kind: Workflow\n"
+            "metadata: {name: w}\n"
+            "spec:\n"
+            "  podSpecPatch: '{\"volumes\": [{\"name\":\"r\","
+            "\"hostPath\": {\"path\": \"/\"}}]}'\n"
+            "  templates:\n"
+            "    - name: t\n"
+            "      container: {image: alpine}\n"
+        )
+        assert run_check(wf, "ARGO-004").passed is False
+
+    def test_argo015_workflow_level_artifact(self):
+        wf = (
+            "apiVersion: argoproj.io/v1alpha1\n"
+            "kind: Workflow\n"
+            "metadata: {name: w}\n"
+            "spec:\n"
+            "  arguments:\n"
+            "    artifacts:\n"
+            "      - name: in\n"
+            "        http: {url: \"http://internal/x.tar\"}\n"
+            "  templates:\n"
+            "    - name: t\n"
+            "      container: {image: alpine}\n"
+        )
+        assert run_check(wf, "ARGO-015").passed is False
+
+    def test_argo016_template_level_admin_sa(self):
+        # A template that overrides the workflow SA to cluster-admin must
+        # fire even when the spec-level SA is a least-privilege name.
+        wf = (
+            "apiVersion: argoproj.io/v1alpha1\n"
+            "kind: Workflow\n"
+            "metadata: {name: w}\n"
+            "spec:\n"
+            "  serviceAccountName: ci-deploy-sa\n"
+            "  templates:\n"
+            "    - name: main\n"
+            "      serviceAccountName: cluster-admin\n"
+            "      container: {image: alpine}\n"
+        )
+        f = run_check(wf, "ARGO-016")
+        assert f.passed is False
+        assert "cluster-admin" in f.description
+        # A least-privilege template SA override must still pass.
+        safe = (
+            "apiVersion: argoproj.io/v1alpha1\n"
+            "kind: Workflow\n"
+            "metadata: {name: w}\n"
+            "spec:\n"
+            "  serviceAccountName: ci-deploy-sa\n"
+            "  templates:\n"
+            "    - name: main\n"
+            "      serviceAccountName: ci-scoped-sa\n"
+            "      container: {image: alpine}\n"
+        )
+        assert run_check(safe, "ARGO-016").passed is True

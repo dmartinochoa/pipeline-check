@@ -10,7 +10,8 @@ from ..base import iter_steps
 
 _SECRET_REF_RE = re.compile(
     r"\$\{?(?:BITBUCKET_TOKEN|REPOSITORY_OAUTH_ACCESS_TOKEN)\}?"
-    r"|\$\{?[A-Z_]*(?:SECRET|TOKEN|PASSWORD|KEY)[A-Z_]*\}?"
+    r"|\$\{?[A-Za-z_]*(?:SECRET|TOKEN|PASSWORD|KEY)[A-Za-z_]*\}?",
+    re.IGNORECASE,
 )
 
 RULE = Rule(
@@ -77,6 +78,10 @@ def check(path: str, doc: dict[str, Any]) -> Finding:
     offenders: list[str] = []
     for loc, step in iter_steps(doc):
         after = step.get("after-script")
+        # ``after-script`` may be a scalar string or a list of lines;
+        # normalize so the scalar form is scanned too.
+        if isinstance(after, str):
+            after = [after]
         if not isinstance(after, list):
             continue
         for line in after:

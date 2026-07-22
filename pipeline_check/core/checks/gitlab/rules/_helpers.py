@@ -57,6 +57,25 @@ def rules_manual(rules: Any) -> bool:
     )
 
 
+def rules_fully_manual(rules: Any) -> bool:
+    """True when *every* reachable ``rules:`` entry is ``when: manual``.
+
+    A job is only fully gated when there's no reachable rules entry that
+    auto-runs: a job that is manual on one branch but auto-runs via a
+    later catch-all entry is not gated. ``when: never`` entries exclude
+    their pipelines, so they don't count as reachable.
+    """
+    if not isinstance(rules, list) or not rules:
+        return False
+    reachable = [
+        r for r in rules
+        if isinstance(r, dict) and r.get("when") != "never"
+    ]
+    if not reachable:
+        return False
+    return all(r.get("when") == "manual" for r in reachable)
+
+
 def _rules_opt_into_mr(rules: Any) -> bool:
     """True when a ``rules:`` list has an entry whose ``if:`` admits MR pipelines.
 

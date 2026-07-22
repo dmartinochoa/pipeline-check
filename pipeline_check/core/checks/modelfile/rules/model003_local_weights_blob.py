@@ -40,7 +40,13 @@ RULE = Rule(
     ),
 )
 
-_PICKLE_EXT_RE = re.compile(r"\.(?:bin|pt|pth)$", re.IGNORECASE)
+# Pickle-backed weight extensions the finding calls out. Includes the
+# literal pickle extensions (``.pkl`` / ``.pickle`` / ``.joblib`` /
+# ``.dill``) and PyTorch's pickle-backed ``.ckpt``, alongside the
+# ``.bin`` / ``.pt`` / ``.pth`` shapes.
+_PICKLE_EXT_RE = re.compile(
+    r"\.(?:bin|pt|pth|pkl|pickle|joblib|dill|ckpt)$", re.IGNORECASE
+)
 
 
 def check(ctx: ModelfileContext) -> list[Finding]:

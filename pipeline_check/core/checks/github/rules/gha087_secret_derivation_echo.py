@@ -151,11 +151,14 @@ _TRANSFORM_RE = re.compile(
 )
 
 #: Bash parameter-expansion truncation: ``${VAR:0:N}``, ``${VAR::N}``,
-#: ``${VAR:N:M}``. The first capture is the variable name. ``${VAR}``
-#: alone (no slice) is the standard env reference and is NOT a
-#: transform.
+#: ``${VAR:N:M}``, and the last-N-chars form ``${VAR: -N}`` (bash
+#: requires the space before a negative offset; ``${VAR:-N}`` without it
+#: is default-value, not a slice). The first capture is the variable
+#: name. ``${VAR}`` alone (no slice) is the standard env reference and is
+#: NOT a transform.
 _PARAM_TRUNC_RE = re.compile(
-    r"\$\{(?P<name>[A-Za-z_][A-Za-z0-9_]*)(?::-?\d+|::-?\d+|:-?\d+:-?\d+)\}",
+    r"\$\{(?P<name>[A-Za-z_][A-Za-z0-9_]*)"
+    r"(?::-?\d+|::-?\d+|:-?\d+:-?\d+|:\s+-?\d+)\}",
 )
 
 #: Print sinks on a logical line. ``echo`` / ``printf`` / ``tee`` at

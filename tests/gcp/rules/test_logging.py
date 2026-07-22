@@ -492,3 +492,59 @@ class TestGCLOG011:
         findings = gclog011_metric_filter_custom_role.check(cat)
         assert len(findings) == 1
         assert findings[0].passed is False
+
+
+class TestAudit202607LowLogging:
+    """2026-07 audit LOW findings on the GCLOG metric-filter / audit rules."""
+
+    def test_gclog001_exempted_members_fail(self, make_catalog):
+        # FN: an allServices config with all three log types but a broad
+        # exemption lets those principals bypass Data Access logging.
+        cat = make_catalog(**{"iam:project_policy": {"bindings": [],
+            "audit_configs": [{"service": "allServices", "audit_log_configs": [
+                {"log_type": 1, "exempted_members": ["user:svc@example.com"]},
+                {"log_type": 2}, {"log_type": 3}]}]}})
+        f = gclog001_audit_config.check(cat)
+        assert f[0].passed is False
+        assert "exempt" in f[0].description.lower()
+
+    def test_gclog007_camelcase_setiampolicy_passes(self, make_catalog):
+        # FP: compute methodNames are camelCase setIamPolicy.
+        cat = make_catalog(**{"logging:metrics": [
+            {"filter": 'protoPayload.methodName="v1.compute.instances.setIamPolicy"'}]})
+        assert gclog007_metric_filter_iam.check(cat)[0].passed is True
+
+    def test_gclog008_methodname_firewall_passes(self, make_catalog):
+        cat = make_catalog(**{"logging:metrics": [
+            {"filter": 'protoPayload.methodName:("compute.firewalls.insert")'}]})
+        assert gclog008_metric_filter_firewall.check(cat)[0].passed is True
+
+    def test_gclog009_methodname_route_passes(self, make_catalog):
+        cat = make_catalog(**{"logging:metrics": [
+            {"filter": 'protoPayload.methodName:("compute.routes.insert")'}]})
+        assert gclog009_metric_filter_route.check(cat)[0].passed is True
+
+    def test_gclog010_has_operator_cloudsql_passes(self, make_catalog):
+        cat = make_catalog(**{"logging:metrics": [
+            {"filter": 'protoPayload.methodName:"cloudsql.instances"'}]})
+        assert gclog010_metric_filter_sql.check(cat)[0].passed is True
+
+    def test_gclog007_unrelated_filter_still_fails(self, make_catalog):
+        cat = make_catalog(**{"logging:metrics": [
+            {"filter": 'resource.type="gce_instance"'}]})
+        assert gclog007_metric_filter_iam.check(cat)[0].passed is False
+
+
+class TestAudit202607Gclog011:
+    """GCLOG-011 affirmative role-change filter match (not bare substring)."""
+
+    def test_methodname_only_filter_passes(self, make_catalog):
+        cat = make_catalog(**{"logging:metrics": [{"filter":
+            'protoPayload.methodName="google.iam.admin.v1.CreateRole" OR '
+            'protoPayload.methodName="google.iam.admin.v1.DeleteRole"'}]})
+        assert gclog011_metric_filter_custom_role.check(cat)[0].passed is True
+
+    def test_negated_resource_type_does_not_satisfy(self, make_catalog):
+        cat = make_catalog(**{"logging:metrics": [
+            {"filter": 'resource.type!="iam_role" AND severity>=ERROR'}]})
+        assert gclog011_metric_filter_custom_role.check(cat)[0].passed is False

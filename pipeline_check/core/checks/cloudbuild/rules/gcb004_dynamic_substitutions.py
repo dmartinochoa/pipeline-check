@@ -96,8 +96,11 @@ RULE = Rule(
 )
 
 # ``$_FOO`` or ``${_FOO}``, the leading underscore distinguishes user
-# substitutions from Cloud Build built-ins (``$PROJECT_ID``, etc.).
-_USER_SUB_RE = re.compile(r"\$\{?_[A-Z][A-Z0-9_]*\}?")
+# substitutions from Cloud Build built-ins (``$PROJECT_ID``, etc.). The
+# name may start with a digit (``_1``). A ``$$`` is Cloud Build's escape
+# for a literal ``$``, so ``$$_TAG`` isn't a substitution — the negative
+# look-behind keeps it from matching.
+_USER_SUB_RE = re.compile(r"(?<!\$)\$\{?_[A-Z0-9][A-Z0-9_]*\}?")
 
 
 def _dynamic_subs_enabled(doc: dict[str, Any]) -> bool:

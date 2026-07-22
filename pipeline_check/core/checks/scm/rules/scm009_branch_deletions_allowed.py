@@ -73,6 +73,10 @@ def check(snapshot: SCMRepoSnapshot) -> Finding:
     allowed = False
     if isinstance(deletions, dict):
         allowed = bool(deletions.get("enabled"))
+    elif isinstance(deletions, bool):
+        # Legacy / PUT-body shape carries a bare boolean (SCM-010
+        # accepts the same for its knob).
+        allowed = deletions
     passed = not allowed
     desc = (
         f"Default branch ``{branch}`` blocks deletion."

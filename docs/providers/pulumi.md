@@ -65,7 +65,7 @@ pipeline_check --pipeline pulumi --pulumi-path ./infra/
 <span class="pg-sev pg-sev--high">HIGH</span> <span class="pg-tag pg-tag--owasp">CICD-SEC-6</span> <span class="pg-tag pg-tag--owasp">CICD-SEC-7</span> <span class="pg-tag pg-tag--esf">ESF-D-SECRETS</span> <span class="pg-tag pg-tag--cwe">CWE-321</span> <span class="pg-tag pg-tag--cwe">CWE-798</span>
 </div>
 
-Reads ``Pulumi.<stack>.yaml`` and fires for any stack where ``secretsprovider`` is missing or set to ``passphrase``. The presence of ``encryptionsalt`` is an additional signal (Pulumi writes the salt only for passphrase-backed stacks). Cloud-KMS providers store an ``encryptedkey`` field instead; either signal is enough to pass the rule.
+Reads ``Pulumi.<stack>.yaml`` and fires for a passphrase-backed stack: either ``secretsprovider`` is ``passphrase``, or ``secretsprovider`` is absent but an ``encryptionsalt`` is present (Pulumi writes the salt only for passphrase-backed stacks). A stack with neither a provider nor a salt has no encrypted secrets to protect, so it doesn't fire. Cloud-KMS providers store an ``encryptedkey`` field instead; either signal is enough to pass the rule.
 
 Skipped when the project has no stack files (no stack yet initialized); the rule has nothing to evaluate in that case. The default Pulumi-service backend (``app.pulumi.com``) is a separate concern, the hosted service stores stack state encrypted at rest in its own envelope but the ``secretsprovider`` field still governs *how* the per-stack secrets are encrypted before upload.
 

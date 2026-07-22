@@ -15,9 +15,9 @@ provider. They need rendering, which would require a `helm` or
 
 Workload kinds (``Deployment``, ``StatefulSet``, ``DaemonSet``,
 ``Job``, ``CronJob``, ``ReplicaSet``, ``Pod``) all expose a pod
-spec, but at different paths. :func:`pod_specs` normalises that and
-yields ``(path_prefix, podspec)`` tuples; rules iterate that rather
-than walking each kind themselves.
+spec, but at different paths. :func:`iter_workload_pod_specs`
+normalizes that and yields ``(manifest, podspec)`` tuples; rules
+iterate that rather than walking each kind themselves.
 """
 from __future__ import annotations
 

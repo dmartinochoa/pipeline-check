@@ -143,6 +143,21 @@ class TestK8S032:
         ctx = k8s_ctx(_ns("app"), _deployment_in("app"), np)
         assert not check_k8s032(ctx).passed
 
+    def test_ingress_only_policy_is_not_full_default_deny(self):
+        # policyTypes: [Ingress] leaves egress wide open, so it is not a
+        # full default-deny (2026-07 audit LOW FN).
+        np = _default_deny_np("app")
+        np["spec"]["policyTypes"] = ["Ingress"]
+        ctx = k8s_ctx(_ns("app"), _deployment_in("app"), np)
+        assert not check_k8s032(ctx).passed
+
+    def test_absent_policy_types_is_not_full_default_deny(self):
+        # An absent policyTypes defaults to [Ingress] in Kubernetes.
+        np = _default_deny_np("app")
+        del np["spec"]["policyTypes"]
+        ctx = k8s_ctx(_ns("app"), _deployment_in("app"), np)
+        assert not check_k8s032(ctx).passed
+
 
 # ──────────────────────────────────────────────────────────────────
 # K8S-033 — ResourceQuota / LimitRange
