@@ -138,7 +138,11 @@ _BOT_EQ_RE = re.compile(
 _BOT_FN_RE = re.compile(
     r"\b(?:contains|endsWith|startsWith)\s*\(\s*"
     r"(?:"
-    r"(?:github\.(?:actor|triggering_actor)|github\.event\.sender\.login)\s*,"
+    # actor field first, but only when the literal it's compared to
+    # actually names a bot (``bot`` anywhere, case-insensitive), so a
+    # non-bot gate like ``contains(github.actor, 'preview')`` is skipped.
+    r"(?:github\.(?:actor|triggering_actor)|github\.event\.sender\.login)"
+    r"\s*,\s*['\"][^'\"]*[Bb][Oo][Tt][^'\"]*['\"]"
     r"|"
     r"['\"][^'\"]*\[bot\][^'\"]*['\"]\s*,"
     r")"

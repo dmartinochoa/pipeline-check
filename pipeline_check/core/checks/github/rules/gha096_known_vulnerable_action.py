@@ -70,9 +70,9 @@ RULE = Rule(
         "because the rule cannot resolve which patch level the tag "
         "currently points at. If the tag follows the latest release "
         "and the advisory is already patched, suppress per-finding "
-        "with a rationale noting the tag is current. SHA pins with "
-        "no version comment also fire conservatively; adding a "
-        "``# vX.Y.Z`` comment lets the rule match precisely.",
+        "with a rationale noting the tag is current. SHA-pinned refs "
+        "also fire conservatively at MEDIUM confidence, since the exact "
+        "version behind the SHA can't be confirmed from the ref alone.",
     ),
     incident_refs=(
         "actions/download-artifact path traversal "

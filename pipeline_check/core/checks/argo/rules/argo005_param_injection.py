@@ -102,6 +102,26 @@ def _scan_text(text: str) -> list[str]:
     return hits
 
 
+_SHELLS = {"sh", "bash", "ash", "dash", "zsh", "ksh"}
+
+
+def _args_are_shell_reparsed(command: object) -> bool:
+    """Whether a param in ``args`` reaches a shell that would re-parse it.
+
+    With no explicit ``command`` the image ENTRYPOINT is unknown and could
+    be a shell, so scan conservatively. An explicit shell command
+    (``sh -c`` / ``bash -c``) means ``args`` form the script. A non-shell
+    command receives ``args`` as discrete argv elements that aren't
+    re-parsed, so a param passed there isn't shell-injectable.
+    """
+    if not isinstance(command, list) or not command:
+        return True
+    exes = [c.rsplit("/", 1)[-1] for c in command if isinstance(c, str)]
+    has_shell = any(e in _SHELLS for e in exes)
+    has_c = any(isinstance(c, str) and c == "-c" for c in command)
+    return has_shell and has_c
+
+
 def check(ctx: ArgoContext) -> Finding:
     offenders: list[str] = []
     # Per-template anchor in the form ``<Kind>/<name>:<template>`` so
@@ -124,7 +144,9 @@ def check(ctx: ArgoContext) -> Finding:
                         anchor_templates[f"{doc.kind}/{doc.name}:{tname}"] = None
                         continue
                 args = container.get("args")
-                if isinstance(args, list):
+                if isinstance(args, list) and _args_are_shell_reparsed(
+                    container.get("command"),
+                ):
                     found = False
                     for a in args:
                         if isinstance(a, str):

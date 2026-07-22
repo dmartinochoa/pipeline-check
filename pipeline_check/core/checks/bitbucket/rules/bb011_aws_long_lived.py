@@ -10,9 +10,20 @@ from ..base import iter_steps
 from ._helpers import aws_key_in
 
 _AWS_CONFIGURE_RE = re.compile(
-    r"aws\s+configure\s+set\s+aws_access_key_id\b"
-    r"|aws\s+configure\s+set\s+aws_secret_access_key\b"
+    r"aws\s+configure\s+set\s+"
+    r"aws_(?:access_key_id|secret_access_key)\s+(\S+)"
 )
+
+
+def _is_literal_value(token: str) -> bool:
+    """True when *token* is an embedded literal, not a ``$``-reference.
+
+    ``aws configure set aws_access_key_id "$SECURED_VAR"`` sources the
+    key from a secured Bitbucket variable (the recommended shape) and
+    must not fire; only a literal value embedded in the file does.
+    """
+    t = token.strip().strip("\"'").strip()
+    return bool(t) and not t.startswith("$")
 
 RULE = Rule(
     id="BB-011",
@@ -68,7 +79,8 @@ def check(path: str, doc: dict[str, Any]) -> Finding:
             if isinstance(script_line, str):
                 if aws_key_in(script_line):
                     static_keys = True
-                if _AWS_CONFIGURE_RE.search(script_line):
+                m = _AWS_CONFIGURE_RE.search(script_line)
+                if m and _is_literal_value(m.group(1)):
                     static_keys = True
         # Also check step-level variables (definitions.variables).
         for v in (step.get("variables") or {}).values() if isinstance(step.get("variables"), dict) else []:

@@ -39,9 +39,11 @@ RULE = Rule(
         "client (server-side cloaking) or simply take the "
         "endpoint offline to break image pulls. The rule fires "
         "on any layer whose descriptor includes a non-empty "
-        "``urls:`` array; it doesn't try to validate URL hygiene "
-        "(HTTPS, allow-list of hosts) since the existence of the "
-        "field alone is the policy violation."
+        "``urls:`` array, or whose ``mediaType`` is a foreign / "
+        "nondistributable layer type (even with no ``urls`` "
+        "field); it doesn't try to validate URL hygiene (HTTPS, "
+        "allow-list of hosts) since either signal alone is the "
+        "policy violation."
     ),
     known_fp=(
         "Legacy Windows Server base images (pre-Windows 11 / "

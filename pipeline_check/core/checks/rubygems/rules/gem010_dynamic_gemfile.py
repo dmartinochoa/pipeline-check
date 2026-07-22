@@ -31,7 +31,7 @@ RULE = Rule(
     docs_note=(
         "Fires when the Gemfile body contains any of "
         "``Dir.glob`` / ``Dir[``, ``eval``, ``instance_eval``, "
-        "``require_relative``, ``require ``, ``load ``, or "
+        "``require_relative``, ``load ``, or "
         "``File.read`` calls at file scope. Lines inside "
         "comments (``#`` prefix) are ignored. The match is "
         "conservative — a Gemfile that uses ``ENV[\"RAILS_ENV\"]`` "
@@ -92,6 +92,11 @@ _DYNAMIC_PATTERNS: tuple[tuple[str, re.Pattern[str]], ...] = (
     ("eval(...)",       re.compile(r"\beval\s*\((?!_gemfile)")),
     ("instance_eval",   re.compile(r"\binstance_eval\b")),
     ("require_relative", re.compile(r"^\s*require_relative\b", re.MULTILINE)),
+    # ``load "extra.rb"`` at line scope executes a file that may add
+    # ``gem`` declarations, the same dynamic-resolution shape as
+    # ``require_relative``. (A bare ``require`` merely loads a library
+    # and is far too common to flag, so it isn't matched.)
+    ("load",            re.compile(r"^\s*load\b", re.MULTILINE)),
     ("File.read",       re.compile(r"\bFile\s*\.\s*read\b")),
 )
 

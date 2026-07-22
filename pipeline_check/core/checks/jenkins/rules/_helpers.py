@@ -45,7 +45,12 @@ def strip_groovy_comments(text: str) -> str:
         return re.sub(r"[^\n]", " ", s)
     return _GROOVY_TOKEN_RE.sub(_replace, text)
 
-PINNED_REF_RE = re.compile(r"^(?:v?\d+(?:\.\d+){1,2}|[0-9a-f]{40})$")
+PINNED_REF_RE = re.compile(
+    # A semver tag (optionally with a prerelease / build suffix like
+    # ``-rc1`` / ``+build.5``) or a full 40-char commit sha — all
+    # immutable pins.
+    r"^(?:v?\d+(?:\.\d+){1,2}(?:[-+][0-9A-Za-z.-]+)?|[0-9a-f]{40})$",
+)
 FLOATING_REFS = frozenset({"main", "master", "develop", "head", "trunk", "latest"})
 
 #: The attacker-controllable Jenkins env-var names. Multibranch /
@@ -131,6 +136,16 @@ AWS_KEY_VAR_RE = re.compile(
     r"(?:accessKeyVariable|secretKeyVariable|aws_access_key_id|aws_secret_access_key)",
     re.IGNORECASE,
 )
+#: A credentials-binding keyword bound to an AWS key environment name,
+#: e.g. ``usernameVariable: 'AWS_ACCESS_KEY_ID'``. This is enough to flag
+#: a long-lived AWS key even when the ``credentialsId`` string itself
+#: doesn't contain "aws" (``credentialsId: 'prod-static'``).
+AWS_KEY_VAR_BINDING_RE = re.compile(
+    r"(?:usernameVariable|passwordVariable|accessKeyVariable|secretKeyVariable"
+    r"|variable)\s*:\s*['\"]"
+    r"(?:AWS_ACCESS_KEY_ID|AWS_SECRET_ACCESS_KEY|AWS_SESSION_TOKEN)['\"]",
+    re.IGNORECASE,
+)
 #: ``withAWS(credentials: 'id')``, the AWS Steps plugin with long-lived
 #: credentials.  ``withAWS(role: '…')`` is the safe IAM-role pattern and
 #: is NOT matched.
@@ -140,7 +155,9 @@ WITH_AWS_CREDS_RE = re.compile(
 )
 
 DOCKER_IMAGE_RE = re.compile(
-    r"docker\s*\{\s*[^}]*?\bimage\s+['\"]([^'\"]+)['\"]",
+    # Both the directive form ``image 'name:tag'`` and the Groovy
+    # method-call form ``image('name:tag')``.
+    r"docker\s*\{\s*[^}]*?\bimage\s*\(?\s*['\"]([^'\"]+)['\"]",
     re.DOTALL,
 )
 
@@ -151,7 +168,8 @@ ENV_AWS_KEY_RE = re.compile(
 
 BUILD_DISCARDER_RE = re.compile(r"\b(?:buildDiscarder|logRotator)\s*\(")
 
-LOAD_STEP_RE = re.compile(r"\bload\s+['\"]([^'\"]+\.groovy)['\"]")
+# Both ``load 'file.groovy'`` and the method-call ``load('file.groovy')``.
+LOAD_STEP_RE = re.compile(r"\bload\s*\(?\s*['\"]([^'\"]+\.groovy)['\"]")
 
 COPY_ARTIFACTS_RE = re.compile(r"\b(?:copyArtifacts|CopyArtifact)\b")
 VERIFY_RE = re.compile(
@@ -221,4 +239,9 @@ ARCHIVE_ARTIFACTS_RE = re.compile(
 #: digest so consumers of ``copyArtifacts`` can verify provenance.
 FINGERPRINT_TRUE_RE = re.compile(
     r"\bfingerprint\s*:\s*true\b"
+)
+#: The standalone ``fingerprint '<glob>'`` step records the same
+#: digests as ``fingerprint: true`` on ``archiveArtifacts``.
+FINGERPRINT_STEP_RE = re.compile(
+    r"\bfingerprint\s+['\"]"
 )

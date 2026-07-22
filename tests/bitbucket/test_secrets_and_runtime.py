@@ -59,8 +59,10 @@ class TestBB008LiteralSecrets:
 class TestBB011AWSLongLived:
     def test_fails_when_aws_configure_set_in_script(self):
         # The rule scans script lines for ``aws configure set
-        # aws_access_key_id`` — the documented anti-pattern for
-        # injecting long-lived keys into a runtime environment.
+        # aws_access_key_id`` with a LITERAL value — the documented
+        # anti-pattern for injecting long-lived keys into a runtime
+        # environment. (A ``$``-referenced secured variable is the
+        # recommended shape and no longer fires; see the 2026-07 audit.)
         cfg = """
         pipelines:
           default:
@@ -69,7 +71,7 @@ class TestBB011AWSLongLived:
                 deployment: production
                 image: amazon/aws-cli:2.15.0
                 script:
-                  - aws configure set aws_access_key_id $AWS_KEY
+                  - aws configure set aws_access_key_id AKIAIOSFODNN7EXAMPLE
                   - aws s3 ls
         """
         f = run_check(cfg, "BB-011")

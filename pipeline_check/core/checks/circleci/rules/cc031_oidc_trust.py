@@ -141,6 +141,10 @@ def check(path: str, doc: dict[str, Any]) -> Finding:
     offenders: list[str] = []
     approvals_by_workflow: dict[str, set[str]] = {}
     for wf_name, job_name, job_cfg in iter_workflow_jobs(doc):
+        # An approval job executes no steps, so it can't assume a role
+        # (same carve-out CC-030 applies).
+        if job_cfg.get("type") == "approval":
+            continue
         if not _has_oidc_role_param(job_cfg):
             continue
         if _has_branch_filter(job_cfg):

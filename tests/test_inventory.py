@@ -132,7 +132,7 @@ def test_cloudformation_inventory_captures_iam_role_stats():
     assert m["inline_policy_count"] == 1
 
 
-def test_cloudformation_inventory_normalises_tags():
+def test_cloudformation_inventory_normalizes_tags():
     ctx = _cfn_ctx({
         "B": {
             "Type": "AWS::S3::Bucket",

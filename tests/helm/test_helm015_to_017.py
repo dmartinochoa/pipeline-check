@@ -156,3 +156,26 @@ class TestHELM017:
         chart = _chart(templates=[tmpl])
         f = check_helm017(_ctx(chart))
         assert f.passed
+
+    def test_passes_on_commented_out_tpl(self):
+        # A Go-template comment renders nothing; it must not be read as a
+        # live tpl-of-.Values sink (2026-07 audit LOW FP).
+        tmpl = (
+            "/fake/demo/templates/cm.yaml",
+            "data:\n  # x: {{/* tpl .Values.greeting . */}}\n",
+        )
+        chart = _chart(templates=[tmpl])
+        f = check_helm017(_ctx(chart))
+        assert f.passed
+
+    def test_fires_on_tpl_of_values_via_variable(self):
+        # A .Values value bound to a $var and then tpl-ed is the same SSTI
+        # sink via an indirect shape (2026-07 audit LOW FN).
+        tmpl = (
+            "/fake/demo/templates/cm.yaml",
+            "{{ $v := .Values.greeting }}\ndata:\n  x: {{ tpl $v . }}\n",
+        )
+        chart = _chart(templates=[tmpl])
+        f = check_helm017(_ctx(chart))
+        assert not f.passed
+        assert "cm.yaml" in f.description

@@ -29,16 +29,36 @@ class CodePipelineChecks(TerraformBaseCheck):
         return findings
 
 
+def _run_order(action: dict[str, Any]) -> int:
+    """A stage action's run_order, defaulting to 1 (CodePipeline's default)."""
+    try:
+        return int(action.get("run_order") or 1)
+    except (TypeError, ValueError):
+        return 1
+
+
 def _cp001_approval_before_deploy(stages: list[dict[str, Any]], name: str) -> Finding:
-    approval_seen = False
+    # An approval only gates a deploy that actually runs after it.
+    # Actions in the same stage with an equal run_order run in parallel,
+    # so a same-stage Approval listed before a Deploy does NOT gate it;
+    # only a strictly lower run_order (or an approval in a prior stage)
+    # does.
+    approval_from_prior_stage = False
     deploy_without_approval = False
     for stage in stages:
-        for action in stage.get("action", []) or []:
-            category = action.get("category", "")
-            if category == "Approval":
-                approval_seen = True
-            if category == "Deploy" and not approval_seen:
+        actions = stage.get("action", []) or []
+        approval_run_orders = [
+            _run_order(a) for a in actions if a.get("category", "") == "Approval"
+        ]
+        for action in actions:
+            if action.get("category", "") != "Deploy":
+                continue
+            deploy_ro = _run_order(action)
+            gated_in_stage = any(ro < deploy_ro for ro in approval_run_orders)
+            if not (approval_from_prior_stage or gated_in_stage):
                 deploy_without_approval = True
+        if approval_run_orders:
+            approval_from_prior_stage = True
 
     passed = not deploy_without_approval
     desc = (
@@ -59,12 +79,27 @@ def _cp001_approval_before_deploy(stages: list[dict[str, Any]], name: str) -> Fi
     )
 
 
+def _is_customer_managed_key(encryption_key: object) -> bool:
+    """True only for a KMS key that isn't an AWS-managed alias.
+
+    An ``encryption_key`` of ``alias/aws/s3`` (or any ``alias/aws/*``)
+    is the AWS-managed key, not a customer-managed one, so it doesn't
+    satisfy the rule. Mirrors the ``alias/aws/`` rejection in the
+    sibling CA-001 / CCM-002 / SSM-002 checks.
+    """
+    if not isinstance(encryption_key, list) or not encryption_key:
+        return False
+    head = encryption_key[0] if isinstance(encryption_key[0], dict) else {}
+    key_id = str(head.get("id", ""))
+    return not key_id.startswith("alias/aws/")
+
+
 def _cp002_artifact_encryption(values: dict[str, Any], name: str) -> Finding:
     stores = values.get("artifact_store", []) or []
     unencrypted = [
         s.get("location", "unknown")
         for s in stores
-        if not (s.get("encryption_key") or [])
+        if not _is_customer_managed_key(s.get("encryption_key"))
     ]
     passed = not unencrypted
     desc = (

@@ -91,6 +91,14 @@ _AUTOMERGE_CLI_RE = re.compile(
     r"gh\s+pr\s+merge\s+.*--auto\b",
 )
 
+#: The GraphQL ``enablePullRequestAutoMerge`` mutation, and the
+#: ``auto_merge`` field set through ``gh api``. These are the API-call
+#: shapes the docs_note names alongside the CLI form.
+_AUTOMERGE_API_RE = re.compile(
+    r"\benablePullRequestAutoMerge\b"
+    r"|\bgh\s+api\b[^\n]*\bauto_merge\b",
+)
+
 
 def _is_pr_trigger(doc: dict[str, Any]) -> bool:
     triggers = workflow_triggers(doc)
@@ -144,7 +152,7 @@ def check(path: str, doc: dict[str, Any]) -> Finding:
                     creates_pr = True
                     create_labels.append(label)
                     locations.append(step_location(path, step))
-                if _AUTOMERGE_CLI_RE.search(run):
+                if _AUTOMERGE_CLI_RE.search(run) or _AUTOMERGE_API_RE.search(run):
                     auto_merges = True
                     merge_labels.append(label)
                     locations.append(step_location(path, step))

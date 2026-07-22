@@ -62,7 +62,11 @@ def check(catalog: ResourceCatalog) -> list[Finding]:
         name = secret.get("Name", "<unnamed>")
         arn = secret.get("ARN", "")
         policy = catalog.secret_resource_policy(arn or name)
-        if policy is None:
+        # ``secret_resource_policy`` returns raw ``json.loads`` output; a
+        # policy that parsed to a list/scalar would crash ``iter_allow``
+        # (which calls ``.get``). AWS only stores object policies, so a
+        # non-dict is a malformed input to skip, not to evaluate.
+        if not isinstance(policy, dict):
             continue
         offenders = [
             idx for idx, stmt in enumerate(iter_allow(policy))

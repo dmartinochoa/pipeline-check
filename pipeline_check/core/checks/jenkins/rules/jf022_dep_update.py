@@ -39,7 +39,7 @@ RULE = Rule(
 )
 
 def check(jf: Jenkinsfile) -> Finding:
-    found = has_dep_update(jf.text.lower())
+    found = has_dep_update(jf.text_no_comments.lower())
     passed = not found
     desc = (
         "No dependency-update commands detected."

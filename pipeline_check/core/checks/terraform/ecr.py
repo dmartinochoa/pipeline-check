@@ -76,7 +76,7 @@ def _ecr002_tag_mutability(values: dict[str, Any], name: str) -> Finding:
     desc = (
         "Image tags are immutable."
         if passed else
-        "Image tag mutability is MUTABLE."
+        f"Image tag mutability is {mutability} (tags can be overwritten)."
     )
     return Finding(
         check_id="ECR-002",
@@ -169,7 +169,9 @@ def _ecr005_kms_encryption(values: dict[str, Any], name: str) -> Finding:
     enc = _first(values.get("encryption_configuration"))
     enc_type = (enc.get("encryption_type") or "AES256")
     kms_key = enc.get("kms_key")
-    passed = enc_type == "KMS" and bool(kms_key)
+    # ``KMS_DSSE`` (dual-layer server-side KMS) is strictly stronger
+    # customer-managed encryption than plain ``KMS``.
+    passed = enc_type in ("KMS", "KMS_DSSE") and bool(kms_key)
 
     if passed:
         desc = f"Repository uses KMS encryption with key {kms_key}."

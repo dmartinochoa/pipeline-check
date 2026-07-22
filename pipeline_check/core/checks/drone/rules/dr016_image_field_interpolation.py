@@ -112,7 +112,10 @@ RULE = Rule(
 )
 
 
-_TEMPLATE_RE = re.compile(r"\$\{[^}]+\}")
+# Drone (drone/envsubst) expands both the braced ``${VAR}`` and the bare
+# ``$VAR`` forms. ``$$`` is the literal-dollar escape, excluded via the
+# negative look-behind on the bare form.
+_TEMPLATE_RE = re.compile(r"\$\{[^}]+\}|(?<!\$)\$\w+")
 
 
 def _scan_container(

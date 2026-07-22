@@ -155,12 +155,24 @@ def _value_looks_literal(value: str) -> bool:
     return True
 
 
+_MAX_SCAN_DEPTH = 4
+
+
 def _scan_block(
-    block: object, source_label: str, offenders: list[str],
+    block: object, source_label: str, offenders: list[str], depth: int = 0,
 ) -> None:
     """Scan one ``environment:`` / ``settings:`` block for literal
-    credential values. Matches are appended to *offenders*.
+    credential values. Recurses into nested config maps / lists (bounded
+    depth) so a credential buried in a plugin's nested ``settings:``
+    sub-map is still classified. Matches are appended to *offenders*.
     """
+    if depth > _MAX_SCAN_DEPTH:
+        return
+    if isinstance(block, list):
+        for i, item in enumerate(block):
+            if isinstance(item, (dict, list)):
+                _scan_block(item, f"{source_label}[{i}]", offenders, depth + 1)
+        return
     if not isinstance(block, dict):
         return
     for key, value in block.items():
@@ -168,6 +180,9 @@ def _scan_block(
             continue
         # ``from_secret:`` reference, the safe shape, always skip.
         if from_secret_value(value) is not None:
+            continue
+        if isinstance(value, (dict, list)):
+            _scan_block(value, f"{source_label}.{key}", offenders, depth + 1)
             continue
         if not isinstance(value, str):
             continue

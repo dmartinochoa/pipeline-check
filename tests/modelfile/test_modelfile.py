@@ -115,6 +115,13 @@ class TestModel003LocalWeightsBlob:
         assert not f.passed
         assert "pickle" in f.description.lower()
 
+    def test_flags_literal_pkl_pickle_note(self):
+        # ``.pkl`` is the most literal pickle extension; the finding
+        # previously fired but dropped the pickle note (2026-07 audit).
+        f = run_check("FROM ./model.pkl\n", "MODEL-003")
+        assert not f.passed
+        assert "pickle" in f.description.lower()
+
     def test_passes_on_registry_ref(self):
         f = run_check("FROM llama3:8b\n", "MODEL-003")
         assert f.passed

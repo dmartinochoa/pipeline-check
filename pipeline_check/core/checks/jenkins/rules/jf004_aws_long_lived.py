@@ -4,7 +4,12 @@ from __future__ import annotations
 from ...base import Finding, Severity
 from ...rule import Rule
 from ..base import Jenkinsfile
-from ._helpers import AWS_KEY_BINDING_RE, AWS_KEY_VAR_RE, WITH_AWS_CREDS_RE
+from ._helpers import (
+    AWS_KEY_BINDING_RE,
+    AWS_KEY_VAR_BINDING_RE,
+    AWS_KEY_VAR_RE,
+    WITH_AWS_CREDS_RE,
+)
 
 RULE = Rule(
     id="JF-004",
@@ -54,10 +59,15 @@ RULE = Rule(
 
 
 def check(jf: Jenkinsfile) -> Finding:
-    # Pattern 1: withCredentials + AWS key variable names
+    # Pattern 1: withCredentials + AWS key variable names. Either an
+    # "aws"-named credentialsId paired with an AWS key variable, or a
+    # binding keyword bound directly to an AWS key env name (which flags
+    # even a non-"aws" credentialsId like 'prod-static').
     binding = bool(AWS_KEY_BINDING_RE.search(jf.text))
     var = bool(AWS_KEY_VAR_RE.search(jf.text))
-    with_creds_long_lived = binding and var
+    with_creds_long_lived = (binding and var) or bool(
+        AWS_KEY_VAR_BINDING_RE.search(jf.text)
+    )
 
     # Pattern 2: withAWS(credentials: '...'), static credential ID
     # (withAWS(role: '...') is the safe pattern and is NOT matched)

@@ -22,6 +22,14 @@ _PROD_TOKENS = ("prod", "production", "live")
 _ECR_TRUSTED_UPSTREAMS = {
     "public.ecr.aws", "registry.k8s.io", "ghcr.io", "gcr.io",
 }
+# A CodePipeline V2 branch include made up only of glob wildcards
+# (``*``, ``**``, ``**/*``) matches every branch, exactly like the
+# literal ``"*"`` the rule already treats as open.
+_MATCH_ALL_GLOB_RE = re.compile(r"[*/]+")
+
+
+def _is_match_all_glob(entry: object) -> bool:
+    return isinstance(entry, str) and bool(_MATCH_ALL_GLOB_RE.fullmatch(entry.strip()))
 
 
 class Phase3Checks(TerraformBaseCheck):
@@ -204,7 +212,11 @@ def _pbac005_cp005_cp007(ctx: TerraformContext) -> list[Finding]:
             is_prod = any(tok in s_name for tok in _PROD_TOKENS) or any(
                 any(tok in an for tok in _PROD_TOKENS) for an in action_names
             )
-            if not is_prod:
+            # The rule is about production *deploys*; a prod-named stage
+            # that only runs tests (no Deploy action) is not a release
+            # gate and must not be flagged for a missing approval.
+            has_deploy = any(a.get("category") == "Deploy" for a in actions)
+            if not (is_prod and has_deploy):
                 continue
             prior_approval = any(
                 a.get("category") == "Approval" and a.get("provider") == "Manual"
@@ -242,7 +254,7 @@ def _pbac005_cp005_cp007(ctx: TerraformContext) -> list[Finding]:
                         branches_raw = branches_raw[0]
                     branches = branches_raw if isinstance(branches_raw, dict) else {}
                     includes = branches.get("includes") or []
-                    if not includes or "*" in includes:
+                    if not includes or any(_is_match_all_glob(i) for i in includes):
                         open_triggers.append(f"trigger[{idx}]")
                         break
             if open_triggers:

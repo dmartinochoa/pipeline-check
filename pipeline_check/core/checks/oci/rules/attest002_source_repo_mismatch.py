@@ -121,11 +121,13 @@ RULE = Rule(
 # ── Source-URI extraction (handles both SLSA v0.2 and v1) ──────────
 
 
-# Matches a recognizable VCS / HTTPS source URI. Conservative: must
-# start with a scheme and contain a path component (so a bare
-# ``github.com`` or ``http://`` doesn't satisfy the rule).
+# Matches a recognizable VCS / HTTPS source URI. Conservative: a
+# ``scheme://host/path`` form, or the scp-like git syntax
+# ``user@host:path`` (``git@github.com:owner/repo.git``). A bare
+# ``github.com`` or ``http://`` doesn't satisfy the rule.
 _VCS_URI_RE = re.compile(
-    r"^(git\+https?|git\+ssh|https?|ssh|git)://[^/\s]+/[^\s]+$"
+    r"^(?:(?:git\+https?|git\+ssh|https?|ssh|git)://[^/\s]+/[^\s]+"
+    r"|[\w.-]+@[^\s:/]+:[^\s]+)$"
 )
 
 # Tokens an attestation might carry as a placeholder when the builder
@@ -183,6 +185,17 @@ def _v0_2_source(predicate: dict[str, Any]) -> tuple[str | None, str | None]:
     return (uri, digest_str)
 
 
+def _first_digest(dep: Any) -> str | None:
+    """First string digest value on a resolvedDependency, or None."""
+    if not isinstance(dep, dict):
+        return None
+    digest_block = dep.get("digest")
+    if not isinstance(digest_block, dict) or not digest_block:
+        return None
+    first = next(iter(digest_block.values()), None)
+    return first if isinstance(first, str) else None
+
+
 def _v1_source(predicate: dict[str, Any]) -> tuple[str | None, str | None]:
     """Extract ``(uri, digest)`` from a SLSA v1 predicate.
 
@@ -225,16 +238,28 @@ def _v1_source(predicate: dict[str, Any]) -> tuple[str | None, str | None]:
     digest: str | None = None
     deps = bd.get("resolvedDependencies")
     if isinstance(deps, list):
-        for dep in deps:
-            if not isinstance(dep, dict):
-                continue
-            digest_block = dep.get("digest")
-            if not isinstance(digest_block, dict) or not digest_block:
-                continue
-            first = next(iter(digest_block.values()), None)
-            if isinstance(first, str):
-                digest = first
-                break
+        # Prefer the dependency whose URI matches the detected source
+        # URI, so a base-image dependency's digest can't stand in for
+        # an unpinned source entry. Fall back to the first dependency
+        # carrying a digest only when no entry matches the source URI.
+        matched_source_dep = False
+        if uri is not None:
+            for dep in deps:
+                if not isinstance(dep, dict):
+                    continue
+                dep_uri = dep.get("uri")
+                if isinstance(dep_uri, str) and (dep_uri == uri
+                                                 or uri in dep_uri
+                                                 or dep_uri in uri):
+                    matched_source_dep = True
+                    digest = _first_digest(dep)
+                    break
+        if not matched_source_dep:
+            for dep in deps:
+                d = _first_digest(dep)
+                if d is not None:
+                    digest = d
+                    break
     return (uri, digest)
 
 

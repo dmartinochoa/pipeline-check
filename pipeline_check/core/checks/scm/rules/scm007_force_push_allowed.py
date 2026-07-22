@@ -76,6 +76,10 @@ def check(snapshot: SCMRepoSnapshot) -> Finding:
     allowed = False
     if isinstance(fp, dict):
         allowed = bool(fp.get("enabled"))
+    elif isinstance(fp, bool):
+        # Legacy / PUT-body shape carries a bare boolean (SCM-010
+        # accepts the same for its knob).
+        allowed = fp
     passed = not allowed
     desc = (
         f"Default branch ``{branch}`` blocks force-pushes."

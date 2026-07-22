@@ -434,7 +434,7 @@ KMS key ring IAM policies govern access to every key in the ring. An overly broa
 
 **Recommended action**
 
-Remove allUsers, allAuthenticatedUsers, and overly broad domain-scoped members from KMS key ring IAM policies. Restrict key access to specific service accounts that need encrypt/decrypt/sign operations.
+Remove allUsers and allAuthenticatedUsers from KMS key ring IAM policies. Restrict key access to specific service accounts that need encrypt/decrypt/sign operations.
 
 </div>
 
@@ -494,7 +494,7 @@ Admin Activity logs are always on, but Data Access logs (reads and writes to use
 
 **Recommended action**
 
-Configure the project IAM policy's auditConfigs to enable Data Access audit logs for allServices. At minimum, enable ADMIN_READ and DATA_WRITE log types.
+Configure the project IAM policy's auditConfigs to enable Data Access audit logs for allServices with all three log types (ADMIN_READ, DATA_WRITE, DATA_READ) and no exempted members.
 
 </div>
 
@@ -588,13 +588,13 @@ Enable logging on all firewall rules. Firewall logs record connections allowed a
 <span class="pg-sev pg-sev--medium">MEDIUM</span> <span class="pg-tag pg-tag--owasp">CICD-SEC-10</span> <span class="pg-tag pg-tag--cwe">CWE-778</span>
 </div>
 
-While enabling allServices audit logging is a good baseline, critical services like Storage, IAM, and Compute should have explicit per-service audit configs to ensure visibility is not accidentally removed by a broad policy change.
+Critical services like Storage, IAM, and Compute need all three Data Access log types (ADMIN_READ, DATA_WRITE, DATA_READ). Coverage from an allServices config counts toward each critical service; an explicit per-service config is equivalent and guards against a later allServices change silently removing visibility.
 
 <div class="pg-rule__rec" markdown>
 
 **Recommended action**
 
-Configure per-service audit log configs for storage.googleapis.com, iam.googleapis.com, and compute.googleapis.com to include all three log types: ADMIN_READ (1), DATA_WRITE (2), and DATA_READ (3).
+Enable all three Data Access log types (ADMIN_READ, DATA_WRITE, DATA_READ) for storage.googleapis.com, iam.googleapis.com, and compute.googleapis.com, either via per-service audit log configs or a project-wide allServices config.
 
 </div>
 
@@ -808,13 +808,13 @@ Configure a Cloud NAT gateway on at least one Cloud Router so that instances wit
 <span class="pg-sev pg-sev--high">HIGH</span> <span class="pg-tag pg-tag--owasp">CICD-SEC-9</span> <span class="pg-tag pg-tag--cwe">CWE-284</span>
 </div>
 
-A Cloud Run service with INGRESS_TRAFFIC_ALL allows any internet user to invoke it. If the service does not implement its own authentication, it is fully exposed.
+Reads the service's IAM policy and fires when ``roles/run.invoker`` is granted to ``allUsers`` or ``allAuthenticatedUsers`` — the bindings that let anyone (or any Google account) invoke the service without service-specific authorization. Ingress settings are a separate network-exposure control and are NOT what this rule checks: an ``INGRESS_TRAFFIC_ALL`` service that still requires IAM auth is not unauthenticated. When the IAM policy can't be read (the token lacks ``run.services.getIamPolicy``) the service is not flagged.
 
 <div class="pg-rule__rec" markdown>
 
 **Recommended action**
 
-Set the Cloud Run service ingress to INGRESS_TRAFFIC_INTERNAL_ONLY or INGRESS_TRAFFIC_INTERNAL_LOAD_BALANCER, or require authentication via IAM invoker bindings. Public services should be behind a load balancer with IAP or API Gateway.
+Remove the ``allUsers`` / ``allAuthenticatedUsers`` binding from the service's ``roles/run.invoker`` grant so only named identities can invoke it (``gcloud run services remove-iam-policy-binding <svc> --member=allUsers --role=roles/run.invoker``). If the service is genuinely meant to be public, front it with a load balancer plus IAP or API Gateway that enforces authentication, rather than exposing the run.invoker endpoint directly.
 
 </div>
 

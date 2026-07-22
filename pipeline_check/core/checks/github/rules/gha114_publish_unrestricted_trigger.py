@@ -196,9 +196,11 @@ def _unrestricted_push(doc: dict[str, Any]) -> tuple[bool, str]:
         return True, "``on: push`` with no branch filter (every branch fires)"
     branches = push.get("branches")
     if branches is None:
-        # No branches filter. A tags-only push is restricted; otherwise
-        # (incl. branches-ignore) every branch fires.
-        if push.get("tags") is not None:
+        # No branches filter. A tags-only push is restricted; but
+        # ``branches-ignore`` is itself a branch filter that still fires on
+        # every non-ignored branch, so ``branches-ignore`` + ``tags`` is
+        # NOT restricted.
+        if push.get("tags") is not None and push.get("branches-ignore") is None:
             return False, ""
         return True, "``on: push`` with no branch filter (every branch fires)"
     if isinstance(branches, str):

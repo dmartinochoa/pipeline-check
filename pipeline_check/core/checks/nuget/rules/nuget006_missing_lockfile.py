@@ -1,9 +1,15 @@
 """NUGET-006, no NuGet lock file for reproducible restores."""
 from __future__ import annotations
 
+import posixpath
+
 from ...base import Finding, Severity
 from ...rule import Rule
 from ..base import NuGetContext, NuGetProject
+
+
+def _dir_of(path: str) -> str:
+    return posixpath.dirname(path.replace("\\", "/"))
 
 RULE = Rule(
     id="NUGET-006",
@@ -24,8 +30,9 @@ RULE = Rule(
         "dependencies to whatever the feed currently serves."
     ),
     docs_note=(
-        "Fires when a csproj project exists but no "
-        "``packages.lock.json`` was found."
+        "Fires when a csproj project has no ``packages.lock.json`` in "
+        "its own directory. A lock file for a sibling project elsewhere "
+        "in the tree doesn't make this project's restore reproducible."
     ),
 )
 
@@ -43,13 +50,17 @@ def check(project: NuGetProject, ctx: NuGetContext) -> Finding:
             ),
             recommendation=RULE.recommendation, passed=True,
         )
-    has_lock = bool(ctx.locks)
+    # ``dotnet restore --locked-mode`` needs each project's OWN
+    # ``packages.lock.json`` (written alongside the csproj), so a lock
+    # for a sibling project doesn't cover this one.
+    proj_dir = _dir_of(project.path)
+    has_lock = any(_dir_of(lock.path) == proj_dir for lock in ctx.locks)
     desc = (
-        "At least one packages.lock.json found; reproducible "
+        "A co-located packages.lock.json was found; reproducible "
         "restores are possible with ``--locked-mode``."
         if has_lock else
-        "No packages.lock.json found. Without a lock file, "
-        "``dotnet restore`` silently upgrades transitive "
+        "No packages.lock.json found alongside this project. Without a "
+        "lock file, ``dotnet restore`` silently upgrades transitive "
         "dependencies to whatever the feed currently serves."
     )
     return Finding(

@@ -19,7 +19,7 @@ from typing import Any
 
 from ...base import Finding, Location, Severity
 from ...rule import Rule
-from ..base import iter_jobs, iter_steps, step_location
+from ..base import find_run_command, iter_jobs, iter_steps, step_location
 from ._helpers import AGENTIC_CLI_RE
 
 RULE = Rule(
@@ -106,7 +106,10 @@ def check(path: str, doc: dict[str, Any]) -> Finding:
         for step in iter_steps(job):
             run = step.get("run")
             if isinstance(run, str) and agent is None:
-                m = AGENTIC_CLI_RE.search(run)
+                # Scan real command chunks so an agent name that appears
+                # only in a comment or an ``echo`` string isn't read as an
+                # invocation.
+                m = find_run_command(run, AGENTIC_CLI_RE)
                 if m:
                     agent = m.group(0).lower()
             if autoland is None:

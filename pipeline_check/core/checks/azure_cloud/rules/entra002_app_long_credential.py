@@ -40,7 +40,11 @@ def check(catalog: ResourceCatalog) -> list[Finding]:
         app_name = app.get("displayName", "<unnamed>")
         app_id = app.get("appId", "<unknown>")
         for cred_list_key in ("passwordCredentials", "keyCredentials"):
-            for cred in app.get(cred_list_key, []):
+            # Graph returns these arrays present-but-null in some exports;
+            # ``or []`` guards a null value (the default only covers absent).
+            for cred in app.get(cred_list_key) or []:
+                if not isinstance(cred, dict):
+                    continue
                 end_raw = cred.get("endDateTime")
                 if not end_raw:
                     continue

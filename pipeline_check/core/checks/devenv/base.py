@@ -541,9 +541,15 @@ def mcp_blanket_auto_approvals(data: dict[str, Any]) -> list[tuple[str, str]]:
 
 
 def _is_blanket_approval(value: Any) -> bool:
-    """True for ``True`` or a list containing a ``"*"`` wildcard."""
+    """True for ``True``, a bare scalar ``"*"``, or a list containing one.
+
+    A user can write the wildcard as a scalar (``alwaysAllow: "*"``) rather
+    than a one-element array; both mean "auto-approve every tool".
+    """
     if value is True:
         return True
+    if isinstance(value, str):
+        return value.strip() == "*"
     if isinstance(value, list):
         return any(isinstance(x, str) and x.strip() == "*" for x in value)
     return False

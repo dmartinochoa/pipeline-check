@@ -25,13 +25,18 @@ RULE = Rule(
 )
 
 
+# The GCE guest environment accepts several boolean spellings for the
+# ``enable-oslogin`` metadata value, all case-insensitive.
+_OSLOGIN_TRUTHY = frozenset({"true", "1", "y", "yes"})
+
+
 def check(catalog: ResourceCatalog) -> list[Finding]:
     findings: list[Finding] = []
     for inst in catalog.compute_instances():
         name = inst.get("name", "<unnamed>")
         metadata = inst.get("metadata", {})
-        os_login = metadata.get("enable-oslogin", "").upper()
-        if os_login == "TRUE":
+        os_login = str(metadata.get("enable-oslogin", "")).strip().lower()
+        if os_login in _OSLOGIN_TRUTHY:
             findings.append(Finding(
                 check_id=RULE.id,
                 title=RULE.title,

@@ -54,11 +54,13 @@ RULE = Rule(
 )
 
 
-# Exact pin shape: optional leading ``v``, then digit-dot-digit
-# segments, optional pre-release / build metadata. Anything with a
-# range/wildcard token fails this match.
+# Exact pin shape: optional leading ``v``, then a full three-component
+# ``X.Y.Z`` semver, optional pre-release / build metadata. A two- or
+# one-component version (``1.2`` / ``1``) is a Masterminds range
+# (``>=1.2.0 <1.3.0`` / ``>=1.0.0 <2.0.0``), not a pin, so it must not
+# match. Anything with a range/wildcard token also fails this match.
 _EXACT_PIN_RE = re.compile(
-    r"^v?\d+(?:\.\d+){0,2}"
+    r"^v?\d+(?:\.\d+){2}"
     r"(?:-[0-9A-Za-z.-]+)?"
     r"(?:\+[0-9A-Za-z.-]+)?$"
 )

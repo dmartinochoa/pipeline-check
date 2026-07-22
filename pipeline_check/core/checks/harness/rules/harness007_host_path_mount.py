@@ -36,8 +36,10 @@ RULE = Rule(
         "sensitive prefix: ``/var/run/docker.sock`` (the canonical "
         "container-escape socket), ``/var/lib/docker``, ``/var/run``, "
         "``/etc``, ``/proc``, ``/sys``, or ``/`` (full host root). "
-        "``EmptyDir`` / PVC volumes pass. Same model as DR-007 / K8S-019 "
-        "across providers."
+        "``EmptyDir`` / PVC volumes pass, as do narrow read-only "
+        "certificate subpaths under ``/etc`` (``/etc/ssl/certs``, "
+        "``/etc/pki``, ``/etc/ca-certificates``), a benign CA-injection "
+        "pattern. Same model as DR-007 / K8S-019 across providers."
     ),
     known_fp=(
         "Trusted-only pipelines on a dedicated, isolated build cluster "
@@ -83,11 +85,24 @@ _SENSITIVE_PREFIXES: tuple[str, ...] = (
     "/sys",
 )
 
+#: Narrow read-only subpaths under ``/etc`` that are a benign, common
+#: pattern (injecting CA certs), not a host-config escape. Exempted so the
+#: broad ``/etc`` prefix doesn't false-fire on them, while mounting ``/etc``
+#: itself (or ``/etc/passwd`` etc.) still fires.
+_ETC_BENIGN_PREFIXES: tuple[str, ...] = (
+    "/etc/ssl/certs",
+    "/etc/pki",
+    "/etc/ca-certificates",
+)
+
 
 def _is_sensitive(host_path: str) -> bool:
     norm = host_path.strip().rstrip("/")
     if norm in ("", "/"):
         return True
+    for benign in _ETC_BENIGN_PREFIXES:
+        if norm == benign or norm.startswith(benign + "/"):
+            return False
     for prefix in _SENSITIVE_PREFIXES:
         if norm == prefix or norm.startswith(prefix + "/"):
             return True

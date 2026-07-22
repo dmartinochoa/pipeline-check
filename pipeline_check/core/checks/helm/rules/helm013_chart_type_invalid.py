@@ -7,7 +7,7 @@ from ..base import HelmContext
 
 RULE = Rule(
     id="HELM-013",
-    title="Chart.yaml type field missing or invalid",
+    title="Chart.yaml type field set to an invalid value",
     severity=Severity.MEDIUM,
     owasp=("CICD-SEC-3",),
     esf=("ESF-S-VERIFY-DEPS",),
@@ -34,11 +34,12 @@ RULE = Rule(
     ),
     docs_note=(
         "Reads ``Chart.yaml`` ``type:`` and fires when the field "
-        "is missing, empty, or set to a value other than "
-        "``application`` / ``library``. The two valid values are "
-        "defined by the Helm 3 chart schema; other values are "
-        "ignored by Helm at install time (which is the silent-"
-        "failure mode the rule catches).\n\n"
+        "is present but set to a value other than ``application`` / "
+        "``library`` (the two values defined by the Helm 3 chart "
+        "schema; any other value is ignored by Helm at install time, "
+        "the silent-failure mode the rule catches). A *missing* "
+        "``type:`` passes: Helm 3 defaults it to ``application``, so "
+        "omitting it is legitimate and common.\n\n"
         "Helm 2 charts (``apiVersion: v1``) are skipped, the "
         "``type:`` field doesn't exist in v1 and HELM-001 already "
         "catches the v1 shape."
@@ -60,19 +61,17 @@ RULE = Rule(
         "the change because no schema rule was in place.",
     ),
     exploit_example=(
-        "# Vulnerable: type field omitted; Helm silently treats\n"
-        "# as application.\n"
+        "# Vulnerable: an invalid type value (typo). Helm ignores it\n"
+        "# at install time rather than erroring, so the chart's\n"
+        "# intended role is silently lost.\n"
         "# Chart.yaml\n"
         "apiVersion: v2\n"
         "name: myapp\n"
         "version: 1.0.0\n"
+        "type: aplication\n"
         "\n"
-        "# Risk: a refactor that moves the chart's templates into\n"
-        "# the library form leaves no schema gate; the chart\n"
-        "# continues to look application-shaped until install\n"
-        "# time, which fails with a confusing error.\n"
-        "\n"
-        "# Safe: explicit type.\n"
+        "# Safe: a valid explicit type (or omit it to accept Helm's\n"
+        "# 'application' default).\n"
         "# Chart.yaml\n"
         "apiVersion: v2\n"
         "name: myapp\n"
@@ -98,12 +97,14 @@ def check(ctx: HelmContext) -> Finding:
         if chart.api_version == "v1":
             continue  # Helm 2: HELM-001 owns this surface.
         t = chart.chart_yaml.get("type")
+        if t is None:
+            # Omitting ``type:`` is legitimate: Helm 3 defaults a missing
+            # type to ``application``. Only a present-but-invalid value is
+            # the silent-failure shape this rule targets.
+            continue
         if isinstance(t, str) and t in _VALID_TYPES:
             continue
-        if t is None:
-            offenders.append(f"{chart.name}: type missing")
-        else:
-            offenders.append(f"{chart.name}: type={t!r}")
+        offenders.append(f"{chart.name}: type={t!r}")
     passed = not offenders
     desc = (
         "Every Helm 3 chart declares an explicit application / "

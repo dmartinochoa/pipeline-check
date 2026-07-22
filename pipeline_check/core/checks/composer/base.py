@@ -417,6 +417,11 @@ def is_floating_constraint(spec: str) -> bool:
     s = spec.strip()
     if not s:
         return False
+    # A 40-char git commit hash is an exact pin (the docstring promises
+    # this; a bare hex string has no ``.`` and would otherwise fail the
+    # digit-segment check below and read as floating).
+    if len(s) == 40 and all(c in "0123456789abcdefABCDEF" for c in s):
+        return False
     if s.startswith("dev-") or s.endswith("-dev"):
         return True
     if s[0] in "^~><":

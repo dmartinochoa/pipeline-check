@@ -163,21 +163,26 @@ class _GraphState:
     consumers fire once per producer-consumer pair.
     """
 
-    # ``key -> [(producer_label, sources)]``
-    leaks: dict[str, list[tuple[str, list[TaintSource]]]] = field(
+    # ``key -> [(producer_idx, producer_label, sources)]``. The index
+    # (not the display label, which can repeat across steps) identifies
+    # the producing step so a shared label can't collapse two steps.
+    leaks: dict[str, list[tuple[int, str, list[TaintSource]]]] = field(
         default_factory=dict,
     )
 
     def record_leak(
         self,
         key: str,
+        producer_idx: int,
         producer: str,
         sources: list[TaintSource],
     ) -> None:
         bucket = self.leaks.setdefault(key, [])
-        bucket.append((producer, list(sources)))
+        bucket.append((producer_idx, producer, list(sources)))
 
-    def producers_of(self, key: str) -> list[tuple[str, list[TaintSource]]]:
+    def producers_of(
+        self, key: str,
+    ) -> list[tuple[int, str, list[TaintSource]]]:
         return list(self.leaks.get(key, []))
 
 
@@ -220,7 +225,7 @@ def analyze_pipeline(doc: dict[str, Any]) -> list[TaintPath]:
                         location=f"{label}",
                     ))
                 if sources:
-                    state.record_leak(key, label, sources)
+                    state.record_leak(key, idx, label, sources)
 
     # ── Pass 2: consumers. ────────────────────────────────────
     for idx, step in iter_command_steps(doc):
@@ -230,11 +235,13 @@ def analyze_pipeline(doc: dict[str, Any]) -> list[TaintPath]:
                 producers = state.producers_of(key)
                 if not producers:
                     continue
-                for producer_label, sources in producers:
-                    if producer_label == consumer_label:
-                        # Same step writes-then-reads its own key.
-                        # That's BK-003 territory (direct interpolation
-                        # within the step), skip cross-step emission.
+                for producer_idx, producer_label, sources in producers:
+                    if producer_idx == idx:
+                        # Same step writes-then-reads its own key (compare
+                        # by step index, not the display label which can
+                        # repeat). That's BK-003 territory (direct
+                        # interpolation within the step), skip cross-step
+                        # emission.
                         continue
                     for src in sources:
                         paths.append(TaintPath(

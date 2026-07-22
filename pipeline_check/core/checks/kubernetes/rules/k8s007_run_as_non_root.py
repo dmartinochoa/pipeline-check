@@ -32,7 +32,9 @@ RULE = Rule(
     docs_note=(
         "A container is considered safe when EITHER its own "
         "securityContext OR the pod-level securityContext sets "
-        "``runAsNonRoot: true`` and a non-zero ``runAsUser``. "
+        "``runAsNonRoot: true`` (and ``runAsUser``, when set, is "
+        "non-zero). The kubelet enforces ``runAsNonRoot`` at container "
+        "start, so an explicit non-zero ``runAsUser`` isn't required. "
         "An explicit ``runAsUser: 0`` always fails, even if "
         "``runAsNonRoot`` is unset."
     ),

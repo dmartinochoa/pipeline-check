@@ -1,9 +1,20 @@
 """GCLOG-011. No log metric filter for custom role changes."""
 from __future__ import annotations
 
+import re
+
 from ...base import Finding, Severity
 from ...rule import Rule
 from .._catalog import ResourceCatalog
+
+# A custom-role-change metric filter, written either against the
+# resource type (affirmatively, ``resource.type="iam_role"`` — not a
+# negated ``!=``) or against the role-mutation method names.
+_ROLE_FILTER_RE = re.compile(
+    r'resource\.type\s*[:=]\s*["\']?iam_role'
+    r'|google\.iam\.admin\.v1\.(?:Create|Update|Delete)Role',
+    re.IGNORECASE,
+)
 
 RULE = Rule(
     id="GCLOG-011",
@@ -30,7 +41,7 @@ def check(catalog: ResourceCatalog) -> list[Finding]:
     metrics = catalog.log_metrics()
     resource = f"projects/{catalog.session.project_id}"
     found = any(
-        "iam_role" in m.get("filter", "")
+        _ROLE_FILTER_RE.search(m.get("filter", ""))
         for m in metrics
     )
     if found:

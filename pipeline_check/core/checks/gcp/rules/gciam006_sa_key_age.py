@@ -80,4 +80,22 @@ def check(catalog: ResourceCatalog) -> list[Finding]:
                     recommendation=RULE.recommendation,
                     passed=True,
                 ))
+            else:
+                # Creation timestamp missing / unparseable: surface the
+                # key instead of dropping it silently, since its rotation
+                # age can't be verified.
+                findings.append(Finding(
+                    check_id=RULE.id,
+                    title=RULE.title,
+                    severity=RULE.severity,
+                    resource=email,
+                    description=(
+                        f"Key '{key_name}' for SA {email} has an "
+                        f"unparseable creation timestamp "
+                        f"({valid_after!r}); rotation age can't be "
+                        "verified. Review this key manually."
+                    ),
+                    recommendation=RULE.recommendation,
+                    passed=False,
+                ))
     return findings

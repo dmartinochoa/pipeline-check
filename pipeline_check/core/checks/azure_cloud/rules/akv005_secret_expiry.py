@@ -30,7 +30,7 @@ def check(catalog: ResourceCatalog) -> list[Finding]:
         vault_name = getattr(vault, "name", "<unnamed>")
         secrets = catalog.key_vault_secrets(vault_name)
         for secret in secrets:
-            sid = secret.get("id", "<unknown>")
+            sid = secret.get("id") or "<unknown>"
             secret_id = sid.rsplit("/", 1)[-1] if "/" in sid else sid
             attrs = secret.get("attributes", {})
             exp = attrs.get("exp")

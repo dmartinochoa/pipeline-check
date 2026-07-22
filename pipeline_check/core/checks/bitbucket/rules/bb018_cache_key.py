@@ -7,9 +7,11 @@ from typing import Any
 from ...base import Finding, Severity
 from ...rule import Rule
 
+# Attacker-controllable pipeline vars. ``BITBUCKET_PR_DESTINATION_BRANCH``
+# is deliberately excluded: the PR *destination* (target) branch is a
+# repo-owned protected name, not a value the PR author controls.
 _CACHE_TAINT_RE = re.compile(
-    r"\$\{?(?:BITBUCKET_BRANCH|BITBUCKET_TAG"
-    r"|BITBUCKET_PR_DESTINATION_BRANCH|BITBUCKET_BOOKMARK)\}?"
+    r"\$\{?(?:BITBUCKET_BRANCH|BITBUCKET_TAG|BITBUCKET_BOOKMARK)\}?"
 )
 
 RULE = Rule(
@@ -27,9 +29,11 @@ RULE = Rule(
     ),
     docs_note=(
         "Bitbucket caches are restored by key. When the key includes "
-        "a value the attacker controls (branch name, tag, PR ID), a "
-        "pull-request pipeline can plant a poisoned cache entry that a "
-        "subsequent default-branch build restores."
+        "a value the PR author controls (the source branch name, tag, "
+        "or bookmark), a pull-request pipeline can plant a poisoned "
+        "cache entry that a subsequent default-branch build restores. "
+        "The PR *destination* branch and the Bitbucket-assigned PR ID "
+        "aren't author-controlled, so they don't taint the key."
     ),
     exploit_example=(
         "# Vulnerable: cache path is namespaced by the branch name.\n"

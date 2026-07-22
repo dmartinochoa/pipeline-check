@@ -90,6 +90,10 @@ def check(path: str, doc: dict[str, Any]) -> Finding:
         tag = ref.rsplit(":", 1)[1]
         if tag == "latest" or not VERSION_TAG_RE.search(ref):
             unpinned.append(f"{where}: {ref}")
+        elif tag.isdigit():
+            # A digit-only tag (``:16``) is a rolling major, not a pin;
+            # the next major release silently moves it.
+            unpinned.append(f"{where}: {ref} (bare-major tag)")
 
     for ref in _service_refs(doc.get("services")):
         _inspect(ref, "<top-level>")

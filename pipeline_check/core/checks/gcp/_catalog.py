@@ -77,7 +77,12 @@ class ResourceCatalog:
                     {
                         "service": ac.service,
                         "audit_log_configs": [
-                            {"log_type": lc.log_type}
+                            {
+                                "log_type": lc.log_type,
+                                "exempted_members": list(
+                                    lc.exempted_members or []
+                                ),
+                            }
                             for lc in (ac.audit_log_configs or [])
                         ],
                     }
@@ -587,6 +592,7 @@ class ResourceCatalog:
                 settings = item.get("settings", {})
                 instances.append({
                     "name": item.get("name", ""),
+                    "databaseVersion": item.get("databaseVersion", ""),
                     "settings": {
                         "ipConfiguration": settings.get(
                             "ipConfiguration", {},
@@ -615,9 +621,25 @@ class ResourceCatalog:
 
             client = ServicesClient(credentials=self.session.credentials)
             parent = f"projects/{self.session.project_id}/locations/-"
+
+            def _invoker_bindings(name: str) -> list[dict[str, Any]]:
+                # Unauthenticated access is an IAM property (allUsers /
+                # allAuthenticatedUsers granted roles/run.invoker), not an
+                # ingress setting. Fetch it per service; degrade to an
+                # empty list if the token lacks getIamPolicy.
+                try:
+                    policy = client.get_iam_policy(request={"resource": name})
+                    return [
+                        {"role": b.role, "members": list(b.members)}
+                        for b in (policy.bindings or [])
+                    ]
+                except Exception:
+                    return []
+
             return [
                 {
                     "name": svc.name,
+                    "iam_policy": _invoker_bindings(svc.name),
                     "template": {
                         "service_account": (
                             svc.template.service_account

@@ -785,6 +785,13 @@ def is_empty_repo(snapshot: SCMRepoSnapshot) -> bool:
     size = meta.get("size")
     if not isinstance(size, int) or size != 0:
         return False
+    # ``size`` (KB) is unreliable: GitHub rounds a tiny repo to 0 and
+    # lags on recalculation right after a push. If the repo has detected
+    # languages it has committed content, so it isn't empty even at
+    # size 0 — don't let the guard suppress a real unprotected repo.
+    langs = snapshot.repo_languages
+    if isinstance(langs, dict) and langs:
+        return False
     return snapshot.default_branch_protection is None
 
 

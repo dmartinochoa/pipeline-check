@@ -83,14 +83,43 @@ _TPL_VALUES_RE = re.compile(
     r"\{\{-?[^{}]*\btpl\b[^{}]*\.Values[^{}]*-?\}\}",
 )
 
+# A Go-template comment (``{{/* ... */}}``) renders nothing; blank it out
+# (preserving newlines for line numbers) before scanning so a commented
+# example isn't read as a live sink.
+_GO_COMMENT_RE = re.compile(r"\{\{-?/\*.*?\*/-?\}\}", re.DOTALL)
+
+# A ``$var := .Values...`` binding: the var carries a ``.Values``-derived
+# value that a later ``tpl $var`` re-evaluates (the indirect SSTI shape).
+_VAR_VALUES_BIND_RE = re.compile(
+    r"\{\{-?\s*(\$[A-Za-z0-9_]+)\s*:=\s*[^{}]*\.Values[^{}]*-?\}\}",
+)
+
+
+def _blank_go_comments(text: str) -> str:
+    def _blank(m: re.Match[str]) -> str:
+        return "".join("\n" if c == "\n" else " " for c in m.group(0))
+    return _GO_COMMENT_RE.sub(_blank, text)
+
 
 def check(ctx: HelmContext) -> Finding:
     offenders: list[str] = []
     locations: list[Location] = []
     for chart in ctx.charts:
         for tpath, text in chart.templates:
-            for m in _TPL_VALUES_RE.finditer(text):
-                line_no = text[: m.start()].count("\n") + 1
+            scan = _blank_go_comments(text)
+            hit_lines: set[int] = set()
+            for m in _TPL_VALUES_RE.finditer(scan):
+                hit_lines.add(scan[: m.start()].count("\n") + 1)
+            # Second pass: ``tpl $var`` where $var was bound to a
+            # ``.Values`` expression in an earlier action.
+            for var in {b.group(1) for b in _VAR_VALUES_BIND_RE.finditer(scan)}:
+                pat = re.compile(
+                    r"\{\{-?[^{}]*\btpl\b[^{}]*" + re.escape(var)
+                    + r"(?![A-Za-z0-9_])[^{}]*-?\}\}"
+                )
+                for m in pat.finditer(scan):
+                    hit_lines.add(scan[: m.start()].count("\n") + 1)
+            for line_no in sorted(hit_lines):
                 offenders.append(f"{chart.name}: {tpath}:{line_no}")
                 locations.append(Location(
                     path=tpath, start_line=line_no, end_line=line_no,

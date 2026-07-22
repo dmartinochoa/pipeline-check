@@ -80,9 +80,11 @@ RULE = Rule(
 # Matches both the Groovy ``allowInsecureProtocol = true`` and the
 # Kotlin DSL ``isAllowInsecureProtocol = true`` (the latter contains
 # the former as a case-insensitive substring). The ``=`` is optional
-# so the rare ``allowInsecureProtocol(true)`` setter form also matches.
+# so the ``allowInsecureProtocol(true)`` setter form matches, and the
+# Gradle lazy-property ``allowInsecureProtocol.set(true)`` form is
+# covered by the ``.set(`` alternative.
 _FLAG_RE = re.compile(
-    r"allowInsecureProtocol\s*[=(]?\s*true",
+    r"allowInsecureProtocol\s*(?:\.set\s*\(|[=(])?\s*true",
     re.IGNORECASE,
 )
 #: Single- / double-quoted string literals, blanked out of a line

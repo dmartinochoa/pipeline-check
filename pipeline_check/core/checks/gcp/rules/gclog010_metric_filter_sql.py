@@ -30,8 +30,11 @@ def check(catalog: ResourceCatalog) -> list[Finding]:
     findings: list[Finding] = []
     metrics = catalog.log_metrics()
     resource = f"projects/{catalog.session.project_id}"
+    # Match on the ``cloudsql.instances`` prefix (case-insensitive) so a
+    # broader has-operator filter (``protoPayload.methodName:
+    # "cloudsql.instances"``, catching create/update/delete) also counts.
     found = any(
-        "cloudsql.instances.update" in m.get("filter", "")
+        "cloudsql.instances" in m.get("filter", "").lower()
         for m in metrics
     )
     if found:

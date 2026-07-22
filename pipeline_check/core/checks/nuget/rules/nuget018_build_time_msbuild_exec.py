@@ -149,8 +149,26 @@ def _has_exec_descendant(target: ET.Element) -> bool:
     return False
 
 
+#: A ``$(Pkg<Id>)`` reference (the GeneratePathProperty-generated
+#: package-path property). Distinct from a user property that merely
+#: starts with ``Pkg`` (``$(PkgVersion)``, ``$(PkgOutputPath)``), which
+#: is filtered out below by cross-checking the project's PropertyGroups.
+_PKG_PROP_RE = re.compile(r"\$\((Pkg[A-Za-z0-9_]+)\)", re.IGNORECASE)
+
+
+def _user_property_names(root: ET.Element) -> set[str]:
+    """Lowercased names of every property declared in a PropertyGroup."""
+    names: set[str] = set()
+    for pg in root.iter():
+        if _strip_ns(pg.tag) == "PropertyGroup":
+            for child in pg:
+                names.add(_strip_ns(child.tag).lower())
+    return names
+
+
 def _offenders(root: ET.Element) -> list[str]:
     out: list[str] = []
+    user_props = _user_property_names(root)
     for elem in root.iter():
         tag = _strip_ns(elem.tag)
         if tag == "Target":
@@ -164,8 +182,11 @@ def _offenders(root: ET.Element) -> list[str]:
                 out.append(f"<Exec> in target {name!r} (runs at {hook})")
         elif tag == "Import":
             project = _attr_ci(elem, "Project") or ""
-            if "$(pkg" in project.lower():
+            for m in _PKG_PROP_RE.finditer(project):
+                if m.group(1).lower() in user_props:
+                    continue  # a user-defined property, not a package path
                 out.append(f"<Import> of a package build path: {project}")
+                break
     return out
 
 

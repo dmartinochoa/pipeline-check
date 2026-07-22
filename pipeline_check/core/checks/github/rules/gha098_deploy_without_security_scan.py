@@ -125,8 +125,38 @@ def _is_scan_step(step: dict[str, Any]) -> bool:
     return False
 
 
+def _is_deploy_step(step: dict[str, Any]) -> bool:
+    run = step.get("run")
+    if isinstance(run, str) and _DEPLOY_CMD_RE.search(run):
+        return True
+    uses = step.get("uses")
+    if isinstance(uses, str) and _action_slug(uses) in _DEPLOY_ACTIONS:
+        return True
+    return False
+
+
 def _job_has_scan_step(job: dict[str, Any]) -> bool:
-    return any(_is_scan_step(step) for step in iter_steps(job))
+    return any(
+        isinstance(step, dict) and _is_scan_step(step)
+        for step in iter_steps(job)
+    )
+
+
+def _job_scans_before_deploy(job: dict[str, Any]) -> bool:
+    """Whether the deploy job runs a scan *before* it ships.
+
+    A scan step that runs after the first deploy-shaped step in the same
+    job doesn't gate the release, so it must not count. When the job is a
+    deploy job by name/``environment:`` only (no deploy-shaped step), any
+    scan step in it counts, since there's no step to order against.
+    """
+    steps = [s for s in iter_steps(job) if isinstance(s, dict)]
+    deploy_idx = next(
+        (i for i, s in enumerate(steps) if _is_deploy_step(s)), None,
+    )
+    if deploy_idx is None:
+        return any(_is_scan_step(s) for s in steps)
+    return any(_is_scan_step(steps[i]) for i in range(deploy_idx))
 
 
 def _needs_list(job: dict[str, Any]) -> list[str]:
@@ -182,7 +212,9 @@ def check(path: str, doc: dict[str, Any]) -> Finding:
     for job_id, job in jobs_map.items():
         if not _is_deploy_job(job_id, job):
             continue
-        if job_id in scan_jobs:
+        # A scan within the deploy job only gates the release if it runs
+        # before the deploy step; a scan after ``kubectl apply`` doesn't.
+        if _job_scans_before_deploy(job):
             continue
         if not _has_scan_ancestor(job_id, jobs_map, scan_jobs):
             deploy_jobs_without_scan.append(job_id)

@@ -128,6 +128,19 @@ _DOTENV_WRITE_RE = re.compile(
     re.VERBOSE,
 )
 
+# ``printf "NAME=%s" "$VAR" > file`` — the key is inside the format
+# string, the tainted value is a following argument.
+_DOTENV_PRINTF_RE = re.compile(
+    r"""
+    printf\s+
+    ["'][^"'\n]*?(?P<name>[A-Za-z_][A-Za-z0-9_]*)=[^"'\n]*["']
+    (?P<val>[^|;&>\n]*)
+    >>?\s*
+    (?P<file>[^\s|;&]+)
+    """,
+    re.VERBOSE,
+)
+
 
 def _extract_dotenv_writes(script_line: str) -> list[tuple[str, str, str]]:
     """Return ``[(var_name, rhs_value, target_file), ...]`` for *script_line*.
@@ -137,12 +150,13 @@ def _extract_dotenv_writes(script_line: str) -> list[tuple[str, str, str]]:
     multi-line scripts still get fully covered.
     """
     out: list[tuple[str, str, str]] = []
-    for m in _DOTENV_WRITE_RE.finditer(script_line):
-        name = m.group("name")
-        val = m.group("val")
-        target = m.group("file").strip()
-        if name and target:
-            out.append((name, val, target))
+    for pattern in (_DOTENV_WRITE_RE, _DOTENV_PRINTF_RE):
+        for m in pattern.finditer(script_line):
+            name = m.group("name")
+            val = m.group("val")
+            target = m.group("file").strip()
+            if name and target:
+                out.append((name, val, target))
     return out
 
 

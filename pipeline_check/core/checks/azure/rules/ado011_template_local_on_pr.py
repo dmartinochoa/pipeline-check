@@ -75,16 +75,19 @@ def check(path: str, doc: dict[str, Any]) -> Finding:
         )
     local_templates: list[str] = []
 
-    def _walk(node: Any) -> None:
+    def _walk(node: Any, in_inputs: bool = False) -> None:
         if isinstance(node, dict):
-            t = node.get("template")
-            if isinstance(t, str) and "@" not in t:
-                local_templates.append(t)
-            for v in node.values():
-                _walk(v)
+            # A ``template:`` inside a task ``inputs:`` mapping is a task
+            # input, not a pipeline template include, so don't flag it.
+            if not in_inputs:
+                t = node.get("template")
+                if isinstance(t, str) and "@" not in t:
+                    local_templates.append(t)
+            for k, v in node.items():
+                _walk(v, in_inputs=in_inputs or k == "inputs")
         elif isinstance(node, list):
             for v in node:
-                _walk(v)
+                _walk(v, in_inputs=in_inputs)
 
     _walk(doc)
     passed = not local_templates

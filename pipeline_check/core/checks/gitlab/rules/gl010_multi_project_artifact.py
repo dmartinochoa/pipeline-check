@@ -66,38 +66,50 @@ RULE = Rule(
 )
 
 
+def _job_verifies(job: dict[str, Any]) -> bool:
+    for line in job_scripts(job):
+        low = line.lower()
+        if (
+            "cosign verify" in low
+            or "sha256sum --check" in low
+            or "sha256sum -c" in low
+            or "gpg --verify" in low
+        ):
+            return True
+    return False
+
+
 def check(path: str, doc: dict[str, Any]) -> Finding:
-    ingests = False
-    verified = False
-    for _name, job in iter_jobs(doc):
+    any_ingesting = False
+    unverified: list[str] = []
+    for name, job in iter_jobs(doc):
         needs = job.get("needs")
-        if isinstance(needs, list):
-            for n in needs:
-                if isinstance(n, dict) and n.get("project") and n.get("artifacts"):
-                    ingests = True
-        for line in job_scripts(job):
-            low = line.lower()
-            if (
-                "cosign verify" in low
-                or "sha256sum --check" in low
-                or "sha256sum -c" in low
-                or "gpg --verify" in low
-            ):
-                verified = True
-    if not ingests:
+        ingests_here = isinstance(needs, list) and any(
+            isinstance(n, dict) and n.get("project") and n.get("artifacts")
+            for n in needs
+        )
+        if not ingests_here:
+            continue
+        any_ingesting = True
+        # The verification has to run in the same job that ingests the
+        # cross-project artifact; a ``cosign verify`` in an unrelated job
+        # (of a different artifact) doesn't protect this ingestion.
+        if not _job_verifies(job):
+            unverified.append(name)
+    if not any_ingesting:
         return Finding(
             check_id=RULE.id, title=RULE.title, severity=RULE.severity,
             resource=path,
             description="Pipeline does not pull artifacts from another project.",
             recommendation="No action required.", passed=True,
         )
-    passed = verified
+    passed = not unverified
     desc = (
         "Multi-project artifact ingestion is paired with a verification step."
         if passed else
-        "Pipeline pulls artifacts from another project via "
-        "`needs: { project: ..., artifacts: true }` but no signature "
-        "or checksum verification step is present. If the upstream "
+        f"{len(unverified)} job(s) pull artifacts from another project via "
+        f"`needs: {{ project: ..., artifacts: true }}` but run no signature "
+        f"or checksum verification: {', '.join(unverified)}. If the upstream "
         "project accepts MR pipelines, the artifact may have been "
         "built by attacker-controlled code."
     )

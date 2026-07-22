@@ -21,9 +21,12 @@ RULE = Rule(
     ),
     docs_note=(
         "Inspects every ``aws_lambda_permission`` resource. Fires "
-        "when ``principal`` is ``\"*\"`` or any other wildcard form. "
-        "A wildcard invoker exposes the function — and whatever role "
-        "it executes with — to the whole internet."
+        "when ``principal`` is exactly ``\"*\"`` and the permission "
+        "carries no ``source_account`` / ``source_arn`` scoping "
+        "condition. (The Lambda API rejects wildcard ARN principals "
+        "like ``arn:aws:iam::*:root``, so only the bare ``\"*\"`` "
+        "reaches this rule.) A wildcard invoker exposes the function — "
+        "and whatever role it executes with — to the whole internet."
     ),
     exploit_example=(
         "# Vulnerable: any AWS account (or anonymous caller via\n"

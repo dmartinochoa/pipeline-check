@@ -32,7 +32,7 @@ RULE = Rule(
 )
 
 _DANGEROUS_PORTS = {22, 3389}
-_ANY_SOURCES = {"*", "internet", "0.0.0.0/0", "any"}
+_ANY_SOURCES = {"*", "internet", "0.0.0.0/0", "::/0", "any"}
 
 
 def _port_in_range(port: int, range_str: str) -> bool:

@@ -353,6 +353,7 @@ Build attestations are the canonical place for SLSA provenance and SBOM data on 
 
 - Intermediate / cache-only images pushed by CI for later-stage consumption may legitimately ship without attestations to keep build artifacts small. Suppress via ignore-file when this is the deliberate shape, the default expectation for any image that reaches a production registry is a full attestation set.
 - Some registries strip the attestation sub-manifests on pull (``docker pull`` of a single platform unwraps the index). If the JSON you're scanning came from ``docker manifest inspect`` rather than ``docker buildx imagetools inspect --raw``, attestations may be invisible even when present upstream.
+- A single-platform image can carry its provenance / SBOM as OCI 1.1 referrer artifacts or cosign attestations rather than index siblings. The scanner can't see referrers, so a genuinely-attested single-platform image still fires here; suppress via ignore-file when referrer-based attestation is the deliberate shape.
 
 <div class="pg-rule__rec" markdown>
 
@@ -396,7 +397,7 @@ Stamp ``org.opencontainers.image.created`` with the build timestamp (RFC 3339 / 
 <span class="pg-sev pg-sev--high">HIGH</span> <span class="pg-tag pg-tag--owasp">CICD-SEC-3</span> <span class="pg-tag pg-tag--owasp">CICD-SEC-9</span> <span class="pg-tag pg-tag--esf">ESF-S-PROVENANCE</span> <span class="pg-tag pg-tag--esf">ESF-S-IMMUTABLE</span> <span class="pg-tag pg-tag--cwe">CWE-494</span> <span class="pg-tag pg-tag--cwe">CWE-829</span>
 </div>
 
-A layer with a ``urls:`` field is fetched from whatever URL the manifest declares, not from the registry the image was pulled from. The digest is still verified after the fetch, so a passive attacker can't substitute a different blob, but an attacker who controls the URL endpoint can serve different content depending on the client (server-side cloaking) or simply take the endpoint offline to break image pulls. The rule fires on any layer whose descriptor includes a non-empty ``urls:`` array; it doesn't try to validate URL hygiene (HTTPS, allow-list of hosts) since the existence of the field alone is the policy violation.
+A layer with a ``urls:`` field is fetched from whatever URL the manifest declares, not from the registry the image was pulled from. The digest is still verified after the fetch, so a passive attacker can't substitute a different blob, but an attacker who controls the URL endpoint can serve different content depending on the client (server-side cloaking) or simply take the endpoint offline to break image pulls. The rule fires on any layer whose descriptor includes a non-empty ``urls:`` array, or whose ``mediaType`` is a foreign / nondistributable layer type (even with no ``urls`` field); it doesn't try to validate URL hygiene (HTTPS, allow-list of hosts) since either signal alone is the policy violation.
 
 **Known false-positive modes**
 

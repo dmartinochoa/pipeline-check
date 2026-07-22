@@ -215,6 +215,10 @@ def _insecure_cache() -> dict:
             {
                 "name": "bad-svc",
                 "ingress": "INGRESS_TRAFFIC_ALL",
+                # allUsers run.invoker = genuinely unauthenticated (GCRUN-001).
+                "iam_policy": [
+                    {"role": "roles/run.invoker", "members": ["allUsers"]},
+                ],
                 "template": {
                     "service_account": "",
                     "scaling": {"min_instance_count": 0},

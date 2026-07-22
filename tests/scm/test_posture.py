@@ -4881,3 +4881,73 @@ class TestOrgFanout:
         for _ in range(3):
             ctx = SCMContext.for_org("acme", self._fake())
             assert [snap.name for snap in ctx.repos] == ["alpha", "beta"]
+
+
+class TestAudit202607LowScm:
+    """2026-07 audit LOW findings on the SCM posture rules."""
+
+    def test_scm007_bare_boolean_force_push_fails(self):
+        snap = SCMRepoSnapshot(
+            owner="o", name="r", repo_meta={"default_branch": "main"},
+            default_branch_protection={"allow_force_pushes": True},
+        )
+        assert _by_id(_findings(snap), "SCM-007").passed is False
+
+    def test_scm009_bare_boolean_deletion_fails(self):
+        snap = SCMRepoSnapshot(
+            owner="o", name="r", repo_meta={"default_branch": "main"},
+            default_branch_protection={"allow_deletions": True},
+        )
+        assert _by_id(_findings(snap), "SCM-009").passed is False
+
+    def test_scm001_size0_with_languages_is_not_empty(self):
+        # A size-0 repo that has detected languages has content, so the
+        # empty-repo guard must not suppress SCM-001.
+        snap = SCMRepoSnapshot(
+            owner="o", name="r",
+            repo_meta={"default_branch": "main", "size": 0},
+            default_branch_protection=None,
+            repo_languages={"Python": 1234},
+        )
+        f = _by_id(_findings(snap), "SCM-001")
+        assert f.passed is False
+        assert "no protection rule" in f.description
+
+    def test_scm001_size0_no_languages_still_treated_empty(self):
+        snap = SCMRepoSnapshot(
+            owner="o", name="r",
+            repo_meta={"default_branch": "main", "size": 0},
+            default_branch_protection=None,
+        )
+        assert _by_id(_findings(snap), "SCM-001").passed is True
+
+
+class TestAudit202607LowScmC2:
+    """2026-07 audit LOW findings (scm_c2 chunk)."""
+
+    def test_scm027_role_name_only_elevated_collaborator(self):
+        snap = SCMRepoSnapshot(
+            owner="o", name="r", repo_meta={"default_branch": "main"},
+            outside_collaborators=[
+                {"login": "contractor-alice", "role_name": "write"},
+                {"login": "contractor-bob", "role_name": "admin"}])
+        assert _by_id(_findings(snap), "SCM-027").passed is False
+        readonly = SCMRepoSnapshot(
+            owner="o", name="r", repo_meta={"default_branch": "main"},
+            outside_collaborators=[{"login": "x", "role_name": "read"}])
+        assert _by_id(_findings(readonly), "SCM-027").passed is True
+
+    def test_scm030_exploit_example_vulnerable_half_fires(self):
+        import json
+        import re
+
+        from pipeline_check.core.checks.scm.rules import (
+            scm030_ruleset_always_bypass as s30,
+        )
+        vuln = s30.RULE.exploit_example.split("# Safe")[0]
+        ruleset = json.loads(re.search(r"\{.*\}", vuln, re.DOTALL).group(0))
+        ruleset["enforcement"] = "active"
+        snap = SCMRepoSnapshot(owner="o", name="r",
+                               repo_meta={"default_branch": "main"},
+                               rulesets=[ruleset])
+        assert _by_id(_findings(snap), "SCM-030").passed is False

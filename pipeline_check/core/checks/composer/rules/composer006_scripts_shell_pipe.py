@@ -78,7 +78,8 @@ _DOWNLOAD_RE = re.compile(
     re.IGNORECASE,
 )
 _PIPE_TO_SHELL_RE = re.compile(
-    r"\|\s*(sh|bash|zsh|ash|dash|php|python(?:3)?|node|iex)\b",
+    r"\|\s*(?:(?:sudo|env|command|exec)\s+)*"
+    r"(sh|bash|zsh|ash|dash|php|python(?:3)?|node|iex|powershell|pwsh)\b",
     re.IGNORECASE,
 )
 

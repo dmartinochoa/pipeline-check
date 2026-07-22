@@ -150,17 +150,20 @@ class TestRun001:
 # ── RUN-002: privileged trigger exercised ────────────────────────────────
 
 class TestRun002:
-    def test_fires_and_counts_by_event(self):
+    def test_reports_privileged_trigger_context(self):
         ctx = _ctx(
             _run(1, "pull_request_target", fork=False),
             _run(2, "workflow_run", fork=False),
             _run(3, "push"),
         )
-        failing = [f for f in _for(_findings(ctx), "RUN-002") if not f.passed]
-        assert len(failing) == 1
-        assert failing[0].severity == Severity.MEDIUM
-        assert "pull_request_target=1" in failing[0].description
-        assert "workflow_run=1" in failing[0].description
+        run002 = _for(_findings(ctx), "RUN-002")
+        # Informational/context now (2026-07 audit LOW FP): it surfaces the
+        # counts but does not fail a repo that legitimately uses these
+        # triggers; the actionable fork case is RUN-001.
+        assert run002 and all(f.passed for f in run002)
+        desc = run002[0].description
+        assert "pull_request_target=1" in desc
+        assert "workflow_run=1" in desc
 
     def test_passes_when_no_privileged_triggers(self):
         ctx = _ctx(_run(1, "push"), _run(2, "pull_request"))
@@ -332,12 +335,23 @@ class TestRun004ForkOidcMint:
         run004 = _for(_findings(ctx), "RUN-004")
         assert run004 and all(f.passed for f in run004)
 
-    def test_aws_and_gcp_markers_also_detected(self):
-        for marker in ("AssumeRoleWithWebIdentity", "workloadIdentityPools",
-                       "ACTIONS_ID_TOKEN_REQUEST_URL"):
+    def test_aws_and_gcp_exchange_markers_detected(self):
+        # Only an actual cloud-federation token exchange counts as a mint.
+        for marker in ("AssumeRoleWithWebIdentity", "workloadIdentityPools"):
             run = _run(1, "pull_request_target", fork=True)
             ctx = self._ctx_with_log(run, f"step\n{marker}\n")
             assert ctx.oidc_mint_runs == {1}, marker
+
+    def test_env_dump_markers_alone_not_a_mint(self):
+        # The issuer host / ACTIONS_ID_TOKEN_REQUEST_* env vars appear in
+        # any id-token:write job that prints its environment; on their own
+        # they do NOT indicate a token exchange (2026-07 audit LOW FP).
+        for marker in ("token.actions.githubusercontent.com",
+                       "ACTIONS_ID_TOKEN_REQUEST_URL=https://x/y",
+                       "ACTIONS_ID_TOKEN_REQUEST_TOKEN=abc"):
+            run = _run(1, "pull_request_target", fork=True)
+            ctx = self._ctx_with_log(run, f"env\n{marker}\n")
+            assert ctx.oidc_mint_runs == set(), marker
 
 
 # ── RUN-005: fork run on a self-hosted runner (--audit-runs-logs) ────────────

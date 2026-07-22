@@ -149,6 +149,15 @@ def _scan_value(value: Any, key_path: str, hits: list[str]) -> None:
     if isinstance(value, dict):
         for k, v in value.items():
             child = f"{key_path}.{k}" if key_path else str(k)
+            # A zero-width / bidi char smuggled into a key (an env var
+            # name, job id, or with-input name) is the same Trojan-Source
+            # shape, so scan the key string itself, not just its value.
+            if isinstance(k, str):
+                key_cps = [hex(ord(c)) for c in k if c in _SUSPICIOUS]
+                if key_cps:
+                    preview = ", ".join(key_cps[:3])
+                    suffix = "..." if len(key_cps) > 3 else ""
+                    hits.append(f"{child} (key) ({preview}{suffix})")
             _scan_value(v, child, hits)
         return
     if isinstance(value, list):

@@ -66,14 +66,18 @@ _EVAL_CMDSUB_VAR_RE = re.compile(
 )
 
 # ``sh -c "$X"`` / ``bash -c "$X"`` / ``sh -c $X``, re-invoke shell
-# on a variable. Same risk category as eval.
+# on a variable. Same risk category as eval. ``_VAR`` matches a ``$``
+# that begins a variable expansion but not a positional / special
+# parameter (``$@ $# $* $? $$ $! $0-$9`` — never injectable, and ``$@``
+# is the documented-safe ``exec "$@"`` idiom) nor a ``$(`` command sub.
+_VAR = r"\$(?![(@#*?$!0-9])"
 _SHELL_DASH_C_VAR_RE = re.compile(
     r"\b(?:ba)?sh\s+-c\s+"
-    r"(?:\"[^\"]*\$(?!\()[^\"]*\""           # sh -c "…$X…"
-    r"|'[^']*\$(?!\()[^']*'"                 # sh -c '…$X…' (re-parse expands)
-    r"|\$(?!\()\w+"                          # sh -c $X
+    rf"(?:\"[^\"]*{_VAR}[^\"]*\""            # sh -c "…$X…"
+    rf"|'[^']*{_VAR}[^']*'"                  # sh -c '…$X…' (re-parse expands)
+    rf"|{_VAR}\w+"                           # sh -c $X
     r"|\$\{\w+\}"                            # sh -c ${X}
-    r"|\"?\$\([^)]*\$(?!\()[^)]*\)\"?)"      # sh -c $(cmd $VAR) / "$(cmd $VAR)"
+    rf"|\"?\$\([^)]*{_VAR}[^)]*\)\"?)"       # sh -c $(cmd $VAR) / "$(cmd $VAR)"
 )
 
 # Backtick command substitution containing a variable expansion.

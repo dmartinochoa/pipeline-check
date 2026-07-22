@@ -128,6 +128,20 @@ class TestMVN016:
         f = _run_gradle(text, "MVN-016", path="build.gradle.kts")
         assert not f.passed
 
+    def test_fires_on_kotlin_lazy_set_form(self):
+        # The Gradle lazy-property setter ``.set(true)`` was missed
+        # (2026-07 audit LOW FN).
+        text = (
+            "repositories {\n"
+            "  maven {\n"
+            "    url = uri(\"http://repo.internal/maven\")\n"
+            "    allowInsecureProtocol.set(true)\n"
+            "  }\n"
+            "}\n"
+        )
+        f = _run_gradle(text, "MVN-016", path="build.gradle.kts")
+        assert not f.passed
+
     def test_passes_when_absent(self):
         text = "repositories {\n  mavenCentral()\n}\n"
         f = _run_gradle(text, "MVN-016")

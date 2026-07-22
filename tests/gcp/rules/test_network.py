@@ -231,3 +231,14 @@ class TestGCNET005:
         findings = gcnet005_cloud_nat.check(cat)
         assert len(findings) == 1
         assert findings[0].passed is False
+
+
+class TestAudit202607Gcnet003Numeric:
+    """GCNET-003 recognizes the numeric IP protocol 6 (TCP)."""
+
+    def test_numeric_tcp_protocol_open_ssh_fires(self, make_catalog):
+        cat = make_catalog(**{"network:firewalls": [{
+            "direction": "INGRESS", "source_ranges": ["0.0.0.0/0"],
+            "allowed": [{"protocol": "6", "ports": ["22"]}]}]})
+        fs = [f for f in gcnet003_open_ssh_rdp.check(cat) if f.passed is False]
+        assert fs

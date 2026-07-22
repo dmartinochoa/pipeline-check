@@ -88,8 +88,10 @@ def _is_github_script_step(step: dict[str, Any]) -> bool:
     uses = step.get("uses")
     if not isinstance(uses, str):
         return False
+    # GitHub action refs are case-insensitive, so ``Actions/github-script``
+    # resolves to the same action.
     head = uses.split("@", 1)[0]
-    return head == "actions/github-script"
+    return head.lower() == "actions/github-script"
 
 
 def check(path: str, doc: dict[str, Any]) -> Finding:

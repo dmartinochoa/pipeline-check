@@ -401,9 +401,11 @@ class TestBitbucketHydration:
                 f"{cid} should pass on fully-protected Bitbucket repo "
                 f"({findings[cid].description})"
             )
-        # SCM-006 always fires on Bitbucket — the platform has no
-        # per-branch signed-commit enforcement. Document that.
-        assert not findings["SCM-006"].passed
+        # SCM-006 is skipped on Bitbucket: the platform has no per-branch
+        # signed-commit enforcement, so the rule is non-actionable there
+        # (2026-07 audit LOW FP; previously it failed every Bitbucket repo).
+        assert findings["SCM-006"].passed
+        assert "not applicable" in findings["SCM-006"].description
 
     def test_bitbucket_codeowners_prefers_bitbucket_path(self):
         """``.bitbucket/CODEOWNERS`` is the platform-preferred path

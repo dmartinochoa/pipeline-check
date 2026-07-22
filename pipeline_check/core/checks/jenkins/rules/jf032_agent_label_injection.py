@@ -49,13 +49,13 @@ RULE = Rule(
         "a rationale rather than disable the rule everywhere.",
     ),
     exploit_example=(
-        "// Vulnerable: ``agent { label \"${env.LABEL_PARAM}\" }``\n"
-        "// or ``agent { label \"$JOB_BASE_NAME\" }`` lets the\n"
-        "// pusher pick which agent runs the job. A branch /\n"
+        "// Vulnerable: ``agent { label \"${env.CHANGE_BRANCH}\" }``\n"
+        "// (or a ``${params.LABEL}`` ref) lets the PR author / build\n"
+        "// triggerer pick which agent runs the job. A branch /\n"
         "// PR named after a privileged label routes the build\n"
         "// to an agent it was never meant to reach.\n"
         "pipeline {\n"
-        "  agent { label \"${env.JOB_BASE_NAME}\" }\n"
+        "  agent { label \"${env.CHANGE_BRANCH}\" }\n"
         "  stages {\n"
         "    stage('deploy') { steps { sh './deploy.sh' } }\n"
         "  }\n"

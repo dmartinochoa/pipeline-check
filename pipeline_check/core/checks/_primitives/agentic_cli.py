@@ -15,8 +15,12 @@ from __future__ import annotations
 
 import re
 
+# The agent name must be in command position: the ``(?<![\w./-])``
+# look-behind excludes an identifier / path char before it, so a
+# hyphenated filename (``run-gemini-benchmark.py``) or a path
+# (``./gemini``) doesn't match, only a standalone command invocation.
 AGENTIC_CLI_RE = re.compile(
-    r"\b(?:claude|gemini|q\s+chat|cursor-agent|aider|openhands|goose)\b",
+    r"(?<![\w./-])(?:claude|gemini|q\s+chat|cursor-agent|aider|openhands|goose)\b",
     re.IGNORECASE,
 )
 

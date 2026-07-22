@@ -61,7 +61,10 @@ RULE = Rule(
 # trigger. Allow leading ``-E`` / ``-H`` flag forms and a typical
 # ``sudo command`` shape, but not ``visudo`` (that's the editor for
 # the sudoers file itself, which is a legitimate package-config use).
-_SUDO_RE = re.compile(r"(?:^|[\s|;&])sudo(?:\s+-?\w+)*\s+\S", re.MULTILINE)
+# ``sudo`` must sit at a command position (line start or after a shell
+# separator ``| ; &``), so a mention inside an echoed string
+# (``echo "use sudo apt-get"``) isn't read as an invocation.
+_SUDO_RE = re.compile(r"(?:^|[|;&])\s*sudo(?:\s+-?\w+)*\s+\S", re.MULTILINE)
 
 
 def check(df: Dockerfile) -> Finding:

@@ -53,9 +53,12 @@ def check(catalog: ResourceCatalog) -> list[Finding]:
         sts_failed = True
     for repo in catalog.codecommit_repositories():
         name = repo.get("repositoryName", "<unnamed>")
-        # When STS failed, derive the account from the repository ARN
-        # (list_repositories includes cloneUrlHttp / ARN fields; fall back
-        # gracefully if none are present).
+        # When STS failed we have no reliable source for the owning
+        # account: ``list_repositories`` returns only repositoryName /
+        # repositoryId (no ARN), so ``repositoryArn`` is virtually always
+        # absent and the per-repo triggers fall through to the degraded
+        # "cannot verify" branch below. Best-effort only, in case a
+        # richer payload ever carries the ARN.
         effective_self = self_account
         if sts_failed and not effective_self:
             effective_self = _account_from_arn(repo.get("repositoryArn", ""))

@@ -158,9 +158,17 @@ def check(snapshot: SCMRepoSnapshot) -> Finding:
     offenders: list[str] = []
     for user in collabs:
         perms = user.get("permissions")
-        if not isinstance(perms, dict):
-            continue
-        level = _elevated_level(perms)
+        if isinstance(perms, dict):
+            level = _elevated_level(perms)
+        else:
+            # Partial payloads may carry only ``role_name``; treat an
+            # elevated role there as the access level rather than
+            # silently claiming the collaborator is read-only.
+            role = user.get("role_name")
+            level = (
+                role if isinstance(role, str)
+                and role in ("write", "maintain", "admin") else None
+            )
         if level is None:
             continue
         login = user.get("login")

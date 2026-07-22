@@ -12,10 +12,9 @@ RULE = Rule(
     owasp=("CICD-SEC-9",),
     cwe=("CWE-284",),
     recommendation=(
-        "Remove allUsers, allAuthenticatedUsers, and overly broad "
-        "domain-scoped members from KMS key ring IAM policies. "
-        "Restrict key access to specific service accounts that need "
-        "encrypt/decrypt/sign operations."
+        "Remove allUsers and allAuthenticatedUsers from KMS key ring "
+        "IAM policies. Restrict key access to specific service accounts "
+        "that need encrypt/decrypt/sign operations."
     ),
     docs_note=(
         "KMS key ring IAM policies govern access to every key in "

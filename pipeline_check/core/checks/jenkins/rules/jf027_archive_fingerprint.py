@@ -4,7 +4,11 @@ from __future__ import annotations
 from ...base import Finding, Severity
 from ...rule import Rule
 from ..base import Jenkinsfile
-from ._helpers import ARCHIVE_ARTIFACTS_RE, FINGERPRINT_TRUE_RE
+from ._helpers import (
+    ARCHIVE_ARTIFACTS_RE,
+    FINGERPRINT_STEP_RE,
+    FINGERPRINT_TRUE_RE,
+)
 
 RULE = Rule(
     id="JF-027",
@@ -41,7 +45,12 @@ def check(jf: Jenkinsfile) -> Finding:
             description="Pipeline does not archive any artifacts.",
             recommendation="No action required.", passed=True,
         )
-    passed = bool(FINGERPRINT_TRUE_RE.search(text))
+    # Accept either the ``fingerprint: true`` map arg on archiveArtifacts
+    # or a standalone ``fingerprint '<glob>'`` step, both of which record
+    # the artifact digest.
+    passed = bool(
+        FINGERPRINT_TRUE_RE.search(text) or FINGERPRINT_STEP_RE.search(text)
+    )
     desc = (
         "``archiveArtifacts`` is paired with ``fingerprint: true``."
         if passed else

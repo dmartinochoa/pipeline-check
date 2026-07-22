@@ -278,6 +278,10 @@ class TestHELM004:
         "1.x",
         "*",
         "1.2.3 || 1.2.4",
+        # Two- / one-component versions are Masterminds ranges, not pins
+        # (2026-07 audit LOW FN).
+        "1.2",
+        "1",
     ])
     def test_range_or_wildcard_fails(self, ver):
         deps = [{"name": "redis", "version": ver}]

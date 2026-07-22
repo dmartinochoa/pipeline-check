@@ -395,6 +395,19 @@ class TestHarness007HostPathMount:
                if not f.passed]
         assert out == []
 
+    def test_etc_certs_subpath_is_exempt(self, tmp_path):
+        # A narrow read-only cert subpath under /etc is a benign
+        # CA-injection pattern, not a host-config escape (2026-07 audit).
+        text = _HOSTPATH.replace("/var/run/docker.sock", "/etc/ssl/certs")
+        out = [f for f in _for(_findings(_ctx(tmp_path, text)), "HARNESS-007")
+               if not f.passed]
+        assert out == []
+        # mounting /etc itself still fires
+        broad = _HOSTPATH.replace("/var/run/docker.sock", "/etc")
+        out2 = [f for f in _for(_findings(_ctx(tmp_path, broad)), "HARNESS-007")
+                if not f.passed]
+        assert len(out2) == 1
+
 
 _AI = """\
 pipeline:
@@ -810,3 +823,42 @@ pipeline:
     def test_empty_timeout_string_still_flags(self, tmp_path):
         # timeout: "" is the key present but value unset -> Harness default.
         assert self._failing(tmp_path, self._EMPTY_TIMEOUT)
+
+    _TWO_IDLESS_STAGES = """\
+pipeline:
+  identifier: build
+  stages:
+    - stage:
+        type: CI
+        timeout: 1h
+        spec:
+          execution:
+            steps:
+              - step:
+                  type: Run
+                  identifier: bounded
+                  spec:
+                    command: make a
+    - stage:
+        type: CI
+        spec:
+          execution:
+            steps:
+              - step:
+                  type: Run
+                  identifier: unbounded
+                  spec:
+                    command: make b
+"""
+
+    def test_idless_stage_timeout_not_misattributed(self, tmp_path):
+        # Two id-less stages both fall back to the label "stage"; a
+        # stage_id-keyed map used to let the second stage's missing
+        # timeout overwrite the first's 1h bound, flagging the bounded
+        # step (2026-07 audit LOW FP).
+        out = self._failing(tmp_path, self._TWO_IDLESS_STAGES)
+        assert len(out) == 1
+        # Only the truly-unbounded step is flagged; the 1h-bounded one is
+        # not ("stage/bounded" is not a substring of "stage/unbounded").
+        assert "stage/unbounded" in out[0].description
+        assert "stage/bounded" not in out[0].description

@@ -70,21 +70,28 @@ _NON_RANGE_PREFIXES: tuple[str, ...] = (
 
 _FLOATING_PREFIX_RE = re.compile(r"^[\^~*><]|^\|\|")
 # npm semver wildcard token: a bare ``x`` / ``X`` in one of the
-# version-number positions (``1.x``, ``1.2.X``, ``1.x.x``, or bare
-# ``x``). Equivalent to a caret range, so floating. Anchored at
-# ``.`` boundaries to avoid matching ``alpha.x`` pre-release tails.
-_FLOATING_WILDCARD_RE = re.compile(r"(?:^|\.)[xX](?:\.|$)")
+# version-number positions (``1.x``, ``1.2.X``, ``1.x.x``, ``x.y``, or
+# bare ``x``). Equivalent to a caret range, so floating. The ``x`` must
+# sit in a numeric version position (bare, at the start before a ``.``,
+# or after a digit-and-dot) so a pre-release / build tail like
+# ``1.2.3-alpha.x`` or ``1.2.3+build.x`` is NOT mistaken for a wildcard.
+_FLOATING_WILDCARD_RE = re.compile(r"^[xX]$|^[xX]\.|\d\.[xX](?:\.|$)")
 
 
 def _is_floating(spec: str) -> bool:
     stripped = spec.strip()
     if not stripped:
-        return False
+        # An empty spec resolves to "*" (any version) in npm.
+        return True
     if stripped.startswith(_NON_RANGE_PREFIXES):
         return False
     if stripped.lower() in _MUTABLE_TAGS:
         return True
     if _FLOATING_PREFIX_RE.match(stripped):
+        return True
+    # Hyphen range (``1.2.3 - 2.3.4``) and union range
+    # (``1.0.0 || 2.0.0``) let npm pick a later version too.
+    if " - " in stripped or "||" in stripped:
         return True
     return bool(_FLOATING_WILDCARD_RE.search(stripped))
 
