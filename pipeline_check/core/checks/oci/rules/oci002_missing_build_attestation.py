@@ -50,6 +50,12 @@ RULE = Rule(
         "``docker manifest inspect`` rather than "
         "``docker buildx imagetools inspect --raw``, attestations "
         "may be invisible even when present upstream.",
+        "A single-platform image can carry its provenance / SBOM as "
+        "OCI 1.1 referrer artifacts or cosign attestations rather "
+        "than index siblings. The scanner can't see referrers, so a "
+        "genuinely-attested single-platform image still fires here; "
+        "suppress via ignore-file when referrer-based attestation is "
+        "the deliberate shape.",
     ),
     exploit_example=(
         "# Vulnerable: the image index ships per-architecture\n"

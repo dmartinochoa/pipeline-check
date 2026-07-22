@@ -76,8 +76,13 @@ def _tainted_vars(variables_block: Any) -> set[str]:
 
 
 def _gl_ref_pattern(name: str) -> str:
-    """Match GitLab shell reference syntax for *name*: ``$VAR`` / ``${VAR}``."""
-    return rf"\$\{{?{re.escape(name)}\}}?"
+    """Match GitLab shell reference syntax for *name*: ``$VAR`` / ``${VAR}``.
+
+    The trailing ``(?![A-Za-z0-9_])`` boundary keeps a tainted name that
+    is a prefix of a clean one (``$TITLE`` vs the sanitized
+    ``$TITLE_SAFE``) from matching the clean reference.
+    """
+    return rf"\$\{{?{re.escape(name)}\}}?(?![A-Za-z0-9_])"
 
 
 def check(path: str, doc: dict[str, Any]) -> Finding:

@@ -100,13 +100,18 @@ def _step_pushes_image(step: dict[str, Any]) -> bool:
                 return True
             if tail and tail[0] == "imagetools" and "push" in tail:
                 return True
-    # Shell-builder fallback: rejoin args and run the blob regex
-    # over the combined text. Catches ``ubuntu`` / ``alpine``
-    # builders whose script invokes docker.
+    # Shell-builder fallback: rejoin args (and the ``script:`` field, a
+    # documented step form) and run the blob regex over the combined
+    # text. Catches ``ubuntu`` / ``alpine`` builders whose script
+    # invokes docker.
+    parts: list[str] = []
     if isinstance(args, list):
-        joined = " ".join(a for a in args if isinstance(a, str))
-        if _DOCKER_PUSH_BLOB_RE.search(joined):
-            return True
+        parts.extend(a for a in args if isinstance(a, str))
+    script = step.get("script")
+    if isinstance(script, str):
+        parts.append(script)
+    if parts and _DOCKER_PUSH_BLOB_RE.search(" ".join(parts)):
+        return True
     return False
 
 

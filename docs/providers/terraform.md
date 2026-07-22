@@ -513,7 +513,7 @@ Pin ``environment[0].image`` by ``@sha256:<digest>`` rather than a mutable tag. 
 <span class="pg-sev pg-sev--high">HIGH</span> <span class="pg-tag pg-tag--owasp">CICD-SEC-4</span> <span class="pg-tag pg-tag--cwe">CWE-863</span>
 </div>
 
-Reads ``aws_codebuild_webhook.filter_group[*].filter[*]``. For each group that covers a ``PULL_REQUEST_*`` event, fires when no sibling ``ACTOR_ACCOUNT_ID`` filter constrains the PR author.
+Reads ``aws_codebuild_webhook.filter_group[*].filter[*]``. For each group that covers a pre-merge pull-request event (``PULL_REQUEST_CREATED``, ``PULL_REQUEST_UPDATED``, or ``PULL_REQUEST_REOPENED`` — the ones a fork author triggers), fires when no sibling ``ACTOR_ACCOUNT_ID`` filter constrains the PR author. ``PULL_REQUEST_MERGED`` runs post-merge on the base branch, so it isn't treated as a fork-controlled event.
 
 <div class="pg-rule__rec" markdown>
 
@@ -633,7 +633,7 @@ Enable ``auto_rollback_configuration`` with at least the ``DEPLOYMENT_FAILURE`` 
 <span class="pg-sev pg-sev--high">HIGH</span> <span class="pg-tag pg-tag--owasp">CICD-SEC-1</span> <span class="pg-tag pg-tag--cwe">CWE-754</span>
 </div>
 
-Reads ``aws_codedeploy_deployment_group.deployment_config_name``. Fires when the value is ``CodeDeployDefault.AllAtOnce``, ``LambdaAllAtOnce``, or ``ECSAllAtOnce`` — these route every request to the new revision simultaneously, leaving no canary validation window.
+Reads ``aws_codedeploy_deployment_group.deployment_config_name``. Fires when the value is a managed all-at-once config (``CodeDeployDefault.AllAtOnce``, ``LambdaAllAtOnce``, ``ECSAllAtOnce``) or a custom ``aws_codedeploy_deployment_config`` in the same plan that is semantically all-at-once (``minimum_healthy_hosts`` value 0, or a ``traffic_routing_config`` of type ``AllAtOnce``). These route every request to the new revision simultaneously, leaving no canary validation window.
 
 <div class="pg-rule__rec" markdown>
 
@@ -1353,7 +1353,7 @@ Move secrets to Secrets Manager or SSM Parameter Store and read them at function
 <span class="pg-sev pg-sev--critical">CRITICAL</span> <span class="pg-tag pg-tag--owasp">CICD-SEC-8</span> <span class="pg-tag pg-tag--cwe">CWE-732</span>
 </div>
 
-Inspects every ``aws_lambda_permission`` resource. Fires when ``principal`` is ``"*"`` or any other wildcard form. A wildcard invoker exposes the function — and whatever role it executes with — to the whole internet.
+Inspects every ``aws_lambda_permission`` resource. Fires when ``principal`` is exactly ``"*"`` and the permission carries no ``source_account`` / ``source_arn`` scoping condition. (The Lambda API rejects wildcard ARN principals like ``arn:aws:iam::*:root``, so only the bare ``"*"`` reaches this rule.) A wildcard invoker exposes the function — and whatever role it executes with — to the whole internet.
 
 <div class="pg-rule__rec" markdown>
 

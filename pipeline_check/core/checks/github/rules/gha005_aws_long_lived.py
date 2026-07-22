@@ -153,7 +153,9 @@ def check(path: str, doc: dict[str, Any]) -> Finding:
             if isinstance(uses, str) and uses.startswith(
                 "aws-actions/configure-aws-credentials@"
             ):
-                w = step.get("with") or {}
+                w = step.get("with")
+                if not isinstance(w, dict):
+                    w = {}
                 if "role-to-assume" in w:
                     oidc_role = True
                 if "aws-access-key-id" in w or "aws-secret-access-key" in w:

@@ -13,8 +13,9 @@ RULE = Rule(
     cwe=("CWE-778",),
     recommendation=(
         "Configure the project IAM policy's auditConfigs to enable "
-        "Data Access audit logs for allServices. At minimum, enable "
-        "ADMIN_READ and DATA_WRITE log types."
+        "Data Access audit logs for allServices with all three log "
+        "types (ADMIN_READ, DATA_WRITE, DATA_READ) and no exempted "
+        "members."
     ),
     docs_note=(
         "Admin Activity logs are always on, but Data Access logs "
@@ -46,6 +47,11 @@ def check(catalog: ResourceCatalog) -> list[Finding]:
                 lc.get("log_type") for lc in ac.get("audit_log_configs", [])
             }
             missing = _REQUIRED_LOG_TYPES - log_types
+            exempted = sorted({
+                m
+                for lc in ac.get("audit_log_configs", [])
+                for m in (lc.get("exempted_members") or [])
+            })
             if missing:
                 findings.append(Finding(
                     check_id=RULE.id,
@@ -57,6 +63,21 @@ def check(catalog: ResourceCatalog) -> list[Finding]:
                         f"log types: {sorted(missing)}. All three types "
                         "(ADMIN_READ=1, DATA_WRITE=2, DATA_READ=3) "
                         "should be enabled."
+                    ),
+                    recommendation=RULE.recommendation,
+                    passed=False,
+                ))
+            elif exempted:
+                findings.append(Finding(
+                    check_id=RULE.id,
+                    title=RULE.title,
+                    severity=RULE.severity,
+                    resource=f"projects/{catalog.session.project_id}",
+                    description=(
+                        "allServices audit config enables all log types "
+                        "but exempts members from logging: "
+                        f"{exempted}. Exempted principals bypass Data "
+                        "Access logging entirely."
                     ),
                     recommendation=RULE.recommendation,
                     passed=False,

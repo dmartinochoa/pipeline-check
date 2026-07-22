@@ -97,8 +97,18 @@ def _reference_matches(ref: str, name: str, arn: str) -> bool:
     if ref in (name, arn):
         return True
     if ref.startswith("arn:") and ":secret:" in ref:
-        friendly = _arn_friendly_name(ref)
-        return friendly == name or friendly == _arn_friendly_name(arn)
+        # Don't blanket-strip the reference: a name whose last segment is
+        # 6 alnum chars (``my-secret`` -> ``-secret``) would be mangled to
+        # ``my``. Compare the raw ``:secret:`` tail first (a reference
+        # usually omits AWS's random suffix), then fall back to a strip
+        # only when the tail actually carries one.
+        ref_tail = ref.split(":secret:", 1)[1]
+        friendly_arn = _arn_friendly_name(arn)
+        if ref_tail in (name, friendly_arn):
+            return True
+        if _ARN_SUFFIX_RE.search(ref_tail):
+            stripped = _ARN_SUFFIX_RE.sub("", ref_tail)
+            return stripped in (name, friendly_arn)
     return False
 
 

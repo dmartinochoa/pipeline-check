@@ -3,17 +3,20 @@ on: pull_request_target
 permissions:
   contents: read
 jobs:
-  review-and-build:
+  gate-and-build:
     runs-on: ubuntu-latest
     steps:
-      # Snapshot of the head SHA at workflow-start time. Used by the
-      # downstream gate to decide whether to run.
-      - id: snap
-        run: echo "sha=${{ github.event.pull_request.head.sha }}" >> "$GITHUB_OUTPUT"
-      - name: Review gate
-        run: ./review-gate.sh "${{ steps.snap.outputs.sha }}"
-      # Race: a contributor force-push between the snapshot and this
-      # checkout lets the build run code that bypassed the gate.
+      # LIVE read: gh pr view fetches the CURRENT head, which a
+      # contributor can force-push after this gate runs.
+      - id: gate
+        env:
+          PR: ${{ github.event.number }}
+        run: |
+          LIVE=$(gh pr view "$PR" --json headRefOid -q .headRefOid)
+          ./review-gate.sh "$LIVE"
+      # Second, independent read: the checkout pins to the payload SHA.
+      # A force-push between the live read and this fetch desyncs the
+      # gate decision from what actually gets built.
       - uses: actions/checkout@692973e3d937129bcbf40652eb9f2f61becf3332
         with:
           ref: ${{ github.event.pull_request.head.sha }}

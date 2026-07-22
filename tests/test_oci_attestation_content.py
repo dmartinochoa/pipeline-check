@@ -1464,3 +1464,40 @@ class TestATTEST007:
         a6_findings = [f for f in findings if f.check_id == "ATTEST-006"]
         assert len(a6_findings) == 1
         assert not a6_findings[0].passed
+
+
+class TestAudit202607LowOci:
+    """2026-07 audit LOW findings on the OCI / attestation rules."""
+
+    def test_attest007_scalar_packages_does_not_crash(self):
+        # A non-list ``packages`` / ``components`` used to raise TypeError
+        # inside len(), aborting the whole OCI scan (no _guard_check here).
+        att = _att({"packages": 5}, pt="https://spdx.dev/Document")
+        assert a7._missing_per_attestation(att)[2] == 0
+        att = _att({"components": True}, pt="https://cyclonedx.org/bom/1.5")
+        assert a7._missing_per_attestation(att)[2] == 0
+
+    def test_attest002_scp_style_git_uri_is_valid(self):
+        assert a2._classify_uri("git@github.com:owner/repo.git") == "ok"
+        assert a2._classify_uri("github.com") == "malformed"
+
+    def test_attest002_v1_digest_must_be_on_the_source_dependency(self):
+        # A base-image dep's digest must not stand in for an unpinned
+        # source-repo entry.
+        pred = {"buildDefinition": {
+            "externalParameters": {
+                "source": {"uri": "git+https://github.com/owner/repo"}},
+            "resolvedDependencies": [
+                {"uri": "pkg:docker/ubuntu@22.04", "digest": {"sha256": "a"}},
+                {"uri": "git+https://github.com/owner/repo"},
+            ],
+        }}
+        uri, digest = a2._v1_source(pred)
+        assert uri == "git+https://github.com/owner/repo"
+        assert digest is None
+        # when the source entry itself is pinned, its digest is taken
+        pred["buildDefinition"]["resolvedDependencies"][1]["digest"] = {
+            "sha1": "b",
+        }
+        _, digest2 = a2._v1_source(pred)
+        assert digest2 == "b"

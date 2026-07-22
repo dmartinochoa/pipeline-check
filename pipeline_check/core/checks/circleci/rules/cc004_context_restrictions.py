@@ -6,7 +6,7 @@ from typing import Any
 
 from ...base import Finding, Severity
 from ...rule import Rule
-from ..base import iter_jobs
+from ..base import iter_env_blocks
 
 RULE = Rule(
     id="CC-004",
@@ -50,13 +50,10 @@ _SECRET_NAME_RE = re.compile(
 
 def check(path: str, doc: dict[str, Any]) -> Finding:
     offending_jobs: list[str] = []
-    for job_id, job in iter_jobs(doc):
-        env = job.get("environment")
-        if not isinstance(env, dict):
-            continue
+    for label, env in iter_env_blocks(doc):
         for var_name in env:
             if isinstance(var_name, str) and _SECRET_NAME_RE.search(var_name):
-                offending_jobs.append(job_id)
+                offending_jobs.append(label)
                 break
     passed = not offending_jobs
     desc = (

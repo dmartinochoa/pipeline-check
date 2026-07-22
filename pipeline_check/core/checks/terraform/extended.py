@@ -203,7 +203,24 @@ def _cb008(values: dict[str, Any], address: str) -> Finding:
 
 def _cb009(values: dict[str, Any], address: str) -> Finding:
     env = _first(values.get("environment"))
-    info = _classify_image(env.get("image"))
+    image = env.get("image")
+    # An unresolved HCL interpolation (``${var.build_image}``) tells us
+    # nothing about the pin state, so don't assert "tag-pinned" on it.
+    if isinstance(image, str) and "${" in image:
+        return Finding(
+            check_id="CB-009",
+            title="CodeBuild image not pinned by digest",
+            severity=Severity.MEDIUM,
+            resource=address,
+            description=(
+                f"Image is an unresolved reference ({image!r}); pin state "
+                "could not be determined from the plan. Verify it resolves "
+                "to a digest-pinned image."
+            ),
+            recommendation="Pin custom images by ``@sha256:<digest>``.",
+            passed=True,
+        )
+    info = _classify_image(image)
     if info.pinned:
         passed = True
         desc = "Image uses AWS-managed or digest-pinned source."
@@ -329,7 +346,10 @@ def _cloudtrail_checks(ctx: TerraformContext) -> list[Finding]:
 def _cw_logs_checks(ctx: TerraformContext) -> list[Finding]:
     out: list[Finding] = []
     for r in ctx.resources("aws_cloudwatch_log_group"):
-        name = r.values.get("name", "") or ""
+        # ``name_prefix`` is the standard alternative to ``name``; a log
+        # group declared with it has no ``name`` value but is still a
+        # CodeBuild log group.
+        name = (r.values.get("name") or r.values.get("name_prefix") or "")
         if not name.startswith("/aws/codebuild/"):
             continue
         retention = r.values.get("retention_in_days")

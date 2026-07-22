@@ -328,7 +328,7 @@ After removing the file from the working tree, rotate every credential the file 
 <span class="pg-sev pg-sev--medium">MEDIUM</span> <span class="pg-tag pg-tag--owasp">CICD-SEC-3</span> <span class="pg-tag pg-tag--esf">ESF-S-VERIFY-DEPS</span> <span class="pg-tag pg-tag--cwe">CWE-829</span> <span class="pg-tag pg-tag--cwe">CWE-94</span>
 </div>
 
-Fires when the Gemfile body contains any of ``Dir.glob`` / ``Dir[``, ``eval``, ``instance_eval``, ``require_relative``, ``require ``, ``load ``, or ``File.read`` calls at file scope. Lines inside comments (``#`` prefix) are ignored. The match is conservative — a Gemfile that uses ``ENV["RAILS_ENV"]`` in an ``if`` block doesn't trip the rule; the rule only fires on code paths that *resolve gem names from elsewhere*.
+Fires when the Gemfile body contains any of ``Dir.glob`` / ``Dir[``, ``eval``, ``instance_eval``, ``require_relative``, ``load ``, or ``File.read`` calls at file scope. Lines inside comments (``#`` prefix) are ignored. The match is conservative — a Gemfile that uses ``ENV["RAILS_ENV"]`` in an ``if`` block doesn't trip the rule; the rule only fires on code paths that *resolve gem names from elsewhere*.
 
 **Known false-positive modes**
 

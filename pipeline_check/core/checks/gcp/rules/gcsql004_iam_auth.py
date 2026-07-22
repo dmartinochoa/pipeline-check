@@ -30,6 +30,11 @@ def check(catalog: ResourceCatalog) -> list[Finding]:
     findings: list[Finding] = []
     for inst in catalog.cloud_sql_instances():
         name = inst.get("name", "<unnamed>")
+        # IAM database authentication is available for MySQL and
+        # PostgreSQL only; SQL Server has no such flag, so flagging it is
+        # an unactionable false positive. Skip those engines.
+        if str(inst.get("databaseVersion", "")).upper().startswith("SQLSERVER"):
+            continue
         settings = inst.get("settings", {})
         flags = settings.get("databaseFlags", [])
         iam_auth = False

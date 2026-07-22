@@ -421,7 +421,7 @@ Never write BITBUCKET_TOKEN or REPOSITORY_OAUTH_ACCESS_TOKEN to files or artifac
 <span class="pg-sev pg-sev--medium">MEDIUM</span> <span class="pg-tag pg-tag--owasp">CICD-SEC-4</span> <span class="pg-tag pg-tag--esf">ESF-D-INJECTION</span> <span class="pg-tag pg-tag--esf">ESF-S-VERIFY-DEPS</span> <span class="pg-tag pg-tag--cwe">CWE-345</span>
 </div>
 
-Bitbucket caches are restored by key. When the key includes a value the attacker controls (branch name, tag, PR ID), a pull-request pipeline can plant a poisoned cache entry that a subsequent default-branch build restores.
+Bitbucket caches are restored by key. When the key includes a value the PR author controls (the source branch name, tag, or bookmark), a pull-request pipeline can plant a poisoned cache entry that a subsequent default-branch build restores. The PR *destination* branch and the Bitbucket-assigned PR ID aren't author-controlled, so they don't taint the key.
 
 <div class="pg-rule__rec" markdown>
 

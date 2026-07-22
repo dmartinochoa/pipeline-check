@@ -279,10 +279,14 @@ def _trust_policy_findings(path: str) -> list[str]:
 # ``/`` (org prefix, no specific repo).
 _TF_WIF_RE = re.compile(
     r"attribute_condition\s*=\s*"
-    r"\"[^\"]*?attribute\.repository\.startsWith\(\s*['\"]"
+    r"\"[^\"]*?attribute\.repository\.(?P<fn>startsWith|matches)\(\s*['\"]"
     r"(?P<value>[^'\"]+)['\"]\s*\)",
     re.IGNORECASE | re.DOTALL,
 )
+
+#: Trailing regex wildcard on a ``matches`` predicate value, stripped so
+#: ``myorg/.*`` reads like the ``startsWith`` prefix ``myorg/``.
+_MATCH_WILDCARD_TAIL_RE = re.compile(r"(?:\.[*+])?\$?$")
 
 
 def _tf_wif_findings(path: str) -> list[str]:
@@ -297,14 +301,20 @@ def _tf_wif_findings(path: str) -> list[str]:
     labels: list[str] = []
     for m in _TF_WIF_RE.finditer(text):
         value = m.group("value")
+        fn = m.group("fn")
+        # For a ``matches`` regex, strip a trailing ``.*`` / ``.+`` / ``$``
+        # so ``myorg/.*`` collapses to the ``myorg/`` prefix shape.
+        norm = value
+        if fn.lower() == "matches":
+            norm = _MATCH_WILDCARD_TAIL_RE.sub("", value)
         # ``myorg/`` is the org-prefix binding; ``myorg/myrepo`` is
         # already tight. Only the prefix-with-slash form is the broad
         # shape we flag.
-        if value.endswith("/") and "/" in value.rstrip("/"):
+        if norm.endswith("/") and "/" in norm.rstrip("/"):
             # ``a/b/`` style — too unusual to flag confidently
             continue
-        if value.endswith("/") or "/" not in value:
-            labels.append(f"attribute.repository.startsWith({value!r})")
+        if norm.endswith("/") or "/" not in norm:
+            labels.append(f"attribute.repository.{fn}({value!r})")
     return labels
 
 

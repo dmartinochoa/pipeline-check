@@ -329,3 +329,30 @@ class TestNPM005:
         }
         f = run_check_manifest(data, "NPM-005")
         assert f.passed
+
+
+class TestNPM001Audit202607:
+    """2026-07 audit LOW findings on NPM-001 floating-range detection."""
+
+    def _fires(self, spec):
+        data = {"name": "x", "version": "1.0.0", "dependencies": {"dep": spec}}
+        return run_check_manifest(data, "NPM-001").passed is False
+
+    def test_prerelease_build_x_tail_not_floating(self):
+        # FP: an exact version whose prerelease/build tail ends in ``.x``
+        # is deterministic, not a wildcard range.
+        assert self._fires("1.2.3-alpha.x") is False
+        assert self._fires("1.2.3+build.x") is False
+
+    def test_numeric_wildcards_still_floating(self):
+        assert self._fires("1.x") is True
+        assert self._fires("1.2.X") is True
+
+    def test_hyphen_and_union_ranges_floating(self):
+        # FN: hyphen ranges and ``||`` unions let npm pick a later version.
+        assert self._fires("1.2.3 - 2.3.4") is True
+        assert self._fires("1.0.0 || 2.0.0") is True
+
+    def test_empty_spec_is_floating(self):
+        # FN: an empty spec resolves to "*" (any version) in npm.
+        assert self._fires("") is True

@@ -5,7 +5,13 @@ from typing import Any
 
 from ...base import Finding, Location, Severity
 from ...rule import Rule
-from ..base import ArgoContext, doc_location, iter_templates, template_name
+from ..base import (
+    ArgoContext,
+    doc_location,
+    iter_templates,
+    template_name,
+    workflow_spec,
+)
 
 RULE = Rule(
     id="ARGO-015",
@@ -131,6 +137,20 @@ def check(ctx: ArgoContext) -> Finding:
                         f"artifact[{art.get('name', '?')}]: {reason}"
                     )
                     locations.append(doc_location(doc, tmpl))
+        # Workflow-global input artifacts (``spec.arguments.artifacts``)
+        # are a valid Argo source location too, not just template inputs.
+        arguments = workflow_spec(doc).get("arguments")
+        global_arts = arguments.get("artifacts") if isinstance(arguments, dict) else None
+        if isinstance(global_arts, list):
+            for art in (a for a in global_arts if isinstance(a, dict)):
+                reason = _scan_artifact(art)
+                if reason:
+                    offenders.append(
+                        f"{doc.kind}/{doc.name} "
+                        f"spec.arguments artifact[{art.get('name', '?')}]: "
+                        f"{reason}"
+                    )
+                    locations.append(doc_location(doc))
     if not ctx.docs:
         return Finding(
             check_id=RULE.id, title=RULE.title, severity=RULE.severity,

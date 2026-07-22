@@ -102,7 +102,7 @@ unlocked dependency, or no maintainers.
 | [HELM-010](#helm-010) | Chart.yaml appVersion field is empty or missing | <span class="pg-sev pg-sev--low">LOW</span> |  |
 | [HELM-011](#helm-011) | Chart dependency repository URL embeds plaintext credentials | <span class="pg-sev pg-sev--high">HIGH</span> |  |
 | [HELM-012](#helm-012) | Chart marked deprecated without naming a successor | <span class="pg-sev pg-sev--medium">MEDIUM</span> |  |
-| [HELM-013](#helm-013) | Chart.yaml type field missing or invalid | <span class="pg-sev pg-sev--medium">MEDIUM</span> |  |
+| [HELM-013](#helm-013) | Chart.yaml type field set to an invalid value | <span class="pg-sev pg-sev--medium">MEDIUM</span> |  |
 | [HELM-014](#helm-014) | Chart dependency matches a known-compromised chart registry | <span class="pg-sev pg-sev--high">HIGH</span> |  |
 | [HELM-015](#helm-015) | OCI chart dependency pinned only by a mutable tag | <span class="pg-sev pg-sev--high">HIGH</span> |  |
 | [HELM-016](#helm-016) | values.yaml ships a default secret or credential | <span class="pg-sev pg-sev--high">HIGH</span> |  |
@@ -424,13 +424,13 @@ A deprecation flag without a successor strands every consumer at the deprecated 
 
 <div class="pg-rule pg-rule--medium" markdown>
 
-## HELM-013: Chart.yaml type field missing or invalid { #helm-013 }
+## HELM-013: Chart.yaml type field set to an invalid value { #helm-013 }
 
 <div class="pg-rule__tags">
 <span class="pg-sev pg-sev--medium">MEDIUM</span> <span class="pg-tag pg-tag--owasp">CICD-SEC-3</span> <span class="pg-tag pg-tag--esf">ESF-S-VERIFY-DEPS</span> <span class="pg-tag pg-tag--cwe">CWE-1357</span>
 </div>
 
-Reads ``Chart.yaml`` ``type:`` and fires when the field is missing, empty, or set to a value other than ``application`` / ``library``. The two valid values are defined by the Helm 3 chart schema; other values are ignored by Helm at install time (which is the silent-failure mode the rule catches).
+Reads ``Chart.yaml`` ``type:`` and fires when the field is present but set to a value other than ``application`` / ``library`` (the two values defined by the Helm 3 chart schema; any other value is ignored by Helm at install time, the silent-failure mode the rule catches). A *missing* ``type:`` passes: Helm 3 defaults it to ``application``, so omitting it is legitimate and common.
 
 Helm 2 charts (``apiVersion: v1``) are skipped, the ``type:`` field doesn't exist in v1 and HELM-001 already catches the v1 shape.
 

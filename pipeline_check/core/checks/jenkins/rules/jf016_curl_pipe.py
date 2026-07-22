@@ -70,7 +70,7 @@ RULE = Rule(
 
 
 def check(jf: Jenkinsfile) -> Finding:
-    hits = remote_script_exec.scan(jf.text.lower())
+    hits = remote_script_exec.scan(jf.text_no_comments.lower())
     passed = not hits
     desc = (
         "No curl-pipe or wget-pipe patterns detected in this Jenkinsfile."

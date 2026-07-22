@@ -60,7 +60,7 @@ RULE = Rule(
 
 
 def check(jf: Jenkinsfile) -> Finding:
-    matches = PKG_INSECURE_RE.findall(jf.text.lower())
+    matches = PKG_INSECURE_RE.findall(jf.text_no_comments.lower())
     passed = not matches
     desc = (
         "No insecure package install patterns detected in this Jenkinsfile."

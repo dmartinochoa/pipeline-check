@@ -66,7 +66,7 @@ pipeline_check --pipeline azure_cloud --subscription-id $AZURE_SUBSCRIPTION_ID -
 | [AZST-004](#azst-004) | Storage account minimum TLS version below 1.2 | <span class="pg-sev pg-sev--high">HIGH</span> |  |
 | [AZST-005](#azst-005) | Storage account blob lifecycle policy should be reviewed | <span class="pg-sev pg-sev--low">LOW</span> |  |
 | [AZST-006](#azst-006) | Storage account access keys not rotated within 90 days | <span class="pg-sev pg-sev--high">HIGH</span> |  |
-| [AZVM-001](#azvm-001) | Virtual machine disks are not encrypted | <span class="pg-sev pg-sev--high">HIGH</span> |  |
+| [AZVM-001](#azvm-001) | VM disks not encrypted with a customer-managed key or ADE | <span class="pg-sev pg-sev--high">HIGH</span> |  |
 | [AZVM-002](#azvm-002) | Virtual machine has a public IP address | <span class="pg-sev pg-sev--high">HIGH</span> |  |
 | [AZVM-003](#azvm-003) | Virtual machine does not have JIT network access | <span class="pg-sev pg-sev--medium">MEDIUM</span> |  |
 | [AZVM-004](#azvm-004) | Virtual machine automatic OS patching not enabled | <span class="pg-sev pg-sev--medium">MEDIUM</span> |  |
@@ -862,13 +862,13 @@ Rotate storage account access keys at least every 90 days. Use Azure Key Vault t
 
 <div class="pg-rule pg-rule--high" markdown>
 
-## AZVM-001: Virtual machine disks are not encrypted { #azvm-001 }
+## AZVM-001: VM disks not encrypted with a customer-managed key or ADE { #azvm-001 }
 
 <div class="pg-rule__tags">
 <span class="pg-sev pg-sev--high">HIGH</span> <span class="pg-tag pg-tag--owasp">CICD-SEC-9</span> <span class="pg-tag pg-tag--cwe">CWE-311</span>
 </div>
 
-Unencrypted VM disks expose data to offline attacks. An attacker who gains access to the storage account backing a VM can mount the VHD and read all data, including pipeline agent credentials and build artifacts.
+All Azure managed disks are SSE-encrypted at rest with platform-managed keys by default; this rule checks for the stronger customer-managed key (disk encryption set) or Azure Disk Encryption (ADE), which keep the key outside Azure's default control. A disk with neither can be read by an attacker who compromises the platform key path or the storage backing the VHD, including pipeline agent credentials and build artifacts.
 
 <div class="pg-rule__rec" markdown>
 

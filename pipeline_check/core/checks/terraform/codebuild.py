@@ -84,7 +84,9 @@ def _cb001_plaintext_secrets(values: dict[str, Any], address: str) -> Finding:
     suspicious_values: list[str] = []
     for env_block in values.get("environment", []) or []:
         for env_var in env_block.get("environment_variable", []) or []:
-            name = env_var.get("name", "")
+            # ``get("name", "")`` keeps an explicit ``None``; coerce so
+            # ``_SECRET_NAME_RE.search`` never sees a non-string.
+            name = env_var.get("name") or ""
             val = env_var.get("value", "") or ""
             var_type = env_var.get("type") or "PLAINTEXT"
             if var_type != "PLAINTEXT":

@@ -108,7 +108,11 @@ def _sidecar_offends(sc: Any) -> list[str]:
     if sc.get("runAsNonRoot") is False:
         issues.append("runAsNonRoot: false")
     if sc.get("runAsNonRoot") is None and not issues:
-        issues.append("runAsNonRoot not set")
+        # A non-zero explicit ``runAsUser`` already establishes non-root,
+        # so a missing ``runAsNonRoot`` isn't a root risk there.
+        run_as = sc.get("runAsUser")
+        if not (isinstance(run_as, int) and run_as > 0):
+            issues.append("runAsNonRoot not set")
     return issues
 
 

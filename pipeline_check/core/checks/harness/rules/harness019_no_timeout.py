@@ -5,7 +5,12 @@ from typing import Any
 
 from ...base import Finding, Severity
 from ...rule import Rule
-from ..base import HarnessPipeline, iter_stages, iter_steps, step_label
+from ..base import (
+    HarnessPipeline,
+    _iter_step_dicts,
+    iter_stages,
+    step_label,
+)
 
 RULE = Rule(
     id="HARNESS-019",
@@ -58,17 +63,21 @@ def check(pipeline: HarnessPipeline) -> Finding:
     # bounds the steps beneath it, so a step only offends when nothing
     # above it and nothing on it sets a timeout.
     pipeline_bounded = _is_meaningful_timeout(pipeline.data.get("timeout"))
-    stage_bounded = {
-        stage_id: _is_meaningful_timeout(stage.get("timeout"))
-        for stage_id, stage in iter_stages(pipeline)
-    }
     offenders: list[str] = []
-    for stage_id, step in iter_steps(pipeline):
-        if pipeline_bounded or stage_bounded.get(stage_id):
+    # Correlate each stage's own timeout with its own steps. Keying a
+    # lookup by stage identifier collides when two stages both lack an
+    # ``identifier`` (both fall back to the literal ``"stage"``), so walk
+    # each stage's steps directly instead.
+    for stage_id, stage in iter_stages(pipeline):
+        if pipeline_bounded or _is_meaningful_timeout(stage.get("timeout")):
             continue
-        if _is_meaningful_timeout(step.get("timeout")):
-            continue
-        offenders.append(step_label(stage_id, step))
+        spec = stage.get("spec")
+        execution = spec.get("execution") if isinstance(spec, dict) else None
+        steps = execution.get("steps") if isinstance(execution, dict) else None
+        for step in _iter_step_dicts(steps):
+            if _is_meaningful_timeout(step.get("timeout")):
+                continue
+            offenders.append(step_label(stage_id, step))
     passed = not offenders
     desc = (
         "Every step is bounded by an explicit timeout."

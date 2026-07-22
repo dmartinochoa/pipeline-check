@@ -85,7 +85,9 @@ def check(path: str, doc: dict[str, Any]) -> Finding:
         for _, other_name, other_cfg in iter_workflow_jobs(doc):
             if other_cfg.get("type") == "approval":
                 approval_jobs.add(other_name)
-        if any(req in approval_jobs for req in requires):
+        if any(
+            isinstance(req, str) and req in approval_jobs for req in requires
+        ):
             continue
         ungated.append(f"{wf_name}/{job_name}")
         # Anchor on the workflow's job entry, that's where the

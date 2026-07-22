@@ -326,3 +326,18 @@ class TestGCKMS006:
     def test_no_keys_returns_empty(self, make_catalog):
         cat = make_catalog(**{"kms:keys": []})
         assert gckms006_imported_key_material.check(cat) == []
+
+
+class TestAudit202607LowKms:
+    """2026-07 audit LOW finding: GCKMS-002 missed KMS-scoped custom roles."""
+
+    def test_gckms002_public_custom_kms_role_fires(self, make_catalog):
+        cat = make_catalog(**{"iam:project_policy": {"bindings": [
+            {"role": "projects/my-project/roles/kmsDecrypterCustom",
+             "members": ["allUsers"]}]}})
+        assert gckms002_public_key.check(cat)
+
+    def test_gckms002_public_non_kms_role_not_flagged(self, make_catalog):
+        cat = make_catalog(**{"iam:project_policy": {"bindings": [
+            {"role": "roles/viewer", "members": ["allUsers"]}]}})
+        assert not gckms002_public_key.check(cat)

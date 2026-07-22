@@ -126,6 +126,41 @@ def iter_run_commands(job: dict[str, Any]) -> Iterator[str]:
             yield step[4:].strip()
 
 
+def iter_env_blocks(doc: dict[str, Any]) -> Iterator[tuple[str, dict[str, Any]]]:
+    """Yield ``(label, environment_dict)`` for every ``environment:`` block.
+
+    CircleCI accepts an ``environment:`` map at job level, on an executor
+    definition, and on each docker image (in both jobs and executors).
+    Rules that only walked ``jobs.<id>.environment`` missed the other
+    placements.
+    """
+    def _docker_envs(container: dict[str, Any], prefix: str) -> Iterator[
+        tuple[str, dict[str, Any]]
+    ]:
+        docker = container.get("docker")
+        if isinstance(docker, list):
+            for i, entry in enumerate(docker):
+                if isinstance(entry, dict) and isinstance(
+                    entry.get("environment"), dict,
+                ):
+                    yield f"{prefix}.docker[{i}]", entry["environment"]
+
+    for job_id, job in iter_jobs(doc):
+        env = job.get("environment")
+        if isinstance(env, dict):
+            yield job_id, env
+        yield from _docker_envs(job, job_id)
+    executors = doc.get("executors") or {}
+    if isinstance(executors, dict):
+        for name, exc in executors.items():
+            if not isinstance(exc, dict):
+                continue
+            env = exc.get("environment")
+            if isinstance(env, dict):
+                yield f"executor:{name}", env
+            yield from _docker_envs(exc, f"executor:{name}")
+
+
 def iter_workflow_jobs(doc: dict[str, Any]) -> Iterator[tuple[str, str, dict[str, Any]]]:
     """Yield ``(workflow_name, job_name, job_config)`` for every job
     reference in every workflow."""

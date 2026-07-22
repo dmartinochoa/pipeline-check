@@ -172,11 +172,13 @@ def _missing_per_attestation(att: Attestation) -> tuple[str, list[str], int]:
     scenarios."""
     if att.predicate_type.startswith("https://spdx.dev/Document"):
         missing = _spdx_missing_supplier(att.predicate)
-        total = len(att.predicate.get("packages") or [])
+        pkgs = att.predicate.get("packages")
+        total = len(pkgs) if isinstance(pkgs, list) else 0
         return "SPDX", missing, total
     if att.predicate_type.startswith("https://cyclonedx.org/bom"):
         missing = _cyclonedx_missing_supplier(att.predicate)
-        total = len(att.predicate.get("components") or [])
+        comps = att.predicate.get("components")
+        total = len(comps) if isinstance(comps, list) else 0
         return "CycloneDX", missing, total
     return att.predicate_type, [], 0
 

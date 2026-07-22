@@ -33,7 +33,7 @@ RULE = Rule(
 
 
 def check(jf: Jenkinsfile) -> Finding:
-    passed = bool(_TIMEOUT_RE.search(jf.text))
+    passed = bool(_TIMEOUT_RE.search(jf.text_no_comments))
     desc = (
         "Pipeline declares a `timeout()` wrapper."
         if passed else

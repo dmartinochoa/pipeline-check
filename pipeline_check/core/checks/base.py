@@ -519,12 +519,15 @@ import re as _re
 #: ``docker run --privileged`` or ``-v /…:/…``, container escape via
 #: host mount, privileged mode, namespace sharing, or socket mount.
 DOCKER_INSECURE_RE = _re.compile(
-    r"docker\s+run\s[^;&]*(?:--privileged|--cap-add"
+    # ``[^;&\n]*`` excludes the newline so the filler can't span the
+    # concatenated document blob and pair a benign ``docker run`` with an
+    # unrelated ``--privileged`` mention on another line.
+    r"docker\s+run\s[^;&\n]*(?:--privileged|--cap-add"
     r"|--(?:net(?:work)?|pid|ipc|userns)[= ]host"                   # namespace sharing
     r"|--security-opt[= ]\s*(?:seccomp|apparmor)=unconfined"        # sandbox disabled
     r"|(?:-v|--volume)\s+/var/run/docker\.sock:"                    # socket mount (any target)
     r"|(?:-v|--volume)\s+/:/)"                                      # root mount
-    r"|docker\s+compose\s[^;&]*--privileged",                       # compose
+    r"|docker\s+compose\s[^;&\n]*--privileged",                     # compose
 )
 
 #: ``pip install --index-url http://`` or ``npm install --registry=http://``
@@ -554,6 +557,8 @@ PKG_NO_LOCKFILE_RE = _re.compile(
     r"(?![^\n]*(?:-r\s|--require-hashes|--requirement))"
     # yarn install without --frozen-lockfile / --immutable
     r"|\byarn\s+install\b(?![^\n]*(?:--frozen-lockfile|--immutable))"
+    # bare ``yarn`` (no subcommand) implicitly runs ``yarn install``.
+    r"|\byarn(?![ \t]*\S)"
     # bundle install without --frozen / --deployment
     r"|\bbundle\s+install\b(?![^\n]*(?:--frozen|--deployment))"
     # cargo install without --locked (--locked enforces Cargo.lock)
@@ -562,7 +567,10 @@ PKG_NO_LOCKFILE_RE = _re.compile(
     # NB: ``poetry install`` is intentionally NOT flagged — it installs
     # from ``poetry.lock`` when present (the lockfile-enforcing analog of
     # ``npm ci``); the lock-bypassing command is ``poetry update``.
-    r"|\bgo\s+install\s+(?!.*@v\d+\.\d+)\S+(?:\s|$)",
+    # A local-path target (``./cmd/tool``, ``../x``, ``/abs``, ``.``)
+    # builds from the repo's own go.mod/go.sum, so it's lockfile-enforced
+    # and exempt (the ``(?![./])`` guard).
+    r"|\bgo\s+install\s+(?!.*@v\d+\.\d+)(?![./])\S+(?:\s|$)",
     _re.MULTILINE,
 )
 

@@ -662,3 +662,77 @@ class TestCA001IntrinsicCmk:
         f = next(x for x in ca001.check(make_context(resources))
                  if x.check_id == "CA-001")
         assert f.passed is False
+
+
+class TestAudit202607LowCfnC1:
+    """2026-07 audit LOW findings (cloudformation_c1 chunk)."""
+
+    def test_cb004_unset_timeout_wording(self):
+        from pipeline_check.core.checks.cloudformation.codebuild import (
+            _cb004_timeout,
+        )
+        f = _cb004_timeout({}, "a")
+        assert f.passed is False
+        assert "AWS maximum" not in f.description
+        assert "60 minutes" in f.description
+
+    def test_cb006_secondary_source_oauth_fires(self):
+        from pipeline_check.core.checks.cloudformation.codebuild import (
+            _cb006_source_auth,
+        )
+        f = _cb006_source_auth(
+            {"Source": {"Type": "NO_SOURCE"},
+             "SecondarySources": [{"Type": "GITHUB", "Auth": {"Type": "OAUTH"}}]},
+            {}, "a")
+        assert f.passed is False
+
+    def test_ca002_scalar_external_connection(self):
+        from pipeline_check.core.checks.cloudformation.services import (
+            _codeartifact,
+        )
+        from tests.cloudformation.conftest import make_context, r
+        ctx = make_context({"Repo": r(
+            "Repo", "AWS::CodeArtifact::Repository",
+            {"ExternalConnections": "public:pypi"})})
+        fs = [f for f in _codeartifact(ctx) if f.check_id == "CA-002"]
+        assert fs and fs[0].passed is False
+
+
+class TestAudit202607LowCfnC4:
+    """2026-07 audit LOW findings (cloudformation_c4 chunk)."""
+
+    def test_iam005_non_dict_condition_does_not_crash(self):
+        from pipeline_check.core.checks.cloudformation.iam import (
+            _iam005_external_trust,
+        )
+        props = {"AssumeRolePolicyDocument": {"Statement": [{
+            "Effect": "Allow",
+            "Principal": {"AWS": "arn:aws:iam::999:root"},
+            "Action": "sts:AssumeRole", "Condition": "weird"}]}}
+        f = _iam005_external_trust(props, "ci")
+        assert f.passed is False  # no AttributeError
+
+    def test_pbac001_scalar_vpc_config_does_not_crash(self):
+        from pipeline_check.core.checks.cloudformation.pbac import (
+            _pbac001_vpc_config,
+        )
+        f = _pbac001_vpc_config({"VpcConfig": "vpc-123"}, "p")
+        assert f.check_id == "PBAC-001"  # no AttributeError
+
+
+class TestAudit202607LowCfnC3:
+    """2026-07 audit LOW findings (cloudformation_c3 chunk)."""
+
+    def test_cwl001_quoted_retention_is_set(self):
+        from pipeline_check.core.checks.cloudformation.extended import _cw_logs
+        ctx = make_context({"LG": r(
+            "LG", "AWS::Logs::LogGroup",
+            {"LogGroupName": "/aws/codebuild/proj", "RetentionInDays": "30"})})
+        fs = [f for f in _cw_logs(ctx) if f.check_id == "CWL-001"]
+        assert fs and fs[0].passed is True
+        # a genuinely unset retention still fires
+        ctx2 = make_context({"LG": r(
+            "LG", "AWS::Logs::LogGroup",
+            {"LogGroupName": "/aws/codebuild/proj"})})
+        fs2 = [f for f in _cw_logs(ctx2) if f.check_id == "CWL-001"]
+        assert fs2 and fs2[0].passed is False

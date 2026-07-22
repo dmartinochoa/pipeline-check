@@ -162,7 +162,7 @@ Rotate every secret reachable to any process that ran ``dotnet restore`` against
 <span class="pg-sev pg-sev--medium">MEDIUM</span> <span class="pg-tag pg-tag--owasp">CICD-SEC-3</span> <span class="pg-tag pg-tag--owasp">CICD-SEC-9</span> <span class="pg-tag pg-tag--esf">ESF-S-VERIFY-DEPS</span> <span class="pg-tag pg-tag--cwe">CWE-353</span>
 </div>
 
-Fires when a csproj project exists but no ``packages.lock.json`` was found.
+Fires when a csproj project has no ``packages.lock.json`` in its own directory. A lock file for a sibling project elsewhere in the tree doesn't make this project's restore reproducible.
 
 <div class="pg-rule__rec" markdown>
 

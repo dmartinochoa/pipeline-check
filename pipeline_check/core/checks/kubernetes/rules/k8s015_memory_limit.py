@@ -24,7 +24,7 @@ RULE = Rule(
         "Set ``resources.limits.memory`` on every container. Without "
         "a memory limit, a leaking or compromised container can "
         "consume the node's RAM until the kernel OOM-kills "
-        "neighbouring pods, taking down workloads that share the "
+        "neighboring pods, taking down workloads that share the "
         "node. Pair the limit with a ``requests.memory`` to inform "
         "the scheduler."
     ),

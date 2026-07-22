@@ -1,9 +1,19 @@
 """PULUMI-009. Pulumi.yaml runtime doesn't match any source file."""
 from __future__ import annotations
 
+import posixpath
+
 from ...base import Finding, Severity
 from ...rule import Rule
 from ..base import PulumiContext
+
+
+def _under_project(source_path: str, project_dir: str) -> bool:
+    """Whether *source_path* lives under the project's own directory."""
+    norm = source_path.replace("\\", "/")
+    if not project_dir:
+        return True
+    return norm == project_dir or norm.startswith(project_dir + "/")
 
 RULE = Rule(
     id="PULUMI-009",
@@ -117,11 +127,14 @@ def check(ctx: PulumiContext) -> Finding:
                 f"java)"
             )
             continue
-        # Look for at least one source file under the project
-        # whose extension matches the runtime.
+        # Look for at least one source file under THIS project's own
+        # directory whose extension matches the runtime; a sibling
+        # project's sources don't count.
+        project_dir = posixpath.dirname(project.path.replace("\\", "/"))
         match = any(
             any(s.path.endswith(ext) for ext in expected)
             for s in ctx.sources
+            if _under_project(s.path, project_dir)
         )
         if not match:
             offenders.append(

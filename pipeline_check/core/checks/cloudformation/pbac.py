@@ -52,7 +52,9 @@ class PBACChecks(CloudFormationBaseCheck):
 
 
 def _pbac001_vpc_config(properties: dict[str, Any], name: str) -> Finding:
-    vpc = properties.get("VpcConfig") or {}
+    vpc = properties.get("VpcConfig")
+    if not isinstance(vpc, dict):
+        vpc = {}
     has_vpc = bool(
         vpc.get("VpcId")
         and vpc.get("Subnets")

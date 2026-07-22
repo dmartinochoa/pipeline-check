@@ -41,8 +41,12 @@ _REPO_ID_RE = re.compile(
 # / ``null`` is the explicit "use the mutable default branch" value, so
 # it is excluded — it is not a pin (the negative lookahead rejects it).
 _REVISION_RE = re.compile(
-    r"\brevision\s*[=:]\s*['\"]?(?!(?:none|null)\b)[\w.\-]+"
-    r"|--revision[=\s]"
+    # Only a commit-ish (7-40 hex) is an immutable pin, matching the
+    # ``@<sha>`` suffix form. A branch/tag (``revision='main'`` /
+    # ``--revision v1.0``) is movable by the model owner, so it is not a
+    # pin, consistent with the rule's recommendation.
+    r"\brevision\s*[=:]\s*['\"]?[0-9a-fA-F]{7,40}\b"
+    r"|--revision[=\s]+['\"]?[0-9a-fA-F]{7,40}\b"
     r"|@[0-9a-fA-F]{7,40}\b",
     re.IGNORECASE,
 )

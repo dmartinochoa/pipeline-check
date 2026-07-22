@@ -20,8 +20,8 @@ from typing import Any
 from ..._primitives.tainted_variables import has_direct_taint
 from ...base import Finding, Location, Severity
 from ...rule import Rule
-from ..base import iter_jobs, iter_steps, step_location
-from ._helpers import UNTRUSTED_CONTEXT_RE, step_invokes_agentic_cli
+from ..base import find_run_command, iter_jobs, iter_steps, step_location
+from ._helpers import AGENTIC_CLI_RE, UNTRUSTED_CONTEXT_RE
 
 RULE = Rule(
     id="GHA-119",
@@ -76,7 +76,11 @@ def check(path: str, doc: dict[str, Any]) -> Finding:
         job_tainted = wf_tainted | _tainted_env_vars(job.get("env"))
         for idx, step in enumerate(iter_steps(job)):
             run = step.get("run")
-            if not isinstance(run, str) or not step_invokes_agentic_cli(run):
+            # Scan real command chunks so an agent name echoed in output or
+            # sitting in a comment isn't read as an invocation.
+            if not isinstance(run, str) or not find_run_command(
+                run, AGENTIC_CLI_RE
+            ):
                 continue
             lines = run.splitlines()
             step_tainted = job_tainted | _tainted_env_vars(step.get("env"))

@@ -43,6 +43,21 @@ RULE = Rule(
 
 def check(snapshot: SCMRepoSnapshot) -> Finding:
     branch = default_branch_name(snapshot)
+    if snapshot.platform == "bitbucket":
+        # Bitbucket Cloud has no per-branch signed-commit enforcement, so
+        # the recommendation ("enable Require signed commits") isn't
+        # actionable there. Skip with a note (matching the pack's
+        # platform-skip convention) rather than fail every Bitbucket repo.
+        return Finding(
+            check_id=RULE.id, title=RULE.title, severity=RULE.severity,
+            resource=repo_resource(snapshot),
+            description=(
+                "Signed-commit enforcement is not a per-branch protection "
+                "setting on Bitbucket Cloud; SCM-006 is not applicable and "
+                f"is skipped on the {snapshot.platform} snapshot."
+            ),
+            recommendation=RULE.recommendation, passed=True,
+        )
     protection = snapshot.default_branch_protection
     if not isinstance(protection, dict):
         # SCM-001 owns the no-protection case; pass silently to

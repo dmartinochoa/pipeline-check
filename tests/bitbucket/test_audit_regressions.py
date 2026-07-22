@@ -460,3 +460,99 @@ class TestBB005NonMappingOptions:
             "          - make\n"
         )
         assert bb005.check("bitbucket-pipelines.yml", doc).passed is True
+
+
+class TestAudit202607LowBitbucketC2:
+    """2026-07 audit LOW findings (bitbucket_c2 chunk)."""
+
+    @staticmethod
+    def run_check(text, cid):
+        from tests.bitbucket.conftest import run_check
+        return run_check(text, cid)
+
+    def test_bb018_destination_branch_is_trusted(self):
+        dest = (
+            "definitions:\n"
+            "  caches:\n"
+            "    deps: nm-$BITBUCKET_PR_DESTINATION_BRANCH\n"
+            "pipelines:\n"
+            "  default:\n"
+            "    - step:\n"
+            "        caches: [deps]\n"
+            "        script: [make]\n"
+        )
+        assert self.run_check(dest, "BB-018").passed is True
+        src = dest.replace("BITBUCKET_PR_DESTINATION_BRANCH", "BITBUCKET_BRANCH")
+        assert self.run_check(src, "BB-018").passed is False
+
+    def test_bb019_scalar_after_script_and_lowercase_secret(self):
+        scalar = (
+            "pipelines:\n"
+            "  default:\n"
+            "    - step:\n"
+            "        script: [./deploy.sh]\n"
+            "        after-script: echo \"$DEPLOY_TOKEN\"\n"
+        )
+        assert self.run_check(scalar, "BB-019").passed is False
+        lower = (
+            "pipelines:\n"
+            "  default:\n"
+            "    - step:\n"
+            "        script: [./deploy.sh]\n"
+            "        after-script: [echo \"$my_secret_token\"]\n"
+        )
+        assert self.run_check(lower, "BB-019").passed is False
+
+
+class TestAudit202607LowBitbucketC3:
+    """2026-07 audit LOW findings (bitbucket_c3 chunk)."""
+
+    def test_bb030_npm_prefix_flag_before_verb(self):
+        from pipeline_check.core.checks._primitives.dep_verification import (
+            _NPM_INSTALL_RE,
+        )
+        assert _NPM_INSTALL_RE.search("npm --prefix ./app install")
+        assert _NPM_INSTALL_RE.search("npm ci")
+        # a named script still doesn't match
+        assert not _NPM_INSTALL_RE.search("npm run install-deps")
+
+    def test_bb031_local_editable_install_not_hash_verifiable(self):
+        from pipeline_check.core.checks._primitives.dep_verification import (
+            is_real_pip_install_line,
+        )
+        assert is_real_pip_install_line("pip install -e .") is False
+        assert is_real_pip_install_line("pip install .") is False
+        # a registry install still requires hashing
+        assert is_real_pip_install_line("pip install requests") is True
+
+
+class TestAudit202607LowBitbucketC1:
+    """2026-07 audit LOW finding (bitbucket_c1 chunk)."""
+
+    @staticmethod
+    def run_check(text, cid):
+        from tests.bitbucket.conftest import run_check
+        return run_check(text, cid)
+
+    def test_bb011_aws_configure_from_secured_var_passes(self):
+        # Sourcing the key from a secured variable is the recommended
+        # shape and must not fire.
+        secured = (
+            "pipelines:\n"
+            "  default:\n"
+            "    - step:\n"
+            "        script:\n"
+            "          - aws configure set aws_access_key_id "
+            "\"$AWS_ACCESS_KEY_ID\"\n"
+        )
+        assert self.run_check(secured, "BB-011").passed is True
+        # a literal embedded key still fires
+        literal = (
+            "pipelines:\n"
+            "  default:\n"
+            "    - step:\n"
+            "        script:\n"
+            "          - aws configure set aws_access_key_id "
+            "AKIAIOSFODNN7EXAMPLE\n"
+        )
+        assert self.run_check(literal, "BB-011").passed is False

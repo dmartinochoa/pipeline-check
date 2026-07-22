@@ -48,9 +48,18 @@ def check(ctx: KubernetesContext) -> Finding:
                 continue
             has_liveness = isinstance(c.get("livenessProbe"), dict)
             has_readiness = isinstance(c.get("readinessProbe"), dict)
+            has_startup = isinstance(c.get("startupProbe"), dict)
             if not (has_liveness or has_readiness):
+                # A startupProbe only gates startup, not ongoing health /
+                # traffic, so a container with just one still lacks the
+                # liveness/readiness gate; note it so the finding is
+                # accurate rather than claiming "no probe".
+                note = (
+                    " (only startupProbe; no liveness/readiness)"
+                    if has_startup else ""
+                )
                 offenders.append(
-                    f"{m.kind}/{m.name} container={container_name(c)}"
+                    f"{m.kind}/{m.name} container={container_name(c)}{note}"
                 )
                 locations.append(manifest_location(m, c))
     passed = not offenders

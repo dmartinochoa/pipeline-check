@@ -39,7 +39,8 @@ def _allows_dangerous_port(allowed_list: list[dict[str, object]]) -> list[str]:
     found: list[str] = []
     for entry in allowed_list:
         protocol = str(entry.get("protocol", "")).lower()
-        if protocol not in ("tcp", "all"):
+        # GCP accepts the IANA protocol number too: ``6`` is TCP.
+        if protocol not in ("tcp", "all", "6"):
             continue
         raw_ports = entry.get("ports")
         ports: list[object] = list(raw_ports) if isinstance(raw_ports, (list, tuple)) else []

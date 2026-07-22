@@ -15,8 +15,23 @@ _AWS_CONFIGURE_RE = re.compile(
 )
 
 _ENV_AWS_KEY_RE = re.compile(
-    r"(?:export\s+)?AWS_(?:ACCESS_KEY_ID|SECRET_ACCESS_KEY)\s*=\s*['\"]?AKIA"
+    # An access key id starts with AKIA; a secret access key is an opaque
+    # 40-char string (never AKIA), so match any non-``$`` literal assigned
+    # to it (``$VAR`` references are OIDC/secret indirection, not literals).
+    r"(?:export\s+)?AWS_ACCESS_KEY_ID\s*=\s*['\"]?AKIA"
+    r"|(?:export\s+)?AWS_SECRET_ACCESS_KEY\s*=\s*['\"]?(?!\$)[^\s'\"]"
 )
+
+
+def _var_literal(v: Any) -> str | None:
+    """Unwrap a GitLab variable value to its literal string, handling the
+    ``{value: "...", description: "..."}`` form GL-002/GL-003 also accept."""
+    if isinstance(v, str):
+        return v
+    if isinstance(v, dict):
+        val = v.get("value")
+        return val if isinstance(val, str) else None
+    return None
 
 RULE = Rule(
     id="GL-013",
@@ -72,14 +87,16 @@ def check(path: str, doc: dict[str, Any]) -> Finding:
     top_vars = doc.get("variables") or {}
     if isinstance(top_vars, dict):
         for v in top_vars.values():
-            if isinstance(v, str) and aws_key_in(v):
+            raw = _var_literal(v)
+            if raw and aws_key_in(raw):
                 static_keys = True
     # Scan per-job variables and script bodies.
     for _, job in iter_jobs(doc):
         job_vars = job.get("variables") or {}
         if isinstance(job_vars, dict):
             for v in job_vars.values():
-                if isinstance(v, str) and aws_key_in(v):
+                raw = _var_literal(v)
+                if raw and aws_key_in(raw):
                     static_keys = True
         # Detect `aws configure set` and inline key assignments in scripts.
         for line in job_scripts(job):

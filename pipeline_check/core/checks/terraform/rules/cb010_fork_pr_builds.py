@@ -24,13 +24,16 @@ RULE = Rule(
     ),
     docs_note=(
         "Reads ``aws_codebuild_webhook.filter_group[*].filter[*]``. "
-        "For each group that covers a ``PULL_REQUEST_*`` event, fires "
-        "when no sibling ``ACTOR_ACCOUNT_ID`` filter constrains the "
-        "PR author."
+        "For each group that covers a pre-merge pull-request event "
+        "(``PULL_REQUEST_CREATED``, ``PULL_REQUEST_UPDATED``, or "
+        "``PULL_REQUEST_REOPENED`` — the ones a fork author triggers), "
+        "fires when no sibling ``ACTOR_ACCOUNT_ID`` filter constrains "
+        "the PR author. ``PULL_REQUEST_MERGED`` runs post-merge on the "
+        "base branch, so it isn't treated as a fork-controlled event."
     ),
     exploit_example=(
-        "# Vulnerable: build runs on PULL_REQUEST_MERGED or\n"
-        "# PULL_REQUEST_CREATED from forks. A fork PR can inject\n"
+        "# Vulnerable: build runs on PULL_REQUEST_CREATED or\n"
+        "# PULL_REQUEST_UPDATED from forks. A fork PR can inject\n"
         "# arbitrary code that executes with the project's IAM role.\n"
         'resource "aws_codebuild_project" "ci" {\n'
         "  source {\n"

@@ -60,7 +60,10 @@ def check(ctx: KubernetesContext) -> Finding:
     offenders: list[str] = []
     locations: list[Location] = []
     for m, ps in iter_workload_pod_specs(ctx):
-        sa = ps.get("serviceAccountName")
+        # ``serviceAccount`` is the deprecated alias kubectl still copies
+        # into ``serviceAccountName``, so an older manifest that only sets
+        # the alias isn't running on the default SA.
+        sa = ps.get("serviceAccountName") or ps.get("serviceAccount")
         if sa in (None, "", "default"):
             offenders.append(f"{m.kind}/{m.name}")
             locations.append(manifest_location(m, ps))

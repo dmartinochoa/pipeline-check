@@ -82,7 +82,14 @@ def check(path: str, doc: dict[str, Any]) -> Finding:
             run = step.get("run")
             if not isinstance(run, str):
                 continue
-            if _DEPRECATED_RE.search(run):
+            # Skip ``#`` comment lines so a migration note referencing the
+            # retired command (``# migrated from: echo "::set-output..."``)
+            # doesn't fire while the live line uses ``$GITHUB_OUTPUT``.
+            live = "\n".join(
+                ln for ln in run.splitlines()
+                if not ln.lstrip().startswith("#")
+            )
+            if _DEPRECATED_RE.search(live):
                 offenders.append(f"{job_id}[{idx}]")
     passed = not offenders
     desc = (

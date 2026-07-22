@@ -57,16 +57,17 @@ PRIVILEGED_TRIGGERS: frozenset[str] = frozenset({
     "pull_request_target", "workflow_run",
 })
 
-#: Markers that a run's logs exercised cloud OIDC token minting. Tight by
-#: design (near-zero false positive): these strings essentially only occur
-#: in an OIDC flow -- GitHub's OIDC issuer / token-request env, the AWS STS
-#: web-identity call, and GCP workload-identity federation. Recall is
-#: best-effort (log content varies and registered secrets are masked),
-#: matching the best-effort nature of run-log forensics.
+#: Markers that a run's logs performed an actual cloud OIDC token
+#: *exchange* (federation), not merely that OIDC was available. Keyed on
+#: the exchange calls only (AWS STS web-identity, GCP workload-identity
+#: federation): the GitHub issuer host and the ``ACTIONS_ID_TOKEN_REQUEST_*``
+#: request-env vars appear in any job that has ``id-token: write`` and
+#: prints its environment (``run: env`` / ``set -x``) even when no token
+#: was ever exchanged, so they overstate "minted a cloud token" and are
+#: excluded. Recall is best-effort (log content varies, secrets are
+#: masked), matching the best-effort nature of run-log forensics.
 _OIDC_MARKERS_RE = re.compile(
-    r"token\.actions\.githubusercontent\.com"
-    r"|ACTIONS_ID_TOKEN_REQUEST_(?:URL|TOKEN)"
-    r"|AssumeRoleWithWebIdentity"
+    r"AssumeRoleWithWebIdentity"
     r"|workloadIdentityPools",
 )
 

@@ -12,16 +12,19 @@ RULE = Rule(
     owasp=("CICD-SEC-10",),
     cwe=("CWE-778",),
     recommendation=(
-        "Configure per-service audit log configs for "
-        "storage.googleapis.com, iam.googleapis.com, and "
-        "compute.googleapis.com to include all three log types: "
-        "ADMIN_READ (1), DATA_WRITE (2), and DATA_READ (3)."
+        "Enable all three Data Access log types (ADMIN_READ, "
+        "DATA_WRITE, DATA_READ) for storage.googleapis.com, "
+        "iam.googleapis.com, and compute.googleapis.com, either via "
+        "per-service audit log configs or a project-wide allServices "
+        "config."
     ),
     docs_note=(
-        "While enabling allServices audit logging is a good baseline, "
-        "critical services like Storage, IAM, and Compute should "
-        "have explicit per-service audit configs to ensure visibility "
-        "is not accidentally removed by a broad policy change."
+        "Critical services like Storage, IAM, and Compute need all "
+        "three Data Access log types (ADMIN_READ, DATA_WRITE, "
+        "DATA_READ). Coverage from an allServices config counts toward "
+        "each critical service; an explicit per-service config is "
+        "equivalent and guards against a later allServices change "
+        "silently removing visibility."
     ),
 )
 

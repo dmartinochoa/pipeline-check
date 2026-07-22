@@ -92,10 +92,15 @@ RULE = Rule(
 )
 
 
-# ``$(params.<name>)`` is the canonical Tekton substitution form;
-# the legacy single-paren ``$params.name`` is no longer accepted by
-# Tekton 0.30+, so we match only the documented shape.
-_PARAM_RE = re.compile(r"\$\(params\.([A-Za-z_][A-Za-z0-9_-]*)\)")
+# The two documented Tekton substitution forms: the dot form
+# ``$(params.name)`` and the bracket form ``$(params['name'])`` /
+# ``$(params["name"])`` (used for param names containing dots). The
+# legacy single-paren ``$params.name`` is no longer accepted by
+# Tekton 0.30+ and is intentionally not matched.
+_PARAM_RE = re.compile(
+    r"\$\(params(?:\.([A-Za-z_][A-Za-z0-9_-]*)"
+    r"|\[['\"]([^'\"]+)['\"]\])\)"
+)
 
 
 def _step_workspaces(step: dict[str, Any]) -> list[dict[str, Any]]:
@@ -125,7 +130,7 @@ def check(ctx: TektonContext) -> Finding:
                     if not isinstance(sub, str):
                         continue
                     refs = sorted(
-                        {m.group(1) for m in _PARAM_RE.finditer(sub)},
+                        {(m.group(1) or m.group(2)) for m in _PARAM_RE.finditer(sub)},
                     )
                     if refs:
                         offenders.append(
@@ -139,7 +144,7 @@ def check(ctx: TektonContext) -> Finding:
                 sub = ws.get("subPath")
                 if not isinstance(sub, str):
                     continue
-                refs = sorted({m.group(1) for m in _PARAM_RE.finditer(sub)})
+                refs = sorted({(m.group(1) or m.group(2)) for m in _PARAM_RE.finditer(sub)})
                 if refs:
                     offenders.append(
                         f"{doc.kind}/{doc.name} {step_name(step, idx)} "

@@ -3,7 +3,7 @@ from __future__ import annotations
 
 from typing import Any
 
-from ..._primitives.secret_shapes import AWS_KEY_RE, SECRETISH_KEY_RE
+from ..._primitives.secret_shapes import SECRETISH_KEY_RE, aws_key_in
 from ...base import Finding, Location, Severity
 from ...rule import Rule
 from ..base import (
@@ -105,7 +105,7 @@ def check(ctx: KubernetesContext) -> Finding:
                 value = entry.get("value")
                 if not isinstance(name, str):
                     continue
-                if AWS_KEY_RE.search(value if isinstance(value, str) else ""):
+                if aws_key_in(value if isinstance(value, str) else ""):
                     offenders.append(
                         f"{m.kind}/{m.name} {kind}={container_name(c)} "
                         f"env={name} (AKIA-shaped value)"

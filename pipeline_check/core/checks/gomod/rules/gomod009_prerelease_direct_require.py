@@ -77,18 +77,22 @@ RULE = Rule(
 )
 
 
-_PRERELEASE_RE = re.compile(
-    r"-(?:rc|alpha|beta|pre|dev)\b", re.IGNORECASE,
-)
-_PSEUDO_VERSION_RE = re.compile(
-    r"^v\d+\.\d+\.\d+-\d{14}-[0-9a-f]{12,}$"
-)
+# A Go pseudo-version (commit pin) always ends in
+# ``<sep><14-digit timestamp>-<commit hash>``. The separator before the
+# timestamp is ``-`` (form 1, ``v1.2.3-<ts>-<hash>``) or ``.`` (form 2/3,
+# ``v1.2.3-rc.0.<ts>-<hash>`` / ``v1.2.4-0.<ts>-<hash>``), so all three
+# forms are recognized as commit pins rather than pre-releases.
+_PSEUDO_VERSION_RE = re.compile(r"[-.]\d{14}-[0-9a-f]{12,}$")
+# Any SemVer pre-release segment: a ``-`` after the ``vX.Y.Z`` head. This
+# covers arbitrary identifiers (rc/alpha/beta/preview/M1/snapshot/canary
+# /...), not a fixed keyword list.
+_SEMVER_PRERELEASE_RE = re.compile(r"^v\d+\.\d+\.\d+-")
 
 
 def _is_prerelease(version: str) -> bool:
-    if _PSEUDO_VERSION_RE.match(version):
+    if _PSEUDO_VERSION_RE.search(version):
         return False
-    return bool(_PRERELEASE_RE.search(version))
+    return bool(_SEMVER_PRERELEASE_RE.match(version))
 
 
 def check(pom: GoModFile) -> Finding:

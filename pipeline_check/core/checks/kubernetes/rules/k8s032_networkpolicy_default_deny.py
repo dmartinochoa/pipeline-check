@@ -63,13 +63,17 @@ _WORKLOAD_KINDS = frozenset({
 
 
 def _is_default_deny(np_data: dict[str, Any]) -> bool:
-    """Return True if *np_data* is the canonical default-deny shape.
+    """Return True if *np_data* is a full (both-direction) default-deny.
 
-    Matches a NetworkPolicy whose ``podSelector`` is the empty
-    mapping (every pod) and which has neither ``ingress:`` nor
-    ``egress:`` rules, or one whose ``policyTypes`` declares Ingress
-    / Egress without populating the corresponding rule list. Both
-    forms are equivalent in Kubernetes' admission semantics.
+    Matches a NetworkPolicy whose ``podSelector`` is the empty mapping
+    (every pod), which has no ``ingress:`` / ``egress:`` allow rules, and
+    whose ``policyTypes`` declares BOTH ``Ingress`` and ``Egress``.
+
+    A policy denies a direction only where ``policyTypes`` covers it, and
+    Kubernetes defaults an absent ``policyTypes`` to ``[Ingress]`` (egress
+    stays wide open). So an ingress-only policy (``policyTypes:
+    [Ingress]``, or no ``policyTypes`` at all) is not a full default-deny;
+    the rule's recommendation asks for ``[Ingress, Egress]``.
     """
     spec = np_data.get("spec")
     if not isinstance(spec, dict):
@@ -81,7 +85,13 @@ def _is_default_deny(np_data: dict[str, Any]) -> bool:
     egress = spec.get("egress")
     has_ingress_rules = isinstance(ingress, list) and len(ingress) > 0
     has_egress_rules = isinstance(egress, list) and len(egress) > 0
-    return not has_ingress_rules and not has_egress_rules
+    if has_ingress_rules or has_egress_rules:
+        return False
+    policy_types = spec.get("policyTypes")
+    if not isinstance(policy_types, list):
+        return False
+    types = {str(t).strip().lower() for t in policy_types}
+    return "ingress" in types and "egress" in types
 
 
 def _namespace_of(m_data: dict[str, Any]) -> str:

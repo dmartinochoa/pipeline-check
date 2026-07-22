@@ -37,6 +37,14 @@ class TestENTRA002AppLongCredential:
         res = entra002.check(cat)
         assert res and res[0].passed is False  # ~365 days > 180
 
+    def test_null_credential_arrays_do_not_crash(self):
+        # Graph can return passwordCredentials / keyCredentials
+        # present-but-null; iterating None used to raise TypeError.
+        cat = _catalog("applications", [{"displayName": "a", "appId": "id",
+            "passwordCredentials": None, "keyCredentials": None}])
+        # No creds to evaluate; the point is it returns cleanly, no crash.
+        assert entra002.check(cat) == []
+
 
 class TestENTRA004ConditionalAccessMFA:
     def test_null_builtin_controls_do_not_crash(self):
@@ -152,3 +160,97 @@ class TestAZVM003JITAccessSecurityProfile:
         result = azvm003.check(cat)
         assert len(result) == 1
         assert result[0].passed is False
+
+
+class TestAudit202607LowAzureCloud:
+    """2026-07 audit LOW findings on the Azure-cloud rules."""
+
+    def test_azst006_naive_key_creation_time_does_not_crash(self):
+        from datetime import datetime, timedelta
+        from types import SimpleNamespace as NS
+
+        from pipeline_check.core.checks.azure_cloud.rules import (
+            azst006_key_rotation as s6,
+        )
+        naive_old = datetime.now() - timedelta(days=200)  # tz-naive
+        acct = NS(name="a", key_creation_time=NS(key1=naive_old, key2=None))
+        res = s6.check(_catalog("storage_accounts", [acct]))
+        assert res and res[0].passed is False
+
+    def test_azsql003_secured_by_perimeter_is_not_public(self):
+        from types import SimpleNamespace as NS
+
+        from pipeline_check.core.checks.azure_cloud.rules import (
+            azsql003_public_access as sq3,
+        )
+        srv = NS(name="s", public_network_access="SecuredByPerimeter")
+        res = sq3.check(_catalog("sql_servers", [{"server": srv}]))
+        assert res and res[0].passed is True
+        srv2 = NS(name="s", public_network_access="Enabled")
+        res = sq3.check(_catalog("sql_servers", [{"server": srv2}]))
+        assert res and res[0].passed is False
+
+    def test_azvm004_windows_automatic_by_platform_is_auto_patched(self):
+        from types import SimpleNamespace as NS
+
+        from pipeline_check.core.checks.azure_cloud.rules import (
+            azvm004_auto_os_patching as v4,
+        )
+        vm = NS(name="v", os_profile=NS(
+            windows_configuration=NS(
+                enable_automatic_updates=False,
+                patch_settings=NS(patch_mode="AutomaticByPlatform")),
+            linux_configuration=None))
+        res = v4.check(_catalog("virtual_machines", [vm]))
+        assert res and res[0].passed is True
+
+
+class TestAudit202607LowAzureCloudC1C2:
+    """2026-07 audit LOW findings (azure_cloud_c1/c2 chunks)."""
+
+    def test_akv004_none_kid_does_not_crash(self):
+        from types import SimpleNamespace as NS
+
+        from pipeline_check.core.checks.azure_cloud.rules import (
+            akv004_key_expiry as k4,
+        )
+        cat = _catalog("key_vaults", [NS(name="v")])
+        cat.key_vault_keys.return_value = [
+            {"kid": None, "attributes": {"enabled": True, "exp": None}}]
+        assert k4.check(cat) is not None  # no TypeError
+
+    def test_acr002_deny_default_action_is_restricted(self):
+        from types import SimpleNamespace as NS
+
+        from pipeline_check.core.checks.azure_cloud.rules import (
+            acr002_public_access as acr2,
+        )
+        reg = NS(name="r", public_network_access="Enabled",
+                 network_rule_set=NS(default_action="Deny"))
+        assert acr2.check(_catalog("container_registries", [reg]))[0].passed is True
+        reg2 = NS(name="r", public_network_access="Enabled",
+                  network_rule_set=NS(default_action="Allow"))
+        assert acr2.check(_catalog("container_registries", [reg2]))[0].passed is False
+
+    def test_azmon002_indefinite_does_not_mask_short_retention(self):
+        from types import SimpleNamespace as NS
+
+        from pipeline_check.core.checks.azure_cloud.rules import (
+            azmon002_log_retention as mon2,
+        )
+        s = NS(name="s", logs=[
+            NS(retention_policy=NS(enabled=True, days=0)),
+            NS(retention_policy=NS(enabled=True, days=30))])
+        assert mon2.check(_catalog("diagnostic_settings", [s]))[0].passed is False
+
+    def test_aznw001_ipv6_any_source_detected(self):
+        from types import SimpleNamespace as NS
+
+        from pipeline_check.core.checks.azure_cloud.rules import (
+            aznw001_ssh_rdp_internet as nw1,
+        )
+        rule = NS(direction="Inbound", access="Allow",
+                  source_address_prefix="::/0", source_address_prefixes=[],
+                  destination_port_range="22", destination_port_ranges=[])
+        nsg = NS(name="n", security_rules=[rule])
+        assert nw1.check(_catalog("network_security_groups", [nsg]))[0].passed is False

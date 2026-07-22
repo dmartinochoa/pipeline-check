@@ -49,6 +49,15 @@ RULE = Rule(
         "passes with a note. The repo-level analog is SCM-048 (org "
         "codespace secret scoped to all repos)."
     ),
+    known_fp=(
+        "A ``private``-visibility org secret passes here, but it is still "
+        "readable by every private / internal repo in the org, a residual "
+        "exposure (a script injection in any low-trust private repo can "
+        "exfiltrate it). The rule intentionally flags only ``all`` "
+        "visibility to avoid firing on the common private-scoped case; "
+        "scope a genuinely sensitive secret to ``selected`` repositories "
+        "rather than leaving it org-wide even at ``private`` visibility.",
+    ),
 )
 
 

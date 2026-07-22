@@ -1127,7 +1127,7 @@ Scope ``iam:PassRole`` to the specific role ARNs the pipeline must hand off to. 
 <span class="pg-sev pg-sev--high">HIGH</span> <span class="pg-tag pg-tag--owasp">CICD-SEC-2</span> <span class="pg-tag pg-tag--cwe">CWE-441</span>
 </div>
 
-Parses ``AssumeRolePolicyDocument``. Walks every ``Allow`` statement whose ``Principal.AWS`` is an external account, and fires when no ``Condition`` carries ``sts:ExternalId``. Without it, the role is vulnerable to the confused-deputy pattern.
+Parses ``AssumeRolePolicyDocument``. Walks every ``Allow`` statement with a ``Principal.AWS`` and fires when no ``Condition`` carries ``sts:ExternalId``. The static template carries no account context, so the check can't confirm the principal is cross-account; ``sts:ExternalId`` is the confused-deputy defense for cross-account trust and is harmless on same-account trust, so requiring it is safe either way.
 
 <div class="pg-rule__rec" markdown>
 

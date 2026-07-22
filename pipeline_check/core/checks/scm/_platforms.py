@@ -549,12 +549,7 @@ def _bitbucket_protection(
         pattern = entry.get("pattern")
         if not isinstance(pattern, str):
             continue
-        if (
-            pattern == default_branch
-            or pattern == "*"
-            or pattern == "master"
-            and default_branch == "master"
-        ):
+        if pattern == default_branch or pattern == "*":
             on_default.append(entry)
     if not on_default:
         return None

@@ -42,6 +42,15 @@ def check(catalog: ResourceCatalog) -> list[Finding]:
                 )
                 if auto_updates:
                     auto_patch = True
+                # Azure-orchestrated patching (AutomaticByPlatform) is
+                # auto-patching too, mirroring the Linux branch below.
+                win_patch = getattr(win_config, "patch_settings", None)
+                if win_patch:
+                    win_mode = str(
+                        getattr(win_patch, "patch_mode", ""),
+                    ).lower()
+                    if win_mode == "automaticbyplatform":
+                        auto_patch = True
 
             # Linux VM check.
             linux_config = getattr(os_profile, "linux_configuration", None)

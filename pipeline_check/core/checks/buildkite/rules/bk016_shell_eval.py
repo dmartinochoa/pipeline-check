@@ -4,8 +4,9 @@ from __future__ import annotations
 from typing import Any
 
 from ..._primitives import shell_eval
-from ...base import Finding, Severity, blob_lower
+from ...base import Finding, Severity
 from ...rule import Rule
+from ..base import iter_command_steps, step_commands
 
 RULE = Rule(
     id="BK-016",
@@ -54,8 +55,13 @@ RULE = Rule(
 
 
 def check(path: str, doc: dict[str, Any]) -> Finding:
-    blob = blob_lower(doc)
-    hits = shell_eval.scan(blob)
+    # Scan only command bodies, not the whole-document blob: a shell
+    # idiom that appears in a label / env value / plugin config isn't an
+    # executed command and shouldn't fire.
+    hits = []
+    for _idx, step in iter_command_steps(doc):
+        for cmd in step_commands(step):
+            hits.extend(shell_eval.scan(cmd.lower()))
     passed = not hits
     desc = (
         "No dangerous shell idioms detected in this pipeline."

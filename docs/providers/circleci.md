@@ -265,7 +265,7 @@ Add a `type: approval` job that precedes the deploy job in the workflow, and lis
 <span class="pg-sev pg-sev--medium">MEDIUM</span> <span class="pg-tag pg-tag--owasp">CICD-SEC-7</span> <span class="pg-tag pg-tag--esf">ESF-D-BUILD-ENV</span> <span class="pg-tag pg-tag--esf">ESF-D-PRIV-BUILD</span> <span class="pg-tag pg-tag--cwe">CWE-269</span>
 </div>
 
-Self-hosted runners that persist between jobs leak filesystem and process state. A PR-triggered job writes to `/tmp`; a subsequent prod-deploy job on the same runner reads it. The check looks for `resource_class` values containing 'self-hosted', if found, it checks for 'ephemeral' in the value.
+Self-hosted runners that persist between jobs leak filesystem and process state. A PR-triggered job writes to `/tmp`; a subsequent prod-deploy job on the same runner reads it. The check treats a namespaced `resource_class` (`<namespace>/<name>`, the shape every self-hosted runner uses) or one containing 'self-hosted' as a runner, then flags it when the value carries no 'ephemeral' marker.
 
 <div class="pg-rule__rec" markdown>
 

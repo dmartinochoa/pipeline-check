@@ -233,7 +233,7 @@ Remove TLS-bypass flags from build commands. The most common offenders are ``cur
 
 Drone's pipeline-level ``volumes:`` block accepts either ``temp:`` (an ephemeral tmpfs, safe) or ``host: { path: ... }`` (a bind mount of the agent's filesystem, the dangerous shape). The rule fires when any pipeline-level volume's ``host.path`` matches a sensitive prefix:
 
-- ``/var/run/docker.sock`` — the canonical Docker-in-Docker escape; equivalent to ``--privileged`` for container takeover purposes;
+- ``/var/run/docker.sock`` (and the ``/run`` twin, plus the ``containerd`` / ``crio`` runtime sockets) — the canonical container-runtime escape; equivalent to ``--privileged`` for container takeover purposes;
 - ``/var/lib/docker`` — exposes every image / container on the host;
 - ``/etc`` — config + credential files;
 - ``/proc`` / ``/sys`` — host kernel state;

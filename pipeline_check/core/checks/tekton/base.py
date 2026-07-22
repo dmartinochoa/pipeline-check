@@ -184,8 +184,23 @@ def step_name(step: dict[str, Any], idx: int) -> str:
 
 
 def iter_step_scripts(doc: TektonDoc) -> Iterator[tuple[str, str]]:
-    """Yield ``(step_name, script_text)`` for every step that has a script."""
+    """Yield ``(step_name, script_text)`` for every step that runs code.
+
+    Covers both the ``script:`` field and the exec form
+    (``command: ["sh","-c"], args: [...]``); the command and args are
+    joined so shell-scanning rules see that shape too.
+    """
     for idx, step in enumerate(task_steps(doc)):
         script = step.get("script")
         if isinstance(script, str) and script:
             yield step_name(step, idx), script
+            continue
+        parts: list[str] = []
+        cmd = step.get("command")
+        if isinstance(cmd, list):
+            parts.extend(c for c in cmd if isinstance(c, str))
+        args = step.get("args")
+        if isinstance(args, list):
+            parts.extend(a for a in args if isinstance(a, str))
+        if parts:
+            yield step_name(step, idx), " ".join(parts)

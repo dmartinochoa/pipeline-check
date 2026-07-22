@@ -149,11 +149,12 @@ class TestHELM013:
         f = check_helm013(_ctx(chart))
         assert f.passed
 
-    def test_fires_on_missing_type(self):
+    def test_missing_type_passes(self):
+        # A missing type: is Helm's ``application`` default (legitimate,
+        # common); the rule no longer flags it (2026-07 audit LOW FP).
         chart = _chart(chart_type=None)
         f = check_helm013(_ctx(chart))
-        assert not f.passed
-        assert "missing" in f.description.lower()
+        assert f.passed
 
     def test_fires_on_invalid_type(self):
         chart = _chart(chart_type="something-else")
