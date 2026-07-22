@@ -10,6 +10,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 PRs landing on `dev` between releases append entries below. The
 release commit collapses this section into `## [X.Y.Z] - <date>`.
 
+## [1.19.0] - 2026-07-22
+
 ### Fixed
 
 - **SCM-006 is skipped on Bitbucket.** Bitbucket Cloud has no per-branch
