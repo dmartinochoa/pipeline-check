@@ -1,5 +1,5 @@
 -r requirements.txt
-hypothesis>=6.156.6
+hypothesis>=6.165.10
 jsonschema>=4.0
 # Pin away from mypy 2.0: it tightens `no-untyped-call` against
 # PyYAML helpers we rely on (``construct_object``, ``construct_document``,
@@ -9,7 +9,7 @@ jsonschema>=4.0
 # PR that first added mypy to ``requirements-dev.txt``.
 mypy>=2.1.0,<3.0
 pytest>=7.4.0
-pytest-benchmark>=5.0.0
+pytest-benchmark>=5.3.0
 pytest-cov>=4.1.0
 pytest-xdist>=3.5.0
 ruff>=0.15.13
