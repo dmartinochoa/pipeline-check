@@ -48,7 +48,7 @@ jobs:
     environment: container-registry
     timeout-minutes: 20
     steps:
-      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0  # v7.0.0
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1  # v7.0.1
         with:
           persist-credentials: false
           fetch-depth: 0
@@ -57,7 +57,7 @@ jobs:
         # Used only to read the package version out of pyproject.toml
         # via ``tomllib``. The image itself is built inside the
         # Dockerfile's own python:3.12-slim base.
-        uses: actions/setup-python@ece7cb06caefa5fff74198d8649806c4678c61a1  # v6.3.0
+        uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97  # v7.0.0
         with:
           python-version: "3.12"
 
@@ -70,13 +70,13 @@ jobs:
       - name: Set up QEMU
         # Emulator binaries that let buildx cross-compile the arm64
         # variant on the amd64 GitHub runner.
-        uses: docker/setup-qemu-action@96fe6ef7f33517b61c61be40b68a1882f3264fb8  # v4.2.0
+        uses: docker/setup-qemu-action@1f40c72289eff860ee54a304f1438e3cff362e0a  # v4.3.0
 
       - name: Set up Buildx
-        uses: docker/setup-buildx-action@bb05f3f5519dd87d3ba754cc423b652a5edd6d2c  # v4.2.0
+        uses: docker/setup-buildx-action@37fe631027851001ddb9b187196cc803df7f5f0e  # v4.3.0
 
       - name: Log in to GHCR
-        uses: docker/login-action@af1e73f918a031802d376d3c8bbc3fe56130a9b0  # v4.4.0
+        uses: docker/login-action@dbcb813823bdd20940b903addbd779551569679f  # v4.6.0
         with:
           registry: ghcr.io
           username: ${{ github.actor }}
@@ -87,7 +87,7 @@ jobs:
         # DOCKERHUB_TOKEN. The token must be a Docker Hub access
         # token (Account Settings -> Security), not the account
         # password.
-        uses: docker/login-action@af1e73f918a031802d376d3c8bbc3fe56130a9b0  # v4.4.0
+        uses: docker/login-action@dbcb813823bdd20940b903addbd779551569679f  # v4.6.0
         with:
           username: ${{ secrets.DOCKERHUB_USERNAME }}
           password: ${{ secrets.DOCKERHUB_TOKEN }}
@@ -174,7 +174,7 @@ jobs:
         # authenticates via the Docker Hub login already performed
         # above; no separate secret is needed.
         id: scout
-        uses: docker/scout-action@2688993af7bafd6ba8c6a74ec652442be91dd82b  # v1.23.1
+        uses: docker/scout-action@7c6b6c3f7844478ace1ffd4e7aef649053d1f87d  # v1.24.0
         with:
           command: cves
           image: ghcr.io/dmartinochoa/pipeline-check@${{ steps.build.outputs.digest }}
@@ -189,7 +189,7 @@ jobs:
         # failed build still surfaces its findings on the Security tab
         # rather than vanishing with the job.
         if: always() && hashFiles('scout-cves.sarif') != ''
-        uses: github/codeql-action/upload-sarif@54f647b7e1bb85c95cddabcd46b0c578ec92bc1a  # v4.36.3
+        uses: github/codeql-action/upload-sarif@cdf488f595d80d6e07e03d4674febd5ab45fa938  # v4.37.9
         with:
           sarif_file: scout-cves.sarif
           category: docker-scout
